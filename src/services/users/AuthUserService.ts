@@ -14,9 +14,14 @@ class AuthUserService {
   async signin({ email, password, googleId }: AuthRequest) {
     const isSocialLogin = googleId != null;
 
-    let user = isSocialLogin ? await User.findOne({ googleId }) : await User.findOne({ email });
+    let user = isSocialLogin
+      ? await User.findOne({ googleId })
+      : await User.findOne({ email });
+
     if (!user) {
-      user = isSocialLogin ? await Professor.findOne({ googleId }) : await Professor.findOne({ email });
+      user = isSocialLogin
+        ? await Professor.findOne({ googleId })
+        : await Professor.findOne({ email });
     }
 
     if (!user) {
@@ -24,54 +29,29 @@ class AuthUserService {
     }
 
     if (isSocialLogin) {
-      if (user.password) {
-        const token = sign(
-          {
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          },
-          process.env.JWT_SECRET!,
-          {
-            subject: user._id.toString(),
-            expiresIn: "1d",
-          }
-        );
-
-        return {
-          id: user._id,
+      const token = sign(
+        {
           name: user.name,
           email: user.email,
           role: user.role,
           school: user.school,
-          token,
-          redirectTo: "/sael/talk",
-        };
-      } else {
+        },
+        process.env.JWT_SECRET!,
+        {
+          subject: user._id.toString(),
+          expiresIn: "1d",
+        }
+      );
 
-        const token = sign(
-          {
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          },
-          process.env.JWT_SECRET!,
-          {
-            subject: user._id.toString(),
-            expiresIn: "1d",
-          }
-        );
-
-        return {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          school: user.school,
-          token,
-          message: "Por favor, confirme seus dados via email para completar seu registro.",
-        };
-      }
+      return {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        school: user.school,
+        token,
+        redirectTo: "/sael/talk",
+      };
     }
 
     if (!user.password) {
@@ -89,6 +69,7 @@ class AuthUserService {
         name: user.name,
         email: user.email,
         role: user.role,
+        school: user.school,
       },
       process.env.JWT_SECRET!,
       {

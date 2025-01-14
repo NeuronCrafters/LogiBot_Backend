@@ -3,16 +3,19 @@ import { DetailsUserService } from "../../services/users/DetailsUserService";
 
 class DetailsUserController {
   async handle(req: Request, res: Response) {
-    const user_id = req.user?.id;
+    try {
+      const { id, role } = req.user;
 
-    if (!user_id) {
-      throw new Error("ID do usuário não encontrado na requisição!");
+      console.log("ID do usuário:", id, "Role:", role);
+
+      const detailsUserService = new DetailsUserService();
+      const userDetails = await detailsUserService.detailsUser(id, role);
+
+      return res.json(userDetails);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes do usuário:", error);
+      return res.status(error.statusCode || 500).json({ error: error.message });
     }
-
-    const details = new DetailsUserService();
-    const user = await details.detailsUser(user_id);
-
-    return res.json(user);
   }
 }
 

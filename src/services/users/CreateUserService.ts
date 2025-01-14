@@ -1,7 +1,8 @@
 import { hash } from "bcryptjs";
 import { AppError } from "../../exceptions/AppError";
-import { User } from "../../models/User";
+import { User, IUser } from "../../models/User";
 import { Professor } from "../../models/Professor";
+import { Types } from "mongoose";
 
 interface CreateUserDTO {
   name: string;
@@ -45,13 +46,21 @@ class CreateUserService {
         };
       }
 
+      const professor = await Professor.findOne({ school });
+      if (!professor) {
+        throw new AppError("Nenhum professor encontrado para esta escola.", 404);
+      }
+
       const newUser = await User.create({
         name,
         email,
         password: passwordHash,
         role: role || "student",
         school,
-      });
+      }) as IUser;
+
+      professor.students.push(new Types.ObjectId(newUser._id));
+
 
       return {
         id: newUser._id,
@@ -59,10 +68,14 @@ class CreateUserService {
         email: newUser.email,
         role: newUser.role,
         school: newUser.school,
+        professor: {
+          id: professor._id,
+          name: professor.name,
+        },
       };
     } catch (error) {
-      console.error("Erro ao criar usuário:", error);
-      throw new AppError(`User creation failed`, 400);
+      console.error("Erro ao criar aluno:", error);
+      throw new AppError("Erro ao criar aluno.", 400);
     }
   }
 }

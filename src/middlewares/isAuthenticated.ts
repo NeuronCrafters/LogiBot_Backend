@@ -4,6 +4,7 @@ import { verify } from "jsonwebtoken";
 interface Payload {
   sub: string;
   role: string;
+  school: string;
 }
 
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
@@ -22,10 +23,9 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
       throw new Error("JWT_SECRET não está definida nas variáveis de ambiente.");
     }
 
-    const { sub, role } = verify(token, secret) as Payload;
+    const { sub, role, school } = verify(token, secret) as Payload;
 
-
-    req.user = { id: sub, role };
+    req.user = { id: sub, role, school };
     return next();
   } catch (error) {
     console.error("Erro de autenticação:", error);

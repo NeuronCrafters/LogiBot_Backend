@@ -2,8 +2,9 @@ import { Request, Response } from "express";
 import { ListStudentsService } from "../../services/admin/ListStudentsService";
 
 class ListStudentsController {
-  async handle(req: Request, res: Response) {
+  async handle(req: Request, res: Response): Promise<Response> {
     const { professorId } = req.params;
+
     const listStudentsService = new ListStudentsService();
 
     try {

@@ -1,6 +1,6 @@
-import passport from "passport";
-import { googleStrategy } from "./googleStrategy";
-import { User } from "../../models/User";
+import passport from 'passport';
+import { googleStrategy } from './googleStrategy';
+import { User } from '../../models/User';
 
 passport.use(googleStrategy);
 
@@ -12,11 +12,12 @@ passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
     if (!user) {
-      return done(new Error("Usuário não encontrado durante a deserialização."), null);
+      return done(new Error('Usuário não encontrado durante a deserialização.'), null);
     }
     done(null, user);
   } catch (error) {
-    console.error("Erro ao desserializar o usuário:", error);
     done(error, null);
   }
 });
+
+export { passport };

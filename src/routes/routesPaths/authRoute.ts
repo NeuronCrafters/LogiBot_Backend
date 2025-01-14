@@ -11,24 +11,35 @@ const authRoute = Router();
 
 // Rotas de Usuários
 authRoute.post("/users", new CreateUserController().handle);
-authRoute.post("/session", new AuthUserController().handle); // login tradicional (email/senha)
+authRoute.post("/session", new AuthUserController().handle);
 authRoute.post("/logout", isAuthenticated, new LogoutController().handle);
 authRoute.get("/me", isAuthenticated, new DetailsUserController().handle);
 
 // Rotas do Rasa (chat SAEL)
 authRoute.get("/sael/talk", isAuthenticated, new RasaController().handle);
 
-// Rota de Login Social com Google
-authRoute.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// Rota de Callback do Google
-authRoute.get("/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req: any, res) => {
-    const { token } = req.user;
 
-    res.redirect(`/sael/talk?token=${token}`);
+// Rotas de Autenticação com Google
+authRoute.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+authRoute.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }), // Callback do Google
+  (req, res) => {
+    res.redirect("/profile"); // Redireciona para uma página específica após login
   }
 );
+
+// Perfil do Usuário (Proteger rota para testar login social)
+authRoute.get("/profile", isAuthenticated, (req, res) => {
+  res.json({
+    message: "Perfil do usuário autenticado",
+    user: req.user,
+  });
+});
 
 export { authRoute };

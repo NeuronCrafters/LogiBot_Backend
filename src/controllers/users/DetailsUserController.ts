@@ -6,8 +6,6 @@ class DetailsUserController {
     try {
       const { id, role } = req.user;
 
-      console.log("ID do usuário:", id, "Role:", role);
-
       const detailsUserService = new DetailsUserService();
       const userDetails = await detailsUserService.detailsUser(id, role);
 

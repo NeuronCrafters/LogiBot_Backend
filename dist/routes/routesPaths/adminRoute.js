@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.adminRouter = void 0;
+const express_1 = require("express");
+const ListProfessorsController_1 = require("../../controllers/admin/ListProfessorsController");
+const ListStudentsProfessorController_1 = require("../../controllers/admin/ListStudentsProfessorController");
+const ViewStudentHistoryController_1 = require("../../controllers/admin/ViewStudentHistoryController");
+const adminRouter = (0, express_1.Router)();
+exports.adminRouter = adminRouter;
+adminRouter.get("/professors", new ListProfessorsController_1.ListProfessorsController().handle);
+adminRouter.get("/professor/:professorId/students", new ListStudentsProfessorController_1.ListStudentsProfessorController().handle);
+adminRouter.get("/student/:studentId/history", new ViewStudentHistoryController_1.ViewStudentHistoryController().handle);

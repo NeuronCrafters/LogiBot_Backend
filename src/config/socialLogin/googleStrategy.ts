@@ -1,6 +1,6 @@
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { User } from '../../models/User';
-import { allowedDomains } from './allowedDomains';
+import domainToSchoolMap from './domainToSchoolMap.json';
 
 const googleStrategy = new GoogleStrategy(
   {
@@ -11,29 +11,35 @@ const googleStrategy = new GoogleStrategy(
   async (accessToken, refreshToken, profile, done) => {
     try {
       const email = profile.emails?.[0]?.value;
-      const emailDomain = email?.split('@')[1];
-
-      if (!email || !allowedDomains.includes(emailDomain!)) {
-        return done(null, false, { message: 'Domínio do email não permitido.' });
+      if (!email) {
+        return done(new Error('Email não encontrado no perfil do Google.'), null);
       }
 
-      let user = await User.findOne({ googleId: profile.id });
+      const emailDomain = email.split('@')[1];
 
+      if (!domainToSchoolMap[emailDomain]) {
+        return done(new Error('Domínio do email não permitido ou não mapeado.'), null);
+      }
+
+      const school = domainToSchoolMap[emailDomain];
+
+      let user = await User.findOne({ googleId: profile.id });
       if (!user) {
         user = await User.create({
           googleId: profile.id,
           name: profile.displayName,
           email,
+          school,
           photo: profile.photos?.[0]?.value || null,
         });
       }
 
       return done(null, user);
     } catch (error) {
-      return done(error, null);
+      console.error('Erro na autenticação com o Google:', error);
+      return done(error);
     }
   }
 );
-
 
 export { googleStrategy }

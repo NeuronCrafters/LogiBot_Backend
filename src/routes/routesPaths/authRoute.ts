@@ -5,7 +5,7 @@ import { DetailsUserController } from "../../controllers/users/DetailsUserContro
 import { AuthUserController } from "../../controllers/users/AuthUserController";
 import { LogoutController } from "../../controllers/users/LogoutController";
 import { RasaController } from "../../controllers/rasa/rasaController";
-import passport from "passport";
+import { passport } from '../../config/socialLogin/passport';
 
 const authRoute = Router();
 
@@ -22,17 +22,18 @@ authRoute.get("/sael/talk", isAuthenticated, new RasaController().handle);
 
 // Rotas de Autenticação com Google
 authRoute.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  '/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
 authRoute.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }), // Callback do Google
+  '/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect("/profile"); // Redireciona para uma página específica após login
+    res.redirect('/profile');
   }
 );
+
 
 // Perfil do Usuário (Proteger rota para testar login social)
 authRoute.get("/profile", isAuthenticated, (req, res) => {
@@ -41,5 +42,7 @@ authRoute.get("/profile", isAuthenticated, (req, res) => {
     user: req.user,
   });
 });
+
+
 
 export { authRoute };

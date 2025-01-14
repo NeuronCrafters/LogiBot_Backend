@@ -1,5 +1,7 @@
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { sign } from 'jsonwebtoken';
 import { User } from '../../models/User';
+import { Professor } from '../../models/Professor';
 import domainToSchoolMap from './domainToSchoolMap.json';
 
 const googleStrategy = new GoogleStrategy(
@@ -17,14 +19,23 @@ const googleStrategy = new GoogleStrategy(
 
       const emailDomain = email.split('@')[1];
 
+      // Verifique se o domínio é permitido e mapeie para a escola
       if (!domainToSchoolMap[emailDomain]) {
         return done(new Error('Domínio do email não permitido ou não mapeado.'), null);
       }
 
       const school = domainToSchoolMap[emailDomain];
 
+      // Verifique se existe um professor associado à escola
+      const professor = await Professor.findOne({ school });
+      if (!professor) {
+        return done(new Error('Nenhum professor encontrado para esta escola.'), null);
+      }
+
+      // Verifique se o usuário já existe
       let user = await User.findOne({ googleId: profile.id });
       if (!user) {
+        // Crie o novo usuário
         user = await User.create({
           googleId: profile.id,
           name: profile.displayName,
@@ -32,9 +43,20 @@ const googleStrategy = new GoogleStrategy(
           school,
           photo: profile.photos?.[0]?.value || null,
         });
+
+        // Vincule o aluno ao professor
+        professor.students.push(user._id);
+        await professor.save();
       }
 
-      return done(null, user);
+      const secret = process.env.JWT_SECRET || 'defaultSecret';
+      const token = sign(
+        { sub: user.id, role: user.role },
+        secret,
+        { expiresIn: '1h' }
+      );
+
+      return done(null, { user, token });
     } catch (error) {
       console.error('Erro na autenticação com o Google:', error);
       return done(error);
@@ -42,4 +64,4 @@ const googleStrategy = new GoogleStrategy(
   }
 );
 
-export { googleStrategy }
+export { googleStrategy };

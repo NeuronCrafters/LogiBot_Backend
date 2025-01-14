@@ -6,6 +6,7 @@ interface ListStudentsResponse {
   name: string;
   email: string;
   role: string;
+  school: string;
 }
 
 class ListStudentsService {
@@ -17,13 +18,17 @@ class ListStudentsService {
         throw new Error("Professor não encontrado.");
       }
 
-      return professor.students.map((student: IUser) => ({
+      const students = professor.students as unknown as IUser[];
+
+      return students.map((student) => ({
         id: student._id.toString(),
         name: student.name,
         email: student.email,
         role: student.role,
+        school: student.school,
       }));
     } catch (error) {
+      console.error("Erro ao listar alunos:", error);
       throw new Error("Erro ao listar alunos.");
     }
   }

@@ -13,7 +13,7 @@ interface CreateUserDTO {
 }
 
 class CreateUserService {
-  async createUser({ name, email, password, role, school }: CreateUserDTO) {
+  async createUser({ name, email, password, role = "student", school }: CreateUserDTO) {
     try {
       const userExists = await User.findOne({ email });
       const professorExists = await Professor.findOne({ email });
@@ -26,7 +26,9 @@ class CreateUserService {
         throw new AppError("Email e senha são obrigatórios!", 400);
       }
 
+
       const passwordHash = await hash(password, 10);
+
 
       if (role === "professor") {
         const newProfessor = await Professor.create({
@@ -46,36 +48,59 @@ class CreateUserService {
         };
       }
 
-      const professor = await Professor.findOne({ school });
-      if (!professor) {
-        throw new AppError("Nenhum professor encontrado para esta escola.", 404);
+      if (role === "student") {
+        const professor = await Professor.findOne({ school });
+        if (!professor) {
+          throw new AppError("Nenhum professor encontrado para esta escola.", 404);
+        }
+
+        const newStudent = await User.create({
+          name,
+          email,
+          password: passwordHash,
+          role: "student",
+          school,
+        }) as IUser;
+
+        professor.students.push(new Types.ObjectId(newStudent._id));
+        await professor.save();
+
+        return {
+          id: newStudent._id,
+          name: newStudent.name,
+          email: newStudent.email,
+          role: newStudent.role,
+          school: newStudent.school,
+          professor: {
+            id: professor._id,
+            name: professor.name,
+          },
+        };
       }
 
-      const newUser = await User.create({
-        name,
-        email,
-        password: passwordHash,
-        role: role || "student",
-        school,
-      }) as IUser;
+      // Lógica para criação de admins
+      // if (role === "admin") {
+      //   const newAdmin = await User.create({
+      //     name,
+      //     email,
+      //     password: passwordHash,
+      //     role: "admin",
+      //     school,
+      //   });
 
-      professor.students.push(new Types.ObjectId(newUser._id));
+      //   return {
+      //     id: newAdmin._id,
+      //     name: newAdmin.name,
+      //     email: newAdmin.email,
+      //     role: newAdmin.role,
+      //     school: newAdmin.school,
+      //   };
+      // }
 
-
-      return {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        school: newUser.school,
-        professor: {
-          id: professor._id,
-          name: professor.name,
-        },
-      };
+      throw new AppError("Role inválido.", 400);
     } catch (error) {
-      console.error("Erro ao criar aluno:", error);
-      throw new AppError("Erro ao criar aluno.", 400);
+      console.error("Erro ao criar usuário:", error);
+      throw new AppError(error.message || "Erro ao criar usuário.", 500);
     }
   }
 }

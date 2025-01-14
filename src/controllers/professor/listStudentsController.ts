@@ -5,11 +5,13 @@ class ListStudentsController {
   async handle(req: Request, res: Response) {
     const { professorId } = req.params;
 
-    const listStudentsService = new ListStudentsService();
     try {
+      const listStudentsService = new ListStudentsService();
       const students = await listStudentsService.execute(professorId);
+
       return res.json(students);
     } catch (error) {
+      console.error("Erro ao listar alunos:", error);
       return res.status(500).json({ error: error.message });
     }
   }

@@ -23,6 +23,7 @@ class RasaSendController {
         metadata: {
           email: user.email,
           role: user.role,
+          name: user.name,
         },
       });
 

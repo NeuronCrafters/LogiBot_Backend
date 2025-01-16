@@ -6,8 +6,18 @@ import { RasaGetHistoryController } from "../../controllers/rasa/rasaGetHistoryC
 
 const rasaRouter = Router();
 
-rasaRouter.post("/talk", isAuthenticated, new RasaSendController().handle);
-rasaRouter.post("/history", isAuthenticated, new RasaSaveHistoryController().handle);
-rasaRouter.get("/history", isAuthenticated, new RasaGetHistoryController().handle);
+// Instâncias dos controladores para resolver bug de comunicação com o rasa
+const rasaSendController = new RasaSendController();
+const rasaSaveHistoryController = new RasaSaveHistoryController();
+const rasaGetHistoryController = new RasaGetHistoryController();
+
+// rota de conversa
+rasaRouter.post("/talk", isAuthenticated, rasaSendController.handle.bind(rasaSendController));
+
+// rotas ainda em teste
+// rota para enviar o historico da conversa para o mongo
+rasaRouter.post("/history", isAuthenticated, rasaSaveHistoryController.handle.bind(rasaSaveHistoryController));
+// rota para pegar o historico da conversa
+rasaRouter.get("/history", isAuthenticated, rasaGetHistoryController.handle.bind(rasaGetHistoryController));
 
 export { rasaRouter };

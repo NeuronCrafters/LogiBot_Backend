@@ -11,7 +11,7 @@ export interface IHistory extends Document {
 
 const HistorySchema: Schema = new Schema(
   {
-    student: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    student: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     messages: [
       {
         sender: { type: String, required: true },

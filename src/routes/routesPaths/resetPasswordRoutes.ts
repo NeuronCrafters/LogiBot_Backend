@@ -6,7 +6,9 @@ import { GenerateResetTokenController } from "../../controllers/password/generat
 const passwordRouter = Router();
 
 passwordRouter.post("/send-reset-password", new SendResetPasswordEmailController().handle);
+
 passwordRouter.post("/reset-password", new ResetPasswordController().handle);
+
 passwordRouter.post("/generate-reset-token", new GenerateResetTokenController().handle);
 
 export { passwordRouter };

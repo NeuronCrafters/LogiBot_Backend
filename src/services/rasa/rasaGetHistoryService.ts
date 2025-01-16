@@ -7,9 +7,8 @@ class RasaGetHistoryService {
     filters: { studentId?: string; classId?: string },
     user: { id: string; role: string[]; school: string | null }
   ): Promise<IHistory[]> {
-    if (!user) {
-      throw new Error("Usuário não autenticado.");
-    }
+    console.log("Iniciando a execução do serviço com filtros:", filters);
+    console.log("Usuário autenticado:", user);
 
     const { role, id, school } = user;
     const { studentId, classId } = filters;
@@ -27,12 +26,14 @@ class RasaGetHistoryService {
     }
 
     if (role.includes("admin")) {
+      console.log("Admin acessando históricos com filtro:", filter);
       return History.find(filter).populate("student").exec();
     }
 
     if (role.includes("professor")) {
       const professor = await Professor.findById(id).populate("students");
       if (!professor || !professor.students) {
+        console.log("Professor sem alunos associados.");
         return [];
       }
       const allowedStudentIds = professor.students.map((studentId) => studentId.toString());
@@ -47,6 +48,7 @@ class RasaGetHistoryService {
         filter.student = { $in: allowedStudentIds };
       }
 
+      console.log("Professor acessando históricos com filtro:", filter);
       return History.find(filter).populate("student").exec();
     }
 
@@ -58,6 +60,7 @@ class RasaGetHistoryService {
       const studentIds = students.map((student) => student._id.toString());
       filter.student = { $in: studentIds };
 
+      console.log("Coordenador de curso acessando históricos com filtro:", filter);
       return History.find(filter).populate("student").exec();
     }
 

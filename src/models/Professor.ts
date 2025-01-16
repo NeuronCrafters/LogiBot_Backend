@@ -7,6 +7,10 @@ export interface IProfessor extends Document {
   role: "professor";
   school: string;
   students: Types.ObjectId[];
+  googleId?: string;
+  photo?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 }
 
 const ProfessorSchema: Schema = new Schema(
@@ -17,6 +21,10 @@ const ProfessorSchema: Schema = new Schema(
     role: { type: String, enum: ["professor"], default: "professor" },
     school: { type: String, required: true },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    googleId: { type: String, required: false },
+    photo: { type: String, required: false },
+    resetPasswordToken: { type: String, required: false },
+    resetPasswordExpires: { type: Date, required: false },
   },
   {
     timestamps: true,

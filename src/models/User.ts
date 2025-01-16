@@ -5,10 +5,12 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
-  role: "admin" | "professor" | "student";
+  role: "admin" | "student";
   school: string;
   googleId?: string;
   photo?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 }
 
 const UserSchema: Schema = new Schema(
@@ -20,6 +22,8 @@ const UserSchema: Schema = new Schema(
     school: { type: String, required: true },
     googleId: { type: String, required: false },
     photo: { type: String, required: false },
+    resetPasswordToken: { type: String, required: false },
+    resetPasswordExpires: { type: Date, required: false },
   },
   {
     timestamps: true,

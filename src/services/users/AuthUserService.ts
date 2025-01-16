@@ -28,13 +28,18 @@ class AuthUserService {
       throw new AppError("Credenciais inválidas.", 401);
     }
 
+    // Login via Google
     if (isSocialLogin) {
+      if (!user.googleId) {
+        throw new AppError("Credenciais sociais inválidas.", 401);
+      }
+
       const token = sign(
         {
           name: user.name,
           email: user.email,
-          role: user.role,
-          school: user.school,
+          role: Array.isArray(user.role) ? user.role : [user.role],
+          school: user.school || "",
         },
         process.env.JWT_SECRET!,
         {
@@ -54,6 +59,7 @@ class AuthUserService {
       };
     }
 
+    // Login via senha
     if (!user.password) {
       throw new AppError("Usuário com erros nas credenciais!", 401);
     }
@@ -68,8 +74,8 @@ class AuthUserService {
       {
         name: user.name,
         email: user.email,
-        role: user.role,
-        school: user.school,
+        role: Array.isArray(user.role) ? user.role : [user.role],
+        school: user.school || "",
       },
       process.env.JWT_SECRET!,
       {
@@ -82,10 +88,11 @@ class AuthUserService {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: Array.isArray(user.role) ? user.role : [user.role],
       school: user.school,
       token,
     };
+
   }
 }
 

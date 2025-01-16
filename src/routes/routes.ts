@@ -3,9 +3,9 @@ import { authRoute } from "./routesPaths/authRoute";
 import { socialLoginRoute } from "./routesPaths/socialLoginRoute";
 import { adminRouter } from "./routesPaths/adminRoute";
 import { professorRouter } from "./routesPaths/professorRoute";
+import { passwordRouter } from "./routesPaths/resetPasswordRoutes";
 import { isAuthenticated } from "../middlewares/isAuthenticated/isAuthenticated";
 import { isAuthorized } from "../middlewares/isAuthorized/isAuthorized";
-import { passwordRouter } from "./routesPaths/resetPasswordRoutes";
 
 const routes = Router();
 
@@ -16,13 +16,12 @@ routes.use("/", authRoute);
 routes.use("/", socialLoginRoute);
 
 // Rotas protegidas para admin
-routes.use("/admin", isAuthenticated, isAuthorized("admin"), adminRouter);
+routes.use("/admin", isAuthenticated, isAuthorized(["admin", "course-coordinator"]), adminRouter);
 
 // Rotas protegidas para professor
-routes.use("/professor", isAuthenticated, isAuthorized("professor"), professorRouter);
+routes.use("/professor", isAuthenticated, isAuthorized(["professor"]), professorRouter);
 
 // Rotas de redefinição de senha
-routes.use("/password", isAuthenticated, isAuthorized, passwordRouter);
-
+routes.use("/password", passwordRouter);
 
 export { routes };

@@ -5,16 +5,20 @@ import { Professor } from "../../models/Professor";
 class DetailsUserService {
   async detailsUser(user_id: string, role: string) {
     try {
+      console.log("Buscando detalhes para:", { user_id, role });
+
       let userDetails;
 
       if (role === "professor") {
         userDetails = await Professor.findById(user_id)
           .select("name email role department")
           .lean();
-      } else {
+      } else if (role === "student" || role === "admin") {
         userDetails = await User.findById(user_id)
           .select("name email role")
           .lean();
+      } else {
+        throw new AppError("Papel inválido!", 400);
       }
 
       if (!userDetails) {

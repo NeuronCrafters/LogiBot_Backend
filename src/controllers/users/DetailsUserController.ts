@@ -6,8 +6,10 @@ class DetailsUserController {
     try {
       const { id, role } = req.user;
 
+      const roleAsString = Array.isArray(role) ? role[0] : role;
+
       const detailsUserService = new DetailsUserService();
-      const userDetails = await detailsUserService.detailsUser(id, role);
+      const userDetails = await detailsUserService.detailsUser(id, roleAsString);
 
       return res.json(userDetails);
     } catch (error) {

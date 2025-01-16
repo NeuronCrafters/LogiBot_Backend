@@ -4,7 +4,7 @@ export interface IProfessor extends Document {
   name: string;
   email: string;
   password?: string;
-  role: "professor";
+  role: string[];
   school: string;
   students: Types.ObjectId[];
   googleId?: string;
@@ -18,7 +18,7 @@ const ProfessorSchema: Schema = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ["professor"], default: "professor" },
+    role: { type: String, enum: ["professor", "course-coordinator"], default: "professor" },
     school: { type: String, required: true },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     googleId: { type: String, required: false },
@@ -30,5 +30,13 @@ const ProfessorSchema: Schema = new Schema(
     timestamps: true,
   }
 );
+
+//middleware temporario
+ProfessorSchema.pre<IProfessor>("save", function (next) {
+  if (!this.role.includes("professor")) {
+    this.role.push("professor");
+  }
+  next();
+});
 
 export const Professor = mongoose.model<IProfessor>("Professor", ProfessorSchema);

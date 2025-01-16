@@ -1,34 +1,38 @@
-import { NextFunction, Request, Response } from "express";
-import { verify } from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
-interface Payload {
-  sub: string;
-  role: string;
-  school: string;
+interface DecodedToken extends JwtPayload {
+  id: string;
+  name: string;
+  email: string;
+  role: string | string[];
+  school?: string;
 }
 
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  const authToken = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-  if (!authToken) {
+  if (!authHeader) {
     return res.status(401).json({ error: "Token não fornecido." });
   }
 
-  const [, token] = authToken.split(" ");
+  const [, token] = authHeader.split(" ");
 
   try {
-    const secret = process.env.JWT_SECRET;
+    const secret = process.env.JWT_SECRET || "default_secret";
+    const decoded = jwt.verify(token, secret) as DecodedToken;
 
-    if (!secret) {
-      throw new Error("JWT_SECRET não está definida nas variáveis de ambiente.");
-    }
+    req.user = {
+      id: decoded.sub,
+      name: decoded.name,
+      email: decoded.email,
+      role: Array.isArray(decoded.role) ? decoded.role : [decoded.role],
+      school: decoded.school || "",
+    };
 
-    const { sub, role, school } = verify(token, secret) as Payload;
 
-    req.user = { id: sub, role, school };
     return next();
   } catch (error) {
-    console.error("Erro de autenticação:", error);
     return res.status(401).json({ error: "Token inválido." });
   }
 }

@@ -7,8 +7,9 @@ class ListStudentsProfessorController {
     const listStudentsProfessorService = new ListStudentsProfessorService();
 
     try {
-      const userRole = req.user?.role;
-      if (userRole !== "admin") {
+      const userRoles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role];
+
+      if (!userRoles.includes("admin")) {
         return res.status(403).json({ error: "Acesso negado. Apenas administradores podem acessar." });
       }
 

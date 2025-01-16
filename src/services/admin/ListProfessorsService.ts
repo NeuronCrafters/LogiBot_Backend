@@ -11,6 +11,7 @@ class ListProfessorsService {
         role: professor.role,
       }));
     } catch (error) {
+      console.error("Erro ao listar professores:", error);
       throw new Error("Erro ao listar professores.");
     }
   }

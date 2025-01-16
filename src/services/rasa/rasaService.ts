@@ -10,7 +10,7 @@ class RasaService {
   private rasaUrl: string;
 
   constructor() {
-    this.rasaUrl = process.env.RASA_URL || "http://localhost:5005/webhooks/rest/webhook";
+    this.rasaUrl = process.env.RASA_URL || "http://rasa:5005/webhooks/rest/webhook";
   }
 
   async sendMessageToSAEL({ sender, message }: RasaMessageRequest) {

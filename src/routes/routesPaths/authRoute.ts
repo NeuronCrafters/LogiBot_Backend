@@ -15,6 +15,6 @@ authRoute.post("/logout", isAuthenticated, new LogoutController().handle);
 authRoute.get("/me", isAuthenticated, new DetailsUserController().handle);
 
 // Rotas do Rasa (chat SAEL)
-authRoute.get("/sael/talk", isAuthenticated, new RasaController().handle);
+authRoute.post("/sael/talk", isAuthenticated, new RasaController().handle);
 
 export { authRoute };

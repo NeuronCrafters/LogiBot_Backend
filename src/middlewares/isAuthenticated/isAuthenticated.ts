@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 interface DecodedToken extends JwtPayload {
-  id: string;
+  sub: string;
   name: string;
   email: string;
   role: string | string[];
@@ -29,11 +29,11 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
     const decoded = jwt.verify(token, secret) as DecodedToken;
 
     req.user = {
-      id: decoded.sub!,
+      id: decoded.sub,
       name: decoded.name,
       email: decoded.email,
       role: normalizeRoles(decoded.role),
-      school: decoded.school || "",
+      school: decoded.school || null,
     };
 
     return next();

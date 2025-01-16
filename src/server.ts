@@ -1,11 +1,10 @@
 import 'dotenv/config';
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import passport from 'passport';
 import './config/socialLogin/passport';
 import session from 'express-session';
 import { connectDB } from './config/database';
 import { routes } from './routes/routes';
-import { AppError } from './exceptions/AppError';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();

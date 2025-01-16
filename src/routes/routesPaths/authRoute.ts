@@ -4,7 +4,6 @@ import { CreateUserController } from "../../controllers/users/CreateUserControll
 import { DetailsUserController } from "../../controllers/users/DetailsUserController";
 import { AuthUserController } from "../../controllers/users/AuthUserController";
 import { LogoutController } from "../../controllers/users/LogoutController";
-import { RasaController } from "../../controllers/rasa/rasaController";
 
 const authRoute = Router();
 
@@ -13,8 +12,5 @@ authRoute.post("/users", new CreateUserController().handle);
 authRoute.post("/session", new AuthUserController().handle);
 authRoute.post("/logout", isAuthenticated, new LogoutController().handle);
 authRoute.get("/me", isAuthenticated, new DetailsUserController().handle);
-
-// Rotas do Rasa (chat SAEL)
-authRoute.post("/sael/talk", isAuthenticated, new RasaController().handle);
 
 export { authRoute };

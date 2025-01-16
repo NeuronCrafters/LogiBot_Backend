@@ -18,7 +18,7 @@ const ProfessorSchema: Schema = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ["professor", "course-coordinator"], default: "professor" },
+    role: { type: [String], enum: ["professor", "course-coordinator"], default: ["professor"] },
     school: { type: String, required: true },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     googleId: { type: String, required: false },
@@ -31,8 +31,10 @@ const ProfessorSchema: Schema = new Schema(
   }
 );
 
-//middleware temporario
 ProfessorSchema.pre<IProfessor>("save", function (next) {
+  if (!Array.isArray(this.role)) {
+    this.role = [this.role];
+  }
   if (!this.role.includes("professor")) {
     this.role.push("professor");
   }

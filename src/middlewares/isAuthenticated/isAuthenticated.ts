@@ -9,6 +9,12 @@ interface DecodedToken extends JwtPayload {
   school?: string;
 }
 
+function normalizeRoles(roleField: string | string[] | null | undefined): string[] {
+  if (!roleField) return [];
+  if (Array.isArray(roleField)) return roleField.filter(Boolean);
+  return [roleField];
+}
+
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
@@ -23,13 +29,12 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
     const decoded = jwt.verify(token, secret) as DecodedToken;
 
     req.user = {
-      id: decoded.sub,
+      id: decoded.sub!,
       name: decoded.name,
       email: decoded.email,
-      role: Array.isArray(decoded.role) ? decoded.role : [decoded.role],
+      role: normalizeRoles(decoded.role),
       school: decoded.school || "",
     };
-
 
     return next();
   } catch (error) {

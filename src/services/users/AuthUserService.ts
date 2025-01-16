@@ -10,6 +10,12 @@ interface AuthRequest {
   googleId?: string;
 }
 
+function normalizeRoles(roleField: string | string[] | null | undefined): string[] {
+  if (!roleField) return [];
+  if (Array.isArray(roleField)) return roleField.filter(Boolean);
+  return [roleField];
+}
+
 class AuthUserService {
   async signin({ email, password, googleId }: AuthRequest) {
     const isSocialLogin = googleId != null;
@@ -28,6 +34,8 @@ class AuthUserService {
       throw new AppError("Credenciais inválidas.", 401);
     }
 
+    const roles = normalizeRoles(user.role);
+
     // Login via Google
     if (isSocialLogin) {
       if (!user.googleId) {
@@ -38,7 +46,7 @@ class AuthUserService {
         {
           name: user.name,
           email: user.email,
-          role: Array.isArray(user.role) ? user.role : [user.role],
+          role: roles,
           school: user.school || "",
         },
         process.env.JWT_SECRET!,
@@ -52,7 +60,7 @@ class AuthUserService {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: roles,
         school: user.school,
         token,
         redirectTo: "/sael/talk",
@@ -74,7 +82,7 @@ class AuthUserService {
       {
         name: user.name,
         email: user.email,
-        role: Array.isArray(user.role) ? user.role : [user.role],
+        role: roles,
         school: user.school || "",
       },
       process.env.JWT_SECRET!,
@@ -88,11 +96,10 @@ class AuthUserService {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: Array.isArray(user.role) ? user.role : [user.role],
+      role: roles,
       school: user.school,
       token,
     };
-
   }
 }
 

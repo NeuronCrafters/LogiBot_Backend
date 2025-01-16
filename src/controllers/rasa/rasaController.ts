@@ -12,7 +12,7 @@ class RasaController {
     const { sender, message } = req.body;
 
     if (!sender || !message) {
-      return res.status(400).json({ error: "Sender and message are required." });
+      return res.status(400).json({ error: "Sender e message são obrigatórios." });
     }
 
     try {
@@ -23,9 +23,9 @@ class RasaController {
 
       return res.json(responseFromRasa);
     } catch (error: any) {
-      console.error("Error communicating with Rasa:", error.message || error);
+      console.error("Errona comunicação com o Rasa:", error.message || error);
       return res.status(error.statusCode || 500).json({
-        error: error.message || "Error connecting to Rasa.",
+        error: error.message || "Error na conexão com o Rasa.",
       });
     }
   }

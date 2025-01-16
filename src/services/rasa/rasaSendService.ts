@@ -4,18 +4,23 @@ import { AppError } from "../../exceptions/AppError";
 interface RasaMessageRequest {
   sender: string;
   message: string;
+  metadata: Record<string, any>;
 }
 
-class RasaService {
+class RasaSendService {
   private rasaUrl: string;
 
   constructor() {
-    this.rasaUrl = process.env.RASA_URL || "http://rasa:5005/webhooks/rest/webhook";
+    this.rasaUrl = process.env.RASA_URL || "http://localhost:5005/webhooks/rest/webhook";
   }
 
-  async sendMessageToSAEL({ sender, message }: RasaMessageRequest) {
+  async sendMessageToSAEL({ sender, message, metadata }: RasaMessageRequest) {
     try {
-      const response = await axios.post(this.rasaUrl, { sender, message });
+      const response = await axios.post(this.rasaUrl, {
+        sender,
+        message,
+        metadata,
+      });
 
       if (!response.data || response.data.length === 0) {
         throw new AppError("Nenhuma resposta do Rasa foi recebida.", 502);
@@ -23,9 +28,7 @@ class RasaService {
 
       return response.data;
     } catch (error: any) {
-
       console.error("Erro no serviço Rasa:", error);
-
       if (error.response) {
         throw new AppError(
           `Erro do Rasa: ${error.response.data.message || error.response.statusText}`,
@@ -38,7 +41,6 @@ class RasaService {
       }
     }
   }
-
 }
 
-export { RasaService };
+export { RasaSendService };

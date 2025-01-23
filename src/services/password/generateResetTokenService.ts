@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { findUserByEmail } from "../../config/resetPassword/findUserByEmail";
 
-export const generateResetToken = async (email: string, model: "User" | "Professor") => {
+const generateResetToken = async (email: string, model: "User" | "Professor") => {
   const user = await findUserByEmail(email, model);
 
   if (!user) {
@@ -22,3 +22,5 @@ export const generateResetToken = async (email: string, model: "User" | "Profess
   const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
   return { token, resetLink };
 };
+
+export { generateResetToken }

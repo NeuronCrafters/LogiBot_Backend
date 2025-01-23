@@ -3,20 +3,40 @@ import { passport } from '../../config/socialLogin/passport';
 
 const socialLoginRoute = Router();
 
-// Rota de login com Google
+// Rota para login com Google 
 socialLoginRoute.get(
-  '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+  '/auth/google/login',
+  passport.authenticate('google-login', { scope: ['profile', 'email'] })
 );
 
-// Callback do Google
+// Callback do Google para login
+socialLoginRoute.get(
+  '/auth/google/login-callback',
+  passport.authenticate('google-login', { session: false }),
+  (req, res) => {
+    const { user, token } = req.user as any;
+    return res.json({
+      message: 'Login com Google realizado com sucesso!',
+      user,
+      token,
+    });
+  }
+);
+
+// Rota para cadastro novos usuários com o Google
+socialLoginRoute.get(
+  '/auth/google/signup',
+  passport.authenticate('google-signup', { scope: ['profile', 'email'] })
+);
+
+// Callback do Google para cadastro
 socialLoginRoute.get(
   '/auth/google/callback',
-  passport.authenticate('google', { session: false }),
+  passport.authenticate('google-signup', { session: false }),
   (req, res) => {
-    const { user, token } = req.user as any; // Obtenha o usuário e o token
+    const { user, token } = req.user as any;
     return res.json({
-      message: 'Autenticação com Google realizada com sucesso!',
+      message: 'Cadastro com Google realizado com sucesso!',
       user,
       token,
     });

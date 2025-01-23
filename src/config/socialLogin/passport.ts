@@ -1,8 +1,13 @@
 import passport from 'passport';
 import { googleStrategy } from './googleStrategy';
+import { googleLoginStrategy } from './googleLoginStrategy';
 import { User } from '../../models/User';
 
-passport.use(googleStrategy);
+// Loga um usuário no sistema Google
+passport.use('google-login', googleLoginStrategy);
+
+// Registra um usuário no sistema via Google
+passport.use('google-signup', googleStrategy);
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);

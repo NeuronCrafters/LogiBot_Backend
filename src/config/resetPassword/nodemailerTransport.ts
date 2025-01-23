@@ -1,9 +1,9 @@
 import nodemailer from "nodemailer";
 
-export const createTransporter = (email: string, password: string, domain: string) => {
+export const createTransporter = (email: string, password: string, domain: string, port: number = 587) => {
   return nodemailer.createTransport({
     host: `smtp.${domain}`,
-    port: 587,
+    port,
     secure: false,
     auth: {
       user: email,

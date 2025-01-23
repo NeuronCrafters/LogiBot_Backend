@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { ResetPasswordService } from "../../services/password/resetPasswordService";
 
 class ResetPasswordController {
-  async handle(req: Request, res: Response) {
+  async handle(req: Request, res: Response): Promise<Response> {
     const { token, newPassword, model } = req.body;
 
     try {

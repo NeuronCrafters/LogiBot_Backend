@@ -1,16 +1,14 @@
 import { Request, Response } from "express";
-import { resetPasswordService } from "../../services/password/resetPasswordService";
+import { ResetPasswordService } from "../../services/password/resetPasswordService";
 
 class ResetPasswordController {
   async handle(req: Request, res: Response) {
     const { token, newPassword, model } = req.body;
 
     try {
-      if (!["User", "Professor"].includes(model)) {
-        throw new Error("Modelo inválido. Use 'User' ou 'Professor'.");
-      }
+      const service = new ResetPasswordService();
+      await service.resetPassword(token, newPassword, model as "User" | "Professor");
 
-      await resetPasswordService(token, newPassword, model as "User" | "Professor");
       return res.status(200).json({ message: "Senha redefinida com sucesso." });
     } catch (error) {
       return res.status(400).json({ error: error.message });

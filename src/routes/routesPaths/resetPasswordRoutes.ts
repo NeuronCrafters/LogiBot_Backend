@@ -1,14 +1,12 @@
 import { Router } from "express";
-import { SendResetPasswordEmailController } from "../../controllers/password/sendResetPasswordEmailController";
 import { ResetPasswordController } from "../../controllers/password/resetPasswordController";
-import { GenerateResetTokenController } from "../../controllers/password/generateResetTokenController";
+import { UpdatePasswordController } from "../../controllers/password/updatePasswordController";
+import { isAuthenticated } from "../../middlewares/isAuthenticated/isAuthenticated";
 
 const passwordRouter = Router();
 
-passwordRouter.post("/send-reset-password", new SendResetPasswordEmailController().handle);
+passwordRouter.patch("/reset-password", new ResetPasswordController().handle);
+passwordRouter.patch("/update-password", isAuthenticated, new UpdatePasswordController().handle);
 
-passwordRouter.post("/reset-password", new ResetPasswordController().handle);
-
-passwordRouter.post("/generate-reset-token", new GenerateResetTokenController().handle);
 
 export { passwordRouter };

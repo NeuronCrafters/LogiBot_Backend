@@ -7,14 +7,17 @@ class ResetPasswordService {
     const secret = process.env.JWT_SECRET || "default_secret";
 
     try {
-
       const decoded = jwt.verify(token, secret) as { id: string };
-
 
       const user = await findUserByEmail(decoded.id);
 
       if (!user || user.resetPasswordToken !== token || user.resetPasswordExpires <= new Date()) {
         throw new Error("Token inválido ou expirado.");
+      }
+
+      const isSamePassword = await bcrypt.compare(newPassword, user.password || "");
+      if (isSamePassword) {
+        throw new Error("A nova senha não pode ser igual à senha anterior.");
       }
 
       user.password = await bcrypt.hash(newPassword, 10);

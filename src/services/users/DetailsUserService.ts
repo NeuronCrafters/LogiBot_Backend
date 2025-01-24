@@ -5,8 +5,6 @@ import { Professor } from "../../models/Professor";
 class DetailsUserService {
   async detailsUser(user_id: string, role: string) {
     try {
-      console.log("Buscando detalhes para:", { user_id, role });
-
       let userDetails;
 
       if (role === "professor") {

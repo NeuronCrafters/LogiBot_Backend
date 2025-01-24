@@ -6,10 +6,10 @@ import { isAuthenticated } from "../../middlewares/isAuthenticated/isAuthenticat
 
 const passwordRouter = Router();
 
-// Rota para enviar o e-mail de redefinição de senha
+// Rota para enviar o e-mail de redefinição
 passwordRouter.post("/send-reset-password", new SendResetPasswordEmailController().handle);
 
-// Rota para redefinir a senha usando o token enviado por e-mail
+// Rota para redefinir a senha
 passwordRouter.patch("/reset-password", new ResetPasswordController().handle);
 
 // Rota para atualizar a senha 

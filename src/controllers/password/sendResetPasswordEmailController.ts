@@ -3,15 +3,15 @@ import { SendResetPasswordEmailService } from "../../services/password/sendReset
 
 class SendResetPasswordEmailController {
   async handle(req: Request, res: Response): Promise<Response> {
-    const { email, model } = req.body;
+    const { email } = req.body;
 
     try {
-      if (!email || !model) {
-        throw new Error("Os campos 'email' e 'model' são obrigatórios.");
+      if (!email) {
+        throw new Error("O campo 'email' é obrigatório.");
       }
 
       const service = new SendResetPasswordEmailService();
-      const { resetLink } = await service.sendEmail(email, model as "User" | "Professor");
+      const { resetLink } = await service.sendEmail(email);
 
       return res.status(200).json({
         message: "E-mail de redefinição enviado com sucesso.",

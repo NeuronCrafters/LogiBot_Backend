@@ -3,11 +3,11 @@ import { ResetPasswordService } from "../../services/password/resetPasswordServi
 
 class ResetPasswordController {
   async handle(req: Request, res: Response): Promise<Response> {
-    const { token, newPassword, model } = req.body;
+    const { token, newPassword } = req.body;
 
     try {
       const service = new ResetPasswordService();
-      await service.resetPassword(token, newPassword, model as "User" | "Professor");
+      await service.resetPassword(token, newPassword);
 
       return res.status(200).json({ message: "Senha redefinida com sucesso." });
     } catch (error) {

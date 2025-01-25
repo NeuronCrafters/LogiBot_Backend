@@ -11,9 +11,9 @@ class GenerateResetToken {
       throw new Error("Usuário não encontrado.");
     }
 
-    if (user.resetPasswordExpires && user.resetPasswordExpires > new Date()) {
-      throw new Error("Aguarde 2 horas antes de solicitar outro e-mail de redefinição.");
-    }
+    // if (user.resetPasswordExpires && user.resetPasswordExpires > new Date()) {
+    //   throw new Error("Aguarde 2 horas antes de solicitar outro e-mail de redefinição.");
+    // }
 
     const token = jwt.sign({ id: user._id }, secret, { expiresIn: "1h" });
 
@@ -21,7 +21,7 @@ class GenerateResetToken {
     user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
     await user.save();
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}?token=${token}`;
     return { token, resetLink };
   }
 }

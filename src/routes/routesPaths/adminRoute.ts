@@ -6,8 +6,11 @@ import { ListStudentsProfessorController } from "../../controllers/admin/ListStu
 
 const adminRouter = Router();
 
+// rota de listagem de professores
 adminRouter.get("/professors", isAuthenticated, isAuthorized(["admin", "course-coordinator"]), new ListProfessorsController().handle);
 
+
+// rota de listagem dos alunos de um professor
 adminRouter.get("/professor/:professorId/students", isAuthenticated, isAuthorized(["admin", "course-coordinator"]), new ListStudentsProfessorController().handle);
 
 export { adminRouter };

@@ -6,7 +6,6 @@ import { RasaGetHistoryController } from "../../controllers/rasa/rasaGetHistoryC
 
 const rasaRouter = Router();
 
-// Instâncias dos controladores
 const rasaSendController = new RasaSendController();
 const rasaGetHistoryController = new RasaGetHistoryController();
 

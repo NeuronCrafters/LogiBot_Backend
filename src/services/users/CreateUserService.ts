@@ -78,25 +78,6 @@ class CreateUserService {
         };
       }
 
-      // Lógica para criação de admins
-      // if (role === "admin") {
-      //   const newAdmin = await User.create({
-      //     name,
-      //     email,
-      //     password: passwordHash,
-      //     role: "admin",
-      //     school,
-      //   });
-
-      //   return {
-      //     id: newAdmin._id,
-      //     name: newAdmin.name,
-      //     email: newAdmin.email,
-      //     role: newAdmin.role,
-      //     school: newAdmin.school,
-      //   };
-      // }
-
       throw new AppError("Role inválido.", 400);
     } catch (error) {
       console.error("Erro ao criar usuário:", error);

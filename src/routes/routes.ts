@@ -4,7 +4,7 @@ import { socialLoginRoute } from "./routesPaths/socialLoginRoute";
 import { adminRouter } from "./routesPaths/adminRoute";
 import { professorRouter } from "./routesPaths/professorRoute";
 import { passwordRouter } from "./routesPaths/resetPasswordRoutes";
-import { rasaRouter } from "./routesPaths/rasaRoute"; // Importando a nova rota
+import { rasaRouter } from "./routesPaths/rasaRoute";
 import { isAuthenticated } from "../middlewares/isAuthenticated/isAuthenticated";
 import { isAuthorized } from "../middlewares/isAuthorized/isAuthorized";
 

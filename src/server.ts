@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import cors from "cors";
 import express from 'express';
 import passport from 'passport';
 import './config/socialLogin/passport';
@@ -9,6 +10,7 @@ import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 connectDB();
 
@@ -19,6 +21,7 @@ app.use(
         saveUninitialized: true,
     })
 );
+
 app.use(passport.initialize());
 app.use(passport.session());
 

@@ -18,7 +18,7 @@ class createCourseService {
     }
 
     const course = await Course.create({ name, university: universityObjectId });
-    university.courses.push(course._id);
+    university.courses.push(course._id as Types.ObjectId);
     await university.save();
 
     return course;

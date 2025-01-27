@@ -18,7 +18,7 @@ class createClassService {
     }
 
     const classData = await Class.create({ name, course: courseObjectId });
-    course.classes.push(classData._id);
+    course.classes.push(classData._id as Types.ObjectId);
     await course.save();
 
     return classData;

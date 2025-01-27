@@ -64,23 +64,27 @@ const swaggerDocument = {
         },
       },
     },
+    '/me': {
+      get: {
+        tags: ['Auth'],
+        summary: 'Pegar Dados de Um Usuário Logado',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: 'Dados do usuário recuperados com sucesso',
+          },
+          401: { description: 'Token inválido ou ausente' },
+        },
+      },
+    },
     '/logout': {
       post: {
         tags: ['Auth'],
         summary: 'Deslogar um usuário',
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-              },
-            },
-          },
-        },
+        security: [{ bearerAuth: [] }],
         responses: {
-          200: { description: 'Login bem-sucedido' },
-          401: { description: 'Credenciais inválidas' },
+          200: { description: 'Logout bem-sucedido' },
+          401: { description: 'Usuário não autenticado' },
         },
       },
     },
@@ -92,22 +96,28 @@ const swaggerDocument = {
         responses: {
           200: {
             description: 'Lista de professores recuperada com sucesso',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', example: '1' },
-                      name: { type: 'string', example: 'Professor X' },
-                    },
-                  },
-                },
-              },
-            },
           },
           403: { description: 'Usuário não autorizado' },
+          401: { description: 'Usuário não autenticado' },
+        },
+      },
+    },
+    '/admin/professor/{professorId}/students': {
+      get: {
+        tags: ['Coordinator'],
+        summary: 'Listar alunos de um professor',
+        parameters: [
+          {
+            name: 'professorId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID do professor',
+          },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: { description: 'Lista de alunos recuperada com sucesso' },
           401: { description: 'Usuário não autenticado' },
         },
       },
@@ -147,32 +157,32 @@ const swaggerDocument = {
         },
       },
     },
-    '/professor/{professorId}/student/{studentId}/history': {
-      get: {
-        tags: ['Professor'],
-        summary: 'Ver histórico de um aluno',
-        parameters: [
-          {
-            name: 'professorId',
-            in: 'path',
-            required: true,
-            schema: { type: 'string' },
-            description: 'ID do professor',
-          },
-          {
-            name: 'studentId',
-            in: 'path',
-            required: true,
-            schema: { type: 'string' },
-            description: 'ID do aluno',
-          },
-        ],
-        responses: {
-          200: { description: 'Histórico do aluno recuperado com sucesso' },
-          401: { description: 'Usuário não autenticado' },
-        },
-      },
-    },
+    // '/professor/{professorId}/student/{studentId}/history': {
+    //   get: {
+    //     tags: ['Professor'],
+    //     summary: 'Ver histórico de um aluno',
+    //     parameters: [
+    //       {
+    //         name: 'professorId',
+    //         in: 'path',
+    //         required: true,
+    //         schema: { type: 'string' },
+    //         description: 'ID do professor',
+    //       },
+    //       {
+    //         name: 'studentId',
+    //         in: 'path',
+    //         required: true,
+    //         schema: { type: 'string' },
+    //         description: 'ID do aluno',
+    //       },
+    //     ],
+    //     responses: {
+    //       200: { description: 'Histórico do aluno recuperado com sucesso' },
+    //       401: { description: 'Usuário não autenticado' },
+    //     },
+    //   },
+    // },
     '/password/send-reset-password': {
       post: {
         tags: ['Reset Password'],
@@ -246,12 +256,19 @@ const swaggerDocument = {
     '/sael/history': {
       get: {
         tags: ['SAEL'],
-        summary: 'Obter histórico de conversas com o SAEL',
+        summary: 'Obter histórico de conversas com o SAEL para um aluno',
+        parameters: [
+          {
+            name: 'studentId',
+            in: 'query',
+            required: true,
+            schema: { type: 'string' },
+            description: 'ID do estudante',
+          },
+        ],
         security: [{ bearerAuth: [] }],
         responses: {
-          200: {
-            description: 'Histórico de conversas recuperado com sucesso',
-          },
+          200: { description: 'Histórico de conversas recuperado com sucesso' },
           401: { description: 'Usuário não autenticado' },
         },
       },
@@ -269,19 +286,9 @@ const swaggerDocument = {
       get: {
         tags: ['Social Login'],
         summary: 'Cadastro com Google',
+        description: 'Redireciona para a janela de escolha de conta do Google.',
         responses: {
           302: { description: 'Redireciona para o Google para cadastro' },
-        },
-      },
-    },
-    '/auth/google/profile': {
-      get: {
-        tags: ['Social Login'],
-        summary: 'Perfil do usuário autenticado via Google',
-        security: [{ bearerAuth: [] }],
-        responses: {
-          200: { description: 'Perfil do usuário recuperado com sucesso' },
-          401: { description: 'Usuário não autenticado' },
         },
       },
     },

@@ -1,7 +1,7 @@
 import { University } from "../../models/University";
 import { AppError } from "../../exceptions/AppError";
 
-class UniversityService {
+class createUniversityService {
   async create(name: string) {
     const existingUniversity = await University.findOne({ name });
     if (existingUniversity) {
@@ -17,4 +17,4 @@ class UniversityService {
   }
 }
 
-export { UniversityService };
+export { createUniversityService };

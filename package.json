@@ -30,7 +30,6 @@
     "passport-google-oauth20": "^2.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.2"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createUniversityService } from "../../services/University/createUniversityService";
 
-class UniversityController {
+class CreateUniversityController {
   async handle(req: Request, res: Response) {
     const { name } = req.body;
     const universityService = new createUniversityService();
@@ -17,4 +17,4 @@ class UniversityController {
   }
 }
 
-export { UniversityController };
+export { CreateUniversityController };

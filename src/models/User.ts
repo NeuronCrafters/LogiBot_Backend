@@ -5,9 +5,9 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   role: string[];
-  school: Types.ObjectId; // Universidade
-  course: Types.ObjectId; // Curso do aluno
-  class: Types.ObjectId; // Turma do aluno
+  school: Types.ObjectId;
+  course: Types.ObjectId;
+  class: Types.ObjectId;
   googleId?: string;
   photo?: string;
   resetPasswordToken?: string;

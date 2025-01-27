@@ -29,7 +29,7 @@ class CreateUserService {
       }
 
       // Verificar se a universidade existe
-      const university = await University.findById(new Types.ObjectId(school));
+      const university = await University.findById(school);
       if (!university) {
         throw new AppError("Universidade não encontrada!", 404);
       }
@@ -37,7 +37,7 @@ class CreateUserService {
       // Verificar se o curso existe na universidade
       const courseData = await Course.findOne({
         name: course,
-        university: new Types.ObjectId(school),
+        university: school,
       });
       if (!courseData) {
         throw new AppError("Curso não encontrado na universidade especificada.", 404);
@@ -52,20 +52,21 @@ class CreateUserService {
         throw new AppError("Turma não encontrada para o curso especificado.", 404);
       }
 
-      // Criar o aluno
+      // Criando o aluno
       const passwordHash = await hash(password, 10);
       const newStudent = await User.create({
         name,
         email,
         password: passwordHash,
         role: "student",
-        school: new Types.ObjectId(school),
+        school,
         course: courseData._id,
         class: classData._id,
       }) as IUser;
 
+      // Associar o aluno à turma
       if (!classData.students.includes(newStudent._id as Types.ObjectId)) {
-        classData.students.push(new Types.ObjectId(newStudent._id));
+        classData.students.push(newStudent._id as Types.ObjectId);
         await classData.save();
       }
 

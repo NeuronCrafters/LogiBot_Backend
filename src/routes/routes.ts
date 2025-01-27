@@ -7,6 +7,7 @@ import { passwordRouter } from "./routesPaths/resetPasswordRoutes";
 import { rasaRouter } from "./routesPaths/rasaRoute";
 import { isAuthenticated } from "../middlewares/isAuthenticated/isAuthenticated";
 import { isAuthorized } from "../middlewares/isAuthorized/isAuthorized";
+import { academicInstitutionRouter } from "./routesPaths/academicInstitution";
 
 const routes = Router();
 
@@ -27,4 +28,9 @@ routes.use("/password", passwordRouter);
 
 // Rotas do Rasa
 routes.use("/sael", rasaRouter);
+
+// Rotas de instituições acadêmicas
+routes.use("/academic-institution", isAuthenticated, academicInstitutionRouter);
+
+
 export { routes };

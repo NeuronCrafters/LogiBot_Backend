@@ -5,8 +5,9 @@ export interface IProfessor extends Document {
   email: string;
   password?: string;
   role: string[];
-  school: string;
-  students: Types.ObjectId[];
+  school: Types.ObjectId; // Universidade
+  courses: Types.ObjectId[]; // Cursos que o professor leciona
+  subjects: Types.ObjectId[]; // Disciplinas ministradas
   googleId?: string;
   photo?: string;
   resetPasswordToken?: string;
@@ -19,8 +20,9 @@ const ProfessorSchema: Schema = new Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: [String], enum: ["professor", "course-coordinator"], default: ["professor"] },
-    school: { type: String, required: true },
-    students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    school: { type: mongoose.Schema.Types.ObjectId, ref: "University", required: true },
+    courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
+    subjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Subject" }],
     googleId: { type: String, required: false },
     photo: { type: String, required: false },
     resetPasswordToken: { type: String, required: false },

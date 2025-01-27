@@ -5,7 +5,6 @@ import { AssignDisciplineController } from "../../controllers/University/AssignD
 import { createClassController } from "../../controllers/University/createClassController";
 import { createCourseController } from "../../controllers/University/createCourseController";
 import { createDisciplineController } from "../../controllers/University/createDisciplineController";
-import { CreateProfessorController } from "../../controllers/University/createProfessorController";
 import { CreateUniversityController } from "../../controllers/University/createUniversityController";
 import { GetClassWithStudentsController } from "@/controllers/University/GetClassWithStudentsController";
 
@@ -30,9 +29,6 @@ academicInstitutionRouter.get("/class/:courseId", ...isAdminOrCoordinator, new c
 // Rotas para criar Disciplinas e listar as mesmas (Admin e Coordenadores)
 academicInstitutionRouter.post("/discipline", ...isAdminOrCoordinator, new createDisciplineController().handle);
 academicInstitutionRouter.get("/discipline", ...isAdminOrCoordinator, new createDisciplineController().list);
-
-// Rotas para criar Professores (apenas Admin)
-academicInstitutionRouter.post("/professor", ...isAdmin, new CreateProfessorController().handle);
 
 // Rota para associar um aluno a uma disciplina (Admin e Coordenadores)
 academicInstitutionRouter.post("/assign-discipline", ...isAdminOrCoordinator, new AssignDisciplineController().handle);

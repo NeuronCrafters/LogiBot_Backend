@@ -25,7 +25,7 @@ class ListStudentsService {
         name: student.name,
         email: student.email,
         role: student.role,
-        school: student.school,
+        school: student.school.toString(),
       }));
     } catch (error) {
       console.error("Erro ao listar alunos:", error);

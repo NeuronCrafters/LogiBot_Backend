@@ -8,6 +8,8 @@ export interface IUser extends Document {
   school: Types.ObjectId;
   course: Types.ObjectId;
   class: Types.ObjectId;
+  disciplines: Types.ObjectId[];
+  status: "active" | "graduated" | "dropped";
   googleId?: string;
   photo?: string;
   resetPasswordToken?: string;
@@ -23,6 +25,12 @@ const UserSchema: Schema = new Schema(
     school: { type: mongoose.Schema.Types.ObjectId, ref: "University", required: true },
     course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
     class: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
+    disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
+    status: {
+      type: String,
+      enum: ["active", "graduated", "dropped"],
+      default: "active",
+    },
     googleId: { type: String, required: false },
     photo: { type: String, required: false },
     resetPasswordToken: { type: String, required: false },

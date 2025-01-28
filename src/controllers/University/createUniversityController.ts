@@ -15,6 +15,14 @@ class CreateUniversityController {
     const universities = await universityService.list();
     return res.status(200).json(universities);
   }
+
+  async deleteCourse(req: Request, res: Response) {
+    const { courseId } = req.params;
+    const universityService = new createUniversityService();
+
+    const result = await universityService.deleteCourse(courseId);
+    return res.status(200).json(result);
+  }
 }
 
 export { CreateUniversityController };

@@ -6,7 +6,7 @@ import { createClassController } from "../../controllers/University/createClassC
 import { createCourseController } from "../../controllers/University/createCourseController";
 import { createDisciplineController } from "../../controllers/University/createDisciplineController";
 import { CreateUniversityController } from "../../controllers/University/createUniversityController";
-import { GetClassWithStudentsController } from "@/controllers/University/GetClassWithStudentsController";
+import { GetClassWithStudentsController } from "../../controllers/University/GetClassWithStudentsController";
 
 const academicInstitutionRouter = Router();
 

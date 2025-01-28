@@ -21,7 +21,7 @@ routes.use("/", socialLoginRoute);
 routes.use("/admin", isAuthenticated, isAuthorized(["admin", "course-coordinator"]), adminRouter);
 
 // Rotas protegidas para professor
-routes.use("/professor", isAuthenticated, isAuthorized(["professor"]), professorRouter);
+routes.use("/professor", isAuthenticated, isAuthorized(["admin", "course-coordinator"]), professorRouter);
 
 // Rotas de redefinição de senha
 routes.use("/password", passwordRouter);

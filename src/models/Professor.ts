@@ -5,9 +5,10 @@ export interface IProfessor extends Document {
   email: string;
   password?: string;
   role: string[];
-  school: Types.ObjectId; // Universidade
-  courses: Types.ObjectId[]; // Cursos que o professor leciona
-  subjects: Types.ObjectId[]; // Disciplinas ministradas
+  school: Types.ObjectId;
+  courses: Types.ObjectId[];
+  disciplines: Types.ObjectId[];
+  students: Types.ObjectId[];
   googleId?: string;
   photo?: string;
   resetPasswordToken?: string;
@@ -22,7 +23,8 @@ const ProfessorSchema: Schema = new Schema(
     role: { type: [String], enum: ["professor", "course-coordinator"], default: ["professor"] },
     school: { type: mongoose.Schema.Types.ObjectId, ref: "University", required: true },
     courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
-    subjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Subject" }],
+    disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
+    students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     googleId: { type: String, required: false },
     photo: { type: String, required: false },
     resetPasswordToken: { type: String, required: false },
@@ -33,12 +35,19 @@ const ProfessorSchema: Schema = new Schema(
   }
 );
 
-ProfessorSchema.pre<IProfessor>("save", function (next) {
-  if (!Array.isArray(this.role)) {
-    this.role = [this.role];
-  }
-  if (!this.role.includes("professor")) {
-    this.role.push("professor");
+ProfessorSchema.pre("findOneAndDelete", async function (next) {
+  const professor = await this.model.findOne(this.getFilter());
+  if (professor) {
+
+    await mongoose.model("Course").updateMany(
+      { _id: { $in: professor.courses } },
+      { $pull: { professors: professor._id } }
+    );
+
+    await mongoose.model("Discipline").updateMany(
+      { professors: professor._id },
+      { $pull: { professors: professor._id } }
+    );
   }
   next();
 });

@@ -26,8 +26,23 @@ class createCourseService {
 
   async listByUniversity(universityId: string) {
     const universityObjectId = new Types.ObjectId(universityId);
-    const courses = await Course.find({ university: universityObjectId });
+    const courses = await Course.find({ university: universityObjectId }).populate("professors", "name email");
     return courses;
+  }
+
+  async delete(courseId: string) {
+    if (!Types.ObjectId.isValid(courseId)) {
+      throw new AppError("ID do curso inválido!", 400);
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      throw new AppError("Curso não encontrado!", 404);
+    }
+
+    await Course.findOneAndDelete({ _id: courseId });
+
+    return { message: "Curso removido com sucesso!" };
   }
 }
 

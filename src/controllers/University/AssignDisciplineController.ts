@@ -3,11 +3,20 @@ import { AssignDisciplineService } from "../../services/University/AssignDiscipl
 
 class AssignDisciplineController {
   async handle(req: Request, res: Response): Promise<Response> {
-    const { studentId, disciplineId } = req.body;
-
     try {
+      const { studentId, disciplineId } = req.body;
+
+      if (!studentId || !disciplineId) {
+        return res.status(400).json({
+          message: "Os campos studentId e disciplineId são obrigatórios.",
+        });
+      }
+
       const assignDisciplineService = new AssignDisciplineService();
-      const result = await assignDisciplineService.assignDiscipline(studentId, disciplineId);
+      const result = await assignDisciplineService.assignDiscipline(
+        studentId,
+        disciplineId
+      );
 
       return res.status(200).json(result);
     } catch (error: any) {

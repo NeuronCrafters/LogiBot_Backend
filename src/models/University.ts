@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IUniversity extends Document {
   name: string;
-  courses: Types.ObjectId[]; // Cursos oferecidos pela universidade
+  courses: Types.ObjectId[];
 }
 
 const UniversitySchema: Schema = new Schema(

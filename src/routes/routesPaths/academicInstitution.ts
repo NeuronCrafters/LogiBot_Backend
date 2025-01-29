@@ -1,39 +1,46 @@
 import { Router } from "express";
-import { isAuthenticated } from "../../middlewares/isAuthenticated/isAuthenticated";
-import { isAuthorized } from "../../middlewares/isAuthorized/isAuthorized";
-import { AssignDisciplineController } from "../../controllers/University/AssignDisciplineController";
-import { createClassController } from "../../controllers/University/createClassController";
-import { createCourseController } from "../../controllers/University/createCourseController";
-import { createDisciplineController } from "../../controllers/University/createDisciplineController";
-import { CreateUniversityController } from "../../controllers/University/createUniversityController";
-import { GetClassWithStudentsController } from "../../controllers/University/GetClassWithStudentsController";
+import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
+import { AssignDisciplineController } from "../../controllers/University/UniversityOuthers/AssignDisciplineController";
+import { CreateClassController } from "../../controllers/University/Class/CreateClassController";
+import { DeleteClassController } from "../../controllers/University/Class/DeleteClassController";
+import { ListClassesByCourseController } from "../../controllers/University/Class/ListClassesByCourseController";
+import { CreateCourseController } from "../../controllers/University/Course/CreateCourseController";
+import { DeleteCourseController } from "../../controllers/University/Course/DeleteCourseController";
+import { ListCoursesByUniversityController } from "../../controllers/University/Course/ListCoursesByUniversityController";
+import { CreateDisciplineController } from "../../controllers/University/Discipline/CreateDisciplineController";
+import { DeleteDisciplineController } from "../../controllers/University/Discipline/DeleteDisciplineController";
+import { ListDisciplinesController } from "../../controllers/University/Discipline/ListDisciplinesController";
+import { CreateUniversityController } from "../../controllers/University/University/CreateUniversityController";
+import { DeleteUniversityCourseController } from "../../controllers/University/University/DeleteUniversityCourseController";
+import { ListUniversitiesController } from "../../controllers/University/University/ListUniversitiesController";
+import { GetClassWithStudentsController } from "../../controllers/University/UniversityOuthers/GetClassWithStudentsController";
 
 const academicInstitutionRouter = Router();
 
-// Middleware para garantir autenticação e autorização
-const isAdminOrCoordinator = [isAuthenticated, isAuthorized(["admin", "course-coordinator"])];
-const isAdmin = [isAuthenticated, isAuthorized(["admin"])];
+// Rotas para Universidades (Somente Admin)
+academicInstitutionRouter.post("/university", ...isPermissions.isAdmin(), new CreateUniversityController().handle);
+academicInstitutionRouter.get("/university", ...isPermissions.isAdmin(), new ListUniversitiesController().handle);
+academicInstitutionRouter.delete("/university", ...isPermissions.isAdmin(), new DeleteUniversityCourseController().handle);
 
-// Rotas para criar instituições e listar as mesmas (apenas Admin)
-academicInstitutionRouter.post("/university", ...isAdmin, new CreateUniversityController().handle);
-academicInstitutionRouter.get("/university", ...isAdmin, new CreateUniversityController().list);
+// Rotas para Cursos (Somente Admin)
+academicInstitutionRouter.post("/course", ...isPermissions.isAdmin(), new CreateCourseController().handle);
+academicInstitutionRouter.get("/course/:universityId", ...isPermissions.isAdmin(), new ListCoursesByUniversityController().handle);
+academicInstitutionRouter.delete("/course/:courseId", ...isPermissions.isAdmin(), new DeleteCourseController().handle);
 
-// Rotas para criar Cursos e listar cursos (apenas Admin)
-academicInstitutionRouter.post("/course", ...isAdmin, new createCourseController().handle);
-academicInstitutionRouter.get("/course/:universityId", ...isAdmin, new createCourseController().list);
+// Rotas para Turmas (Admin e Coordenadores)
+academicInstitutionRouter.post("/class", ...isPermissions.isAdminOrCoordinator(), new CreateClassController().handle);
+academicInstitutionRouter.get("/class/:courseId", ...isPermissions.isAdminOrCoordinator(), new ListClassesByCourseController().handle);
+academicInstitutionRouter.delete("/class/:classId", ...isPermissions.isAdminOrCoordinator(), new DeleteClassController().handle);
 
-// Rotas para criar Turmas e listar as mesmas (Admin e Coordenadores)
-academicInstitutionRouter.post("/class", ...isAdminOrCoordinator, new createClassController().handle);
-academicInstitutionRouter.get("/class/:courseId", ...isAdminOrCoordinator, new createClassController().list);
-
-// Rotas para criar Disciplinas e listar as mesmas (Admin e Coordenadores)
-academicInstitutionRouter.post("/discipline", ...isAdminOrCoordinator, new createDisciplineController().handle);
-academicInstitutionRouter.get("/discipline", ...isAdminOrCoordinator, new createDisciplineController().list);
+// Rotas para Disciplinas (Admin e Coordenadores)
+academicInstitutionRouter.post("/discipline", ...isPermissions.isAdminOrCoordinator(), new CreateDisciplineController().handle);
+academicInstitutionRouter.get("/discipline", ...isPermissions.isAdminOrCoordinator(), new ListDisciplinesController().handle);
+academicInstitutionRouter.delete("/discipline/:disciplineId", ...isPermissions.isAdminOrCoordinator(), new DeleteDisciplineController().handle);
 
 // Rota para associar um aluno a uma disciplina (Admin e Coordenadores)
-academicInstitutionRouter.post("/assign-discipline", ...isAdminOrCoordinator, new AssignDisciplineController().handle);
+academicInstitutionRouter.post("/assign-discipline", ...isPermissions.isAdminOrCoordinator(), new AssignDisciplineController().handle);
 
-// Rota para buscar uma turma específica e listar os seus alunos (Admin e Coordenadores)
-academicInstitutionRouter.get("/class/:classId/students", ...isAdminOrCoordinator, new GetClassWithStudentsController().handle);
+// Rota para listar alunos de uma turma específica (Admin e Coordenadores)
+academicInstitutionRouter.get("/class/:classId/students", ...isPermissions.isAdminOrCoordinator(), new GetClassWithStudentsController().handle);
 
 export { academicInstitutionRouter };

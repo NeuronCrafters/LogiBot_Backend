@@ -1,6 +1,6 @@
-import { AppError } from "../../exceptions/AppError";
-import { User } from "../../models/User";
-import { Discipline } from "../../models/Discipline";
+import { AppError } from "../../../exceptions/AppError";
+import { User } from "../../../models/User";
+import { Discipline } from "../../../models/Discipline";
 import { Types } from "mongoose";
 
 class AssignDisciplineService {

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AssignDisciplineService } from "../../services/University/AssignDisciplineService";
+import { AssignDisciplineService } from "../../../services/University/UniversityOuthers/AssignDisciplineService";
 
 class AssignDisciplineController {
   async handle(req: Request, res: Response): Promise<Response> {

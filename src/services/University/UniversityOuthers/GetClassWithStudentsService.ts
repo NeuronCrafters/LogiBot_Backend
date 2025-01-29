@@ -1,6 +1,6 @@
-import { Class } from "../../models/Class";
-import { User } from "../../models/User";
-import { AppError } from "../../exceptions/AppError";
+import { Class } from "../../../models/Class";
+import { User } from "../../../models/User";
+import { AppError } from "../../../exceptions/AppError";
 
 class GetClassWithStudentsService {
   async execute(classId: string) {

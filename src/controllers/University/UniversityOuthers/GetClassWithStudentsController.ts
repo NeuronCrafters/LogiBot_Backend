@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { GetClassWithStudentsService } from "../../services/University/GetClassWithStudentsService"
+import { GetClassWithStudentsService } from "../../../services/University/UniversityOuthers/GetClassWithStudentsService"
 
 class GetClassWithStudentsController {
   async handle(req: Request, res: Response): Promise<Response> {

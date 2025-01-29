@@ -1,21 +1,26 @@
 import { Router } from "express";
-import { isAuthenticated } from "../../middlewares/isAuthenticated/isAuthenticated";
-import { isAuthorized } from "../../middlewares/isAuthorized/isAuthorized";
-import { CreateProfessorController } from "../../controllers/admin/createProfessorController";
+import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
+import { CreateProfessorController } from "../../controllers/admin/CreateProfessorController";
+import { ListProfessorsByCourseController } from "../../controllers/admin/ListProfessorsByCourseController";
+import { DeleteProfessorController } from "../../controllers/admin/DeleteProfessorController";
 import { ListProfessorsController } from "../../controllers/admin/ListProfessorsController";
 import { ListStudentsProfessorController } from "../../controllers/admin/ListStudentsProfessorController";
 
 const adminRouter = Router();
-const isAdminOrCoordinator = [isAuthenticated, isAuthorized(["admin", "course-coordinator"])];
-const isAdmin = [isAuthenticated, isAuthorized(["admin"])];
 
-// Rotas para criar Professores
-adminRouter.post("/professor", ...isAdmin, new CreateProfessorController().handle);
+// Criar um novo professor
+adminRouter.post("/professor", ...isPermissions.isAdmin(), new CreateProfessorController().handle);
 
-// rota de listagem de professores
-adminRouter.get("/professors", ...isAdminOrCoordinator, new ListProfessorsController().handle);
+// Listar todos os professores
+adminRouter.get("/professors", ...isPermissions.isAdminOrCoordinator(), new ListProfessorsController().handle);
 
-// rota de listagem dos alunos de um professor
-adminRouter.get("/professor/:professorId/students", ...isAdminOrCoordinator, new ListStudentsProfessorController().handle);
+// Listar alunos de um professor específico
+adminRouter.get("/professor/:professorId/students", ...isPermissions.isAdminOrCoordinator(), new ListStudentsProfessorController().handle);
+
+// Listar professores de um curso específico
+adminRouter.get("/course/:courseId/professors", ...isPermissions.isAdminOrCoordinator(), new ListProfessorsByCourseController().handle);
+
+// Remover um professor
+adminRouter.delete("/professor/:professorId", ...isPermissions.isAdmin(), new DeleteProfessorController().handle);
 
 export { adminRouter };

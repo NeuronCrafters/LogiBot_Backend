@@ -55,6 +55,9 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                 └── swaggerConfig.ts
         └── 📁controllers
             └── 📁admin
+                └── CreateProfessorController.ts
+                └── DeleteProfessorController.ts
+                └── ListProfessorsByCourseController.ts
                 └── ListProfessorsController.ts
                 └── ListStudentsProfessorController.ts
             └── 📁google
@@ -70,6 +73,26 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
             └── 📁rasa
                 └── rasaGetHistoryController.ts
                 └── rasaSendController.ts
+            └── 📁University
+                └── 📁Class
+                    └── CreateClassController.ts
+                    └── DeleteClassController.ts
+                    └── ListClassesByCourseController.ts
+                └── 📁Course
+                    └── CreateCourseController.ts
+                    └── DeleteCourseController.ts
+                    └── ListCoursesByUniversityController.ts
+                └── 📁Discipline
+                    └── CreateDisciplineController.ts
+                    └── DeleteDisciplineController.ts
+                    └── ListDisciplinesController.ts
+                └── 📁University
+                    └── CreateUniversityController.ts
+                    └── DeleteUniversityCourseController.ts
+                    └── ListUniversitiesController.ts
+                └── 📁UniversityOuthers
+                    └── AssignDisciplineController.ts
+                    └── GetClassWithStudentsController.ts
             └── 📁users
                 └── AuthUserController.ts
                 └── CreateUserController.ts
@@ -83,22 +106,32 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                 └── isAuthenticated.ts
             └── 📁isAuthorized
                 └── isAuthorized.ts
+            └── 📁isPermissions
+                └── isPermissions.ts
         └── 📁models
+            └── Class.ts
+            └── Course.ts
+            └── Discipline.ts
             └── History.ts
             └── Professor.ts
+            └── University.ts
             └── User.ts
         └── 📁routes
             └── routes.ts
             └── 📁routesPaths
+                └── academicInstitution.ts
                 └── adminRoute.ts
                 └── authRoute.ts
+                └── passwordRouter.ts
                 └── professorRoute.ts
                 └── rasaRoute.ts
-                └── resetPasswordRoutes.ts
                 └── socialLoginRoute.ts
         └── server.ts
         └── 📁services
             └── 📁admin
+                └── CreateProfessorService.ts
+                └── deleteProfessorService.ts
+                └── ListProfessorsByCourseService.ts
                 └── ListProfessorsService.ts
                 └── ListStudentsProfessorService.ts
             └── 📁google
@@ -114,17 +147,34 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
             └── 📁rasa
                 └── rasaGetHistoryService.ts
                 └── rasaSendService.ts
+            └── 📁University
+                └── 📁Class
+                    └── CreateClassService.ts
+                    └── DeleteClassService.ts
+                    └── ListClassesByCourseService.ts
+                └── 📁Course
+                    └── CreateCourseService.ts
+                    └── DeleteCourseService.ts
+                    └── ListCoursesByUniversityService.ts
+                └── 📁Discipline
+                    └── CreateDisciplineService.ts
+                    └── DeleteDisciplineService.ts
+                    └── ListDisciplinesService.ts
+                └── 📁University
+                    └── CreateUniversityService.ts
+                    └── DeleteUniversityCourseService.ts
+                    └── ListUniversitiesService.ts
+                └── 📁UniversityOuthers
+                    └── AssignDisciplineService.ts
+                    └── GetClassWithStudentsService.ts
             └── 📁users
                 └── AuthUserService.ts
                 └── CreateUserService.ts
                 └── DetailsUserService.ts
                 └── LogoutUserService.ts
     └── .env
-    └── .env_teste
     └── .gitignore
     └── docker-compose.yml
-    └── mongo-init.js
-    └── mongo-init.ts
     └── package-lock.json
     └── package.json
     └── README.md

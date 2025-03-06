@@ -10,9 +10,11 @@ interface RasaMessageRequest {
 
 class RasaSendService {
   private rasaUrl: string;
+  private rasaActionUrl: string;
 
   constructor() {
     this.rasaUrl = process.env.RASA_URL || "http://localhost:5005/webhooks/rest/webhook";
+    this.rasaActionUrl = process.env.RASA_ACTION_URL || "http://localhost:5055/webhook";
   }
 
   async sendMessageToSAEL({ sender, message, metadata }: RasaMessageRequest) {
@@ -27,6 +29,8 @@ class RasaSendService {
       if (!response.data || response.data.length === 0) {
         throw new AppError("Nenhuma resposta do Rasa foi recebida.", 502);
       }
+
+      const actionResponse = await this.callActionServer(sender, metadata);
 
       // Salvar histórico no Mongo Atlas no Schema Histories
       await this.saveConversationHistory({
@@ -53,6 +57,20 @@ class RasaSendService {
       } else {
         throw new AppError(`Erro desconhecido ao processar mensagem no Rasa: ${error.message}`, 500);
       }
+    }
+  }
+
+  private async callActionServer(sender: string, metada: Record<string, any>) {
+    try {
+      const responde = await axios.post(this.rasaActionUrl, {
+        tracker: {
+          sender_id: sender,
+          slots: metada,
+        },
+      });
+    } catch (error: any) {
+      console.log(`Erro ao chamar o Action Server: ${error.message}`);
+      return null;
     }
   }
 

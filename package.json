@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node -r tsconfig-paths/register src/server.ts",
     "dev": "ts-node-dev --transpile-only src/server.ts",
     "generate-docs": "ts-node src/config/swagger/swaggerConfig.ts"
   },

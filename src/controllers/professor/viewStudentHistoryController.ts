@@ -3,14 +3,15 @@ import { ViewStudentHistoryService } from "../../services/professor/viewStudentH
 
 class ViewStudentHistoryController {
   async handle(req: Request, res: Response) {
-    const { studentId } = req.params;
+    const { professorId, studentId } = req.params;
 
     const viewStudentHistoryService = new ViewStudentHistoryService();
+
     try {
-      const history = await viewStudentHistoryService.execute(studentId);
-      return res.json(history);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
+      const history = await viewStudentHistoryService.execute(professorId, studentId);
+      return res.status(200).json(history);
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({ message: error.message });
     }
   }
 }

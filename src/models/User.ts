@@ -1,12 +1,15 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IUser extends Document {
-  _id: Types.ObjectId;
   name: string;
   email: string;
   password?: string;
   role: string[];
-  school: string;
+  school: Types.ObjectId;
+  course: Types.ObjectId;
+  class: Types.ObjectId;
+  disciplines: Types.ObjectId[];
+  status: "active" | "graduated" | "dropped";
   googleId?: string;
   photo?: string;
   resetPasswordToken?: string;
@@ -19,7 +22,15 @@ const UserSchema: Schema = new Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: false },
     role: { type: [String], default: ["student"] },
-    school: { type: String, required: true },
+    school: { type: mongoose.Schema.Types.ObjectId, ref: "University", required: true },
+    course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
+    class: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
+    disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
+    status: {
+      type: String,
+      enum: ["active", "graduated", "dropped"],
+      default: "active",
+    },
     googleId: { type: String, required: false },
     photo: { type: String, required: false },
     resetPasswordToken: { type: String, required: false },

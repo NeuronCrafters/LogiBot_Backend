@@ -3,10 +3,11 @@ import { authRoute } from "./routesPaths/authRoute";
 import { socialLoginRoute } from "./routesPaths/socialLoginRoute";
 import { adminRouter } from "./routesPaths/adminRoute";
 import { professorRouter } from "./routesPaths/professorRoute";
-import { passwordRouter } from "./routesPaths/passwordRouter";
+import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
-import { academicInstitutionRouter } from "./routesPaths/academicInstitution";
+import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
 import { userAnalysisRouter } from "./routesPaths/userAnalysisRoute";
+import { faqStoreRouter } from "./routesPaths/faqStoreRoute";
 
 const routes = Router();
 
@@ -33,5 +34,8 @@ routes.use("/academic-institution", academicInstitutionRouter);
 
 // Rotas de análise de usuário (User Analysis)
 routes.use("/user-analysis", userAnalysisRouter);
+
+// Rota para o faqstore das perguntas e gabaritos
+routes.use("/faq", faqStoreRouter);
 
 export { routes };

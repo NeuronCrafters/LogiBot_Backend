@@ -55,11 +55,14 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                 └── swaggerConfig.ts
         └── 📁controllers
             └── 📁admin
-                └── CreateProfessorController.ts
+                └── createProfessorController.ts
                 └── DeleteProfessorController.ts
                 └── ListProfessorsByCourseController.ts
                 └── ListProfessorsController.ts
                 └── ListStudentsProfessorController.ts
+            └── 📁faq_store
+                └── CreateFAQEntryController.ts
+                └── GetFAQEntriesController.ts
             └── 📁google
                 └── signinGoogleController.ts
                 └── signupGoogleController.ts
@@ -93,6 +96,14 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                 └── 📁UniversityOuthers
                     └── AssignDisciplineController.ts
                     └── GetClassWithStudentsController.ts
+            └── 📁userAnalysis
+                └── addInteracaoForaDaSalaController.ts
+                └── addInteractionController.ts
+                └── endSessionController.ts
+                └── getUserAnalysisController.ts
+                └── registerUserAnswerController.ts
+                └── setTaxaDeAcertosController.ts
+                └── startSessionController.ts
             └── 📁users
                 └── AuthUserController.ts
                 └── CreateUserController.ts
@@ -112,28 +123,34 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
             └── Class.ts
             └── Course.ts
             └── Discipline.ts
+            └── FAQStore.ts
             └── History.ts
             └── Professor.ts
             └── University.ts
             └── User.ts
+            └── UserAnalysis.ts
         └── 📁routes
             └── routes.ts
             └── 📁routesPaths
-                └── academicInstitution.ts
+                └── academicInstitutionRoute.ts
                 └── adminRoute.ts
                 └── authRoute.ts
-                └── passwordRouter.ts
+                └── faqStoreRoute.ts
+                └── passwordRoute.ts
                 └── professorRoute.ts
                 └── rasaRoute.ts
                 └── socialLoginRoute.ts
-        └── server.ts
+                └── userAnalysisRoute.ts
         └── 📁services
             └── 📁admin
-                └── CreateProfessorService.ts
+                └── createProfessorService.ts
                 └── deleteProfessorService.ts
                 └── ListProfessorsByCourseService.ts
                 └── ListProfessorsService.ts
                 └── ListStudentsProfessorService.ts
+            └── 📁faq_store
+                └── createFAQEntryService.ts
+                └── getFAQEntriesService.ts
             └── 📁google
                 └── signinGoogleService.ts
                 └── signupGoogleService.ts
@@ -167,14 +184,27 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                 └── 📁UniversityOuthers
                     └── AssignDisciplineService.ts
                     └── GetClassWithStudentsService.ts
+            └── 📁userAnalysis
+                └── 📁Analysis
+                    └── addInteracaoForaDaSalaService.ts
+                    └── addInteractionService.ts
+                    └── endSessionService.ts
+                    └── getUserAnalysisService.ts
+                    └── registerUserAnswerService.ts
+                    └── setTaxaDeAcertosService.ts
+                    └── startSessionService.ts
+                └── userAnalysisManager.ts
             └── 📁users
                 └── AuthUserService.ts
                 └── CreateUserService.ts
                 └── DetailsUserService.ts
                 └── LogoutUserService.ts
+        └── server.ts
     └── .env
     └── .gitignore
     └── docker-compose.yml
+    └── mongo-init.js
+    └── mongo-init.ts
     └── package-lock.json
     └── package.json
     └── README.md

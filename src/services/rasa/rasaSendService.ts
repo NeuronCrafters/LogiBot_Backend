@@ -19,7 +19,7 @@ class RasaSendService {
 
   async sendMessageToSAEL({ sender, message, metadata }: RasaMessageRequest) {
     try {
-      // Envia a mensagem para o SAEL
+      // Enviar mensagem para o Rasa Server
       const response = await axios.post(this.rasaUrl, {
         sender,
         message,
@@ -30,14 +30,16 @@ class RasaSendService {
         throw new AppError("Nenhuma resposta do Rasa foi recebida.", 502);
       }
 
+      // Chamar Action Server (se necessário)
       const actionResponse = await this.callActionServer(sender, metadata);
 
-      // Salvar histórico no Mongo Atlas no Schema Histories
+      // Salvar histórico no MongoDB
       await this.saveConversationHistory({
         studentId: sender,
         messages: [
           { sender: "user", text: message },
           ...response.data.map((res: any) => ({ sender: "bot", text: res.text })),
+          ...(actionResponse ? [{ sender: "bot", text: actionResponse }] : []), // Adicionar resposta do Action Server se houver
         ],
         metadata,
         startTime: new Date(),
@@ -60,19 +62,26 @@ class RasaSendService {
     }
   }
 
-  private async callActionServer(sender: string, metada: Record<string, any>) {
+  private async callActionServer(sender: string, metadata: Record<string, any>) {
     try {
-      const responde = await axios.post(this.rasaActionUrl, {
+      const response = await axios.post(this.rasaActionUrl, {
         tracker: {
           sender_id: sender,
-          slots: metada,
+          slots: metadata,
         },
       });
+
+      if (!response.data || !response.data.responses || response.data.responses.length === 0) {
+        throw new AppError("Resposta inválida do Action Server.", 502);
+      }
+
+      return response.data.responses[0]?.text || null;
     } catch (error: any) {
-      console.log(`Erro ao chamar o Action Server: ${error.message}`);
-      return null;
+      console.error(`Erro ao chamar o Action Server: ${error.message}`);
+      throw new AppError(`Erro ao chamar o Action Server: ${error.message}`, 500);
     }
   }
+
 
   private async saveConversationHistory({
     studentId,

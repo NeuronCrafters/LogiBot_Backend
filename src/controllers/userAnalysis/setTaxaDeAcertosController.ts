@@ -4,14 +4,17 @@ import { setTaxaDeAcertosService } from "../../services/userAnalysis/Analysis/se
 class SetTaxaDeAcertosController {
   async handle(req: Request, res: Response) {
     try {
-      const { taxa } = req.body;
+      const { correctAnswers, wrongAnswers } = req.body;
       const user = req.user;
 
-      if (!user || taxa === undefined) {
-        return res.status(400).json({ error: "Usuário ou taxa de acertos inválida." });
+      if (!user || correctAnswers === undefined || wrongAnswers === undefined) {
+        return res.status(400).json({
+          error: "Usuário não autenticado ou dados insuficientes (correctAnswers, wrongAnswers)."
+        });
       }
 
-      const session = await setTaxaDeAcertosService.execute(user.id, taxa);
+      const session = await setTaxaDeAcertosService.execute(user.id, correctAnswers, wrongAnswers);
+
       return res.json({ message: "Taxa de acertos registrada.", session });
     } catch (error: any) {
       return res.status(500).json({ error: error.message });

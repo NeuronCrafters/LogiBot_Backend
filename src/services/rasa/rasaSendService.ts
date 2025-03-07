@@ -28,7 +28,7 @@ class RasaSendService {
 
   async sendMessageToSAEL({ sender, message, metadata }: RasaMessageRequest) {
     try {
-      // converter metadata para o formato aceito pelo db
+      // Converter metadata para o formato aceito pelo banco
       const sessionMetadata: SessionMetadata = {
         dispositivo: metadata.dispositivo || "desconhecido",
         name: metadata.name || "desconhecido",
@@ -43,20 +43,34 @@ class RasaSendService {
       // registrar a interação do usuário
       await userAnalysisManager.addInteraction(sender, message);
 
+      // criar payload com os slots (nível, categoria, pergunta) para o Rasa
+      const payload = {
+        sender,
+        message,
+        metadata: {
+          nivel: metadata.nivel || "desconhecido",
+          categoria: metadata.categoria || null,
+          pergunta: metadata.pergunta || null,
+          dispositivo: metadata.dispositivo || "desconhecido"
+        }
+      };
+
+      console.log("enviando requisição para Rasa:", payload);
+
       // enviar mensagem para o Rasa Server
-      const response = await axios.post(this.rasaUrl, { sender, message, metadata });
+      const response = await axios.post(this.rasaUrl, payload);
 
       if (!response.data || response.data.length === 0) {
-        throw new AppError("Nenhuma resposta do Rasa foi recebida.", 502);
+        throw new AppError("nenhuma resposta do Rasa foi recebida.", 502);
       }
 
-      // chamar Action Server (se necessário)
+      // chamar Action Server se necessário
       const actionResponse = await this.callActionServer(sender, metadata);
 
-      // processar resposta para verificar se é uma questão
+      // processar resposta para verificar se é uma pergunta
       const processedResponse = await this.processQuestionAnswer(sender, response.data);
 
-      // salvar histórico da conversa
+      // salvar histórico da conversa no banco de dados
       await this.saveConversationHistory({
         studentId: sender,
         messages: [
@@ -71,16 +85,16 @@ class RasaSendService {
 
       return response.data;
     } catch (error: any) {
-      console.error("Erro no serviço Rasa:", error);
+      console.error("erro no serviço Rasa:", error);
       if (error.response) {
         throw new AppError(
           `Erro do Rasa: ${error.response.data.message || error.response.statusText}`,
           error.response.status
         );
       } else if (error.request) {
-        throw new AppError("Falha na comunicação com o Rasa. Nenhuma resposta recebida.", 503);
+        throw new AppError("falha na comunicação com o Rasa. Nenhuma resposta recebida.", 503);
       } else {
-        throw new AppError(`Erro desconhecido ao processar mensagem no Rasa: ${error.message}`, 500);
+        throw new AppError(`erro desconhecido ao processar mensagem no Rasa: ${error.message}`, 500);
       }
     }
   }
@@ -97,8 +111,8 @@ class RasaSendService {
 
       return response.data.responses[0]?.text || null;
     } catch (error: any) {
-      console.error(`Erro ao chamar o Action Server: ${error.message}`);
-      throw new AppError(`Erro ao chamar o Action Server: ${error.message}`, 500);
+      console.error(`erro ao chamar o Action Server: ${error.message}`);
+      throw new AppError(`erro ao chamar o Action Server: ${error.message}`, 500);
     }
   }
 
@@ -114,7 +128,7 @@ class RasaSendService {
         // buscar resposta do usuário
         const userAnswer = await userAnalysisManager.getUserAnswer(sender, question_id);
 
-        // se não houver resposta, continuar normalmente
+        // se não houver resposta, apenas registrar a pergunta no chat
         if (!userAnswer || !userAnswer.selectedOption) {
           processedMessages.push({ sender: "bot", text });
           continue;
@@ -122,7 +136,7 @@ class RasaSendService {
 
         const isCorrect = userAnswer.selectedOption === correct_answer;
 
-        // registrar resposta do usuário (agora corretamente)
+        // registrar resposta do usuário
         await userAnalysisManager.registerUserAnswer(sender, group_id, question_id, userAnswer.selectedOption);
 
         // atualizar feedback da resposta no histórico
@@ -134,7 +148,6 @@ class RasaSendService {
 
     return processedMessages;
   }
-
 
   private async saveConversationHistory({
     studentId,
@@ -157,9 +170,9 @@ class RasaSendService {
         startTime,
         endTime,
       });
-      console.log("Histórico de conversa salvo com sucesso.");
+      console.log("histórico de conversa salvo com sucesso.");
     } catch (error: any) {
-      console.error("Erro ao salvar histórico no MongoDB:", error.message);
+      console.error("erro ao salvar histórico no MongoDB:", error.message);
     }
   }
 }

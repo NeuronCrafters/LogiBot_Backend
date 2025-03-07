@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
-import { CreateProfessorController } from "../../controllers/admin/CreateProfessorController";
+import { CreateProfessorController } from "../../controllers/admin/createProfessorController";
 import { ListProfessorsByCourseController } from "../../controllers/admin/ListProfessorsByCourseController";
 import { DeleteProfessorController } from "../../controllers/admin/DeleteProfessorController";
 import { ListProfessorsController } from "../../controllers/admin/ListProfessorsController";

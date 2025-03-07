@@ -1,11 +1,20 @@
 import axios from "axios";
 import { AppError } from "../../exceptions/AppError";
 import { History } from "../../models/History";
+import { userAnalysisManager } from "../userAnalysis/userAnalysisManager";
 
 interface RasaMessageRequest {
   sender: string;
   message: string;
   metadata: Record<string, any>;
+}
+
+interface SessionMetadata {
+  dispositivo: string;
+  name: string;
+  email: string;
+  role: string[];
+  school: string;
 }
 
 class RasaSendService {
@@ -19,27 +28,41 @@ class RasaSendService {
 
   async sendMessageToSAEL({ sender, message, metadata }: RasaMessageRequest) {
     try {
-      // Enviar mensagem para o Rasa Server
-      const response = await axios.post(this.rasaUrl, {
-        sender,
-        message,
-        metadata,
-      });
+      // converter metadata para o formato aceito pelo db
+      const sessionMetadata: SessionMetadata = {
+        dispositivo: metadata.dispositivo || "desconhecido",
+        name: metadata.name || "desconhecido",
+        email: metadata.email || "desconhecido",
+        role: Array.isArray(metadata.role) ? metadata.role : [],
+        school: metadata.school || "desconhecido",
+      };
+
+      // iniciar ou atualizar sessão do usuário
+      await userAnalysisManager.startSession(sender, sessionMetadata);
+
+      // registrar a interação do usuário
+      await userAnalysisManager.addInteraction(sender, message);
+
+      // enviar mensagem para o Rasa Server
+      const response = await axios.post(this.rasaUrl, { sender, message, metadata });
 
       if (!response.data || response.data.length === 0) {
         throw new AppError("Nenhuma resposta do Rasa foi recebida.", 502);
       }
 
-      // Chamar Action Server (se necessário)
+      // chamar Action Server (se necessário)
       const actionResponse = await this.callActionServer(sender, metadata);
 
-      // Salvar histórico no MongoDB
+      // processar resposta para verificar se é uma questão
+      const processedResponse = await this.processQuestionAnswer(sender, response.data);
+
+      // salvar histórico da conversa
       await this.saveConversationHistory({
         studentId: sender,
         messages: [
           { sender: "user", text: message },
-          ...response.data.map((res: any) => ({ sender: "bot", text: res.text })),
-          ...(actionResponse ? [{ sender: "bot", text: actionResponse }] : []), // Adicionar resposta do Action Server se houver
+          ...processedResponse,
+          ...(actionResponse ? [{ sender: "bot", text: actionResponse }] : []),
         ],
         metadata,
         startTime: new Date(),
@@ -65,10 +88,7 @@ class RasaSendService {
   private async callActionServer(sender: string, metadata: Record<string, any>) {
     try {
       const response = await axios.post(this.rasaActionUrl, {
-        tracker: {
-          sender_id: sender,
-          slots: metadata,
-        },
+        tracker: { sender_id: sender, slots: metadata },
       });
 
       if (!response.data || !response.data.responses || response.data.responses.length === 0) {
@@ -80,6 +100,39 @@ class RasaSendService {
       console.error(`Erro ao chamar o Action Server: ${error.message}`);
       throw new AppError(`Erro ao chamar o Action Server: ${error.message}`, 500);
     }
+  }
+
+  private async processQuestionAnswer(sender: string, rasaResponse: any) {
+    let processedMessages = [];
+
+    for (const res of rasaResponse) {
+      let text = res.text;
+
+      if (res.custom && res.custom.question_id) {
+        const { question_id, correct_answer, group_id } = res.custom;
+
+        // buscar resposta do usuário
+        const userAnswer = await userAnalysisManager.getUserAnswer(sender, question_id);
+
+        // se não houver resposta, continuar normalmente
+        if (!userAnswer || !userAnswer.selectedOption) {
+          processedMessages.push({ sender: "bot", text });
+          continue;
+        }
+
+        const isCorrect = userAnswer.selectedOption === correct_answer;
+
+        // registrar resposta do usuário (agora corretamente)
+        await userAnalysisManager.registerUserAnswer(sender, group_id, question_id, userAnswer.selectedOption);
+
+        // atualizar feedback da resposta no histórico
+        processedMessages.push({ sender: "bot", text: `${text} (${isCorrect ? "Acertou!" : "Errou."})` });
+      } else {
+        processedMessages.push({ sender: "bot", text });
+      }
+    }
+
+    return processedMessages;
   }
 
 

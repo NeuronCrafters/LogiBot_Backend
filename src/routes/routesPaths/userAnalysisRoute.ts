@@ -6,6 +6,7 @@ import { SetTaxaDeAcertosController } from "../../controllers/userAnalysis/setTa
 import { AddInteracaoForaDaSalaController } from "../../controllers/userAnalysis/addInteracaoForaDaSalaController";
 import { GetUserAnalysisController } from "../../controllers/userAnalysis/getUserAnalysisController";
 import { RegisterUserAnswerController } from "../../controllers/userAnalysis/registerUserAnswerController";
+import { GetUserAnswerController } from "../../controllers/userAnalysis/getUserAnswerController";
 
 const userAnalysisRouter = Router();
 
@@ -16,5 +17,6 @@ userAnalysisRouter.post("/set-taxa-acertos", new SetTaxaDeAcertosController().ha
 userAnalysisRouter.post("/out-of-room", new AddInteracaoForaDaSalaController().handle);
 userAnalysisRouter.get("/get-analysis", new GetUserAnalysisController().handle);
 userAnalysisRouter.post("/user-analysis/register-answer", new RegisterUserAnswerController().handle);
+userAnalysisRouter.get("/user-analysis/get-user-answer", new GetUserAnswerController().handle);
 
 export { userAnalysisRouter };

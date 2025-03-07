@@ -1,15 +1,17 @@
 import { FAQStore } from "../../../models/FAQStore";
 import { UserAnalysis } from "../../../models/UserAnalysis";
+import { userAnalysisManager } from "../userAnalysisManager";
 
 interface UserAnswer {
   userId: string;
   group_id: string;
-  questionIndex: number;
+  question_id: string;
   selectedOption: string;
+  isCorrect?: boolean;
 }
 
 export class RegisterUserAnswerService {
-  async execute({ userId, group_id, questionIndex, selectedOption }: UserAnswer) {
+  async execute({ userId, group_id, question_id, selectedOption }: UserAnswer) {
     try {
       // Buscar o gabarito da questão
       const faqEntry = await FAQStore.findOne({ group_id });
@@ -18,7 +20,12 @@ export class RegisterUserAnswerService {
         throw new Error("Gabarito não encontrado.");
       }
 
-      // Pegar a resposta correta
+      // Encontrar a resposta correta
+      const questionIndex = faqEntry.questions.findIndex((q) => q.question_id === question_id);
+      if (questionIndex === -1) {
+        throw new Error("Pergunta não encontrada no gabarito.");
+      }
+
       const correctAnswer = faqEntry.answer_keys[questionIndex];
 
       // Verificar se a resposta está correta
@@ -31,24 +38,25 @@ export class RegisterUserAnswerService {
         userAnalysis = new UserAnalysis({
           userId,
           startTime: new Date(),
-          taxaDeAcertos: 0,
-          outOfScopeQuestions: 0,
+          correctAnswers: 0,
+          wrongAnswers: 0,
           interactions: [],
+          answerHistory: [],
         });
       }
 
-      // Atualiza a taxa de acertos
-      if (isCorrect) {
-        userAnalysis.taxaDeAcertos += 1;
-      }
-
-      // Adiciona interação ao histórico
-      userAnalysis.interactions.push({
+      // Registrar resposta na análise do usuário
+      userAnalysis.answerHistory.push({
+        question_id,
+        selectedOption,
+        isCorrect,
         timestamp: new Date(),
-        message: `Pergunta ${questionIndex + 1}: ${selectedOption} (${isCorrect ? "Acertou" : "Errou"})`,
       });
 
       await userAnalysis.save();
+
+      // Atualizar taxa de acertos automaticamente
+      await userAnalysisManager.updateUserAccuracy(userId, isCorrect ? 1 : 0, isCorrect ? 0 : 1);
 
       return { message: `Resposta registrada. ${isCorrect ? "Acertou!" : "Errou."}`, isCorrect };
     } catch (error) {

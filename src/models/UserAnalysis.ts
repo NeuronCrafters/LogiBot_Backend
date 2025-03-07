@@ -8,6 +8,9 @@ interface IUserAnalysis extends Document {
   outOfScopeQuestions: number;
   correctAnswers: number;
   wrongAnswers: number;
+  totalQuestionsAnswered: number;
+  taxaDeAcertos: number;
+  taxaDeErros: number;
   interacoesForaDaSala?: { timestamp: Date }[];
   dispositivo?: string;
   interactions: { timestamp: Date; message: string }[];
@@ -24,11 +27,12 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   startTime: { type: Date, required: true, default: Date.now },
   endTime: { type: Date },
   totalTime: { type: Number, default: 0 },
-
   outOfScopeQuestions: { type: Number, default: 0 },
   correctAnswers: { type: Number, default: 0 },
   wrongAnswers: { type: Number, default: 0 },
-
+  totalQuestionsAnswered: { type: Number, default: 0 },
+  taxaDeAcertos: { type: Number, default: 0 },
+  taxaDeErros: { type: Number, default: 0 },
   interacoesForaDaSala: { type: [{ timestamp: { type: Date } }], default: [] },
   interactions: [{ timestamp: { type: Date }, message: { type: String } }],
 
@@ -44,7 +48,6 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   ],
 });
 
-// Método para calcular o tempo total automaticamente antes de salvar
 UserAnalysisSchema.pre("save", function (next) {
   if (this.endTime && this.startTime) {
     this.totalTime = (this.endTime.getTime() - this.startTime.getTime()) / 1000;

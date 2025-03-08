@@ -67,10 +67,9 @@ class RasaSendService {
       // chamar Action Server se necessário
       const actionResponse = await this.callActionServer(sender, metadata);
 
-      // processar resposta para verificar se é uma pergunta
+
       const processedResponse = await this.processQuestionAnswer(sender, response.data);
 
-      // salvar histórico da conversa no banco de dados
       await this.saveConversationHistory({
         studentId: sender,
         messages: [
@@ -117,37 +116,29 @@ class RasaSendService {
   }
 
   private async processQuestionAnswer(sender: string, rasaResponse: any) {
-    let processedMessages = [];
+    const processedMessages = [];
 
     for (const res of rasaResponse) {
       let text = res.text;
 
-      if (res.custom && res.custom.question_id) {
+      if (res.custom?.question_id && res.custom?.group_id) {
         const { question_id, correct_answer, group_id } = res.custom;
 
-        // buscar resposta do usuário
-        const userAnswer = await userAnalysisManager.getUserAnswer(sender, question_id);
+        const selectedOption = "opção_padrão";
+        const isCorrect = selectedOption === correct_answer;
 
-        // se não houver resposta, apenas registrar a pergunta no chat
-        if (!userAnswer || !userAnswer.selectedOption) {
-          processedMessages.push({ sender: "bot", text });
-          continue;
-        }
+        await userAnalysisManager.registerUserAnswer(sender, group_id, question_id, selectedOption);
+        await userAnalysisManager.updateUserAccuracy(sender, isCorrect ? 1 : 0, isCorrect ? 0 : 1);
 
-        const isCorrect = userAnswer.selectedOption === correct_answer;
-
-        // registrar resposta do usuário
-        await userAnalysisManager.registerUserAnswer(sender, group_id, question_id, userAnswer.selectedOption);
-
-        // atualizar feedback da resposta no histórico
-        processedMessages.push({ sender: "bot", text: `${text} (${isCorrect ? "Acertou!" : "Errou."})` });
-      } else {
-        processedMessages.push({ sender: "bot", text });
+        text += ` (${isCorrect ? "Acertou!" : "Errou."})`;
       }
+
+      processedMessages.push({ sender: "bot", text });
     }
 
     return processedMessages;
   }
+
 
   private async saveConversationHistory({
     studentId,

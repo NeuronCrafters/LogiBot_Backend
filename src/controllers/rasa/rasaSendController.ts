@@ -3,7 +3,6 @@ import { RasaSendService } from "../../services/rasa/rasaSendService";
 import { userAnalysisManager } from "../../services/userAnalysis/userAnalysisManager";
 import { AppError } from "../../exceptions/AppError";
 
-
 class RasaSendController {
   private rasaSendService: RasaSendService;
 
@@ -13,10 +12,9 @@ class RasaSendController {
 
   async handle(req: Request, res: Response) {
     try {
-      const { message, dispositivo } = req.body;
+      const { message, dispositivo, nivel, categoria, pergunta } = req.body;
       const user = req.user;
 
-      // validação dos dados de entrada
       if (!message) {
         throw new AppError("A mensagem é obrigatória.", 400);
       }
@@ -25,29 +23,34 @@ class RasaSendController {
         throw new AppError("Usuário não autenticado.", 401);
       }
 
-      // atualizar sessão do usuário para análise 
-      await userAnalysisManager.startSession(user.id, dispositivo || "desconhecido");
-
-      // registrar interação do usuário
-      await userAnalysisManager.addInteraction(user.id, message);
-
-      // metadados do usuário
-      const metadata = {
+      const sessionMetadata = {
+        dispositivo: dispositivo || "desconhecido",
         email: user.email || "desconhecido",
-        role: user.role || "desconhecido",
         name: user.name || "desconhecido",
+        role: Array.isArray(user.role) ? user.role : [],
+        school: user.school || "desconhecido",
+        nivel: nivel || "desconhecido",
+        categoria: req.body.categoria || null,
+        pergunta: req.body.pergunta || null,
       };
 
-      // enviar mensagem ao sael e obter resposta
+      // Inicializa sessão e registra interação
+      await userAnalysisManager.startSession(user.id, sessionMetadata);
+      await userAnalysisManager.addInteraction(user.id, message);
+
+      // Envia mensagem ao Rasa com slots necessários já preenchidos
       const responseFromRasa = await this.rasaSendService.sendMessageToSAEL({
         sender: user.id,
         message,
-        metadata,
+        metadata: sessionMetadata,
       });
 
-      // responder com a resposta do sael
-      return res.json(responseFromRasa);
+      // Caso mensagem indique finalização, encerra sessão
+      if (message.toLowerCase().includes("finalizar")) {
+        await userAnalysisManager.endSession(user.id);
+      }
 
+      return res.json(responseFromRasa);
     } catch (error: any) {
       console.error("Erro no controlador Rasa:", error);
 

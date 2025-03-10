@@ -9,7 +9,7 @@ const rasaSendController = new RasaSendController();
 const rasaGetHistoryController = new RasaGetHistoryController();
 
 // Rota de conversa com o SAEL (somente usuários autenticados)
-rasaRouter.post("/talk", ...isPermissions.isAuthenticated(), rasaSendController.handle.bind(rasaSendController));
+rasaRouter.post("/talk", ...isPermissions.isAuthenticated(), rasaSendController.handle);
 
 // Rota para obter o histórico de conversa (somente Admin, Professores e Coordenadores)
 rasaRouter.get("/history", ...isPermissions.isAdminProfessorOrCoordinator(), rasaGetHistoryController.handle.bind(rasaGetHistoryController));

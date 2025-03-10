@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
 import { RasaSendService } from "../../services/rasa/rasaSendService";
-import { userAnalysisManager } from "../../services/userAnalysis/userAnalysisManager";
-import { AppError } from "../../exceptions/AppError";
 
 class RasaSendController {
   private rasaSendService: RasaSendService;
@@ -12,51 +10,31 @@ class RasaSendController {
 
   async handle(req: Request, res: Response) {
     try {
-      const { message, dispositivo, nivel, categoria, pergunta } = req.body;
-      const user = req.user;
+      // capturar token do cabeçalho da requisição
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ error: "Token não fornecido" });
+      }
 
+      // capturar mensagem do corpo da requisição
+      const { message } = req.body;
       if (!message) {
-        throw new AppError("A mensagem é obrigatória.", 400);
+        return res.status(400).json({ error: "Mensagem não fornecida" });
       }
 
-      if (!user || !user.id) {
-        throw new AppError("Usuário não autenticado.", 401);
+      // obter ID do usuário do token
+      const sender = (req as any).user?.id;
+      if (!sender) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
       }
 
-      const sessionMetadata = {
-        dispositivo: dispositivo || "desconhecido",
-        email: user.email || "desconhecido",
-        name: user.name || "desconhecido",
-        role: Array.isArray(user.role) ? user.role : [],
-        school: user.school || "desconhecido",
-        nivel: nivel || "desconhecido",
-        categoria: req.body.categoria || null,
-        pergunta: req.body.pergunta || null,
-      };
+      // enviar mensagem para o Rasa e armazenar no banco
+      const response = await this.rasaSendService.sendMessageToRasa({ sender, message, token });
 
-      // Inicializa sessão e registra interação
-      await userAnalysisManager.startSession(user.id, sessionMetadata);
-      await userAnalysisManager.addInteraction(user.id, message);
-
-      // Envia mensagem ao Rasa com slots necessários já preenchidos
-      const responseFromRasa = await this.rasaSendService.sendMessageToSAEL({
-        sender: user.id,
-        message,
-        metadata: sessionMetadata,
-      });
-
-      // Caso mensagem indique finalização, encerra sessão
-      if (message.toLowerCase().includes("finalizar")) {
-        await userAnalysisManager.endSession(user.id);
-      }
-
-      return res.json(responseFromRasa);
+      return res.json(response);
     } catch (error: any) {
       console.error("Erro no controlador Rasa:", error);
-
-      return res.status(error.statusCode || 500).json({
-        error: error.message || "Erro ao processar a mensagem no Rasa.",
-      });
+      return res.status(500).json({ error: error.message });
     }
   }
 }

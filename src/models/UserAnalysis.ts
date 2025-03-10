@@ -13,7 +13,10 @@ interface IUserAnalysis extends Document {
   taxaDeErros: number;
   interacoesForaDaSala?: { timestamp: Date }[];
   dispositivo?: string;
-  interactions: { timestamp: Date; message: string }[];
+  level?: string;
+  courses?: string;
+  classes?: string;
+  interactions: { timestamp: Date; message: string; botResponse?: string }[];
   answerHistory: {
     question_id: string;
     selectedOption: string;
@@ -34,10 +37,11 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   taxaDeAcertos: { type: Number, default: 0 },
   taxaDeErros: { type: Number, default: 0 },
   interacoesForaDaSala: { type: [{ timestamp: { type: Date } }], default: [] },
-  interactions: [{ timestamp: { type: Date }, message: { type: String } }],
-
+  interactions: [{ timestamp: { type: Date }, message: { type: String }, botResponse: { type: String, default: "" } }],
   dispositivo: { type: String, default: "desconhecido" },
-
+  level: { type: String, default: "desconhecido" },
+  courses: { type: String, default: "desconhecido" },
+  classes: { type: String, default: "desconhecido" },
   answerHistory: [
     {
       question_id: { type: String, required: true },

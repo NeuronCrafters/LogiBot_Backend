@@ -3,7 +3,6 @@ import { Professor } from "../../models/Professor";
 import { compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { AppError } from "../../exceptions/AppError";
-import { userAnalysisManager } from "../userAnalysis/userAnalysisManager";
 
 interface AuthRequest {
   email: string;
@@ -56,15 +55,6 @@ class AuthUserService {
           expiresIn: "1d",
         }
       );
-
-      await userAnalysisManager.startSession(user._id.toString(), {
-        dispositivo: "web",
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        school: user.school ? user.school.toString() : "",
-      });
-
 
       return {
         id: user._id,

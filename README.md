@@ -184,16 +184,6 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                 └── 📁UniversityOuthers
                     └── AssignDisciplineService.ts
                     └── GetClassWithStudentsService.ts
-            └── 📁userAnalysis
-                └── 📁Analysis
-                    └── addInteracaoForaDaSalaService.ts
-                    └── addInteractionService.ts
-                    └── endSessionService.ts
-                    └── getUserAnalysisService.ts
-                    └── registerUserAnswerService.ts
-                    └── setTaxaDeAcertosService.ts
-                    └── startSessionService.ts
-                └── userAnalysisManager.ts
             └── 📁users
                 └── AuthUserService.ts
                 └── CreateUserService.ts

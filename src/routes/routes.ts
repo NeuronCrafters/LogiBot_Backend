@@ -6,8 +6,8 @@ import { professorRouter } from "./routesPaths/professorRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
-import { userAnalysisRouter } from "./routesPaths/userAnalysisRoute";
 import { faqStoreRouter } from "./routesPaths/faqStoreRoute";
+import { publicAcademicRoute } from "./routesPaths/academicPublicRoutes";
 
 const routes = Router();
 
@@ -32,10 +32,10 @@ routes.use("/sael", rasaRouter);
 // Rotas de instituições acadêmicas (middlewares já estão dentro do `academicInstitutionRouter.ts`)
 routes.use("/academic-institution", academicInstitutionRouter);
 
-// Rotas de análise de usuário (User Analysis)
-routes.use("/user-analysis", userAnalysisRouter);
-
 // Rota para o faqstore das perguntas e gabaritos
 routes.use("/faq", faqStoreRouter);
+
+// Rota pública para consultar a lista de universidades, cursos e turmas para usar na rota de cadastro
+routes.use("/public", publicAcademicRoute);
 
 export { routes };

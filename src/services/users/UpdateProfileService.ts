@@ -17,6 +17,7 @@ class UpdateProfileService {
       throw new AppError("Usuário não encontrado!", 404);
     }
 
+
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
@@ -24,9 +25,9 @@ class UpdateProfileService {
       }
     }
 
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (password) user.password = await hash(password, 10);
+    if (name !== undefined) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (password !== undefined) user.password = await hash(password, 10);
 
     await user.save();
 

@@ -6,7 +6,6 @@ import { Discipline } from "../../models/Discipline";
 import { Professor } from "../../models/Professor";
 import { User } from "../../models/User";
 
-// Listar todas as universidades com cursos e turmas
 async function getUniversitiesWithCoursesAndClasses(req: Request, res: Response) {
   try {
     const universities = await University.find().lean();
@@ -157,6 +156,64 @@ async function getStudentsByClassId(req: Request, res: Response) {
   }
 }
 
+// Listar alunos de uma disciplina específica dentro de um curso e universidade
+async function getStudentsByDisciplineId(req: Request, res: Response) {
+  const { universityId, courseId, disciplineId } = req.params;
+
+  try {
+    const university = await University.findById(universityId);
+    if (!university) {
+      return res.status(404).json({ message: "Universidade não encontrada" });
+    }
+
+    const course = await Course.findOne({ _id: courseId, university: universityId });
+    if (!course) {
+      return res.status(404).json({ message: "Curso não encontrado para essa universidade" });
+    }
+
+    const discipline = await Discipline.findOne({ _id: disciplineId, course: courseId });
+    if (!discipline) {
+      return res.status(404).json({ message: "Disciplina não encontrada para esse curso" });
+    }
+
+    const students = await User.find(
+      { disciplines: disciplineId, role: "student" },
+      { name: 1, email: 1, status: 1, photo: 1 }
+    ).lean();
+
+    res.status(200).json(students);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar alunos da disciplina", error });
+  }
+}
+
+// Listar todos os alunos de um curso dentro de uma universidade
+async function getStudentsByCourseId(req: Request, res: Response) {
+  const { universityId, courseId } = req.params;
+
+  try {
+    const university = await University.findById(universityId);
+    if (!university) {
+      return res.status(404).json({ message: "Universidade não encontrada" });
+    }
+
+    const course = await Course.findOne({ _id: courseId, university: universityId });
+    if (!course) {
+      return res.status(404).json({ message: "Curso não encontrado para essa universidade" });
+    }
+
+    const students = await User.find(
+      { course: courseId, role: "student" },
+      { name: 1, email: 1, status: 1, photo: 1 }
+    ).lean();
+
+    res.status(200).json(students);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar alunos do curso", error });
+  }
+}
+
+
 export {
   getUniversitiesWithCoursesAndClasses,
   getCoursesByUniversityId,
@@ -164,4 +221,6 @@ export {
   getClassesByCourseId,
   getProfessorsByUniversityId,
   getStudentsByClassId,
+  getStudentsByDisciplineId,
+  getStudentsByCourseId
 };

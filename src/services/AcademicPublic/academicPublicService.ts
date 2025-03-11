@@ -122,6 +122,53 @@ async function getStudentsByClassId(universityId: string, courseId: string, clas
   return students;
 }
 
+// listar alunos ligados a uma disciplina
+async function getStudentsByDisciplineId(universityId: string, courseId: string, disciplineId: string) {
+  const university = await University.findById(universityId);
+  if (!university) {
+    throw new Error("Universidade não encontrada");
+  }
+
+  const course = await Course.findOne({ _id: courseId, university: universityId });
+  if (!course) {
+    throw new Error("Curso não encontrado para essa universidade");
+  }
+
+  const discipline = await Discipline.findOne({ _id: disciplineId, course: courseId });
+  if (!discipline) {
+    throw new Error("Disciplina não encontrada para esse curso");
+  }
+
+  const students = await User.find(
+    { disciplines: disciplineId, role: "student" },
+    { name: 1, email: 1, status: 1, photo: 1 }
+  ).lean();
+
+  return students;
+}
+
+// listar alunos vincualados a um curso
+async function getStudentsByCourseId(universityId: string, courseId: string) {
+  const university = await University.findById(universityId);
+  if (!university) {
+    throw new Error("Universidade não encontrada");
+  }
+
+  const course = await Course.findOne({ _id: courseId, university: universityId });
+  if (!course) {
+    throw new Error("Curso não encontrado para essa universidade");
+  }
+
+  const students = await User.find(
+    { course: courseId, role: "student" },
+    { name: 1, email: 1, status: 1, photo: 1 }
+  ).lean();
+
+  return students;
+}
+
+
+
 export {
   getUniversitiesWithCoursesAndClasses,
   getCoursesByUniversityId,
@@ -129,4 +176,6 @@ export {
   getClassesByCourseId,
   getProfessorsByUniversityId,
   getStudentsByClassId,
+  getStudentsByDisciplineId,
+  getStudentsByCourseId
 };

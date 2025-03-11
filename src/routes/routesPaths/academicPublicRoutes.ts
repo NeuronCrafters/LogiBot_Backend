@@ -6,6 +6,8 @@ import {
   getClassesByCourseId,
   getProfessorsByUniversityId,
   getStudentsByClassId,
+  getStudentsByDisciplineId,
+  getStudentsByCourseId
 } from "../../controllers/AcademicPublic/academicPublicController";
 
 const publicAcademicRoute = Router();
@@ -27,5 +29,11 @@ publicAcademicRoute.get("/professors/:universityId/:courseId?", getProfessorsByU
 
 /** Listar alunos de uma turma específica que pertence a um curso de uma universidade */
 publicAcademicRoute.get("/students/:universityId/:courseId/:classId", getStudentsByClassId);
+
+/** Listar alunos de uma disciplina específica */
+publicAcademicRoute.get("/students/:universityId/:courseId/:disciplineId", getStudentsByDisciplineId);
+
+/** Listar todos os alunos de um curso */
+publicAcademicRoute.get("/students/:universityId/:courseId", getStudentsByCourseId);
 
 export { publicAcademicRoute };

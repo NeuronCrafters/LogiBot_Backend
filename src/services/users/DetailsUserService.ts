@@ -9,11 +9,11 @@ class DetailsUserService {
 
       if (role === "professor") {
         userDetails = await Professor.findById(user_id)
-          .select("name email role department")
+          .select("name email role school course class department")
           .lean();
       } else if (role === "student" || role === "admin") {
         userDetails = await User.findById(user_id)
-          .select("name email role")
+          .select("name email role school course class")
           .lean();
       } else {
         throw new AppError("Papel inválido!", 400);

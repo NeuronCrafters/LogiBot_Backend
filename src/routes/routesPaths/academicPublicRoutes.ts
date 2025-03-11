@@ -4,10 +4,11 @@ import { Course } from "../../models/Course";
 import { Class } from "../../models/Class";
 import { Discipline } from "../../models/Discipline";
 import { Professor } from "../../models/Professor";
+import { User } from "../../models/User";
 
 const publicAcademicRoute = Router();
 
-/** listar todas as universidades com cursos e turmas */
+/** Listar todas as universidades com cursos e turmas */
 publicAcademicRoute.get("/institutions", async (req, res) => {
   try {
     const universities = await University.find().lean();
@@ -40,54 +41,121 @@ publicAcademicRoute.get("/institutions", async (req, res) => {
   }
 });
 
-/** listar disciplinas de um curso dentro de uma universidade */
+/** Listar cursos de uma universidade específica */
+publicAcademicRoute.get("/courses/:universityId", async (req, res) => {
+  const { universityId } = req.params;
+
+  try {
+    const university = await University.findById(universityId);
+    if (!university) {
+      return res.status(404).json({ message: "Universidade não encontrada" });
+    }
+
+    const courses = await Course.find({ university: universityId }).lean();
+    res.status(200).json(courses);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar cursos", error });
+  }
+});
+
+/** Listar disciplinas de um curso dentro de uma universidade */
 publicAcademicRoute.get("/disciplines/:universityId/:courseId", async (req, res) => {
   const { universityId, courseId } = req.params;
 
   try {
-    const courseExists = await Course.findOne({ _id: courseId, university: universityId });
-    if (!courseExists) {
+    const university = await University.findById(universityId);
+    if (!university) {
+      return res.status(404).json({ message: "Universidade não encontrada" });
+    }
+
+    const course = await Course.findOne({ _id: courseId, university: universityId });
+    if (!course) {
       return res.status(404).json({ message: "Curso não encontrado para essa universidade" });
     }
 
-    const disciplines = await Discipline.find({ course: courseId });
+    const disciplines = await Discipline.find({ course: courseId }).lean();
     res.status(200).json(disciplines);
   } catch (error) {
     res.status(500).json({ message: "Erro ao buscar disciplinas", error });
   }
 });
 
-/** listar turmas de um curso dentro de uma universidade */
+/** Listar turmas de um curso dentro de uma universidade */
 publicAcademicRoute.get("/classes/:universityId/:courseId", async (req, res) => {
   const { universityId, courseId } = req.params;
 
   try {
-    const courseExists = await Course.findOne({ _id: courseId, university: universityId });
-    if (!courseExists) {
+    const university = await University.findById(universityId);
+    if (!university) {
+      return res.status(404).json({ message: "Universidade não encontrada" });
+    }
+
+    const course = await Course.findOne({ _id: courseId, university: universityId });
+    if (!course) {
       return res.status(404).json({ message: "Curso não encontrado para essa universidade" });
     }
 
-    const classes = await Class.find({ course: courseId });
+    const classes = await Class.find({ course: courseId }).lean();
     res.status(200).json(classes);
   } catch (error) {
     res.status(500).json({ message: "Erro ao buscar turmas", error });
   }
 });
 
-/** listar professores vinculados a uma universidade */
-publicAcademicRoute.get("/professors/:universityId", async (req, res) => {
-  const { universityId } = req.params;
+/** Listar professores vinculados a uma universidade e, opcionalmente, a um curso */
+publicAcademicRoute.get("/professors/:universityId/:courseId?", async (req, res) => {
+  const { universityId, courseId } = req.params;
 
   try {
-    const universityExists = await University.findById(universityId);
-    if (!universityExists) {
+    const university = await University.findById(universityId);
+    if (!university) {
       return res.status(404).json({ message: "Universidade não encontrada" });
     }
 
-    const professors = await Professor.find({ university: universityId });
+    let query = { university: universityId } as any;
+    if (courseId) {
+      const course = await Course.findOne({ _id: courseId, university: universityId });
+      if (!course) {
+        return res.status(404).json({ message: "Curso não encontrado para essa universidade" });
+      }
+      query.course = courseId;
+    }
+
+    const professors = await Professor.find(query).lean();
     res.status(200).json(professors);
   } catch (error) {
     res.status(500).json({ message: "Erro ao buscar professores", error });
+  }
+});
+
+/** Listar alunos de uma turma específica que pertence a um curso de uma universidade */
+publicAcademicRoute.get("/students/:universityId/:courseId/:classId", async (req, res) => {
+  const { universityId, courseId, classId } = req.params;
+
+  try {
+    const university = await University.findById(universityId);
+    if (!university) {
+      return res.status(404).json({ message: "Universidade não encontrada" });
+    }
+
+    const course = await Course.findOne({ _id: courseId, university: universityId });
+    if (!course) {
+      return res.status(404).json({ message: "Curso não encontrado para essa universidade" });
+    }
+
+    const classDoc = await Class.findOne({ _id: classId, course: courseId });
+    if (!classDoc) {
+      return res.status(404).json({ message: "Turma não encontrada para esse curso" });
+    }
+
+    const students = await User.find(
+      { class: classId, role: "student" },
+      { name: 1, email: 1, status: 1, photo: 1 }
+    ).lean();
+
+    res.status(200).json(students);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar alunos", error });
   }
 });
 

@@ -11,7 +11,7 @@ import { CreateDisciplineController } from "../../controllers/University/Discipl
 import { DeleteDisciplineController } from "../../controllers/University/Discipline/DeleteDisciplineController";
 import { ListDisciplinesController } from "../../controllers/University/Discipline/ListDisciplinesController";
 import { CreateUniversityController } from "../../controllers/University/University/CreateUniversityController";
-import { DeleteUniversityCourseController } from "../../controllers/University/University/DeleteUniversityCourseController";
+import { DeleteUniversityController } from "../../controllers/University/University/DeleteUniversityController";
 import { ListUniversitiesController } from "../../controllers/University/University/ListUniversitiesController";
 import { GetClassWithStudentsController } from "../../controllers/University/UniversityOuthers/GetClassWithStudentsController";
 
@@ -20,7 +20,7 @@ const academicInstitutionRouter = Router();
 // Rotas para Universidades (Somente Admin)
 academicInstitutionRouter.post("/university", ...isPermissions.isAdmin(), new CreateUniversityController().handle);
 academicInstitutionRouter.get("/university", ...isPermissions.isAdmin(), new ListUniversitiesController().handle);
-academicInstitutionRouter.delete("/university", ...isPermissions.isAdmin(), new DeleteUniversityCourseController().handle);
+academicInstitutionRouter.delete("/university/:universityId", ...isPermissions.isAdmin(), new DeleteUniversityController().handle);
 
 // Rotas para Cursos (Somente Admin)
 academicInstitutionRouter.post("/course", ...isPermissions.isAdmin(), new CreateCourseController().handle);

@@ -1,15 +1,15 @@
 import { Router } from "express";
 import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
+import { RasaSendController } from "../../controllers/rasa/rasaSendController";
 import { RasaGetHistoryController } from "../../controllers/rasa/rasaGetHistoryController";
-import { RasaControllerSend } from "../../controllers/rasa/rasaControllerSend";
 
 const rasaRouter = Router();
 
+const rasaSendController = new RasaSendController();
 const rasaGetHistoryController = new RasaGetHistoryController();
-const rasaControllerSend = new RasaControllerSend();
 
 // Rota de conversa com o SAEL (somente usuários autenticados)
-rasaRouter.post("/talk", ...isPermissions.isAuthenticated(), rasaControllerSend.handle.bind(rasaControllerSend));
+rasaRouter.post("/talk", ...isPermissions.isAuthenticated(), rasaSendController.handle);
 
 // Rota para obter o histórico de conversa (somente Admin, Professores e Coordenadores)
 rasaRouter.get("/history", ...isPermissions.isAdminProfessorOrCoordinator(), rasaGetHistoryController.handle.bind(rasaGetHistoryController));

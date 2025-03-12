@@ -2,20 +2,21 @@ import mongoose, { Document, Schema } from "mongoose";
 
 interface IUserAnalysis extends Document {
   userId: string;
-  startTime: Date;
-  endTime?: Date;
-  totalTime?: number;
-  outOfScopeQuestions: number;
-  correctAnswers: number;
-  wrongAnswers: number;
-  totalQuestionsAnswered: number;
-  taxaDeAcertos: number;
-  taxaDeErros: number;
-  interacoesForaDaSala?: { timestamp: Date }[];
-  dispositivo?: string;
-  level?: string;
-  courses?: string;
-  classes?: string;
+  sessionStart: Date; //quando a sessão começou
+  sessionEnd?: Date; //quando a sessão acabou
+  sessionDuration?: number; //duração da sessão
+  outOfScopeQuestions: number; //questões fora do escopo dado
+  correctAnswers: number; //números de questões corretas
+  wrongAnswers: number; //números de questões erradas
+  totalQuestionsAnswered: number; //número total de questões
+  successRate: number; //taxa de acertos
+  errorRate: number; //taxa de erros
+  interactionsOutsideTheClassroom?: { timestamp: Date }[]; //interacoes fora de sala
+  device?: string; //tipo do dispositivo
+  level?: string; //nível escolhido pelo user
+  school: string; //universidade
+  courses: string; //curso
+  classes: string; //turma
   interactions: { timestamp: Date; message: string; botResponse?: string }[];
   answerHistory: {
     question_id: string;
@@ -27,21 +28,24 @@ interface IUserAnalysis extends Document {
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
   userId: { type: String, required: true, index: true },
-  startTime: { type: Date, required: true, default: Date.now },
-  endTime: { type: Date },
-  totalTime: { type: Number, default: 0 },
+  sessionStart: { type: Date, required: true, default: Date.now },
+  sessionEnd: { type: Date },
+  sessionDuration: { type: Number, default: 0 },
   outOfScopeQuestions: { type: Number, default: 0 },
   correctAnswers: { type: Number, default: 0 },
   wrongAnswers: { type: Number, default: 0 },
   totalQuestionsAnswered: { type: Number, default: 0 },
-  taxaDeAcertos: { type: Number, default: 0 },
-  taxaDeErros: { type: Number, default: 0 },
-  interacoesForaDaSala: { type: [{ timestamp: { type: Date } }], default: [] },
-  interactions: [{ timestamp: { type: Date }, message: { type: String }, botResponse: { type: String, default: "" } }],
-  dispositivo: { type: String, default: "desconhecido" },
+  successRate: { type: Number, default: 0 },
+  errorRate: { type: Number, default: 0 },
+  interactionsOutsideTheClassroom: { type: [{ timestamp: { type: Date } }], default: [] },
+  interactions: [
+    { timestamp: { type: Date }, message: { type: String }, botResponse: { type: String, default: "" } }
+  ],
+  device: { type: String, default: "desconhecido" },
   level: { type: String, default: "desconhecido" },
-  courses: { type: String, default: "desconhecido" },
-  classes: { type: String, default: "desconhecido" },
+  school: { type: String, required: true },
+  courses: { type: String, required: true },
+  classes: { type: String, required: true },
   answerHistory: [
     {
       question_id: { type: String, required: true },
@@ -53,8 +57,8 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
 });
 
 UserAnalysisSchema.pre("save", function (next) {
-  if (this.endTime && this.startTime) {
-    this.totalTime = (this.endTime.getTime() - this.startTime.getTime()) / 1000;
+  if (this.sessionEnd && this.sessionStart) {
+    this.sessionDuration = (this.sessionEnd.getTime() - this.sessionStart.getTime()) / 1000;
   }
   next();
 });

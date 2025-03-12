@@ -3,24 +3,31 @@ import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 import { CreateUserController } from "../../controllers/users/CreateUserController";
 import { DetailsUserController } from "../../controllers/users/DetailsUserController";
 import { AuthUserController } from "../../controllers/users/AuthUserController";
-import { LogoutController } from "../../controllers/users/LogoutController";
+import { LogoutUserController } from "../../controllers/users/LogoutUserController";
 import { UpdateProfileController } from "../../controllers/users/UpdateProfileController";
 
 const authRoute = Router();
 
-// Rota para criar conta
-authRoute.post("/users", new CreateUserController().handle);
+// Criando instâncias dos controllers
+const createUserController = new CreateUserController();
+const updateProfileController = new UpdateProfileController();
+const authUserController = new AuthUserController();
+const logoutController = new LogoutUserController();
+const detailsUserController = new DetailsUserController();
 
-// Rota para atualizar os dados do user
-authRoute.put("/profile/:userId", ...isPermissions.isAuthenticated(), new UpdateProfileController().handle);
+// Rota para criar conta (cadastro)
+authRoute.post("/users", createUserController.handle.bind(createUserController));
 
-// Rota para logar
-authRoute.post("/session", new AuthUserController().handle);
+// Rota para atualizar perfil do usuário (somente autenticado)
+authRoute.put("/profile/:userId", ...isPermissions.isAuthenticated(), updateProfileController.handle.bind(updateProfileController));
 
-// Rota de logout (somente usuários autenticados)
-authRoute.post("/logout", ...isPermissions.isAuthenticated(), new LogoutController().handle);
+// Rota para login (autenticação)
+authRoute.post("/session", authUserController.handle.bind(authUserController));
 
-// Rota para ver detalhes da própria conta (somente usuários autenticados)
-authRoute.get("/me", ...isPermissions.isAuthenticated(), new DetailsUserController().handle);
+// Rota para logout (encerra a sessão, somente autenticado)
+authRoute.post("/logout", ...isPermissions.isAuthenticated(), logoutController.handle.bind(logoutController));
+
+// Rota para ver detalhes da conta (somente autenticado)
+authRoute.get("/me", ...isPermissions.isAuthenticated(), detailsUserController.handle.bind(detailsUserController));
 
 export { authRoute };

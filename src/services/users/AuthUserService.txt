@@ -1,6 +1,5 @@
 import { User } from "../../models/User";
 import { Professor } from "../../models/Professor";
-import { UserAnalysis } from "../../models/UserAnalysis";
 import { compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { AppError } from "../../exceptions/AppError";
@@ -42,29 +41,49 @@ class AuthUserService {
       if (!user.googleId) {
         throw new AppError("Credenciais sociais inválidas.", 401);
       }
-    } else {
-      if (!user.password) {
-        throw new AppError("Usuário com erros nas credenciais!", 401);
-      }
 
-      const passwordMatch = await compare(password!, user.password);
-      if (!passwordMatch) {
-        throw new AppError("Credenciais inválidas.", 401);
-      }
+      const token = sign(
+        {
+          name: user.name,
+          email: user.email,
+          role: roles,
+          school: user.school || "",
+        },
+        process.env.JWT_SECRET!,
+        {
+          subject: user._id.toString(),
+          expiresIn: "1d",
+        }
+      );
+
+      return {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: roles,
+        school: user.school,
+        token,
+        redirectTo: "/sael/talk",
+      };
     }
 
-    const courses = user.course || "desconhecido";
-    const classes = user.class || "desconhecido";
-    const school = user.school || "desconhecido";
+    // Login via senha
+    if (!user.password) {
+      throw new AppError("Usuário com erros nas credenciais!", 401);
+    }
+
+    const passwordMatch = await compare(password!, user.password);
+
+    if (!passwordMatch) {
+      throw new AppError("Credenciais inválidas.", 401);
+    }
 
     const token = sign(
       {
         name: user.name,
         email: user.email,
         role: roles,
-        school,
-        courses,
-        classes,
+        school: user.school || "",
       },
       process.env.JWT_SECRET!,
       {
@@ -73,34 +92,14 @@ class AuthUserService {
       }
     );
 
-    await UserAnalysis.create({
-      userId: user._id.toString(),
-      sessionStart: new Date(),
-      courses,
-      classes,
-      school,
-    });
-
     return {
       id: user._id,
       name: user.name,
       email: user.email,
       role: roles,
-      school,
-      courses,
-      classes,
+      school: user.school,
       token,
     };
-  }
-
-  async logout(userId: string) {
-    const userSession = await UserAnalysis.findOne({ userId }).sort({ sessionStart: -1 });
-
-    if (userSession) {
-      userSession.sessionEnd = new Date();
-      userSession.sessionDuration = (userSession.sessionEnd.getTime() - userSession.sessionStart.getTime()) / 1000;
-      await userSession.save();
-    }
   }
 }
 

@@ -7,5 +7,6 @@ declare namespace Express {
       role: string[];
       school: string | null;
     };
+    useragent?: useragent.Details;
   }
 }

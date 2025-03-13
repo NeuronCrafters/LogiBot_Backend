@@ -4,6 +4,7 @@ import { UserAnalysis } from "../../models/UserAnalysis";
 import { compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { AppError } from "../../exceptions/AppError";
+import useragent from "express-useragent";
 
 interface AuthRequest {
   email: string;

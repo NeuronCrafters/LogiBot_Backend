@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 class RasaControllerSend {
   async handle(req: Request, res: Response) {
     try {
+      // 🔹 Verifica o token do usuário
       const authHeader = req.headers.authorization;
       if (!authHeader) {
         console.error("[Erro] Token JWT não fornecido no cabeçalho Authorization.");
@@ -38,7 +39,7 @@ class RasaControllerSend {
 
       console.log(`[DEBUG] Usuário autenticado: ${userId}`);
 
-
+      // 🔹 Obtém a mensagem do usuário
       const { message } = req.body;
       if (!message) {
         return res.status(400).json({ error: "O campo 'message' é obrigatório." });
@@ -46,31 +47,37 @@ class RasaControllerSend {
 
       console.log(`[DEBUG] Enviando mensagem para Rasa: ${message}`);
 
+      // 🔹 Envia a mensagem para o Rasa e obtém a resposta
       const response = await rasaServiceSend(message, userId);
-
       console.log(`[DEBUG] Resposta do Rasa recebida: ${JSON.stringify(response)}`);
 
       const botResponse = response.length ? response[0].text : "";
 
-      const updateResult = await UserAnalysis.findOneAndUpdate(
-        { userId },
-        {
-          $push: {
-            interactions: {
-              timestamp: new Date(),
-              message,
-              botResponse,
-            },
-          },
-        },
-        { new: true }
-      );
+      // 🔹 Busca a análise do usuário no banco
+      const userAnalysis = await UserAnalysis.findOne({ userId });
 
-      if (!updateResult) {
-        console.warn(`[UserAnalysis] Nenhum documento encontrado para userId: ${userId}`);
-      } else {
-        console.log(`[UserAnalysis] Interação registrada para usuário: ${userId}`);
+      if (!userAnalysis || userAnalysis.sessions.length === 0) {
+        return res.status(404).json({ error: "Nenhuma sessão ativa encontrada para este usuário." });
       }
+
+      // 🔹 Obtém a última sessão ativa
+      const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
+
+      if (lastSession.sessionEnd) {
+        return res.status(400).json({ error: "A sessão do usuário já foi encerrada." });
+      }
+
+      // 🔹 Adiciona a interação dentro da sessão ativa
+      lastSession.interactions.push({
+        timestamp: new Date(),
+        message,
+        botResponse,
+      });
+
+      // 🔹 Salva a atualização no banco de dados
+      await userAnalysis.save();
+
+      console.log(`[UserAnalysis] Interação registrada para usuário: ${userId}`);
 
       return res.json(response);
     } catch (error) {

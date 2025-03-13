@@ -2,62 +2,166 @@ import mongoose, { Document, Schema } from "mongoose";
 
 interface IUserAnalysis extends Document {
   userId: string;
-  startTime: Date;
-  endTime?: Date;
-  totalTime?: number;
-  outOfScopeQuestions: number;
-  correctAnswers: number;
-  wrongAnswers: number;
-  totalQuestionsAnswered: number;
-  taxaDeAcertos: number;
-  taxaDeErros: number;
-  interacoesForaDaSala?: { timestamp: Date }[];
-  dispositivo?: string;
-  level?: string;
-  courses?: string;
-  classes?: string;
-  interactions: { timestamp: Date; message: string; botResponse?: string }[];
-  answerHistory: {
-    question_id: string;
-    selectedOption: string;
-    isCorrect: boolean;
-    timestamp: Date;
+  name: string;
+  email: string;
+  school: string;
+  courses: string;
+  classes: string;
+  sessions: {
+    sessionStart: Date;
+    sessionEnd?: Date;
+    sessionDuration?: number;
+    devices: {
+      deviceType: string;
+      os: string;
+      browser: string;
+      timestamp: Date;
+    }[];
+    levels: {
+      level: string;
+      timestamp: Date;
+    }[];
+    interactions: { timestamp: Date; message: string; botResponse?: string }[];
+    answerHistory: {
+      question_id: string;
+      selectedOption: string;
+      isCorrect: boolean;
+      timestamp: Date;
+    }[];
+    interactionsOutsideTheClassroom: {
+      timestamp: Date;
+      message: string;
+    }[];
   }[];
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
   userId: { type: String, required: true, index: true },
-  startTime: { type: Date, required: true, default: Date.now },
-  endTime: { type: Date },
-  totalTime: { type: Number, default: 0 },
-  outOfScopeQuestions: { type: Number, default: 0 },
-  correctAnswers: { type: Number, default: 0 },
-  wrongAnswers: { type: Number, default: 0 },
-  totalQuestionsAnswered: { type: Number, default: 0 },
-  taxaDeAcertos: { type: Number, default: 0 },
-  taxaDeErros: { type: Number, default: 0 },
-  interacoesForaDaSala: { type: [{ timestamp: { type: Date } }], default: [] },
-  interactions: [{ timestamp: { type: Date }, message: { type: String }, botResponse: { type: String, default: "" } }],
-  dispositivo: { type: String, default: "desconhecido" },
-  level: { type: String, default: "desconhecido" },
-  courses: { type: String, default: "desconhecido" },
-  classes: { type: String, default: "desconhecido" },
-  answerHistory: [
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  school: { type: String, required: true },
+  courses: { type: String, required: true },
+  classes: { type: String, required: true },
+  sessions: [
     {
-      question_id: { type: String, required: true },
-      selectedOption: { type: String, required: true },
-      isCorrect: { type: Boolean, required: true },
-      timestamp: { type: Date, default: Date.now },
+      sessionStart: { type: Date, required: true, default: Date.now },
+      sessionEnd: { type: Date },
+      sessionDuration: { type: Number, default: 0 },
+      devices: [
+        {
+          deviceType: { type: String, required: true },
+          os: { type: String, required: true },
+          browser: { type: String, required: true },
+          timestamp: { type: Date, required: true, default: Date.now },
+        },
+      ],
+      levels: [
+        {
+          level: { type: String, required: true },
+          timestamp: { type: Date, required: true, default: Date.now },
+        },
+      ],
+      interactions: [
+        {
+          timestamp: { type: Date, required: true, default: Date.now },
+          message: { type: String, required: true },
+          botResponse: { type: String, default: "" },
+        },
+      ],
+      answerHistory: [
+        {
+          question_id: { type: String, required: true },
+          selectedOption: { type: String, required: true },
+          isCorrect: { type: Boolean, required: true },
+          timestamp: { type: Date, default: Date.now },
+        },
+      ],
+      interactionsOutsideTheClassroom: [
+        {
+          timestamp: { type: Date, required: true, default: Date.now },
+          message: { type: String, required: true },
+        },
+      ],
     },
   ],
 });
 
+// calculo da duração da sessão antes de salvar
 UserAnalysisSchema.pre("save", function (next) {
-  if (this.endTime && this.startTime) {
-    this.totalTime = (this.endTime.getTime() - this.startTime.getTime()) / 1000;
+  if (this.sessions.length > 0) {
+    const lastSession = this.sessions[this.sessions.length - 1];
+    if (lastSession.sessionEnd && lastSession.sessionStart) {
+      lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+    }
   }
   next();
 });
+
+// método para adicionar interações dentro da sessão ativa
+UserAnalysisSchema.methods.addInteraction = function (message: string, botResponse?: string) {
+  if (this.sessions.length > 0) {
+    const lastSession = this.sessions[this.sessions.length - 1];
+
+    if (!lastSession.sessionEnd) {
+      // Atualiza a última interação se já houver interações
+      if (lastSession.interactions.length > 0) {
+        lastSession.interactions[lastSession.interactions.length - 1] = {
+          timestamp: new Date(),
+          message,
+          botResponse: botResponse || "",
+        };
+      } else {
+        lastSession.interactions.push({
+          timestamp: new Date(),
+          message,
+          botResponse: botResponse || "",
+        });
+      }
+    } else {
+      console.warn("A sessão foi encerrada. Não é possível adicionar novas interações.");
+    }
+  } else {
+    console.warn("Nenhuma sessão ativa encontrada. Interação não registrada.");
+  }
+};
+
+// método para adicionar histórico de respostas dentro da sessão ativa
+UserAnalysisSchema.methods.addAnswerHistory = function (question_id: string, selectedOption: string, isCorrect: boolean) {
+  if (this.sessions.length > 0) {
+    const lastSession = this.sessions[this.sessions.length - 1];
+
+    if (!lastSession.sessionEnd) {
+      lastSession.answerHistory.push({
+        question_id,
+        selectedOption,
+        isCorrect,
+        timestamp: new Date(),
+      });
+    } else {
+      console.warn("A sessão foi encerrada. Não é possível adicionar respostas.");
+    }
+  } else {
+    console.warn("Nenhuma sessão ativa encontrada. Resposta não registrada.");
+  }
+};
+
+// Método para adicionar interações fora da sala de aula dentro da sessão ativa
+UserAnalysisSchema.methods.addInteractionOutsideClassroom = function (message: string) {
+  if (this.sessions.length > 0) {
+    const lastSession = this.sessions[this.sessions.length - 1];
+
+    if (!lastSession.sessionEnd) {
+      lastSession.interactionsOutsideTheClassroom.push({
+        timestamp: new Date(),
+        message,
+      });
+    } else {
+      console.warn("A sessão foi encerrada. Não é possível adicionar interações fora da sala de aula.");
+    }
+  } else {
+    console.warn("Nenhuma sessão ativa encontrada. Interação fora da sala de aula não registrada.");
+  }
+};
 
 const UserAnalysis = mongoose.model<IUserAnalysis>("UserAnalysis", UserAnalysisSchema);
 export { UserAnalysis, IUserAnalysis };

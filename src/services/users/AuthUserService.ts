@@ -56,7 +56,15 @@ class AuthUserService {
     // Captura a hora atual da sessão do usuário
     const sessionStart = new Date();
 
-    // Cria o token JWT com os dados do usuário
+    // Simulação de captura de dispositivo do usuário
+    const deviceInfo = {
+      deviceType: "desktop",
+      os: "Windows",
+      browser: "Chrome",
+      timestamp: sessionStart,
+    };
+
+    // Cria o token JWT
     const token = sign(
       {
         id: user._id.toString(),
@@ -74,53 +82,93 @@ class AuthUserService {
       }
     );
 
-    // Retorna os dados do usuário
-    const responseData = {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: roles,
-      school: user.school || "desconhecido",
-      courses: user.course || "desconhecido",
-      classes: user.class || "desconhecido",
-      sessionStart,
-      token,
-    };
-
-    console.log(`[LOGIN] Usuário autenticado: ${responseData.email}`);
-
-    // Envia os dados para o UserAnalysis 
+    // Atualiza ou cria o UserAnalysis com a nova sessão
     setImmediate(async () => {
       try {
-        const result = await UserAnalysis.findOneAndUpdate(
-          { userId: responseData.id },
-          {
-            $setOnInsert: {
-              userId: responseData.id,
-              name: responseData.name,
-              email: responseData.email,
-              school: responseData.school,
-              courses: responseData.courses,
-              classes: responseData.classes
-            },
-            $push: {
-              sessions: { sessionStart: responseData.sessionStart },
-            },
-          },
-          { upsert: true, new: true }
-        );
+        const existingUserAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
 
-        if (result) {
-          console.log(`[UserAnalysis] Dados atualizados para usuário: ${responseData.email}`);
+        if (existingUserAnalysis && existingUserAnalysis.sessions.length > 0) {
+          const lastSession = existingUserAnalysis.sessions[existingUserAnalysis.sessions.length - 1];
+
+          if (!lastSession.sessionEnd) {
+            // Sessão já existente ativa, não criar uma nova
+            console.log(`[UserAnalysis] Sessão já aberta para: ${user.email}`);
+          } else {
+            // Criar nova sessão
+            existingUserAnalysis.sessions.push({
+              sessionStart,
+              devices: [deviceInfo],
+              levels: [],
+              interactions: [],
+              answerHistory: [],
+              interactionsOutsideTheClassroom: [],
+            });
+
+            await existingUserAnalysis.save();
+            console.log(`[UserAnalysis] Nova sessão iniciada para: ${user.email}`);
+          }
         } else {
-          console.log(`[UserAnalysis] Novo usuário registrado: ${responseData.email}`);
+          // Criar novo UserAnalysis
+          await UserAnalysis.create({
+            userId: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            school: user.school,
+            courses: user.course,
+            classes: user.class,
+            sessions: [
+              {
+                sessionStart,
+                devices: [deviceInfo],
+                levels: [],
+                interactions: [],
+                answerHistory: [],
+                interactionsOutsideTheClassroom: [],
+              },
+            ],
+          });
+
+          console.log(`[UserAnalysis] Novo usuário registrado e sessão iniciada: ${user.email}`);
         }
       } catch (error) {
         console.error("[UserAnalysis] Erro ao registrar usuário:", error);
       }
     });
 
-    return responseData;
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: roles,
+      school: user.school,
+      courses: user.course,
+      classes: user.class,
+      sessionStart,
+      token,
+    };
+  }
+
+  async logout(userId: string) {
+    try {
+      const userAnalysis = await UserAnalysis.findOne({ userId });
+
+      if (userAnalysis && userAnalysis.sessions.length > 0) {
+        const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
+
+        if (!lastSession.sessionEnd) {
+          lastSession.sessionEnd = new Date();
+          lastSession.sessionDuration =
+            (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+
+          await userAnalysis.save();
+          console.log(`[UserAnalysis] Sessão encerrada para usuário: ${userId}`);
+        } else {
+          console.log(`[UserAnalysis] Nenhuma sessão ativa encontrada para ${userId}`);
+        }
+      }
+    } catch (error) {
+      console.error("[UserAnalysis] Erro ao encerrar sessão:", error);
+    }
   }
 }
 

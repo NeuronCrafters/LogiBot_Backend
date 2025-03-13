@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { UserAnalysis } from "../../models/UserAnalysis";
+import { LogoutUserService } from "../../services/users/LogoutUserService";
 import { AppError } from "../../exceptions/AppError";
 
 class LogoutUserController {
@@ -26,29 +26,10 @@ class LogoutUserController {
 
       const userId = decoded.sub;
 
-      let userAnalysis = await UserAnalysis.findOne({ userId });
+      const logoutUserService = new LogoutUserService();
+      const result = await logoutUserService.logout(userId);
 
-      if (!userAnalysis || userAnalysis.sessions.length === 0) {
-        throw new AppError("Nenhuma sessão ativa encontrada para este usuário.", 404);
-      }
-
-      // atualizar a última sessão
-      const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
-      lastSession.sessionEnd = new Date();
-      lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
-
-      // calcular tempo total de uso do usuário
-      const totalUsageTime = userAnalysis.sessions.reduce((acc, session) => {
-        return acc + (session.sessionDuration || 0);
-      }, 0);
-
-      await userAnalysis.save();
-
-      return res.status(200).json({
-        message: "Sessão encerrada com sucesso.",
-        sessionEnd: lastSession.sessionEnd,
-        totalUsageTime,
-      });
+      return res.status(200).json(result);
     } catch (error) {
       return res.status(error.statusCode || 500).json({ error: error.message });
     }

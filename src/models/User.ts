@@ -9,6 +9,7 @@ export interface IUser extends Document {
   course: Types.ObjectId;
   class: Types.ObjectId;
   disciplines: Types.ObjectId[];
+  level?: string;
   status: "active" | "graduated" | "dropped";
   googleId?: string;
   photo?: string;
@@ -26,6 +27,7 @@ const UserSchema: Schema = new Schema(
     course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
     class: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
     disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
+    level: { type: String, required: false, default: "desconhecido" },
     status: {
       type: String,
       enum: ["active", "graduated", "dropped"],

@@ -53,18 +53,18 @@ class AuthUserService {
       }
     }
 
-    const courses = user.course || "desconhecido";
-    const classes = user.class || "desconhecido";
-    const school = user.school || "desconhecido";
+    // Captura a hora atual da sessão do usuário
+    const sessionStart = new Date();
 
+    // Cria o token JWT com os dados do usuário
     const token = sign(
       {
         name: user.name,
         email: user.email,
         role: roles,
-        school,
-        courses,
-        classes,
+        school: user.school || "desconhecido",
+        courses: user.course || "desconhecido",
+        classes: user.class || "desconhecido",
       },
       process.env.JWT_SECRET!,
       {
@@ -73,34 +73,53 @@ class AuthUserService {
       }
     );
 
-    await UserAnalysis.create({
-      userId: user._id.toString(),
-      sessionStart: new Date(),
-      courses,
-      classes,
-      school,
-    });
-
-    return {
-      id: user._id,
+    // Retorna os dados do usuário
+    const responseData = {
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: roles,
-      school,
-      courses,
-      classes,
+      school: user.school || "desconhecido",
+      courses: user.course || "desconhecido",
+      classes: user.class || "desconhecido",
+      sessionStart,
       token,
     };
-  }
 
-  async logout(userId: string) {
-    const userSession = await UserAnalysis.findOne({ userId }).sort({ sessionStart: -1 });
+    console.log(`[LOGIN] Usuário autenticado: ${responseData.email}`);
 
-    if (userSession) {
-      userSession.sessionEnd = new Date();
-      userSession.sessionDuration = (userSession.sessionEnd.getTime() - userSession.sessionStart.getTime()) / 1000;
-      await userSession.save();
-    }
+    // Envia os dados para o UserAnalysis 
+    setImmediate(async () => {
+      try {
+        const result = await UserAnalysis.findOneAndUpdate(
+          { userId: responseData.id },
+          {
+            $setOnInsert: {
+              userId: responseData.id,
+              name: responseData.name,
+              email: responseData.email,
+              school: responseData.school,
+              courses: responseData.courses,
+              classes: responseData.classes
+            },
+            $push: {
+              sessions: { sessionStart: responseData.sessionStart },
+            },
+          },
+          { upsert: true, new: true }
+        );
+
+        if (result) {
+          console.log(`[UserAnalysis] Dados atualizados para usuário: ${responseData.email}`);
+        } else {
+          console.log(`[UserAnalysis] Novo usuário registrado: ${responseData.email}`);
+        }
+      } catch (error) {
+        console.error("[UserAnalysis] Erro ao registrar usuário:", error);
+      }
+    });
+
+    return responseData;
   }
 }
 

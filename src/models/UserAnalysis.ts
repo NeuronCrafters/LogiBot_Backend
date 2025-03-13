@@ -2,21 +2,30 @@ import mongoose, { Document, Schema } from "mongoose";
 
 interface IUserAnalysis extends Document {
   userId: string;
-  sessionStart: Date; //quando a sessão começou
-  sessionEnd?: Date; //quando a sessão acabou
-  sessionDuration?: number; //duração da sessão
-  outOfScopeQuestions: number; //questões fora do escopo dado
-  correctAnswers: number; //números de questões corretas
-  wrongAnswers: number; //números de questões erradas
-  totalQuestionsAnswered: number; //número total de questões
-  successRate: number; //taxa de acertos
-  errorRate: number; //taxa de erros
-  interactionsOutsideTheClassroom?: { timestamp: Date }[]; //interacoes fora de sala
-  device?: string; //tipo do dispositivo
-  level?: string; //nível escolhido pelo user
-  school: string; //universidade
-  courses: string; //curso
-  classes: string; //turma
+  name: string;
+  email: string;
+  sessions: {
+    sessionStart: Date;
+    sessionEnd?: Date;
+    sessionDuration?: number;
+  }[];
+  devices: {
+    deviceType: string;
+    os: string;
+    browser: string;
+    timestamp: Date;
+  }[];
+  levels: {
+    level: string;
+    timestamp: Date;
+  }[];
+  interactionsOutsideTheClassroom: {
+    timestamp: Date;
+    message: string;
+  }[];
+  school: string;
+  courses: string;
+  classes: string;
   interactions: { timestamp: Date; message: string; botResponse?: string }[];
   answerHistory: {
     question_id: string;
@@ -28,24 +37,41 @@ interface IUserAnalysis extends Document {
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
   userId: { type: String, required: true, index: true },
-  sessionStart: { type: Date, required: true, default: Date.now },
-  sessionEnd: { type: Date },
-  sessionDuration: { type: Number, default: 0 },
-  outOfScopeQuestions: { type: Number, default: 0 },
-  correctAnswers: { type: Number, default: 0 },
-  wrongAnswers: { type: Number, default: 0 },
-  totalQuestionsAnswered: { type: Number, default: 0 },
-  successRate: { type: Number, default: 0 },
-  errorRate: { type: Number, default: 0 },
-  interactionsOutsideTheClassroom: { type: [{ timestamp: { type: Date } }], default: [] },
-  interactions: [
-    { timestamp: { type: Date }, message: { type: String }, botResponse: { type: String, default: "" } }
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  sessions: [
+    {
+      sessionStart: { type: Date, required: true, default: Date.now },
+      sessionEnd: { type: Date },
+      sessionDuration: { type: Number, default: 0 },
+    },
   ],
-  device: { type: String, default: "desconhecido" },
-  level: { type: String, default: "desconhecido" },
+  devices: [
+    {
+      deviceType: { type: String, required: true },
+      os: { type: String, required: true },
+      browser: { type: String, required: true },
+      timestamp: { type: Date, required: true, default: Date.now },
+    },
+  ],
+  levels: [
+    {
+      level: { type: String, required: true },
+      timestamp: { type: Date, required: true, default: Date.now },
+    },
+  ],
+  interactionsOutsideTheClassroom: [
+    {
+      timestamp: { type: Date, required: true, default: Date.now },
+      message: { type: String, required: true },
+    },
+  ],
   school: { type: String, required: true },
   courses: { type: String, required: true },
   classes: { type: String, required: true },
+  interactions: [
+    { timestamp: { type: Date }, message: { type: String }, botResponse: { type: String, default: "" } }
+  ],
   answerHistory: [
     {
       question_id: { type: String, required: true },
@@ -57,8 +83,11 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
 });
 
 UserAnalysisSchema.pre("save", function (next) {
-  if (this.sessionEnd && this.sessionStart) {
-    this.sessionDuration = (this.sessionEnd.getTime() - this.sessionStart.getTime()) / 1000;
+  if (this.sessions.length > 0) {
+    const lastSession = this.sessions[this.sessions.length - 1];
+    if (lastSession.sessionEnd && lastSession.sessionStart) {
+      lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+    }
   }
   next();
 });

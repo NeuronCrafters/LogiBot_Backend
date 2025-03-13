@@ -13,7 +13,7 @@ class RasaControllerSend {
 
       const response = await rasaServiceSend(message, sender);
 
-      // Buscar a sessão ativa do usuário
+      // buscar a sessão ativa do usuário
       let userSession = await UserAnalysis.findOne({ userId: sender }).sort({ sessionStart: -1 });
 
       if (!userSession) {

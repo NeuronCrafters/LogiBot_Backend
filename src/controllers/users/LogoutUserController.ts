@@ -26,18 +26,29 @@ class LogoutUserController {
 
       const userId = decoded.sub;
 
-      let userSession = await UserAnalysis.findOne({ userId }).sort({ sessionStart: -1 });
+      let userAnalysis = await UserAnalysis.findOne({ userId });
 
-      if (!userSession) {
+      if (!userAnalysis || userAnalysis.sessions.length === 0) {
         throw new AppError("Nenhuma sessão ativa encontrada para este usuário.", 404);
       }
 
-      userSession.sessionEnd = new Date();
-      userSession.sessionDuration = (userSession.sessionEnd.getTime() - userSession.sessionStart.getTime()) / 1000;
+      // atualizar a última sessão
+      const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
+      lastSession.sessionEnd = new Date();
+      lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
 
-      await userSession.save();
+      // calcular tempo total de uso do usuário
+      const totalUsageTime = userAnalysis.sessions.reduce((acc, session) => {
+        return acc + (session.sessionDuration || 0);
+      }, 0);
 
-      return res.status(200).json({ message: "Sessão encerrada com sucesso.", sessionEnd: userSession.sessionEnd });
+      await userAnalysis.save();
+
+      return res.status(200).json({
+        message: "Sessão encerrada com sucesso.",
+        sessionEnd: lastSession.sessionEnd,
+        totalUsageTime,
+      });
     } catch (error) {
       return res.status(error.statusCode || 500).json({ error: error.message });
     }

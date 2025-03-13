@@ -1,12 +1,12 @@
-import { History, IHistory } from "../../models/History";
-import { User, IUser } from "../../models/User";
-import { Professor, IProfessor } from "../../models/Professor";
+import { UserAnalysis } from "../../models/UserAnalysis";
+import { User } from "../../models/User";
+import { Professor } from "../../models/Professor";
 
 class RasaGetHistoryService {
   async execute(
     filters: { studentId?: string; classId?: string },
     user: { id: string; role: string[]; school: string | null }
-  ): Promise<IHistory[]> {
+  ) {
     console.log("Iniciando a execução do serviço com filtros:", filters);
     console.log("Usuário autenticado:", user);
 
@@ -15,53 +15,59 @@ class RasaGetHistoryService {
 
     const filter: any = {};
 
+    // Se um aluno específico for solicitado
     if (studentId) {
-      filter.student = studentId;
+      filter.userId = studentId;
     }
 
+    // Se for filtrado por turma (classId)
     if (classId) {
-      const studentsInClass = await User.find({ classId }).select("_id");
+      const studentsInClass = await User.find({ class: classId }).select("_id");
       const studentIds = studentsInClass.map((student) => student._id.toString());
-      filter.student = { $in: studentIds };
+      filter.userId = { $in: studentIds };
     }
 
+    // Se for admin, pode acessar tudo
     if (role.includes("admin")) {
-      console.log("Admin acessando históricos com filtro:", filter);
-      return History.find(filter).populate("student").exec();
+      console.log("Admin acessando todos os dados com filtro:", filter);
+      return UserAnalysis.find(filter).exec();
     }
 
+    // Se for professor, pode acessar apenas alunos que supervisiona
     if (role.includes("professor")) {
       const professor = await Professor.findById(id).populate("students");
       if (!professor || !professor.students) {
         console.log("Professor sem alunos associados.");
         return [];
       }
+
       const allowedStudentIds = professor.students.map((studentId) => studentId.toString());
 
-      if (filter.student && Array.isArray(filter.student.$in)) {
-        filter.student.$in = filter.student.$in.filter((id) => allowedStudentIds.includes(id));
-      } else if (filter.student && typeof filter.student === "string") {
-        if (!allowedStudentIds.includes(filter.student)) {
-          throw new Error("Permissão negada para acessar o histórico desse aluno.");
+      if (filter.userId && Array.isArray(filter.userId.$in)) {
+        filter.userId.$in = filter.userId.$in.filter((id) => allowedStudentIds.includes(id));
+      } else if (filter.userId && typeof filter.userId === "string") {
+        if (!allowedStudentIds.includes(filter.userId)) {
+          throw new Error("Permissão negada para acessar os dados desse aluno.");
         }
       } else {
-        filter.student = { $in: allowedStudentIds };
+        filter.userId = { $in: allowedStudentIds };
       }
 
-      console.log("Professor acessando históricos com filtro:", filter);
-      return History.find(filter).populate("student").exec();
+      console.log("Professor acessando dados com filtro:", filter);
+      return UserAnalysis.find(filter).exec();
     }
 
+    // Se for coordenador de curso, pode acessar apenas alunos da sua universidade
     if (role.includes("course-coordinator")) {
       if (!school) {
         throw new Error("Coordenador de curso não tem escola associada.");
       }
       const students = await User.find({ school }).select("_id");
       const studentIds = students.map((student) => student._id.toString());
-      filter.student = { $in: studentIds };
+      filter.userId = { $in: studentIds };
 
-      console.log("Coordenador de curso acessando históricos com filtro:", filter);
-      return History.find(filter).populate("student").exec();
+      console.log("Coordenador de curso acessando dados com filtro:", filter);
+      return UserAnalysis.find(filter).exec();
     }
 
     throw new Error("Permissão negada.");

@@ -59,6 +59,7 @@ class AuthUserService {
     // Cria o token JWT com os dados do usuário
     const token = sign(
       {
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: roles,

@@ -10,50 +10,37 @@ class RasaActionController {
   }
 
   async iniciarBot(req: Request, res: Response) {
-    console.log("[RasaActionController] iniciando o bot...");
     try {
       const response = await this.rasaActionService.iniciarBot();
-      console.log("[RasaActionController] resposta do Rasa:", response);
       return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] erro ao iniciar o bot:", error);
       return res.status(500).json({ error: "erro ao iniciar o bot" });
     }
   }
 
   async listarNiveis(req: Request, res: Response) {
-    console.log("[RasaActionController] listando níveis...");
     try {
       const response = await this.rasaActionService.listarNiveis();
-      console.log("[RasaActionController] resposta do Rasa:", response);
       return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] erro ao listar níveis:", error);
       return res.status(500).json({ error: "erro ao listar níveis" });
     }
   }
 
   async definirNivel(req: Request, res: Response) {
-    console.log("[RasaActionController] definindo nível...");
-    console.log("body recebido:", req.body);
     try {
       const { nivel } = req.body;
       if (!nivel) {
         throw new AppError("o campo 'nivel' é obrigatório", 400);
       }
       const response = await this.rasaActionService.definirNivel(nivel);
-      console.log("[RasaActionController] resposta do Rasa:", response);
       return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] erro ao definir nível:", error);
       return res.status(error.statusCode || 500).json({ error: error.message || "erro ao definir o nível" });
     }
   }
 
   async listarSubopcoes(req: Request, res: Response) {
-    console.log("📌 [RasaActionController] listando subopções...");
-    console.log("📥 [RasaActionController] body recebido:", req.body);
-
     try {
       const { categoria } = req.body;
       if (!categoria) {
@@ -63,7 +50,6 @@ class RasaActionController {
       const response = await this.rasaActionService.listarSubopcoes(categoria);
       return res.json(response);
     } catch (error) {
-      console.error("❌ [RasaActionController] erro ao listar subopções:", error);
       return res.status(error.statusCode || 500).json({ error: error.message || "erro ao listar subopções" });
     }
   }
@@ -81,7 +67,6 @@ class RasaActionController {
       return res.status(error.statusCode || 500).json({ error: error.message || "erro ao gerar perguntas" });
     }
   }
-
 }
 
 export { RasaActionController };

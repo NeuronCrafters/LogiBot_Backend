@@ -115,13 +115,16 @@ class RasaActionService {
   }
 
   // gera perguntas com base em um subtópico específico
-  async gerarPerguntas(pergunta: string) {
-    console.log(`📌 [SERVICE] Enviando pergunta para o Rasa: ${pergunta}`);
+  async gerarPerguntas(pergunta: string, nivel: string) {
+    console.log(`📌 [SERVICE] Enviando pergunta para o Rasa: ${pergunta} (nível: ${nivel})`);
 
     try {
       const response = await axios.post(RASA_ACTION_URL, {
         next_action: "action_gerar_perguntas_chatgpt",
-        tracker: { sender_id: "user", slots: { pergunta } }
+        tracker: {
+          sender_id: "user",
+          slots: { pergunta, nivel }
+        }
       });
 
       console.log("✅ [SERVICE] Resposta do Rasa:", response.data);
@@ -131,6 +134,7 @@ class RasaActionService {
       throw new AppError("erro ao gerar perguntas", 500);
     }
   }
+
 }
 
 export { RasaActionService };

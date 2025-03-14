@@ -66,4 +66,5 @@ rasaActionRoute.post("/action/gerar_perguntas", isPermissions.isAuthenticated(),
 });
 
 
+
 export { rasaActionRoute };

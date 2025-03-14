@@ -76,18 +76,23 @@ class RasaActionController {
     console.log("📥 [RasaActionController] body recebido:", req.body);
 
     try {
-      const { pergunta } = req.body;
-      if (!pergunta) {
-        throw new AppError("pergunta é obrigatória", 400);
+      const { pergunta, nivel } = req.body;
+      if (!pergunta || !nivel) {
+        return res.status(400).json({ error: "pergunta e nivel são obrigatórios" });
       }
 
-      const response = await this.rasaActionService.gerarPerguntas(pergunta);
-      return res.json(response);
+      // Chama o serviço para obter as perguntas
+      const response = await this.rasaActionService.gerarPerguntas(pergunta, nivel);
+
+      // Retorna apenas os dados necessários
+      return response;
     } catch (error) {
       console.error("❌ [RasaActionController] erro ao gerar perguntas:", error);
-      return res.status(error.statusCode || 500).json({ error: error.message || "erro ao gerar perguntas" });
+      throw new AppError("erro ao gerar perguntas", 500);
     }
   }
+
+
 }
 
 

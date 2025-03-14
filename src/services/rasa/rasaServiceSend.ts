@@ -1,19 +1,28 @@
 import axios from "axios";
+import dotenv from "dotenv";
 
-const RASA_URL = "http://localhost:5005/webhooks/rest/webhook";
+dotenv.config();
 
-function rasaServiceSend(message: string, sender: string) {
+const rasa_send = process.env.RASA as string
+
+async function rasaSendService(message: string, sender: string) {
   if (!sender) {
     throw new Error("Sender (usuário) não pode ser indefinido.");
   }
 
-  return axios
-    .post(RASA_URL, { sender, message })
-    .then(response => response.data)
-    .catch(error => {
-      console.error("Erro ao conectar ao Rasa:", error);
-      throw new Error("Falha ao se comunicar com o Rasa.");
-    });
+  try {
+    const response = await axios.post(rasa_send, { sender, message });
+
+    if (!response.data || response.data.length === 0) {
+      console.warn("[RasaServiceSend] Nenhuma resposta do Rasa.");
+      return [{ text: "Desculpe, não entendi sua pergunta." }];
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("[RasaServiceSend] Erro ao conectar ao Rasa:", error.message);
+    throw new Error("Falha ao se comunicar com o Rasa.");
+  }
 }
 
-export { rasaServiceSend };
+export { rasaSendService };

@@ -1,80 +1,73 @@
 import { Request, Response } from "express";
-import { rasaServiceSend } from "../../services/rasa/rasaServiceSend";
+import { rasaSendService } from "../../services/rasa/rasaServiceSend";
 import { UserAnalysis } from "../../models/UserAnalysis";
 import jwt from "jsonwebtoken";
+import { AppError } from "../../exceptions/AppError";
 
-class RasaControllerSend {
+class RasaSendController {
   async handle(req: Request, res: Response) {
     try {
-      // 🔹 Verifica o token do usuário
+      // verifica o token do usuário
       const authHeader = req.headers.authorization;
       if (!authHeader) {
-        console.error("[Erro] Token JWT não fornecido no cabeçalho Authorization.");
-        return res.status(401).json({ error: "Token não fornecido." });
+        throw new AppError("Token não fornecido.", 401);
       }
 
       const token = authHeader.split(" ")[1];
       if (!token) {
-        console.error("[Erro] Token JWT inválido.");
-        return res.status(401).json({ error: "Token inválido." });
+        throw new AppError("Token inválido.", 401);
       }
 
-      let userId: string | undefined;
+      // decodifica o token JWT
+      let userId: string;
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id?: string };
         if (!decoded.id) {
-          console.error("[Erro] Token JWT não contém ID do usuário.");
-          return res.status(401).json({ error: "Token inválido ou expirado." });
+          throw new AppError("Token inválido ou expirado.", 401);
         }
         userId = decoded.id;
       } catch (error) {
-        console.error("[Erro] Falha ao verificar token JWT:", error);
-        return res.status(401).json({ error: "Token inválido ou expirado." });
-      }
-
-      if (!userId) {
-        console.error("[Erro] userId não extraído do token.");
-        return res.status(401).json({ error: "Usuário não autenticado." });
+        throw new AppError("Token inválido ou expirado.", 401);
       }
 
       console.log(`[DEBUG] Usuário autenticado: ${userId}`);
 
-      // 🔹 Obtém a mensagem do usuário
+      // obtém a mensagem do usuário
       const { message } = req.body;
       if (!message) {
-        return res.status(400).json({ error: "O campo 'message' é obrigatório." });
+        throw new AppError("O campo 'message' é obrigatório.", 400);
       }
 
       console.log(`[DEBUG] Enviando mensagem para Rasa: ${message}`);
 
-      // 🔹 Envia a mensagem para o Rasa e obtém a resposta
-      const response = await rasaServiceSend(message, userId);
+      // envia a mensagem para o Rasa e obtém a resposta
+      const response = await rasaSendService(message, userId);
       console.log(`[DEBUG] Resposta do Rasa recebida: ${JSON.stringify(response)}`);
 
-      const botResponse = response.length ? response[0].text : "";
+      const botResponse = response.length ? response[0].text : "Não foi possível processar sua mensagem.";
 
-      // 🔹 Busca a análise do usuário no banco
+      // busca a análise do usuário no banco
       const userAnalysis = await UserAnalysis.findOne({ userId });
 
       if (!userAnalysis || userAnalysis.sessions.length === 0) {
-        return res.status(404).json({ error: "Nenhuma sessão ativa encontrada para este usuário." });
+        throw new AppError("Nenhuma sessão ativa encontrada para este usuário.", 404);
       }
 
-      // 🔹 Obtém a última sessão ativa
+      // obtém a última sessão ativa
       const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
 
       if (lastSession.sessionEnd) {
-        return res.status(400).json({ error: "A sessão do usuário já foi encerrada." });
+        throw new AppError("A sessão do usuário já foi encerrada.", 400);
       }
 
-      // 🔹 Adiciona a interação dentro da sessão ativa
+      // adiciona a interação dentro da sessão ativa
       lastSession.interactions.push({
         timestamp: new Date(),
         message,
         botResponse,
       });
 
-      // 🔹 Salva a atualização no banco de dados
+      // salva a atualização no banco de dados
       await userAnalysis.save();
 
       console.log(`[UserAnalysis] Interação registrada para usuário: ${userId}`);
@@ -82,9 +75,9 @@ class RasaControllerSend {
       return res.json(response);
     } catch (error) {
       console.error("[RasaControllerSend] Erro ao processar interação:", error);
-      return res.status(500).json({ error: "Erro interno no servidor." });
+      return res.status(error.statusCode || 500).json({ error: error.message || "Erro interno no servidor." });
     }
   }
 }
 
-export { RasaControllerSend };
+export { RasaSendController };

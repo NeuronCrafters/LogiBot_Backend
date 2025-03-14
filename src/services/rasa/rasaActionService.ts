@@ -7,7 +7,8 @@ dotenv.config();
 const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
 class RasaActionService {
-  // inicia a conversa e obtém os níveis disponíveis
+  private nivelAtual: string | null = null;
+
   async iniciarBot() {
     console.log("[RasaActionService] iniciando o bot e listando níveis...");
     try {
@@ -22,7 +23,6 @@ class RasaActionService {
     }
   }
 
-  // obtém os níveis disponíveis no SAEL
   async listarNiveis() {
     console.log("[RasaActionService] listando níveis disponíveis...");
     try {
@@ -38,13 +38,11 @@ class RasaActionService {
     }
   }
 
-  // define o nível do usuário no SAEL
   async definirNivel(nivel: string) {
     try {
       console.log("🚀 [SERVICE] Enviando requisição para definir nível...");
       console.log("📥 [SERVICE] Nível enviado:", nivel);
 
-      // Define o nível no Rasa
       const nivelResponse = await axios.post(RASA_ACTION_URL, {
         next_action: "action_definir_nivel",
         tracker: {
@@ -55,27 +53,15 @@ class RasaActionService {
 
       console.log("✅ [SERVICE] Nível definido com sucesso:", nivelResponse.data);
 
-      // Espera um curto tempo antes de buscar opções para garantir que o SAEL processe o novo nível
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      this.nivelAtual = nivel;
 
-      // Obtém as opções disponíveis após definir o nível
-      console.log("📌 [SERVICE] Buscando opções disponíveis...");
-      const opcoesResponse = await this.listarOpcoes();
-
-      const response = {
-        nivel_definido: nivelResponse.data,
-        opcoes_disponiveis: opcoesResponse
-      };
-
-      console.log("🎯 [SERVICE] Resposta final:", response);
-      return response;
+      return nivelResponse.data;
     } catch (error) {
-      console.error("❌ [SERVICE] Erro ao definir nível e listar opções:", error);
-      throw new AppError("Erro ao definir o nível e obter as opções.", 500);
+      console.error("❌ [SERVICE] Erro ao definir nível:", error);
+      throw new AppError("Erro ao definir o nível.", 500);
     }
   }
 
-  // obtém as opções disponíveis no SAEL
   async listarOpcoes() {
     console.log("📌 [SERVICE] Buscando opções disponíveis...");
     try {
@@ -94,7 +80,6 @@ class RasaActionService {
     }
   }
 
-  // obtém as subopções de uma categoria específica
   async listarSubopcoes(categoria: string) {
     console.log(`📌 [SERVICE] Buscando subopções para a categoria: ${categoria}`);
     try {
@@ -114,44 +99,42 @@ class RasaActionService {
     }
   }
 
-  // gera perguntas com base em um subtópico específico
-  // Obtém o nível atual do usuário
   async obterNivelAtual(): Promise<string | null> {
-    console.log("📌 [SERVICE] Obtendo nível atual do usuário...");
-
     try {
       const response = await axios.post(RASA_ACTION_URL, {
         next_action: "action_obter_nivel",
         tracker: { sender_id: "user" },
       });
 
-      console.log("✅ [SERVICE] Resposta completa do Rasa:", response.data);
+      console.log("✅ [SERVICE] Resposta do Rasa ao obter nível:", response.data);
 
-      // Verifique a estrutura exata da resposta
       if (!response.data || !response.data.nivel) {
-        console.warn("⚠️ [SERVICE] Nível não encontrado na resposta do Rasa.");
+        console.warn("⚠️ [SERVICE] O Rasa não retornou um nível válido.");
         return null;
       }
 
-      console.log("✅ [SERVICE] Nível obtido:", response.data.nivel);
       return response.data.nivel;
     } catch (error) {
       console.error("❌ [SERVICE] Erro ao obter nível do usuário:", error);
-      return null; // Retorna null em vez de lançar erro diretamente
+      return null;
     }
   }
 
 
-  // gera perguntas com base em um subtópico específico e no nível do usuário
-  async gerarPerguntas(pergunta: string, nivel: string) {
-    console.log(`📌 [SERVICE] Enviando pergunta para o Rasa: ${pergunta} (nível: ${nivel})`);
+  async gerarPerguntas(pergunta: string) {
+    if (!this.nivelAtual) {
+      console.warn("⚠️ [SERVICE] O nível do usuário não foi definido anteriormente.");
+      throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
+    }
+
+    console.log(`📌 [SERVICE] Enviando pergunta para o Rasa: ${pergunta} (nível: ${this.nivelAtual})`);
 
     try {
       const response = await axios.post(RASA_ACTION_URL, {
         next_action: "action_gerar_perguntas_chatgpt",
         tracker: {
           sender_id: "user",
-          slots: { pergunta, nivel }
+          slots: { pergunta, nivel: this.nivelAtual }
         }
       });
 
@@ -162,6 +145,7 @@ class RasaActionService {
       throw new AppError("erro ao gerar perguntas", 500);
     }
   }
+
 
 
 

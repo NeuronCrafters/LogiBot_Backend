@@ -9,7 +9,6 @@ class RasaActionController {
     this.rasaActionService = new RasaActionService();
   }
 
-  // inicia o bot e obtém os níveis disponíveis
   async iniciarBot(req: Request, res: Response) {
     console.log("[RasaActionController] iniciando o bot...");
     try {
@@ -22,7 +21,6 @@ class RasaActionController {
     }
   }
 
-  // lista os níveis disponíveis
   async listarNiveis(req: Request, res: Response) {
     console.log("[RasaActionController] listando níveis...");
     try {
@@ -35,7 +33,6 @@ class RasaActionController {
     }
   }
 
-  // define o nível do usuário no Rasa
   async definirNivel(req: Request, res: Response) {
     console.log("[RasaActionController] definindo nível...");
     console.log("body recebido:", req.body);
@@ -72,27 +69,15 @@ class RasaActionController {
   }
 
   async gerarPerguntas(req: Request, res: Response) {
-    console.log("📌 [RasaActionController] gerando perguntas...");
-    console.log("📥 [RasaActionController] body recebido:", req.body);
-
     try {
       const { pergunta } = req.body;
       if (!pergunta) {
         return res.status(400).json({ error: "pergunta é obrigatória" });
       }
 
-      // Obtém o nível do usuário antes de gerar as perguntas
-      const nivel = await this.rasaActionService.obterNivelAtual();
-      if (!nivel) {
-        return res.status(400).json({ error: "não foi possível obter o nível do usuário" });
-      }
-
-      // Gera as perguntas com o nível obtido
-      const response = await this.rasaActionService.gerarPerguntas(pergunta, nivel);
-
+      const response = await this.rasaActionService.gerarPerguntas(pergunta);
       return res.json(response);
     } catch (error) {
-      console.error("❌ [RasaActionController] erro ao gerar perguntas:", error);
       return res.status(error.statusCode || 500).json({ error: error.message || "erro ao gerar perguntas" });
     }
   }

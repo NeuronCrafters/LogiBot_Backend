@@ -5,6 +5,7 @@ import { adminRouter } from "./routesPaths/adminRoute";
 import { professorRouter } from "./routesPaths/professorRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
+import { rasaActionRoute } from "./routesPaths/rasaActionRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
 import { faqStoreRouter } from "./routesPaths/faqStoreRoute";
 import { publicAcademicRoute } from "./routesPaths/academicPublicRoutes";
@@ -26,8 +27,11 @@ routes.use("/professor", professorRouter);
 // Rotas de redefinição de senha
 routes.use("/password", passwordRouter);
 
-// Rotas do Rasa (middlewares já estão dentro do `rasaRouter.ts`)
+// Rotas do SAEL (middlewares já estão dentro do `rasaRouter.ts`)
 routes.use("/sael", rasaRouter);
+
+// Rotas do SAEL para actions (middlewares já estão dentro do `rasaActionRoute.ts`)
+routes.use("/saelaction", rasaActionRoute);
 
 // Rotas de instituições acadêmicas (middlewares já estão dentro do `academicInstitutionRouter.ts`)
 routes.use("/academic-institution", academicInstitutionRouter);

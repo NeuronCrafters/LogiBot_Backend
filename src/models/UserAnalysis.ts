@@ -17,17 +17,21 @@ interface IUserAnalysis extends Document {
       browser: string;
       timestamp: Date;
     }[];
+    interactions: {
+      timestamp: Date;
+      message: string;
+      botResponse?: string
+    }[];
     levels: {
       level: string;
       timestamp: Date;
     }[];
-    interactions: { timestamp: Date; message: string; botResponse?: string }[];
     answerHistory: {
       question_id: string;
       selectedOption: string;
       isCorrect: boolean;
       timestamp: Date;
-    }[];
+    }[];//testar o uso fora de sala de alguma forma aí
     interactionsOutsideTheClassroom: {
       timestamp: Date;
       message: string;

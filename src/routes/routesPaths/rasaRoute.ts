@@ -22,6 +22,9 @@ rasaRouter.get("/logs/coordinator", ...isPermissions.isAdminOrCoordinator(), log
 // rota para Professores: acesso apenas aos logs dos alunos das disciplinas que ele ensina
 rasaRouter.get("/logs/professor", ...isPermissions.isAdminProfessorOrCoordinator(), logsController.handle.bind(logsController));
 
+//iniciar o rasa action
+rasaRouter.post("/action/iniciar", ...isPermissions.isAuthenticated(), actionController.iniciarConversa.bind(actionController));
+
 // listar níveis
 rasaRouter.get("/action/listar_niveis", ...isPermissions.isAuthenticated(), actionController.listarNiveis.bind(actionController));
 

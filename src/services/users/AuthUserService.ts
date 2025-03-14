@@ -65,6 +65,11 @@ class AuthUserService {
       timestamp: sessionStart,
     };
 
+    // Define valores padrão para evitar erro de validação
+    const school = user.school ? user.school.toString() : "Desconhecido";
+    const courses = user.course ? user.course.toString() : "Desconhecido";
+    const classes = user.class ? user.class.toString() : "Desconhecido";
+
     // Cria o token JWT
     const token = sign(
       {
@@ -72,9 +77,9 @@ class AuthUserService {
         name: user.name,
         email: user.email,
         role: roles,
-        school: user.school || "desconhecido",
-        courses: user.course || "desconhecido",
-        classes: user.class || "desconhecido",
+        school,
+        courses,
+        classes,
       },
       process.env.JWT_SECRET!,
       {
@@ -114,9 +119,9 @@ class AuthUserService {
             userId: user._id.toString(),
             name: user.name,
             email: user.email,
-            school: user.school,
-            courses: user.course,
-            classes: user.class,
+            school,
+            courses,
+            classes,
             sessions: [
               {
                 sessionStart,
@@ -141,9 +146,9 @@ class AuthUserService {
       name: user.name,
       email: user.email,
       role: roles,
-      school: user.school,
-      courses: user.course,
-      classes: user.class,
+      school,
+      courses,
+      classes,
       sessionStart,
       token,
     };

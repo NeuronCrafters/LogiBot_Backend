@@ -7,8 +7,24 @@ dotenv.config();
 const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
 class RasaActionService {
-  // obtém os níveis disponíveis no Rasa
+  /**
+   * 🔹 Inicia o bot e lista os níveis disponíveis
+   */
+  async iniciarBot() {
+    try {
+      const response = await axios.post(RASA_ACTION_URL, {
+        next_action: "action_listar_niveis",
+      });
+      return response.data;
+    } catch (error) {
+      console.error("[RasaActionService] Erro ao iniciar o bot:", error);
+      throw new AppError("Erro ao iniciar a conversa com o bot.", 500);
+    }
+  }
 
+  /**
+   * 🔹 Obtém os níveis disponíveis no Rasa
+   */
   async listarNiveis() {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -21,7 +37,9 @@ class RasaActionService {
     }
   }
 
-  // dfine o nível do usuário
+  /**
+   * 🔹 Define o nível do usuário no Rasa
+   */
   async definirNivel(nivel: string) {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -35,7 +53,9 @@ class RasaActionService {
     }
   }
 
-  // obtém as opções disponíveis no Rasa
+  /**
+   * 🔹 Obtém as opções disponíveis no Rasa
+   */
   async listarOpcoes() {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -48,7 +68,9 @@ class RasaActionService {
     }
   }
 
-  // obtém as subopções de um determinado assunto
+  /**
+   * 🔹 Obtém as subopções de um determinado assunto
+   */
   async listarSubopcoes(categoria: string) {
     try {
       const response = await axios.post(RASA_ACTION_URL, {

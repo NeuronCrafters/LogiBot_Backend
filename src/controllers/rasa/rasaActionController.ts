@@ -9,6 +9,16 @@ class RasaActionController {
     this.rasaActionService = new RasaActionService();
   }
 
+  async iniciarConversa(req: Request, res: Response) {
+    try {
+      const response = await this.rasaActionService.iniciarBot();
+      return res.json(response);
+    } catch (error) {
+      console.error("[RasaActionController] Erro ao iniciar conversa:", error);
+      return res.status(error.statusCode || 500).json({ error: error.message });
+    }
+  }
+
   // rota para listar níveis
 
   async listarNiveis(req: Request, res: Response) {

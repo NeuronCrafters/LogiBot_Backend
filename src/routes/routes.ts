@@ -5,7 +5,7 @@ import { adminRouter } from "./routesPaths/adminRoute";
 import { professorRouter } from "./routesPaths/professorRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
-import { rasaActionRoute } from "./routesPaths/rasaActionRoute";
+import { rasaActionRouter } from "./routesPaths/rasaActionRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
 import { faqStoreRouter } from "./routesPaths/faqStoreRoute";
 import { publicAcademicRoute } from "./routesPaths/academicPublicRoutes";
@@ -31,7 +31,7 @@ routes.use("/password", passwordRouter);
 routes.use("/sael", rasaRouter);
 
 // Rotas do SAEL para actions (middlewares já estão dentro do `rasaActionRoute.ts`)
-routes.use("/saelaction", rasaActionRoute);
+routes.use("/saelaction", rasaActionRouter);
 
 // Rotas de instituições acadêmicas (middlewares já estão dentro do `academicInstitutionRouter.ts`)
 routes.use("/academic-institution", academicInstitutionRouter);

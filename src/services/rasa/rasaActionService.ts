@@ -7,9 +7,7 @@ dotenv.config();
 const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
 class RasaActionService {
-  /**
-   * 🔹 Inicia o bot e lista os níveis disponíveis
-   */
+  // inicia o bot e lista os níveis disponíveis
   async iniciarBot() {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -22,9 +20,7 @@ class RasaActionService {
     }
   }
 
-  /**
-   * 🔹 Obtém os níveis disponíveis no Rasa
-   */
+  // obtém os níveis disponíveis no Rasa
   async listarNiveis() {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -37,9 +33,7 @@ class RasaActionService {
     }
   }
 
-  /**
-   * 🔹 Define o nível do usuário no Rasa
-   */
+  // define o nível do usuário no Rasa
   async definirNivel(nivel: string) {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -53,9 +47,7 @@ class RasaActionService {
     }
   }
 
-  /**
-   * 🔹 Obtém as opções disponíveis no Rasa
-   */
+  // obtém as opções disponíveis no Rasa
   async listarOpcoes() {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -68,9 +60,7 @@ class RasaActionService {
     }
   }
 
-  /**
-   * 🔹 Obtém as subopções de um determinado assunto
-   */
+  // obtém as subopções de um determinado assunto
   async listarSubopcoes(categoria: string) {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -81,6 +71,20 @@ class RasaActionService {
     } catch (error) {
       console.error("[RasaActionService] Erro ao listar subopções:", error);
       throw new AppError("Erro ao obter as subopções.", 500);
+    }
+  }
+
+  // gera perguntas sobre um subtópico específico
+  async gerarPerguntas(subtopico: string, nivel: string) {
+    try {
+      const response = await axios.post(RASA_ACTION_URL, {
+        next_action: "action_gerar_perguntas_chatgpt",
+        tracker: { slots: { pergunta: subtopico, nivel } },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("[RasaActionService] Erro ao gerar perguntas:", error);
+      throw new AppError("Erro ao gerar perguntas.", 500);
     }
   }
 }

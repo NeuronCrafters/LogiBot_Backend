@@ -9,68 +9,84 @@ class RasaActionController {
     this.rasaActionService = new RasaActionService();
   }
 
-  async iniciarConversa(req: Request, res: Response) {
+  // inicia o bot e obtém os níveis disponíveis
+  async iniciarBot(req: Request, res: Response) {
     try {
       const response = await this.rasaActionService.iniciarBot();
       return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] Erro ao iniciar conversa:", error);
-      return res.status(error.statusCode || 500).json({ error: error.message });
+      console.error("[RasaActionController] erro ao iniciar o bot:", error);
+      return res.status(500).json({ error: "erro ao iniciar o bot" });
     }
   }
 
-  // rota para listar níveis
-
+  // lista os níveis disponíveis
   async listarNiveis(req: Request, res: Response) {
     try {
-      const result = await this.rasaActionService.listarNiveis();
-      return res.json(result);
+      const response = await this.rasaActionService.listarNiveis();
+      return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] Erro ao listar níveis:", error);
-      return res.status(error.statusCode || 500).json({ error: error.message });
+      console.error("[RasaActionController] erro ao listar níveis:", error);
+      return res.status(500).json({ error: "erro ao listar níveis" });
     }
   }
 
-  // rota para definir nível
+  // define o nível do usuário
   async definirNivel(req: Request, res: Response) {
     try {
       const { nivel } = req.body;
       if (!nivel) {
-        throw new AppError("O campo 'nivel' é obrigatório.", 400);
+        throw new AppError("o campo 'nivel' é obrigatório", 400);
       }
 
-      const result = await this.rasaActionService.definirNivel(nivel);
-      return res.json(result);
+      const response = await this.rasaActionService.definirNivel(nivel);
+      return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] Erro ao definir nível:", error);
-      return res.status(error.statusCode || 500).json({ error: error.message });
+      console.error("[RasaActionController] erro ao definir nível:", error);
+      return res.status(error.statusCode || 500).json({ error: error.message || "erro ao definir nível" });
     }
   }
 
-  // rota para listar opções
+  // lista as opções disponíveis
   async listarOpcoes(req: Request, res: Response) {
     try {
-      const result = await this.rasaActionService.listarOpcoes();
-      return res.json(result);
+      const response = await this.rasaActionService.listarOpcoes();
+      return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] Erro ao listar opções:", error);
-      return res.status(error.statusCode || 500).json({ error: error.message });
+      console.error("[RasaActionController] erro ao listar opções:", error);
+      return res.status(500).json({ error: "erro ao listar opções" });
     }
   }
 
-  // rota para listar subopções de uma categoria
+  // lista as subopções de uma categoria específica
   async listarSubopcoes(req: Request, res: Response) {
     try {
       const { categoria } = req.body;
       if (!categoria) {
-        throw new AppError("O campo 'categoria' é obrigatório.", 400);
+        throw new AppError("o campo 'categoria' é obrigatório", 400);
       }
 
-      const result = await this.rasaActionService.listarSubopcoes(categoria);
-      return res.json(result);
+      const response = await this.rasaActionService.listarSubopcoes(categoria);
+      return res.json(response);
     } catch (error) {
-      console.error("[RasaActionController] Erro ao listar subopções:", error);
-      return res.status(error.statusCode || 500).json({ error: error.message });
+      console.error("[RasaActionController] erro ao listar subopções:", error);
+      return res.status(error.statusCode || 500).json({ error: error.message || "erro ao listar subopções" });
+    }
+  }
+
+  // gera perguntas com base em uma subopção escolhida
+  async gerarPerguntas(req: Request, res: Response) {
+    try {
+      const { subtopico, nivel } = req.body;
+      if (!subtopico || !nivel) {
+        throw new AppError("os campos 'subtopico' e 'nivel' são obrigatórios", 400);
+      }
+
+      const response = await this.rasaActionService.gerarPerguntas(subtopico, nivel);
+      return res.json(response);
+    } catch (error) {
+      console.error("[RasaActionController] erro ao gerar perguntas:", error);
+      return res.status(error.statusCode || 500).json({ error: error.message || "erro ao gerar perguntas" });
     }
   }
 }

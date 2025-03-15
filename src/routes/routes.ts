@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authRoute } from "./routesPaths/authRoute";
 import { socialLoginRoute } from "./routesPaths/socialLoginRoute";
 import { adminRouter } from "./routesPaths/adminRoute";
-import { professorRouter } from "./routesPaths/professorRoute";
+// import { professorRouter } from "./routesPaths/professorRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
 import { rasaActionRouter } from "./routesPaths/rasaActionRoute";
@@ -22,7 +22,7 @@ routes.use("/", socialLoginRoute);
 routes.use("/admin", adminRouter);
 
 // Rotas protegidas para professor (middlewares já estão dentro do `professorRouter.ts`)
-routes.use("/professor", professorRouter);
+// routes.use("/professor", professorRouter);
 
 // Rotas de redefinição de senha
 routes.use("/password", passwordRouter);

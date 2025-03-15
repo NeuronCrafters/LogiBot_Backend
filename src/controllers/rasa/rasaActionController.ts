@@ -62,9 +62,13 @@ class RasaActionController {
       }
 
       const response = await this.rasaActionService.gerarPerguntas(pergunta);
-      return res.json(response);
+
+      return res.json({
+        questions: response.questions,
+        answer_keys: response.answer_keys
+      });
     } catch (error) {
-      return res.status(error.statusCode || 500).json({ error: error.message || "erro ao gerar perguntas" });
+      return res.status(error.statusCode || 500).json({ error: error.message || "Erro ao gerar perguntas" });
     }
   }
 }

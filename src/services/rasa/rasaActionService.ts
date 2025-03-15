@@ -104,7 +104,6 @@ class RasaActionService {
     }
   }
 
-
   async gerarPerguntas(pergunta: string) {
     if (!this.nivelAtual) {
       throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
@@ -119,9 +118,39 @@ class RasaActionService {
         }
       });
 
-      return response.data;
+      console.log("✅ [SERVICE] Resposta do Rasa:", response.data);
+
+      if (!response.data.responses || !response.data.responses[0]?.text) {
+        throw new AppError("Formato de resposta inválido do Rasa.", 500);
+      }
+
+      const rawText = response.data.responses[0].text;
+      let jsonData;
+
+      try {
+        jsonData = JSON.parse(rawText);
+      } catch (error) {
+        console.warn("⚠️ [SERVICE] Resposta não está no formato JSON válido.");
+        throw new AppError("Erro ao interpretar a resposta do Rasa.", 500);
+      }
+
+      if (!jsonData.questions || !Array.isArray(jsonData.questions) || !jsonData.answer_keys) {
+        throw new AppError("Formato inesperado de perguntas na resposta.", 500);
+      }
+
+      const resultado = {
+        questions: jsonData.questions.map((q: any) => ({
+          pergunta: q.question || "Pergunta não encontrada",
+          opcoes: q.options || []
+        })),
+        answer_keys: jsonData.answer_keys.map((resposta: string) => resposta)
+      };
+
+      console.log("✅ [SERVICE] Perguntas extraídas:", resultado);
+      return resultado;
     } catch (error) {
-      throw new AppError("erro ao gerar perguntas", 500);
+      console.error("❌ [SERVICE] Erro ao gerar perguntas:", error);
+      throw new AppError("Erro ao gerar perguntas", 500);
     }
   }
 }

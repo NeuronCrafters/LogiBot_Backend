@@ -31,7 +31,7 @@ interface IUserAnalysis extends Document {
       selectedOption: string;
       isCorrect: boolean;
       timestamp: Date;
-    }[];//testar o uso fora de sala de alguma forma aí
+    }[];
     interactionsOutsideTheClassroom: {
       timestamp: Date;
       message: string;

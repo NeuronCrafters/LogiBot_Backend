@@ -11,6 +11,8 @@ rasaActionRouter.get("/action/listar_niveis", ...isPermissions.isAuthenticated()
 
 rasaActionRouter.post("/action/definir_nivel", ...isPermissions.isAuthenticated(), actionController.definirNivel.bind(actionController));
 
+rasaActionRouter.get("/action/listar_opcoes", ...isPermissions.isAuthenticated(), actionController.listarOpcoes.bind(actionController));
+
 rasaActionRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), actionController.listarSubopcoes.bind(actionController));
 
 rasaActionRouter.post("/action/gerar_perguntas", ...isPermissions.isAuthenticated(), actionController.gerarPerguntas.bind(actionController));

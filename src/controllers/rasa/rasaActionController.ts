@@ -36,10 +36,10 @@ class RasaActionController {
     }
   }
 
-  async listarSubopcoes(req: Request, res: Response) {
+  async sendOpcaoEListarSubopcoes(req: Request, res: Response) {
     try {
       const { categoria } = req.body;
-      const subopcoes = await this.rasaActionService.listarSubopcoes(categoria);
+      const subopcoes = await this.rasaActionService.sendOpcaoEListarSubopcoes(categoria);
       return res.status(200).json(subopcoes);
     } catch (error) {
       return res.status(500).json({ message: "Erro ao obter as subopções", error: error.message });
@@ -62,6 +62,16 @@ class RasaActionController {
       return res.status(200).json(gabarito);
     } catch (error) {
       return res.status(500).json({ message: "Erro ao obter o gabarito", error: error.message });
+    }
+  }
+
+  async verificarRespostas(req: Request, res: Response) {
+    try {
+      const { respostas } = req.body;
+      const resultado = await this.rasaActionService.verificarRespostas(respostas);
+      return res.status(200).json(resultado);
+    } catch (error) {
+      return res.status(500).json({ message: "Erro ao verificar respostas", error: error.message });
     }
   }
 }

@@ -9,6 +9,7 @@ const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 class RasaActionService {
   private nivelAtual: string | null = null;
   private lastAnswerKeys: string[] = [];
+  private lastSubject: string | null = null;
 
   async listarNiveis() {
     try {
@@ -46,18 +47,18 @@ class RasaActionService {
       const response = await axios.post(RASA_ACTION_URL, {
         next_action: "action_listar_opcoes",
         tracker: {
-          sender_id: "user",
+          sender_id: "user"
         },
       });
-
       return response.data;
     } catch (error) {
       throw new AppError("Erro ao obter as opções", 500);
     }
   }
 
-  async listarSubopcoes(categoria: string) {
+  async sendOpcaoEListarSubopcoes(categoria: string) {
     try {
+      this.lastSubject = categoria;
       const response = await axios.post(RASA_ACTION_URL, {
         next_action: "action_listar_subopcoes",
         tracker: {
@@ -65,7 +66,6 @@ class RasaActionService {
           slots: { categoria },
         },
       });
-
       return response.data;
     } catch (error) {
       throw new AppError("Erro ao obter as subopções", 500);
@@ -105,7 +105,6 @@ class RasaActionService {
           options: [],
         };
       }
-
       else if (line.trim().startsWith("- (")) {
         if (currentQuestion) {
           currentQuestion.options.push(line.trim().substring(3));
@@ -126,6 +125,7 @@ class RasaActionService {
     }
 
     try {
+      this.lastSubject = pergunta;
       const response = await axios.post(RASA_ACTION_URL, {
         next_action: "action_gerar_perguntas_chatgpt",
         tracker: {
@@ -134,7 +134,6 @@ class RasaActionService {
         },
       });
 
-      console.log("✅ [SERVICE] Resposta completa do Rasa:", JSON.stringify(response.data, null, 2));
 
       if (!response.data || !response.data.responses || response.data.responses.length === 0) {
         throw new AppError("Resposta do Rasa não contém texto válido.", 500);
@@ -160,7 +159,40 @@ class RasaActionService {
   }
 
   async getGabarito() {
-    return { answer_keys: this.lastAnswerKeys };
+    return { answer_keys: this.lastAnswerKeys, assunto: this.lastSubject };
+  }
+
+  async verificarRespostas(respostas: string[]) {
+    if (!this.lastAnswerKeys.length) {
+      throw new AppError("Nenhum gabarito disponível. Gere perguntas primeiro.", 400);
+    }
+
+    if (!Array.isArray(respostas) || respostas.length !== this.lastAnswerKeys.length) {
+      throw new AppError("Número de respostas inválido.", 400);
+    }
+
+    let acertos = 0;
+    let erros = 0;
+    let resultados = [];
+
+    respostas.forEach((resposta, index) => {
+      if (resposta === this.lastAnswerKeys[index]) {
+        acertos++;
+        resultados.push({ pergunta: index + 1, status: "✅ Correta! 🎉", resposta });
+      } else {
+        erros++;
+        resultados.push({ pergunta: index + 1, status: "❌ Errada! 😢", resposta, correta: this.lastAnswerKeys[index] });
+      }
+    });
+
+    return {
+      message: acertos === this.lastAnswerKeys.length ? "🎉 Parabéns! Você acertou todas as questões!" : "⚠️ Aqui está seu resultado:",
+      total_acertos: acertos,
+      total_erros: erros,
+      total_questoes: this.lastAnswerKeys.length,
+      assunto: this.lastSubject,
+      detalhes: resultados
+    };
   }
 }
 

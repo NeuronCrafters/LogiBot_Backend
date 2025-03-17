@@ -11,10 +11,12 @@ rasaActionRouter.post("/action/definir_nivel", ...isPermissions.isAuthenticated(
 
 rasaActionRouter.get("/action/listar_opcoes", ...isPermissions.isAuthenticated(), actionController.listarOpcoes.bind(actionController));
 
-rasaActionRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), actionController.listarSubopcoes.bind(actionController));
+rasaActionRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), actionController.sendOpcaoEListarSubopcoes.bind(actionController));
 
 rasaActionRouter.post("/action/gerar_perguntas", ...isPermissions.isAuthenticated(), actionController.gerarPerguntas.bind(actionController));
 
 rasaActionRouter.get("/action/gabarito", ...isPermissions.isAuthenticated(), actionController.getGabarito.bind(actionController));
+
+rasaActionRouter.post("/action/send", ...isPermissions.isAuthenticated(), actionController.verificarRespostas.bind(actionController));
 
 export { rasaActionRouter };

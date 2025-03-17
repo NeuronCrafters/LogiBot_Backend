@@ -61,16 +61,22 @@ class RasaActionController {
         return res.status(400).json({ error: "pergunta é obrigatória" });
       }
 
+      console.log("✅ [CONTROLLER] Recebida pergunta:", pergunta);
+
       const response = await this.rasaActionService.gerarPerguntas(pergunta);
+
+      console.log("✅ [CONTROLLER] Perguntas geradas:", response);
 
       return res.json({
         questions: response.questions,
         answer_keys: response.answer_keys
       });
     } catch (error) {
+      console.error("❌ [CONTROLLER] Erro ao gerar perguntas:", error);
       return res.status(error.statusCode || 500).json({ error: error.message || "Erro ao gerar perguntas" });
     }
   }
+
 }
 
 export { RasaActionController };

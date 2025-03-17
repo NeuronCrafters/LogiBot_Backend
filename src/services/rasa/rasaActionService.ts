@@ -8,6 +8,7 @@ const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
 class RasaActionService {
   private nivelAtual: string | null = null;
+  private lastAnswerKeys: string[] = [];
 
   async listarNiveis() {
     try {
@@ -88,7 +89,7 @@ class RasaActionService {
     }
   }
 
-  private parseQuestionsFromText(text: string, answerKeys: string[] | null) {
+  private parseQuestionsFromText(text: string) {
     const lines = text.split("\n");
     const questions = [];
     let currentQuestion = null;
@@ -116,10 +117,7 @@ class RasaActionService {
       questions.push(currentQuestion);
     }
 
-    return {
-      questions,
-      answer_keys: answerKeys || [],
-    };
+    return { questions };
   }
 
   async gerarPerguntas(pergunta: string) {
@@ -136,35 +134,33 @@ class RasaActionService {
         },
       });
 
+      console.log("✅ [SERVICE] Resposta completa do Rasa:", JSON.stringify(response.data, null, 2));
+
       if (!response.data || !response.data.responses || response.data.responses.length === 0) {
         throw new AppError("Resposta do Rasa não contém texto válido.", 500);
       }
 
       const rawText = response.data.responses[0]?.text;
-      const answerKeys = response.data.responses[0]?.custom?.answer_keys || [];  // Acessando corretamente
+      this.lastAnswerKeys = response.data.responses[0]?.custom?.answer_keys || [];
 
       if (!rawText) {
         throw new AppError("Resposta do Rasa não contém texto.", 500);
       }
 
-      const jsonData = this.parseQuestionsFromText(rawText, answerKeys);
+      const jsonData = this.parseQuestionsFromText(rawText);
 
       if (!jsonData.questions || !Array.isArray(jsonData.questions)) {
         throw new AppError("Formato inesperado de perguntas na resposta.", 500);
       }
 
-      const resultado = {
-        questions: jsonData.questions.map((q: any) => ({
-          pergunta: q.question || "Pergunta não encontrada",
-          opcoes: q.options || [],
-        })),
-        answer_keys: jsonData.answer_keys,
-      };
-
-      return resultado;
+      return { questions: jsonData.questions };
     } catch (error) {
       throw new AppError("Erro ao gerar perguntas", 500);
     }
+  }
+
+  async getGabarito() {
+    return { answer_keys: this.lastAnswerKeys };
   }
 }
 

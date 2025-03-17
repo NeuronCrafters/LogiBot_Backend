@@ -15,4 +15,6 @@ rasaActionRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticat
 
 rasaActionRouter.post("/action/gerar_perguntas", ...isPermissions.isAuthenticated(), actionController.gerarPerguntas.bind(actionController));
 
+rasaActionRouter.get("/action/gabarito", ...isPermissions.isAuthenticated(), actionController.getGabarito.bind(actionController));
+
 export { rasaActionRouter };

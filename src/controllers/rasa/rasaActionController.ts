@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { RasaActionService } from "../../services/rasa/rasaActionService";
-import { AppError } from "../../exceptions/AppError";
 
 class RasaActionController {
   private rasaActionService: RasaActionService;
@@ -11,67 +10,60 @@ class RasaActionController {
 
   async listarNiveis(req: Request, res: Response) {
     try {
-      const response = await this.rasaActionService.listarNiveis();
-      return res.json(response);
+      const niveis = await this.rasaActionService.listarNiveis();
+      return res.status(200).json(niveis);
     } catch (error) {
-      return res.status(500).json({ error: "erro ao listar níveis" });
+      return res.status(500).json({ message: "Erro ao obter os níveis", error: error.message });
     }
   }
 
   async definirNivel(req: Request, res: Response) {
     try {
       const { nivel } = req.body;
-      if (!nivel) {
-        throw new AppError("o campo 'nivel' é obrigatório", 400);
-      }
-      const response = await this.rasaActionService.definirNivel(nivel);
-      return res.json(response);
+      const result = await this.rasaActionService.definirNivel(nivel);
+      return res.status(200).json(result);
     } catch (error) {
-      return res.status(error.statusCode || 500).json({ error: error.message || "erro ao definir o nível" });
+      return res.status(500).json({ message: "Erro ao definir o nível", error: error.message });
     }
   }
 
   async listarOpcoes(req: Request, res: Response) {
     try {
-      const response = await this.rasaActionService.listarOpcoes();
-      return res.json(response);
+      const opcoes = await this.rasaActionService.listarOpcoes();
+      return res.status(200).json(opcoes);
     } catch (error) {
-      return res.status(error.statusCode || 500).json({ error: error.message || "Erro ao listar opções" });
+      return res.status(500).json({ message: "Erro ao obter as opções", error: error.message });
     }
   }
 
   async listarSubopcoes(req: Request, res: Response) {
     try {
       const { categoria } = req.body;
-      if (!categoria) {
-        throw new AppError("categoria é obrigatória", 400);
-      }
-
-      const response = await this.rasaActionService.listarSubopcoes(categoria);
-      return res.json(response);
+      const subopcoes = await this.rasaActionService.listarSubopcoes(categoria);
+      return res.status(200).json(subopcoes);
     } catch (error) {
-      return res.status(error.statusCode || 500).json({ error: error.message || "erro ao listar subopções" });
+      return res.status(500).json({ message: "Erro ao obter as subopções", error: error.message });
     }
   }
 
   async gerarPerguntas(req: Request, res: Response) {
     try {
       const { pergunta } = req.body;
-      if (!pergunta) {
-        return res.status(400).json({ error: "pergunta é obrigatória" });
-      }
-
-      const response = await this.rasaActionService.gerarPerguntas(pergunta);
-
-      return res.json({
-        questions: response.questions,
-        answer_keys: response.answer_keys
-      });
+      const perguntas = await this.rasaActionService.gerarPerguntas(pergunta);
+      return res.status(200).json(perguntas);
     } catch (error) {
-      return res.status(error.statusCode || 500).json({ error: error.message || "Erro ao gerar perguntas" });
+      return res.status(500).json({ message: "Erro ao gerar perguntas", error: error.message });
     }
   }
 
+  async getGabarito(req: Request, res: Response) {
+    try {
+      const gabarito = await this.rasaActionService.getGabarito();
+      return res.status(200).json(gabarito);
+    } catch (error) {
+      return res.status(500).json({ message: "Erro ao obter o gabarito", error: error.message });
+    }
+  }
 }
 
 export { RasaActionController };

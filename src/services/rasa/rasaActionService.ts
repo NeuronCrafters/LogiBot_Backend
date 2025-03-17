@@ -1,3 +1,4 @@
+import { UserAnalysis } from "../../models/UserAnalysis";
 import { AppError } from "../../exceptions/AppError";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -10,6 +11,7 @@ class RasaActionService {
   private nivelAtual: string | null = null;
   private lastAnswerKeys: string[] = [];
   private lastSubject: string | null = null;
+  private lastQuestions: string[] = [];
 
   async listarNiveis() {
     try {
@@ -162,8 +164,9 @@ class RasaActionService {
     return { answer_keys: this.lastAnswerKeys, assunto: this.lastSubject };
   }
 
-  async verificarRespostas(respostas: string[]) {
-    if (!this.lastAnswerKeys.length) {
+  async verificarRespostas(respostas: string[], userId: string, email: string) {
+    if (!this.lastAnswerKeys.length || !this.lastQuestions.length) {
+      console.error("Erro: Nenhum gabarito disponível. Gere perguntas primeiro.");
       throw new AppError("Nenhum gabarito disponível. Gere perguntas primeiro.", 400);
     }
 
@@ -173,27 +176,56 @@ class RasaActionService {
 
     let acertos = 0;
     let erros = 0;
-    let resultados = [];
+
+    const level = this.nivelAtual || "Nível Desconhecido";
+    const subject = this.lastSubject || "Assunto Desconhecido";
+
+    let answerHistoryEntry = {
+      questions: [] as any[],
+    };
 
     respostas.forEach((resposta, index) => {
-      if (resposta === this.lastAnswerKeys[index]) {
-        acertos++;
-        resultados.push({ pergunta: index + 1, status: "✅ Correta! 🎉", resposta });
-      } else {
-        erros++;
-        resultados.push({ pergunta: index + 1, status: "❌ Errada! 😢", resposta, correta: this.lastAnswerKeys[index] });
-      }
+      const isCorrect = resposta === this.lastAnswerKeys[index];
+      if (isCorrect) acertos++;
+      else erros++;
+
+      answerHistoryEntry.questions.push({
+        level: level,
+        subject: subject,
+        selectedOption: [
+          {
+            question: this.lastQuestions[index],
+            isCorrect: this.lastAnswerKeys[index],
+            isSelected: resposta,
+          },
+        ],
+        totalCorrectAnswers: acertos,
+        totalWrongAnswers: erros,
+        timestamp: new Date(),
+      });
     });
+
+    const userAnalysis = await UserAnalysis.findOneAndUpdate(
+      { userId, email },
+      {
+        $push: { "sessions.0.answerHistory": { questions: answerHistoryEntry.questions } },
+        $inc: {
+          totalCorrectAnswers: acertos,
+          totalWrongAnswers: erros,
+          "sessions.0.totalCorrectAnswers": acertos,
+          "sessions.0.totalWrongAnswers": erros,
+        },
+      },
+      { new: true, upsert: true }
+    );
 
     return {
       message: acertos === this.lastAnswerKeys.length ? "🎉 Parabéns! Você acertou todas as questões!" : "⚠️ Aqui está seu resultado:",
-      total_acertos: acertos,
-      total_erros: erros,
-      total_questoes: this.lastAnswerKeys.length,
-      assunto: this.lastSubject,
-      detalhes: resultados
+      totalCorrectAnswers: acertos,
+      totalWrongAnswers: erros,
+      detalhes: answerHistoryEntry,
     };
   }
-}
 
+}
 export { RasaActionService };

@@ -11,33 +11,32 @@ interface IUserAnalysis extends Document {
     sessionStart: Date;
     sessionEnd?: Date;
     sessionDuration?: number;
-    devices: {
-      deviceType: string;
-      os: string;
-      browser: string;
-      timestamp: Date;
-    }[];
     interactions: {
       timestamp: Date;
       message: string;
       botResponse?: string
     }[];
-    levels: {
-      level: string;
-      timestamp: Date;
-    }[];
     answerHistory: {
-      question_id: string;
-      selectedOption: string;
-      isCorrect: boolean;
-      timestamp: Date;
-    }[];
-    interactionsOutsideTheClassroom: {
-      timestamp: Date;
-      message: string;
+      questions: {
+        level: string;
+        subject: string;
+        selectedOption: {
+          question: string;
+          isCorrect: string;
+          isSelected: string;
+        }[];
+        totalCorrectAnswers: number;
+        totalWrongAnswers: number;
+        timestamp: Date;
+      }[];
     }[];
   }[];
-}
+  interactionsOutsideTheClassroom: {
+    timestamp: Date;
+    message: string;
+  }[];
+}[];
+
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
   userId: { type: String, required: true, index: true },
@@ -51,20 +50,6 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
       sessionStart: { type: Date, required: true, default: Date.now },
       sessionEnd: { type: Date },
       sessionDuration: { type: Number, default: 0 },
-      devices: [
-        {
-          deviceType: { type: String, required: true },
-          os: { type: String, required: true },
-          browser: { type: String, required: true },
-          timestamp: { type: Date, required: true, default: Date.now },
-        },
-      ],
-      levels: [
-        {
-          level: { type: String, required: true },
-          timestamp: { type: Date, required: true, default: Date.now },
-        },
-      ],
       interactions: [
         {
           timestamp: { type: Date, required: true, default: Date.now },
@@ -74,10 +59,22 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
       ],
       answerHistory: [
         {
-          question_id: { type: String, required: true },
-          selectedOption: { type: String, required: true },
-          isCorrect: { type: Boolean, required: true },
-          timestamp: { type: Date, default: Date.now },
+          questions: [
+            {
+              level: { type: String },
+              subject: { type: String, required: true },
+              selectedOption: [
+                {
+                  question: { type: String, required: true },
+                  isCorrect: { type: String, required: true },
+                  isSelected: { type: String, required: true },
+                },
+              ],
+              totalCorrectAnswers: { type: Number, default: 0 },
+              totalWrongAnswers: { type: Number, default: 0 },
+              timestamp: { type: Date, default: Date.now },
+            },
+          ],
         },
       ],
       interactionsOutsideTheClassroom: [
@@ -107,7 +104,7 @@ UserAnalysisSchema.methods.addInteraction = function (message: string, botRespon
     const lastSession = this.sessions[this.sessions.length - 1];
 
     if (!lastSession.sessionEnd) {
-      // Atualiza a última interação se já houver interações
+      // atualiza a última interação se já houver interações
       if (lastSession.interactions.length > 0) {
         lastSession.interactions[lastSession.interactions.length - 1] = {
           timestamp: new Date(),
@@ -149,7 +146,7 @@ UserAnalysisSchema.methods.addAnswerHistory = function (question_id: string, sel
   }
 };
 
-// Método para adicionar interações fora da sala de aula dentro da sessão ativa
+// método para adicionar interações fora da sala de aula dentro da sessão ativa
 UserAnalysisSchema.methods.addInteractionOutsideClassroom = function (message: string) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];

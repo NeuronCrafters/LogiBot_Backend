@@ -5,8 +5,6 @@ import { RasaActionController } from "../../controllers/rasa/rasaActionControlle
 const rasaActionRouter = Router();
 const actionController = new RasaActionController();
 
-rasaActionRouter.post("/action/iniciar", ...isPermissions.isAuthenticated(), actionController.iniciarBot.bind(actionController));
-
 rasaActionRouter.get("/action/listar_niveis", ...isPermissions.isAuthenticated(), actionController.listarNiveis.bind(actionController));
 
 rasaActionRouter.post("/action/definir_nivel", ...isPermissions.isAuthenticated(), actionController.definirNivel.bind(actionController));

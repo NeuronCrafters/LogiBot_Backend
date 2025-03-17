@@ -9,15 +9,6 @@ class RasaActionController {
     this.rasaActionService = new RasaActionService();
   }
 
-  async iniciarBot(req: Request, res: Response) {
-    try {
-      const response = await this.rasaActionService.iniciarBot();
-      return res.json(response);
-    } catch (error) {
-      return res.status(500).json({ error: "erro ao iniciar o bot" });
-    }
-  }
-
   async listarNiveis(req: Request, res: Response) {
     try {
       const response = await this.rasaActionService.listarNiveis();

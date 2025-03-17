@@ -9,17 +9,6 @@ const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 class RasaActionService {
   private nivelAtual: string | null = null;
 
-  async iniciarBot() {
-    try {
-      const response = await axios.post(RASA_ACTION_URL, {
-        next_action: "action_listar_niveis",
-      });
-      return response.data;
-    } catch (error) {
-      throw new AppError("Erro ao iniciar a conversa com o bot", 500);
-    }
-  }
-
   async listarNiveis() {
     try {
       const response = await axios.post(RASA_ACTION_URL, {
@@ -99,7 +88,7 @@ class RasaActionService {
     }
   }
 
-  private parseQuestionsFromText(text: string) {
+  private parseQuestionsFromText(text: string, answerKeys: string[] | null) {
     const lines = text.split("\n");
     const questions = [];
     let currentQuestion = null;
@@ -127,11 +116,9 @@ class RasaActionService {
       questions.push(currentQuestion);
     }
 
-    const answerKeys = ["Opção A", "Opção B", "Opção C", "Opção D", "Opção E"];
-
     return {
       questions,
-      answer_keys: answerKeys,
+      answer_keys: answerKeys || [],
     };
   }
 
@@ -149,12 +136,18 @@ class RasaActionService {
         },
       });
 
+      if (!response.data || !response.data.responses || response.data.responses.length === 0) {
+        throw new AppError("Resposta do Rasa não contém texto válido.", 500);
+      }
+
       const rawText = response.data.responses[0]?.text;
+      const answerKeys = response.data.responses[0]?.custom?.answer_keys || [];  // Acessando corretamente
+
       if (!rawText) {
         throw new AppError("Resposta do Rasa não contém texto.", 500);
       }
 
-      const jsonData = this.parseQuestionsFromText(rawText);
+      const jsonData = this.parseQuestionsFromText(rawText, answerKeys);
 
       if (!jsonData.questions || !Array.isArray(jsonData.questions)) {
         throw new AppError("Formato inesperado de perguntas na resposta.", 500);

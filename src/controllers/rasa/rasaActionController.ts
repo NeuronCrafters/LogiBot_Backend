@@ -103,6 +103,7 @@ class RasaActionController {
       const email = userData.email;
       console.log("Usuário autenticado:", { userId, email });
 
+      // Chamando o método do service para processar as respostas
       const resultado = await this.rasaActionService.verificarRespostas(respostas, userId, email);
 
       console.log("Resultado da verificação de respostas:", resultado);

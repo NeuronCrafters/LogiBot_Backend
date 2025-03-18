@@ -1,4 +1,4 @@
-import { UserAnalysis } from "../../models/UserAnalysis";
+import { UserAnalysis, IUserAnalysis } from "../../models/UserAnalysis";
 import { AppError } from "../../exceptions/AppError";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -122,9 +122,10 @@ class RasaActionService {
   }
 
   async gerarPerguntas(pergunta: string) {
-    console.log("Chamando gerarPerguntas com pergunta:", pergunta);
+
     if (!this.nivelAtual) {
       throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
+
     }
 
     try {
@@ -136,8 +137,6 @@ class RasaActionService {
           slots: { pergunta, nivel: this.nivelAtual },
         },
       });
-
-      console.log("Resposta de gerarPerguntas:", response.data);
 
       if (!response.data || !response.data.responses || response.data.responses.length === 0) {
         throw new AppError("Resposta do Rasa não contém texto válido.", 500);
@@ -159,21 +158,19 @@ class RasaActionService {
       this.lastQuestions = jsonData.questions.map(q => q.question);
 
       if (!this.lastQuestions.length) {
-        console.error("Erro: Nenhuma pergunta extraída do Rasa.");
+
         throw new AppError("Nenhuma pergunta foi retornada pelo sistema.", 500);
+
       }
 
-      console.log("Perguntas armazenadas corretamente:", this.lastQuestions);
       return { questions: jsonData.questions };
     } catch (error) {
-      console.error("Erro ao gerar perguntas:", error);
+
       throw new AppError("Erro ao gerar perguntas", 500);
     }
   }
 
   async getGabarito() {
-    console.log("Chamando getGabarito...");
-    console.log("Gabarito retornado:", { answer_keys: this.lastAnswerKeys, assunto: this.lastSubject });
 
     return { answer_keys: this.lastAnswerKeys, assunto: this.lastSubject };
 
@@ -189,83 +186,53 @@ class RasaActionService {
 
     const answerHistoryEntry = respostas.map((resposta, index) => {
       const isCorrect = resposta === this.lastAnswerKeys[index];
-      isCorrect ? acertos++ : erros++;
 
+      if (isCorrect) {
+        acertos++;
+      } else {
+        erros++;
+      }
       return {
-        level: this.nivelAtual,
-        subject: this.lastSubject,
+        level: this.nivelAtual ? String(this.nivelAtual) : "Nível desconhecido",
+        subject: this.lastSubject ? String(this.lastSubject) : "Assunto desconhecido",
         selectedOption: {
-          question: this.lastQuestions[index],
-          isCorrect: isCorrect.toString(),
-          isSelected: resposta || "false",
+          question: this.lastQuestions[index] ? String(this.lastQuestions[index]) : "N/A",
+          isCorrect: String(isCorrect),
+          isSelected: resposta ? String(resposta) : "false",
         },
-        totalCorrectAnswers: acertos,
-        totalWrongAnswers: erros,
+
+        totalCorrectAnswers: isCorrect ? 1 : 0,
+        totalWrongAnswers: isCorrect ? 0 : 1,
         timestamp: new Date(),
       };
     });
 
-    answerHistoryEntry.forEach((entry, index) => {
-      if (!entry.level) {
-        console.log(`Entry ${index}: Missing field 'level'`);
-      }
-      if (!entry.subject) {
-        console.log(`Entry ${index}: Missing field 'subject'`);
-      }
-      if (!entry.selectedOption) {
-        console.log(`Entry ${index}: Missing field 'selectedOption'`);
-      } else {
-        if (!entry.selectedOption.question) {
-          console.log(`Entry ${index}: Missing field 'selectedOption.question'`);
-        }
-        if (!entry.selectedOption.isCorrect) {
-          console.log(`Entry ${index}: Missing field 'selectedOption.isCorrect'`);
-        }
-        if (!entry.selectedOption.isSelected) {
-          console.log(`Entry ${index}: Missing field 'selectedOption.isSelected'`);
-        }
-      }
-
-      if (entry.totalCorrectAnswers === undefined || entry.totalCorrectAnswers === null) {
-        console.log(`Entry ${index}: Missing field 'totalCorrectAnswers'`);
-      }
-      if (entry.totalWrongAnswers === undefined || entry.totalWrongAnswers === null) {
-        console.log(`Entry ${index}: Missing field 'totalWrongAnswers'`);
-      }
-      if (!entry.timestamp) {
-        console.log(`Entry ${index}: Missing field 'timestamp'`);
-      }
-    });
-
-    const hasMissingFields = answerHistoryEntry.some(entry =>
-      !entry.level ||
-      !entry.subject ||
-      !entry.selectedOption ||
-      !entry.selectedOption.question ||
-      !entry.selectedOption.isSelected ||
-      !entry.selectedOption.isCorrect ||
-      entry.totalCorrectAnswers === undefined ||
-      entry.totalWrongAnswers === undefined ||
-      !entry.timestamp
-    );
-
-    if (hasMissingFields) {
-      throw new AppError("Campos obrigatórios faltando no answerHistory.", 400);
+    const userAnalysis = await UserAnalysis.findOne({ userId, email });
+    if (!userAnalysis) {
+      throw new AppError("Usuário não encontrado.", 404);
+    }
+    if (!userAnalysis.sessions || userAnalysis.sessions.length === 0) {
+      throw new AppError("Nenhuma sessão ativa encontrada para este usuário.", 404);
     }
 
-    await UserAnalysis.findOneAndUpdate(
-      { userId, email },
-      {
-        $push: { "sessions.0.answerHistory": { questions: answerHistoryEntry } },
-        $inc: {
-          totalCorrectAnswers: acertos,
-          totalWrongAnswers: erros,
-          "sessions.0.totalCorrectAnswers": acertos,
-          "sessions.0.totalWrongAnswers": erros,
-        },
-      },
-      { new: true, upsert: true }
-    );
+    const lastSessionIndex = userAnalysis.sessions.length - 1;
+
+    userAnalysis.sessions[lastSessionIndex].answerHistory.push({ questions: answerHistoryEntry });
+
+    userAnalysis.totalCorrectAnswers = (userAnalysis.totalCorrectAnswers || 0) + acertos;
+    userAnalysis.totalWrongAnswers = (userAnalysis.totalWrongAnswers || 0) + erros;
+
+    userAnalysis.sessions[lastSessionIndex].totalCorrectAnswers =
+      (userAnalysis.sessions[lastSessionIndex].totalCorrectAnswers || 0) + acertos;
+    userAnalysis.sessions[lastSessionIndex].totalWrongAnswers =
+      (userAnalysis.sessions[lastSessionIndex].totalWrongAnswers || 0) + erros;
+
+    try {
+      await userAnalysis.save();
+    } catch (error) {
+      console.error("Erro ao salvar o histórico de respostas:", error);
+      throw new AppError("Erro ao salvar as respostas: " + error.message, 500);
+    }
 
     return {
       message: acertos === respostas.length ? "🎉 Parabéns! Acertou todas!" : "⚠️ Confira seu resultado:",
@@ -274,6 +241,7 @@ class RasaActionService {
       detalhes: { questions: answerHistoryEntry },
     };
   }
+
 
 }
 

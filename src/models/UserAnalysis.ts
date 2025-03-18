@@ -8,10 +8,14 @@ interface IUserAnalysis extends Document {
   courses: string;
   classes: string;
   totalUsageTime: number;
+  totalCorrectAnswers: number;
+  totalWrongAnswers: number;
   sessions: {
     sessionStart: Date;
     sessionEnd?: Date;
     sessionDuration?: number;
+    totalCorrectAnswers: number;
+    totalWrongAnswers: number;
     interactions: {
       timestamp: Date;
       message: string;
@@ -38,6 +42,7 @@ interface IUserAnalysis extends Document {
   }[];
 }
 
+
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
   userId: { type: String, required: true, index: true },
   name: { type: String, required: true },
@@ -46,11 +51,15 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   courses: { type: String, required: true },
   classes: { type: String, required: true },
   totalUsageTime: { type: Number, default: 0 },
+  totalCorrectAnswers: { type: Number, default: 0 },
+  totalWrongAnswers: { type: Number, default: 0 },
   sessions: [
     {
       sessionStart: { type: Date, required: true, default: Date.now },
       sessionEnd: { type: Date },
       sessionDuration: { type: Number, default: 0 },
+      totalCorrectAnswers: { type: Number, default: 0 },
+      totalWrongAnswers: { type: Number, default: 0 },
       interactions: [
         {
           timestamp: { type: Date, required: true, default: Date.now },
@@ -85,6 +94,7 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
     },
   ],
 });
+
 
 // metodo para calcular a duração da sessão antes de salvar
 UserAnalysisSchema.pre("save", function (next) {

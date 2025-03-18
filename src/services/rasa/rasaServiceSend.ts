@@ -3,7 +3,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const rasa_send = process.env.RASA as string
+const rasa_send = process.env.RASA;
+if (!rasa_send) {
+  console.error("Variável de ambiente RASA não definida.");
+}
 
 async function rasaSendService(message: string, sender: string) {
   if (!sender) {
@@ -11,6 +14,7 @@ async function rasaSendService(message: string, sender: string) {
   }
 
   try {
+
     const response = await axios.post(rasa_send, { sender, message });
 
     if (!response.data || response.data.length === 0) {
@@ -19,8 +23,12 @@ async function rasaSendService(message: string, sender: string) {
     }
 
     return response.data;
-  } catch (error) {
-    console.error("[RasaServiceSend] Erro ao conectar ao Rasa:", error.message);
+  } catch (error: any) {
+    if (error.response) {
+      console.error("[RasaServiceSend] Erro ao conectar ao Rasa. Status:", error.response.status, "Dados:", error.response.data);
+    } else {
+      console.error("[RasaServiceSend] Erro ao conectar ao Rasa:", error.message);
+    }
     throw new Error("Falha ao se comunicar com o Rasa.");
   }
 }

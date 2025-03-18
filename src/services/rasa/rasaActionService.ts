@@ -140,7 +140,6 @@ class RasaActionService {
       console.log("Resposta de gerarPerguntas:", response.data);
 
       if (!response.data || !response.data.responses || response.data.responses.length === 0) {
-        console.error("Erro: Resposta do Rasa não contém texto válido.");
         throw new AppError("Resposta do Rasa não contém texto válido.", 500);
       }
 
@@ -152,7 +151,12 @@ class RasaActionService {
       }
 
       const jsonData = this.parseQuestionsFromText(rawText);
-      this.lastQuestions = jsonData.questions.map(q => q.question); // Armazena corretamente as perguntas
+
+      if (!jsonData.questions || !Array.isArray(jsonData.questions)) {
+        throw new AppError("Formato inesperado de perguntas na resposta.", 500);
+      }
+
+      this.lastQuestions = jsonData.questions.map(q => q.question);
 
       if (!this.lastQuestions.length) {
         console.error("Erro: Nenhuma pergunta extraída do Rasa.");
@@ -170,100 +174,107 @@ class RasaActionService {
   async getGabarito() {
     console.log("Chamando getGabarito...");
     console.log("Gabarito retornado:", { answer_keys: this.lastAnswerKeys, assunto: this.lastSubject });
+
     return { answer_keys: this.lastAnswerKeys, assunto: this.lastSubject };
+
   }
 
   async verificarRespostas(respostas: string[], userId: string, email: string) {
-    console.log("Recebendo requisição para verificar respostas...");
-    console.log("Respostas recebidas:", respostas);
-    console.log("Usuário:", { userId, email });
-    console.log("Gabarito armazenado:", this.lastAnswerKeys);
-    console.log("Perguntas armazenadas:", this.lastQuestions);
-    console.log("Nível atual:", this.nivelAtual);
-    console.log("Assunto atual:", this.lastSubject);
-
-    if (!this.lastAnswerKeys.length) {
-      console.error("Erro: Nenhum gabarito armazenado.");
-      throw new AppError("Nenhum gabarito disponível. Gere perguntas primeiro.", 400);
-    }
-
-    if (!this.lastQuestions.length) {
-      console.error("Erro: Nenhuma pergunta armazenada antes de verificar respostas.");
-      throw new AppError("Nenhuma pergunta foi armazenada. Gere perguntas primeiro.", 400);
-    }
-
-    if (!Array.isArray(respostas) || respostas.length !== this.lastAnswerKeys.length) {
-      console.error("Erro: Número de respostas inválido.", {
-        respostasRecebidas: respostas.length,
-        respostasEsperadas: this.lastAnswerKeys.length,
-      });
-      throw new AppError("Número de respostas inválido.", 400);
+    if (!this.lastAnswerKeys.length || !this.lastQuestions.length) {
+      throw new AppError("Gabarito ou perguntas não definidos.", 400);
     }
 
     let acertos = 0;
     let erros = 0;
 
-    const level = this.nivelAtual || "Nível Desconhecido";
-    const subject = this.lastSubject || "Assunto Desconhecido";
-
-    let answerHistoryEntry = {
-      questions: [] as any[],
-    };
-
-    respostas.forEach((resposta, index) => {
+    const answerHistoryEntry = respostas.map((resposta, index) => {
       const isCorrect = resposta === this.lastAnswerKeys[index];
-      if (isCorrect) acertos++;
-      else erros++;
+      isCorrect ? acertos++ : erros++;
 
-      answerHistoryEntry.questions.push({
-        level: level,
-        subject: subject,
-        selectedOption: [
-          {
-            question: this.lastQuestions[index], // Certifica-se de pegar a pergunta correta
-            isCorrect: this.lastAnswerKeys[index],
-            isSelected: resposta,
-          },
-        ],
+      return {
+        level: this.nivelAtual,
+        subject: this.lastSubject,
+        selectedOption: {
+          question: this.lastQuestions[index],
+          isCorrect: isCorrect.toString(),
+          isSelected: resposta || "false",
+        },
         totalCorrectAnswers: acertos,
         totalWrongAnswers: erros,
         timestamp: new Date(),
-      });
+      };
     });
 
-    console.log("Resumo da verificação de respostas:", {
-      totalAcertos: acertos,
-      totalErros: erros,
-      detalhes: answerHistoryEntry,
+    answerHistoryEntry.forEach((entry, index) => {
+      if (!entry.level) {
+        console.log(`Entry ${index}: Missing field 'level'`);
+      }
+      if (!entry.subject) {
+        console.log(`Entry ${index}: Missing field 'subject'`);
+      }
+      if (!entry.selectedOption) {
+        console.log(`Entry ${index}: Missing field 'selectedOption'`);
+      } else {
+        if (!entry.selectedOption.question) {
+          console.log(`Entry ${index}: Missing field 'selectedOption.question'`);
+        }
+        if (!entry.selectedOption.isCorrect) {
+          console.log(`Entry ${index}: Missing field 'selectedOption.isCorrect'`);
+        }
+        if (!entry.selectedOption.isSelected) {
+          console.log(`Entry ${index}: Missing field 'selectedOption.isSelected'`);
+        }
+      }
+
+      if (entry.totalCorrectAnswers === undefined || entry.totalCorrectAnswers === null) {
+        console.log(`Entry ${index}: Missing field 'totalCorrectAnswers'`);
+      }
+      if (entry.totalWrongAnswers === undefined || entry.totalWrongAnswers === null) {
+        console.log(`Entry ${index}: Missing field 'totalWrongAnswers'`);
+      }
+      if (!entry.timestamp) {
+        console.log(`Entry ${index}: Missing field 'timestamp'`);
+      }
     });
 
-    try {
-      await UserAnalysis.findOneAndUpdate(
-        { userId, email },
-        {
-          $push: { "sessions.0.answerHistory": { questions: answerHistoryEntry.questions } },
-          $inc: {
-            totalCorrectAnswers: acertos,
-            totalWrongAnswers: erros,
-            "sessions.0.totalCorrectAnswers": acertos,
-            "sessions.0.totalWrongAnswers": erros,
-          },
-        },
-        { new: true, upsert: true }
-      );
-      console.log("Dados atualizados no banco de dados para usuário:", userId);
-    } catch (dbError) {
-      console.error("Erro ao atualizar o banco de dados:", dbError);
-      throw new AppError("Erro ao salvar respostas no banco de dados.", 500);
+    const hasMissingFields = answerHistoryEntry.some(entry =>
+      !entry.level ||
+      !entry.subject ||
+      !entry.selectedOption ||
+      !entry.selectedOption.question ||
+      !entry.selectedOption.isSelected ||
+      !entry.selectedOption.isCorrect ||
+      entry.totalCorrectAnswers === undefined ||
+      entry.totalWrongAnswers === undefined ||
+      !entry.timestamp
+    );
+
+    if (hasMissingFields) {
+      throw new AppError("Campos obrigatórios faltando no answerHistory.", 400);
     }
 
+    await UserAnalysis.findOneAndUpdate(
+      { userId, email },
+      {
+        $push: { "sessions.0.answerHistory": { questions: answerHistoryEntry } },
+        $inc: {
+          totalCorrectAnswers: acertos,
+          totalWrongAnswers: erros,
+          "sessions.0.totalCorrectAnswers": acertos,
+          "sessions.0.totalWrongAnswers": erros,
+        },
+      },
+      { new: true, upsert: true }
+    );
+
     return {
-      message: acertos === this.lastAnswerKeys.length ? "🎉 Parabéns! Você acertou todas as questões!" : "⚠️ Aqui está seu resultado:",
+      message: acertos === respostas.length ? "🎉 Parabéns! Acertou todas!" : "⚠️ Confira seu resultado:",
       totalCorrectAnswers: acertos,
       totalWrongAnswers: erros,
-      detalhes: answerHistoryEntry,
+      detalhes: { questions: answerHistoryEntry },
     };
   }
+
 }
 
 export { RasaActionService };

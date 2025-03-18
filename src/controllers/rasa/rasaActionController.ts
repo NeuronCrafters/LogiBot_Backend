@@ -68,49 +68,30 @@ class RasaActionController {
 
   async verificarRespostas(req: Request, res: Response) {
     try {
-      console.log("Recebendo requisição para verificar respostas...");
       const { respostas } = req.body;
 
       if (!respostas) {
-        console.log("Erro: As respostas não foram fornecidas.");
         return res.status(400).json({ message: "As respostas são obrigatórias." });
       }
 
       const authHeader = req.headers.authorization;
       if (!authHeader) {
-        console.log("Erro: Token não fornecido no cabeçalho da requisição.");
         return res.status(401).json({ message: "Token não fornecido." });
       }
 
       const token = authHeader.split(" ")[1];
-      console.log("Token recebido:", token);
+      const userData: any = jwt.verify(token, process.env.JWT_SECRET as string);
 
-      let userData;
-      try {
-        userData = jwt.verify(token, process.env.JWT_SECRET as string);
-        console.log("Token decodificado com sucesso:", userData);
-      } catch (error) {
-        console.log("Erro ao verificar token:", error);
-        return res.status(401).json({ message: "Token inválido." });
-      }
-
-      if (!userData || typeof userData !== "object" || !userData.id || !userData.email) {
-        console.log("Erro: Estrutura inválida do token decodificado.", userData);
+      if (!userData || !userData.id || !userData.email) {
         return res.status(401).json({ message: "Token inválido." });
       }
 
       const userId = userData.id;
       const email = userData.email;
-      console.log("Usuário autenticado:", { userId, email });
 
-      // Chamando o método do service para processar as respostas
       const resultado = await this.rasaActionService.verificarRespostas(respostas, userId, email);
-
-      console.log("Resultado da verificação de respostas:", resultado);
-
       return res.status(200).json(resultado);
     } catch (error) {
-      console.log("Erro inesperado ao verificar respostas:", error);
       return res.status(500).json({ message: "Erro ao verificar respostas", error: error.message });
     }
   }

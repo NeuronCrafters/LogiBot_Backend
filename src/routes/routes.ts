@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authRoute } from "./routesPaths/authRoute";
 import { socialLoginRoute } from "./routesPaths/socialLoginRoute";
 import { adminRouter } from "./routesPaths/adminRoute";
-// import { professorRouter } from "./routesPaths/professorRoute";
+import { professorRouter } from "./routesPaths/professorRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
@@ -21,7 +21,7 @@ routes.use("/", socialLoginRoute);
 routes.use("/admin", adminRouter);
 
 // Rotas protegidas para professor (middlewares já estão dentro do `professorRouter.ts`)
-// routes.use("/professor", professorRouter);
+routes.use("/professor", professorRouter);
 
 // Rotas de redefinição de senha
 routes.use("/password", passwordRouter);
@@ -29,13 +29,13 @@ routes.use("/password", passwordRouter);
 // Rotas do SAEL (middlewares já estão dentro do `rasaRouter.ts`)
 routes.use("/sael", rasaRouter);
 
+//Rota para pegar os logs do usuario
+routes.use("/logs", logRoutes)
+
 // Rotas de instituições acadêmicas (middlewares já estão dentro do `academicInstitutionRouter.ts`)
 routes.use("/academic-institution", academicInstitutionRouter);
 
 // Rota pública para consultar a lista de universidades, cursos e turmas para usar na rota de cadastro
 routes.use("/public", publicAcademicRoute);
-
-//Rota para pegar os logs do usuario
-routes.use("/logs", logRoutes)
 
 export { routes };

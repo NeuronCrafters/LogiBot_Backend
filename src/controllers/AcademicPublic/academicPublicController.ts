@@ -99,7 +99,6 @@ async function getClassesByCourseId(req: Request, res: Response) {
   }
 }
 
-// Listar professores vinculados a uma universidade e, opcionalmente, a um curso
 async function getProfessorsByUniversityId(req: Request, res: Response) {
   const { universityId, courseId } = req.params;
 
@@ -109,16 +108,20 @@ async function getProfessorsByUniversityId(req: Request, res: Response) {
       return res.status(404).json({ message: "Universidade não encontrada" });
     }
 
-    let query = { university: universityId } as any;
+    let query = { school: universityId } as any;
+
     if (courseId) {
       const course = await Course.findOne({ _id: courseId, university: universityId });
+
       if (!course) {
         return res.status(404).json({ message: "Curso não encontrado para essa universidade" });
       }
-      query.course = courseId;
+
+      query.courses = courseId;
     }
 
     const professors = await Professor.find(query).lean();
+
     res.status(200).json(professors);
   } catch (error) {
     res.status(500).json({ message: "Erro ao buscar professores", error });

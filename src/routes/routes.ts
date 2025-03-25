@@ -5,10 +5,10 @@ import { adminRouter } from "./routesPaths/adminRoute";
 // import { professorRouter } from "./routesPaths/professorRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
-import { rasaActionRouter } from "./routesPaths/rasaActionRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
 import { faqStoreRouter } from "./routesPaths/faqStoreRoute";
 import { publicAcademicRoute } from "./routesPaths/academicPublicRoutes";
+import { logRoutes } from "./routesPaths/logsRoutes";
 
 const routes = Router();
 
@@ -30,9 +30,6 @@ routes.use("/password", passwordRouter);
 // Rotas do SAEL (middlewares já estão dentro do `rasaRouter.ts`)
 routes.use("/sael", rasaRouter);
 
-// Rotas do SAEL para actions (middlewares já estão dentro do `rasaActionRoute.ts`)
-routes.use("/saelaction", rasaActionRouter);
-
 // Rotas de instituições acadêmicas (middlewares já estão dentro do `academicInstitutionRouter.ts`)
 routes.use("/academic-institution", academicInstitutionRouter);
 
@@ -41,5 +38,8 @@ routes.use("/faq", faqStoreRouter);
 
 // Rota pública para consultar a lista de universidades, cursos e turmas para usar na rota de cadastro
 routes.use("/public", publicAcademicRoute);
+
+//Rota para pegar os logs do usuario
+routes.use("/logs", logRoutes)
 
 export { routes };

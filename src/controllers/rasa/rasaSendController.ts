@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { rasaSendService } from "../../services/rasa/rasaServiceSend";
+import { rasaSendService } from "../../services/rasa/rasaSendService";
 import { UserAnalysis } from "../../models/UserAnalysis";
 import jwt from "jsonwebtoken";
 import { AppError } from "../../exceptions/AppError";

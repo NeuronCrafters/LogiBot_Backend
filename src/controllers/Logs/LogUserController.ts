@@ -15,4 +15,4 @@ class LogUserController {
   }
 }
 
-export { LogUserController }
+export { LogUserController };

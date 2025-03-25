@@ -28,12 +28,12 @@ publicAcademicRoute.get("/classes/:universityId/:courseId", getClassesByCourseId
 publicAcademicRoute.get("/professors/:universityId/:courseId?", getProfessorsByUniversityId);
 
 /** Listar alunos de uma turma específica que pertence a um curso de uma universidade */
-publicAcademicRoute.get("/students/:universityId/:courseId/:classId", getStudentsByClassId);
+publicAcademicRoute.get("/students/by-class/:universityId/:courseId/:classId", getStudentsByClassId);
 
 /** Listar alunos de uma disciplina específica */
-publicAcademicRoute.get("/students/:universityId/:courseId/:disciplineId", getStudentsByDisciplineId);
+publicAcademicRoute.get("/students/by-discipline/:universityId/:courseId/:disciplineId", getStudentsByDisciplineId);
 
 /** Listar todos os alunos de um curso */
-publicAcademicRoute.get("/students/:universityId/:courseId", getStudentsByCourseId);
+publicAcademicRoute.get("/students/by-course/:universityId/:courseId", getStudentsByCourseId);
 
 export { publicAcademicRoute };

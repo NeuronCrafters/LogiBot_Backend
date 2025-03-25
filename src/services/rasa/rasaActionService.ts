@@ -122,55 +122,6 @@ class RasaActionService {
     return { questions };
   }
 
-  // async gerarPerguntas(pergunta: string) {
-
-  //   if (!this.nivelAtual) {
-  //     throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
-
-  //   }
-
-  //   try {
-  //     this.lastSubject = pergunta;
-  //     const response = await axios.post(RASA_ACTION_URL, {
-  //       next_action: "action_gerar_perguntas_chatgpt",
-  //       tracker: {
-  //         sender_id: "user",
-  //         slots: { pergunta, nivel: this.nivelAtual },
-  //       },
-  //     });
-
-  //     if (!response.data || !response.data.responses || response.data.responses.length === 0) {
-  //       throw new AppError("Resposta do Rasa não contém texto válido.", 500);
-  //     }
-
-  //     const rawText = response.data.responses[0]?.text;
-  //     this.lastAnswerKeys = response.data.responses[0]?.custom?.answer_keys || [];
-
-  //     if (!rawText) {
-  //       throw new AppError("Resposta do Rasa não contém texto.", 500);
-  //     }
-
-  //     const jsonData = this.parseQuestionsFromText(rawText);
-
-  //     if (!jsonData.questions || !Array.isArray(jsonData.questions)) {
-  //       throw new AppError("Formato inesperado de perguntas na resposta.", 500);
-  //     }
-
-  //     this.lastQuestions = jsonData.questions.map(q => q.question);
-
-  //     if (!this.lastQuestions.length) {
-
-  //       throw new AppError("Nenhuma pergunta foi retornada pelo sistema.", 500);
-
-  //     }
-
-  //     return { questions: jsonData.questions };
-  //   } catch (error) {
-
-  //     throw new AppError("Erro ao gerar perguntas", 500);
-  //   }
-  // }
-
   async gerarPerguntas(pergunta: string) {
     if (!this.nivelAtual) {
       throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);

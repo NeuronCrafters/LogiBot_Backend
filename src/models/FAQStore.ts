@@ -1,51 +1,55 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-interface IFAQStore extends Document {
-  group_id: string;
-  subject: string;
-  nivel: "basico" | "intermediario" | "avancado";
-  questions: {
-    question_id: string;
-    question: string;
-    options: string[];
-  }[];
-  answer_keys: string[];
-  user_answers?: {
-    userId: string;
-    question_id: string;
-    selectedOption: string;
-    isCorrect: boolean;
-    timestamp: Date;
-  }[];
-  created_at: Date;
+interface IQuestion {
+  question: string;
+  options: string[];
 }
 
-const FAQStoreSchema = new Schema<IFAQStore>({
-  group_id: { type: String, required: true, unique: true },
-  subject: { type: String, required: true, unique: false },
-  nivel: {
-    type: String,
-    required: true,
-    enum: ["basico", "intermediario", "avancado"],
-  },
-  questions: [
-    {
-      question_id: { type: String, required: true },
-      question: { type: String, required: true },
-      options: [{ type: String, required: true }],
-    },
-  ],
-  answer_keys: [{ type: String, required: true }],
-  user_answers: [
-    {
-      userId: { type: String, required: true },
-      question_id: { type: String, required: true },
-      selectedOption: { type: String, required: true },
-      isCorrect: { type: Boolean, required: true },
-      timestamp: { type: Date, default: Date.now },
-    },
-  ],
-  created_at: { type: Date, default: Date.now },
+interface IFaqStore extends Document {
+  nivel: string;
+  assunto: string;
+  subassunto: string;
+  questions: IQuestion[];
+  answer_keys: string[];
+}
+
+const QuestionSchema = new Schema<IQuestion>({
+  question: { type: String, required: true },
+  options: [{ type: String, required: true }]
 });
 
-export const FAQStore = mongoose.model<IFAQStore>("FAQStore", FAQStoreSchema);
+const FaqStoreSchema = new Schema<IFaqStore>(
+  {
+    nivel: { type: String, required: true },
+    assunto: { type: String, required: true },
+    subassunto: { type: String, required: true },
+    questions: {
+      type: [QuestionSchema],
+      required: true,
+      validate: [arr => arr.length === 5, "São necessárias exatamente 5 perguntas."]
+    },
+    answer_keys: {
+      type: [String],
+      required: true,
+      validate: [arr => arr.length === 5, "São necessários exatamente 5 gabaritos."]
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+FaqStoreSchema.index(
+  {
+    nivel: 1,
+    assunto: 1,
+    subassunto: 1,
+    "questions.question": 1,
+    "questions.options": 1
+  },
+  { unique: true }
+);
+
+const FaqStore = mongoose.model<IFaqStore>("FaqStore", FaqStoreSchema);
+
+export { FaqStore, IFaqStore };

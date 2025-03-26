@@ -4,7 +4,7 @@ import { getSession } from "../../../services/rasa/types/sessionMemory";
 
 export async function getGabaritoController(req: Request, res: Response) {
   try {
-    const userId = "user";
+    const userId = req.user.id;
     const session = getSession(userId);
 
     const result = getGabaritoService(session);

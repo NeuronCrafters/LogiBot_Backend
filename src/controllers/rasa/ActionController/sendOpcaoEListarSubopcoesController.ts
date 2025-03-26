@@ -5,7 +5,7 @@ import { getSession } from "../../../services/rasa/types/sessionMemory";
 export async function sendOpcaoEListarSubopcoesController(req: Request, res: Response) {
   try {
     const { categoria } = req.body;
-    const userId = "user";
+    const userId = req.user.id;
     const session = getSession(userId);
 
     session.lastSubject = categoria;

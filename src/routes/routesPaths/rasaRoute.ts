@@ -1,29 +1,39 @@
 import { Router } from "express";
 import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 import { RasaSendController } from "../../controllers/rasa/rasaSendController";
-import { RasaActionController } from "../../controllers/rasa/rasaActionController";
-
+import { listarNiveisController } from "../../controllers/rasa/ActionController/listarNiveisController";
+import { definirNivelController } from "../../controllers/rasa/ActionController/definirNivelController";
+import { listarOpcoesController } from "../../controllers/rasa/ActionController/listarOpcoesController";
+import { sendOpcaoEListarSubopcoesController } from "../../controllers/rasa/ActionController/sendOpcaoEListarSubopcoesController";
+import { gerarPerguntasController } from "../../controllers/rasa/ActionController/gerarPerguntasController";
+import { getGabaritoController } from "../../controllers/rasa/ActionController/getGabaritoController";
+import { verificarRespostasController } from "../../controllers/rasa/ActionController/verificarRespostasController";
 
 const rasaRouter = Router();
-
 const sendController = new RasaSendController();
-const actionController = new RasaActionController();
 
-// Rota para enviar mensagem ao chatbot (somente usuários autenticados)
+// Rota para enviar mensagem ao chatbot (ainda em classe)
 rasaRouter.post("/talk", ...isPermissions.isAuthenticated(), sendController.handle.bind(sendController));
 
-rasaRouter.get("/action/listar_niveis", ...isPermissions.isAuthenticated(), actionController.listarNiveis.bind(actionController));
+// Rota: Listar níveis
+rasaRouter.get("/action/listar_niveis", ...isPermissions.isAuthenticated(), listarNiveisController);
 
-rasaRouter.post("/action/definir_nivel", ...isPermissions.isAuthenticated(), actionController.definirNivel.bind(actionController));
+// Rota: Definir nível
+rasaRouter.post("/action/definir_nivel", ...isPermissions.isAuthenticated(), definirNivelController);
 
-rasaRouter.get("/action/listar_opcoes", ...isPermissions.isAuthenticated(), actionController.listarOpcoes.bind(actionController));
+// Rota: Listar opções
+rasaRouter.get("/action/listar_opcoes", ...isPermissions.isAuthenticated(), listarOpcoesController);
 
-rasaRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), actionController.sendOpcaoEListarSubopcoes.bind(actionController));
+// Rota: Listar subopções
+rasaRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), sendOpcaoEListarSubopcoesController);
 
-rasaRouter.post("/action/gerar_perguntas", ...isPermissions.isAuthenticated(), actionController.gerarPerguntas.bind(actionController));
+// Rota: Gerar perguntas
+rasaRouter.post("/action/gerar_perguntas", ...isPermissions.isAuthenticated(), gerarPerguntasController);
 
-rasaRouter.get("/action/gabarito", ...isPermissions.isAuthenticated(), actionController.getGabarito.bind(actionController));
+// Rota: Obter gabarito
+rasaRouter.get("/action/gabarito", ...isPermissions.isAuthenticated(), getGabaritoController);
 
-rasaRouter.post("/action/send", ...isPermissions.isAuthenticated(), actionController.verificarRespostas.bind(actionController));
+// Rota: Verificar respostas
+rasaRouter.post("/action/send", ...isPermissions.isAuthenticated(), verificarRespostasController);
 
 export { rasaRouter };

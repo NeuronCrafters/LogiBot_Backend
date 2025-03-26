@@ -5,9 +5,9 @@ import { getSession } from "../../../services/rasa/types/sessionMemory";
 export async function definirNivelController(req: Request, res: Response) {
   try {
     const { nivel } = req.body;
-    const userId = "user";
-
+    const userId = req.user.id;
     const session = getSession(userId);
+
     const result = await definirNivelService(nivel);
     session.nivelAtual = nivel;
 

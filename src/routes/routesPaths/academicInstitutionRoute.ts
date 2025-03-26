@@ -17,14 +17,143 @@ import { GetClassWithStudentsController } from "../../controllers/University/Uni
 
 const academicInstitutionRouter = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Universidade
+ *   description: Rotas relacionadas à gestão acadêmica (universidades, cursos, turmas, disciplinas)
+ */
+
+/**
+ * @swagger
+ * /academic-institution/university:
+ *   post:
+ *     summary: Criação de uma nova universidade
+ *     tags: [Universidade]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Universidade criada com sucesso
+ *       409:
+ *         description: Universidade já existente
+ */
 // Rotas para Universidades (Somente Admin)
 academicInstitutionRouter.post("/university", ...isPermissions.isAdmin(), new CreateUniversityController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/university:
+ *   get:
+ *     summary: Listar todas as universidades
+ *     tags: [Universidade]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de universidades retornada com sucesso
+ */
 academicInstitutionRouter.get("/university", ...isPermissions.isAdmin(), new ListUniversitiesController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/university/{universityId}:
+ *   delete:
+ *     summary: Deletar uma universidade
+ *     tags: [Universidade]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: universityId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Universidade deletada com sucesso
+ *       404:
+ *         description: Universidade não encontrada
+ */
 academicInstitutionRouter.delete("/university/:universityId", ...isPermissions.isAdmin(), new DeleteUniversityController().handle);
 
+/**
+ * @swagger
+ * /academic-institution/course:
+ *   post:
+ *     summary: Criação de um novo curso
+ *     tags: [Universidade]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               universityId:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Curso criado com sucesso
+ *       409:
+ *         description: Curso já existente
+ */
 // Rotas para Cursos (Somente Admin)
 academicInstitutionRouter.post("/course", ...isPermissions.isAdmin(), new CreateCourseController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/course/{universityId}:
+ *   get:
+ *     summary: Listar cursos por universidade
+ *     tags: [Universidade]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: universityId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de cursos retornada com sucesso
+ */
 academicInstitutionRouter.get("/course/:universityId", ...isPermissions.isAdmin(), new ListCoursesByUniversityController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/course/{courseId}:
+ *   delete:
+ *     summary: Deletar um curso
+ *     tags: [Universidade]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Curso deletado com sucesso
+ *       404:
+ *         description: Curso não encontrado
+ */
 academicInstitutionRouter.delete("/course/:courseId", ...isPermissions.isAdmin(), new DeleteCourseController().handle);
 
 // Rotas para Turmas (Admin e Coordenadores)

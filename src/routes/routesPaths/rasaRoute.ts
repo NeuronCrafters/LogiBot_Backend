@@ -31,7 +31,7 @@ rasaRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), 
 rasaRouter.post("/action/gerar_perguntas", ...isPermissions.isAuthenticated(), gerarPerguntasController);
 
 // Rota: Obter gabarito
-rasaRouter.get("/action/gabarito", ...isPermissions.isAuthenticated(), getGabaritoController);
+rasaRouter.get("/action/gabarito", ...isPermissions.isAdminProfessorOrCoordinator(), getGabaritoController);
 
 // Rota: Verificar respostas
 rasaRouter.post("/action/send", ...isPermissions.isAuthenticated(), verificarRespostasController);

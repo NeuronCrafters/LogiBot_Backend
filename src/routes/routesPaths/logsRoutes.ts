@@ -12,16 +12,115 @@ const disciplineController = new LogDisciplineController();
 const courseController = new LogCourseController();
 const classController = new LogClassController();
 
-// logs de um usuário (admin, coordenador e aluno)
+/**
+ * @swagger
+ * tags:
+ *   name: Logs
+ *   description: Rotas relacionadas aos Logs de interação com o bot
+ */
+
+/**
+ * @swagger
+ * /logs/user/{userId}:
+ *   get:
+ *     tags: [Logs]
+ *     summary: Buscar logs de um usuário
+ *     description: Retorna os logs de interação de um usuário específico.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         description: ID do usuário
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Logs do usuário retornados com sucesso
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Logs não encontrados ou usuário inválido
+ */
 logRoutes.get("/user/:userId", isPermissions.isAdminProfessorOrCoordinator(), userController.getUserLogs.bind(userController));
 
-// logs de uma turma (admin e coordenador)
+/**
+ * @swagger
+ * /logs/class/{classId}:
+ *   get:
+ *     tags: [Logs]
+ *     summary: Buscar logs de uma turma
+ *     description: Retorna os logs de todos os alunos de uma turma específica.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         description: ID da turma
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Logs da turma retornados com sucesso
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Turma não encontrada
+ */
 logRoutes.get("/class/:classId", isPermissions.isAdminOrCoordinator(), classController.getClassLogs.bind(classController));
 
-// logs de uma disciplina (admin, coordenador ou professor da disciplina)
+/**
+ * @swagger
+ * /logs/discipline/{disciplineId}:
+ *   get:
+ *     tags: [Logs]
+ *     summary: Buscar logs de uma disciplina
+ *     description: Retorna os logs de todos os alunos de uma disciplina específica.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: disciplineId
+ *         required: true
+ *         description: ID da disciplina
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Logs da disciplina retornados com sucesso
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Disciplina não encontrada
+ */
 logRoutes.get("/discipline/:disciplineId", isPermissions.isAdminProfessorOrCoordinator(), disciplineController.getDisciplineLogs.bind(disciplineController));
 
-// logs de um curso (admin e coordenador)
+/**
+ * @swagger
+ * /logs/course/{courseId}:
+ *   get:
+ *     tags: [Logs]
+ *     summary: Buscar logs de um curso
+ *     description: Retorna os logs de todos os alunos de um curso específico.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         description: ID do curso
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Logs do curso retornados com sucesso
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Curso não encontrado
+ */
 logRoutes.get("/course/:courseId", isPermissions.isAdminOrCoordinator(), courseController.getCourseLogs.bind(courseController));
 
 export { logRoutes };

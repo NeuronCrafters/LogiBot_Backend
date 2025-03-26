@@ -16,6 +16,13 @@ const detailsUserController = new DetailsUserController();
 
 /**
  * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Rotas relacionadas a login detalhes da conta, logout e outros...
+ */
+
+/**
+ * @swagger
  * /users:
  *   post:
  *     tags: [Auth]

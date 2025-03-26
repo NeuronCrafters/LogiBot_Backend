@@ -156,19 +156,186 @@ academicInstitutionRouter.get("/course/:universityId", ...isPermissions.isAdmin(
  */
 academicInstitutionRouter.delete("/course/:courseId", ...isPermissions.isAdmin(), new DeleteCourseController().handle);
 
+/**
+ * @swagger
+ * /academic-institution/class:
+ *   post:
+ *     tags: [Universidade]
+ *     summary: Criar nova turma
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               courseId:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Turma criada com sucesso
+ */
 // Rotas para Turmas (Admin e Coordenadores)
 academicInstitutionRouter.post("/class", ...isPermissions.isAdminOrCoordinator(), new CreateClassController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/class/{courseId}:
+ *   get:
+ *     tags: [Universidade]
+ *     summary: Listar turmas de um curso
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de turmas
+ */
 academicInstitutionRouter.get("/class/:courseId", ...isPermissions.isAdminOrCoordinator(), new ListClassesByCourseController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/class/{classId}:
+ *   delete:
+ *     tags: [Universidade]
+ *     summary: Deletar turma
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Turma deletada com sucesso
+ */
 academicInstitutionRouter.delete("/class/:classId", ...isPermissions.isAdminOrCoordinator(), new DeleteClassController().handle);
 
+
+/**
+ * @swagger
+ * /academic-institution/discipline:
+ *   post:
+ *     tags: [Universidade]
+ *     summary: Criar nova disciplina
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               courseId:
+ *                 type: string
+ *               classIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               professorIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Disciplina criada com sucesso
+ */
 // Rotas para Disciplinas (Admin e Coordenadores)
 academicInstitutionRouter.post("/discipline", ...isPermissions.isAdminOrCoordinator(), new CreateDisciplineController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/discipline:
+ *   get:
+ *     tags: [Universidade]
+ *     summary: Listar disciplinas
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de disciplinas
+ */
 academicInstitutionRouter.get("/discipline", ...isPermissions.isAdminOrCoordinator(), new ListDisciplinesController().handle);
+
+/**
+ * @swagger
+ * /academic-institution/discipline/{disciplineId}:
+ *   delete:
+ *     tags: [Universidade]
+ *     summary: Deletar disciplina
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: disciplineId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Disciplina deletada com sucesso
+ */
 academicInstitutionRouter.delete("/discipline/:disciplineId", ...isPermissions.isAdminOrCoordinator(), new DeleteDisciplineController().handle);
 
+/**
+ * @swagger
+ * /academic-institution/assign-discipline:
+ *   post:
+ *     tags: [Universidade]
+ *     summary: Associar aluno a disciplina
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               studentId:
+ *                 type: string
+ *               disciplineId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Aluno associado à disciplina com sucesso
+ */
 // Rota para associar um aluno a uma disciplina (Admin e Coordenadores)
 academicInstitutionRouter.post("/assign-discipline", ...isPermissions.isAdminOrCoordinator(), new AssignDisciplineController().handle);
 
+
+/**
+ * @swagger
+ * /academic-institution/class/{classId}/students:
+ *   get:
+ *     tags: [Universidade]
+ *     summary: Listar alunos de uma turma
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de alunos da turma
+ */
 // Rota para listar alunos de uma turma específica (Admin e Coordenadores)
 academicInstitutionRouter.get("/class/:classId/students", ...isPermissions.isAdminOrCoordinator(), new GetClassWithStudentsController().handle);
 

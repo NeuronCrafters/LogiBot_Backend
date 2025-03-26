@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import cors from "cors";
 import express from 'express';
-import swaggerUi from 'swagger-ui-express';
-import swaggerFile from '../src/config/swagger/swagger_output.json';
+import { setupSwagger } from "./config/swagger/swaggerConfig";
 import passport from 'passport';
 import './config/socialLogin/passport';
 import session from 'express-session';
@@ -29,7 +28,7 @@ app.use(passport.session());
 
 app.use(routes);
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
+setupSwagger(app);
 
 app.use(errorHandler);
 

@@ -1,24 +1,38 @@
-import swaggerAutogen from 'swagger-autogen';
+import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import { Express } from "express";
 
-const outputFile = './src/config/swagger/swagger_output.json';
-const endpointsFiles = ['./src/routes/routes.ts'];
-
-const doc = {
-  info: {
-    title: 'API - Chat SAEL',
-    description: 'Documentação das rotas da API do SAEL',
+const options: swaggerJSDoc.Options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Chat SAEL API",
+      version: "1.0.0",
+      description: "Documentação da API do Chat SAEL",
+    },
+    servers: [
+      {
+        url: "http://localhost:3000",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [{ bearerAuth: [] }],
   },
-  host: 'localhost:3000',
-  schemes: ['http'],
-  tags: [
-    { name: 'Auth', description: 'Rotas de autenticação' },
-    { name: 'Admin', description: 'Rotas administrativas' },
-    { name: 'Professor', description: 'Acesso de professores' },
-    { name: 'SAEL (ChatBot)', description: 'Interação com o ChatBot' },
-    { name: 'Logs', description: 'Logs de usuários, cursos, disciplinas e turmas' },
-    { name: 'Instituições Acadêmicas', description: 'CRUD acadêmico (admin)' },
-    { name: 'Acadêmico Público', description: 'Rotas públicas de cursos e universidades' },
+  apis: [
+    "./src/routes/routesPaths/*.ts",
   ],
 };
 
-swaggerAutogen({ openapi: '3.0.0' })(outputFile, endpointsFiles, doc);
+const swaggerSpec = swaggerJSDoc(options);
+
+export function setupSwagger(app: Express) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}

@@ -55,7 +55,7 @@ class AuthUserService {
     }
 
     // Captura a hora atual da sessão do usuário
-    const sessionStart = new Date();
+    const sessionStart = new Date() || null;
 
     // Simulação de captura de dispositivo do usuário
     const deviceInfo = {
@@ -88,58 +88,57 @@ class AuthUserService {
       }
     );
 
-    // Atualiza ou cria o UserAnalysis com a nova sessão
-    setImmediate(async () => {
-      try {
-        const existingUserAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
+    // Atualiza ou cria o UserAnalysis com a nova sessão somente para os usuários do tipo student
+    if (roles.includes("student")) {
+      setImmediate(async () => {
+        try {
+          const existingUserAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
 
-        if (existingUserAnalysis && existingUserAnalysis.sessions.length > 0) {
-          const lastSession = existingUserAnalysis.sessions[existingUserAnalysis.sessions.length - 1];
+          if (existingUserAnalysis && existingUserAnalysis.sessions.length > 0) {
+            const lastSession = existingUserAnalysis.sessions[existingUserAnalysis.sessions.length - 1];
 
-          if (!lastSession.sessionEnd) {
-            // Sessão já existente ativa, não criar uma nova
-            console.log(`[UserAnalysis] Sessão já aberta para: ${user.email}`);
-          } else {
-            // Criar nova sessão
-            existingUserAnalysis.sessions.push({
-              sessionStart,
-              devices: [deviceInfo],
-              levels: [],
-              interactions: [],
-              answerHistory: [],
-              interactionsOutsideTheClassroom: [],
-            });
-
-            await existingUserAnalysis.save();
-            console.log(`[UserAnalysis] Nova sessão iniciada para: ${user.email}`);
-          }
-        } else {
-          // Criar novo UserAnalysis
-          await UserAnalysis.create({
-            userId: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            school,
-            courses,
-            classes,
-            sessions: [
-              {
+            if (!lastSession.sessionEnd) {
+              console.log(`[UserAnalysis] Sessão já aberta para: ${user.email}`);
+            } else {
+              existingUserAnalysis.sessions.push({
                 sessionStart,
                 devices: [deviceInfo],
                 levels: [],
                 interactions: [],
                 answerHistory: [],
                 interactionsOutsideTheClassroom: [],
-              },
-            ],
-          });
+              });
 
-          console.log(`[UserAnalysis] Novo usuário registrado e sessão iniciada: ${user.email}`);
+              await existingUserAnalysis.save();
+              console.log(`[UserAnalysis] Nova sessão iniciada para: ${user.email}`);
+            }
+          } else {
+            await UserAnalysis.create({
+              userId: user._id.toString(),
+              name: user.name,
+              email: user.email,
+              school,
+              courses,
+              classes,
+              sessions: [
+                {
+                  sessionStart,
+                  devices: [deviceInfo],
+                  levels: [],
+                  interactions: [],
+                  answerHistory: [],
+                  interactionsOutsideTheClassroom: [],
+                },
+              ],
+            });
+
+            console.log(`[UserAnalysis] Novo usuário registrado e sessão iniciada: ${user.email}`);
+          }
+        } catch (error) {
+          console.error("[UserAnalysis] Erro ao registrar usuário:", error);
         }
-      } catch (error) {
-        console.error("[UserAnalysis] Erro ao registrar usuário:", error);
-      }
-    });
+      });
+    }
 
     return {
       id: user._id.toString(),

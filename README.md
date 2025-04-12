@@ -54,27 +54,46 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
             └── 📁swagger
                 └── swaggerConfig.ts
         └── 📁controllers
+            └── 📁AcademicPublic
+                └── getClassesByCourseIdController.ts
+                └── getCoursesByUniversityIdController.ts
+                └── getDisciplinesByCourseIdController.ts
+                └── getProfessorsByUniversityIdController.ts
+                └── getStudentsByClassIdController.ts
+                └── getStudentsByCourseIdController.ts
+                └── getStudentsByDisciplineIdController.ts
+                └── getUniversitiesWithCoursesAndClassesController.ts
             └── 📁admin
                 └── createProfessorController.ts
                 └── DeleteProfessorController.ts
                 └── ListProfessorsByCourseController.ts
                 └── ListProfessorsController.ts
                 └── ListStudentsProfessorController.ts
-            └── 📁faq_store
-                └── CreateFAQEntryController.ts
-                └── GetFAQEntriesController.ts
             └── 📁google
                 └── signinGoogleController.ts
                 └── signupGoogleController.ts
+            └── 📁Logs
+                └── LogClassController.ts
+                └── LogCourseController.ts
+                └── LogDisciplineController.ts
+                └── LogUserController.ts
             └── 📁password
                 └── resetPasswordController.ts
                 └── sendResetPasswordEmailController.ts
                 └── updatePasswordController.ts
             └── 📁professor
                 └── listStudentsController.ts
-                └── viewStudentHistoryController.ts
             └── 📁rasa
-                └── rasaGetHistoryController.ts
+                └── 📁ActionController
+                    └── definirNivelController.ts
+                    └── gerarPerguntasController.ts
+                    └── getGabaritoController.ts
+                    └── listarNiveisController.ts
+                    └── listarOpcoesController.ts
+                    └── obterNivelAtualController.ts
+                    └── parseQuestionsFromTextController.ts
+                    └── sendOpcaoEListarSubopcoesController.ts
+                    └── verificarRespostasController.ts
                 └── rasaSendController.ts
             └── 📁University
                 └── 📁Class
@@ -91,24 +110,17 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                     └── ListDisciplinesController.ts
                 └── 📁University
                     └── CreateUniversityController.ts
-                    └── DeleteUniversityCourseController.ts
+                    └── DeleteUniversityController.ts
                     └── ListUniversitiesController.ts
                 └── 📁UniversityOuthers
                     └── AssignDisciplineController.ts
                     └── GetClassWithStudentsController.ts
-            └── 📁userAnalysis
-                └── addInteracaoForaDaSalaController.ts
-                └── addInteractionController.ts
-                └── endSessionController.ts
-                └── getUserAnalysisController.ts
-                └── registerUserAnswerController.ts
-                └── setTaxaDeAcertosController.ts
-                └── startSessionController.ts
             └── 📁users
                 └── AuthUserController.ts
                 └── CreateUserController.ts
                 └── DetailsUserController.ts
-                └── LogoutController.ts
+                └── LogoutUserController.ts
+                └── UpdateProfileController.ts
         └── 📁exceptions
             └── AppError.ts
         └── 📁middlewares
@@ -124,7 +136,6 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
             └── Course.ts
             └── Discipline.ts
             └── FAQStore.ts
-            └── History.ts
             └── Professor.ts
             └── University.ts
             └── User.ts
@@ -133,37 +144,59 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
             └── routes.ts
             └── 📁routesPaths
                 └── academicInstitutionRoute.ts
+                └── academicPublicRoutes.ts
                 └── adminRoute.ts
                 └── authRoute.ts
-                └── faqStoreRoute.ts
+                └── logsRoutes.ts
                 └── passwordRoute.ts
                 └── professorRoute.ts
                 └── rasaRoute.ts
                 └── socialLoginRoute.ts
-                └── userAnalysisRoute.ts
         └── 📁services
+            └── 📁AcademicPublic
+                └── getClassesByCourseIdService.ts
+                └── getCoursesByUniversityIdService.ts
+                └── getDisciplinesByCourseIdService.ts
+                └── getProfessorsByUniversityIdService.ts
+                └── getStudentsByClassIdService.ts
+                └── getStudentsByCourseIdService.ts
+                └── getStudentsByDisciplineIdService.ts
+                └── getUniversitiesWithCoursesAndClassesService.ts
             └── 📁admin
                 └── createProfessorService.ts
                 └── deleteProfessorService.ts
                 └── ListProfessorsByCourseService.ts
                 └── ListProfessorsService.ts
                 └── ListStudentsProfessorService.ts
-            └── 📁faq_store
-                └── createFAQEntryService.ts
-                └── getFAQEntriesService.ts
             └── 📁google
                 └── signinGoogleService.ts
                 └── signupGoogleService.ts
+            └── 📁Logs
+                └── LogClassService.ts
+                └── LogCourseService.ts
+                └── LogDisciplineService.ts
+                └── LogUserService.ts
             └── 📁password
                 └── resetPasswordService.ts
                 └── sendResetPasswordEmailService.ts
                 └── updatePasswordService.ts
             └── 📁professor
                 └── listStudentsService.ts
-                └── viewStudentHistoryService.ts
             └── 📁rasa
-                └── rasaGetHistoryService.ts
+                └── 📁ActionService
+                    └── definirNivelService.ts
+                    └── gerarPerguntasService.ts
+                    └── getGabaritoService.ts
+                    └── listarNiveisService.ts
+                    └── listarOpcoesService.ts
+                    └── obterNivelAtualService.ts
+                    └── parseQuestionsFromTextService.ts
+                    └── sendOpcaoEListarSubopcoesService.ts
+                    └── verificarRespostasService.ts
                 └── rasaSendService.ts
+                └── 📁types
+                    └── RasaSessionData.ts
+                    └── sessionMemory.ts
             └── 📁University
                 └── 📁Class
                     └── CreateClassService.ts
@@ -179,7 +212,7 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                     └── ListDisciplinesService.ts
                 └── 📁University
                     └── CreateUniversityService.ts
-                    └── DeleteUniversityCourseService.ts
+                    └── DeleteUniversityService.ts
                     └── ListUniversitiesService.ts
                 └── 📁UniversityOuthers
                     └── AssignDisciplineService.ts
@@ -189,16 +222,14 @@ Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para geren
                 └── CreateUserService.ts
                 └── DetailsUserService.ts
                 └── LogoutUserService.ts
+                └── UpdateProfileService.ts
         └── server.ts
     └── .env
     └── .gitignore
     └── docker-compose.yml
-    └── mongo-init.js
-    └── mongo-init.ts
     └── package-lock.json
     └── package.json
     └── README.md
-    └── swagger_output.json
     └── tsconfig.json
 ```
 
@@ -230,4 +261,10 @@ docker run -d --name mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e 
 ### 3. Para Acessar Dentro do MongoDB Compass:
 ```bash
 mongodb://root:example@localhost:27017
+```
+
+### 4. Rota para o Swagger:
+```bash
+http://localhost:3000/api-docs
+
 ```

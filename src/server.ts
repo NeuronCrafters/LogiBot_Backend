@@ -1,13 +1,13 @@
 import 'dotenv/config';
 import cors from "cors";
 import express from 'express';
+import { setupSwagger } from "./config/swagger/swaggerConfig";
 import passport from 'passport';
 import './config/socialLogin/passport';
 import session from 'express-session';
 import { connectDB } from './config/database';
 import { routes } from './routes/routes';
 import { errorHandler } from './middlewares/errorHandler';
-import { setupSwagger } from "./config/swagger/swaggerConfig";
 
 const app = express();
 app.use(express.json());
@@ -28,9 +28,9 @@ app.use(passport.session());
 
 app.use(routes);
 
-app.use(errorHandler);
-
 setupSwagger(app);
+
+app.use(errorHandler);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

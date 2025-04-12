@@ -1,32 +1,83 @@
+import { User } from "../../models/User";
+import { Professor } from "../../models/Professor";
 import { UserAnalysis } from "../../models/UserAnalysis";
+import { AppError } from "../../exceptions/AppError";
+
+function normalizeRoles(roleField: string | string[] | null | undefined): string[] {
+  if (!roleField) return [];
+  if (Array.isArray(roleField)) return roleField.filter(Boolean);
+  return [roleField];
+}
 
 class LogoutUserService {
   async logout(userId: string) {
     if (!userId) {
-      throw new Error("O 'userId' é obrigatório para realizar o logout.");
+      throw new AppError("O 'userId' é obrigatório para realizar o logout.", 400);
     }
+
+    // buscar o usuário e identificar o papel
+    const user =
+      (await User.findById(userId)) ||
+      (await Professor.findById(userId));
+
+    if (!user) {
+      throw new AppError("Usuário não encontrado.", 404);
+    }
+
+    const roles = normalizeRoles(user.role);
+
+    // se o usuário não for um estudante, apenas finaliza o logout sem erro
+    if (!roles.includes("student")) {
+      console.log(`[LOGOUT] Usuário ${user.email} não é estudante. Logout simples efetuado.`);
+      return {
+        message: "Logout efetuado (sem análise de sessão).",
+        sessionEnd: null,
+        sessionDuration: null,
+        totalUsageTime: null,
+      };
+    }
+
+    // lgica normal de logout para estudantes 
+    console.log(`[LOGOUT] Buscando UserAnalysis para userId: ${userId}`);
 
     const userAnalysis = await UserAnalysis.findOne({ userId });
 
     if (!userAnalysis || userAnalysis.sessions.length === 0) {
-      throw new Error("Nenhuma sessão ativa encontrada para este usuário.");
+      throw new AppError("Nenhuma sessão ativa encontrada para este estudante.", 404);
     }
 
-    // atualizar a última sessão
     const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
-    lastSession.sessionEnd = new Date();
-    lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
 
-    // calcular tempo total de uso do usuário
+    if (lastSession.sessionEnd) {
+      throw new AppError("Este estudante já está deslogado.", 400);
+    }
+
+    if (!lastSession.sessionStart) {
+      throw new AppError("A sessão não possui uma data de início válida.", 400);
+    }
+
+    lastSession.sessionEnd = new Date();
+    lastSession.sessionDuration =
+      (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+
     const totalUsageTime = userAnalysis.sessions.reduce((acc, session) => {
       return acc + (session.sessionDuration || 0);
     }, 0);
 
-    await userAnalysis.save();
+    userAnalysis.totalUsageTime = totalUsageTime;
+
+    try {
+      await userAnalysis.save();
+      console.log(`[LOGOUT] Sessão encerrada com sucesso para estudante: ${user.email}`);
+    } catch (error) {
+      console.error(`[LOGOUT] Erro ao salvar UserAnalysis:`, error);
+      throw new AppError("Erro ao salvar a sessão: " + error.message, 500);
+    }
 
     return {
       message: "Sessão encerrada com sucesso.",
       sessionEnd: lastSession.sessionEnd,
+      sessionDuration: lastSession.sessionDuration,
       totalUsageTime,
     };
   }

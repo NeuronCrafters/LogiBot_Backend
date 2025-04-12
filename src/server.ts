@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import cors from "cors";
 import express from 'express';
+import cookieParser from "cookie-parser";
 import { setupSwagger } from "./config/swagger/swaggerConfig";
 import passport from 'passport';
 import './config/socialLogin/passport';
@@ -10,10 +11,16 @@ import { routes } from './routes/routes';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
-app.use(express.json());
-app.use(cors());
 
 connectDB();
+
+app.use(cookieParser());
+app.use(express.json());
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+}));
 
 app.use(
     session({

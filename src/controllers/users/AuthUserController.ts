@@ -8,7 +8,16 @@ class AuthUserController {
     const authUserService = new AuthUserService();
     const result = await authUserService.signin({ email, password });
 
-    return res.json(result);
+    const { token, ...userData } = result;
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24,
+    });
+
+    return res.json(userData);
   }
 
   async logout(req: Request, res: Response) {
@@ -20,6 +29,8 @@ class AuthUserController {
 
     const authUserService = new AuthUserService();
     await authUserService.logout(userId);
+
+    res.clearCookie("token");
 
     return res.json({ message: "Sessão encerrada com sucesso." });
   }

@@ -6,16 +6,10 @@ import { AppError } from "../../exceptions/AppError";
 class LogoutUserController {
   async handle(req: Request, res: Response) {
     try {
-      const authHeader = req.headers.authorization;
-
-      if (!authHeader) {
-        throw new AppError("Token não fornecido.", 401);
-      }
-
-      const token = authHeader.split(" ")[1];
+      const token = req.cookies.token;
 
       if (!token) {
-        throw new AppError("Token inválido.", 401);
+        throw new AppError("Token não fornecido.", 401);
       }
 
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
@@ -28,6 +22,8 @@ class LogoutUserController {
 
       const logoutUserService = new LogoutUserService();
       const result = await logoutUserService.logout(userId);
+
+      res.clearCookie("token");
 
       return res.status(200).json(result);
     } catch (error) {

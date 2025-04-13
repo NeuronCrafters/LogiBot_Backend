@@ -4,12 +4,7 @@ import { UserAnalysis } from "../../models/UserAnalysis";
 import { AppError } from "../../exceptions/AppError";
 
 class LogCourseService {
-  async getCourseLogs(
-    requestingUser: any,
-    courseId: string,
-    startDate?: string,
-    endDate?: string
-  ) {
+  async getCourseLogs(requestingUser: any, courseId: string) {
     const course = await Course.findById(courseId);
     if (!course) {
       throw new AppError("Curso não encontrado.", 404);
@@ -30,14 +25,8 @@ class LogCourseService {
     const users = await User.find({ course: courseId });
     const userIds = users.map((u) => u._id.toString());
 
-    const query: any = { userId: { $in: userIds } };
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
-      if (endDate) query.createdAt.$lte = new Date(endDate);
-    }
+    const logs = await UserAnalysis.find({ userId: { $in: userIds } });
 
-    const logs = await UserAnalysis.find(query);
     return {
       course: course.name,
       totalUsers: users.length,

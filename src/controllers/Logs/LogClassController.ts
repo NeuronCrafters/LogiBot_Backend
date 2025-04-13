@@ -7,13 +7,7 @@ class LogClassController {
   async getClassLogs(req: Request, res: Response) {
     try {
       const { classId } = req.params;
-      const { startDate, endDate } = req.query;
-      const result = await this.logClassService.getClassLogs(
-        req.user,
-        classId,
-        startDate as string,
-        endDate as string
-      );
+      const result = await this.logClassService.getClassLogs(req.user, classId);
       return res.status(200).json(result);
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({ message: error.message });

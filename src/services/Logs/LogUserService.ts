@@ -4,12 +4,7 @@ import { User } from "../../models/User";
 import { AppError } from "../../exceptions/AppError";
 
 class LogUserService {
-  async getUserLogs(
-    requestingUser: any,
-    targetUserId: string,
-    startDate?: string,
-    endDate?: string
-  ) {
+  async getUserLogs(requestingUser: any, targetUserId: string) {
     const isAdmin = requestingUser.role.includes("admin");
     const isSelf = requestingUser.id === targetUserId;
 
@@ -33,14 +28,7 @@ class LogUserService {
       throw new AppError("Aluno não encontrado ou não é válido.", 404);
     }
 
-    const query: any = { userId: targetUserId };
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
-      if (endDate) query.createdAt.$lte = new Date(endDate);
-    }
-
-    const userLog = await UserAnalysis.findOne(query);
+    const userLog = await UserAnalysis.findOne({ userId: targetUserId });
     if (!userLog) {
       throw new AppError("Logs do usuário não encontrados.", 404);
     }

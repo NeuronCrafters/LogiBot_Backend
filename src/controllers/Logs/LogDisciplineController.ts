@@ -7,13 +7,7 @@ class LogDisciplineController {
   async getDisciplineLogs(req: Request, res: Response) {
     try {
       const { disciplineId } = req.params;
-      const { startDate, endDate } = req.query;
-      const result = await this.disciplineLogService.getDisciplineLogs(
-        req.user,
-        disciplineId,
-        startDate as string,
-        endDate as string
-      );
+      const result = await this.disciplineLogService.getDisciplineLogs(req.user, disciplineId);
       return res.status(200).json(result);
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({ message: error.message });
@@ -21,4 +15,4 @@ class LogDisciplineController {
   }
 }
 
-export { LogDisciplineController };
+export { LogDisciplineController }

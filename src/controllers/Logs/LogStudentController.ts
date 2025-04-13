@@ -1,4 +1,3 @@
-// src/controllers/Logs/LogStudentController.ts
 import { Request, Response } from "express";
 import { LogStudentService } from "../../services/Logs/LogStudentService";
 

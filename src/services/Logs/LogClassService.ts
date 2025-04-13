@@ -1,4 +1,3 @@
-// src/services/Logs/LogClassService.ts
 import { UserAnalysis } from "../../models/UserAnalysis";
 import { Class } from "../../models/Class";
 import { AppError } from "../../exceptions/AppError";

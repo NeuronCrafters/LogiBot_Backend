@@ -1,16 +1,16 @@
 import { Router } from "express";
-import { LogUserController } from "../../controllers/Logs/LogUserController";
 import { LogDisciplineController } from "../../controllers/Logs/LogDisciplineController";
 import { LogCourseController } from "../../controllers/Logs/LogCourseController";
-import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 import { LogClassController } from "../../controllers/Logs/LogClassController";
+import { LogStudentController } from "../../controllers/Logs/LogStudentController";
+import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 
 const logRoutes = Router();
 
-const userController = new LogUserController();
 const disciplineController = new LogDisciplineController();
 const courseController = new LogCourseController();
 const classController = new LogClassController();
+const studentController = new LogStudentController();
 
 /**
  * @swagger
@@ -21,29 +21,44 @@ const classController = new LogClassController();
 
 /**
  * @swagger
- * /logs/user/{userId}:
+ * /logs/student/{id}:
  *   get:
  *     tags: [Logs]
- *     summary: Buscar logs de um usuário
- *     description: Retorna os logs de interação de um usuário específico.
+ *     summary: Buscar logs de um aluno individual
+ *     description: Retorna os logs de interação de um aluno específico. O acesso é permitido para administradores, coordenadores do curso, professores que ministram uma das disciplinas em que o aluno está matriculado, ou o próprio aluno.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: id
  *         required: true
- *         description: ID do usuário
+ *         description: ID do aluno
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: false
+ *         description: Data de início para filtrar os logs.
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: false
+ *         description: Data de término para filtrar os logs.
  *     responses:
  *       200:
- *         description: Logs do usuário retornados com sucesso
+ *         description: Logs do aluno retornados com sucesso.
  *       403:
- *         description: Acesso negado
+ *         description: Acesso negado.
  *       404:
- *         description: Logs não encontrados ou usuário inválido
+ *         description: Logs não encontrados ou aluno inválido.
  */
-logRoutes.get("/user/:userId", isPermissions.isAdminProfessorOrCoordinator(), userController.getUserLogs.bind(userController));
+// Para a rota de estudante, utilizamos um middleware de autenticação básico; a validação fina ocorre no service.
+logRoutes.get("/student/:id", isPermissions.isAuthenticated(), studentController.getStudentLogs.bind(studentController));
 
 /**
  * @swagger
@@ -63,11 +78,11 @@ logRoutes.get("/user/:userId", isPermissions.isAdminProfessorOrCoordinator(), us
  *           type: string
  *     responses:
  *       200:
- *         description: Logs da turma retornados com sucesso
+ *         description: Logs da turma retornados com sucesso.
  *       403:
- *         description: Acesso negado
+ *         description: Acesso negado.
  *       404:
- *         description: Turma não encontrada
+ *         description: Turma não encontrada.
  */
 logRoutes.get("/class/:classId", isPermissions.isAdminOrCoordinator(), classController.getClassLogs.bind(classController));
 
@@ -89,11 +104,11 @@ logRoutes.get("/class/:classId", isPermissions.isAdminOrCoordinator(), classCont
  *           type: string
  *     responses:
  *       200:
- *         description: Logs da disciplina retornados com sucesso
+ *         description: Logs da disciplina retornados com sucesso.
  *       403:
- *         description: Acesso negado
+ *         description: Acesso negado.
  *       404:
- *         description: Disciplina não encontrada
+ *         description: Disciplina não encontrada.
  */
 logRoutes.get("/discipline/:disciplineId", isPermissions.isAdminProfessorOrCoordinator(), disciplineController.getDisciplineLogs.bind(disciplineController));
 
@@ -115,11 +130,11 @@ logRoutes.get("/discipline/:disciplineId", isPermissions.isAdminProfessorOrCoord
  *           type: string
  *     responses:
  *       200:
- *         description: Logs do curso retornados com sucesso
+ *         description: Logs do curso retornados com sucesso.
  *       403:
- *         description: Acesso negado
+ *         description: Acesso negado.
  *       404:
- *         description: Curso não encontrado
+ *         description: Curso não encontrado.
  */
 logRoutes.get("/course/:courseId", isPermissions.isAdminOrCoordinator(), courseController.getCourseLogs.bind(courseController));
 

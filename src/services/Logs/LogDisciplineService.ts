@@ -3,7 +3,12 @@ import { UserAnalysis } from "../../models/UserAnalysis";
 import { AppError } from "../../exceptions/AppError";
 
 class LogDisciplineService {
-  async getDisciplineLogs(requestingUser: any, disciplineId: string) {
+  async getDisciplineLogs(
+    requestingUser: any,
+    disciplineId: string,
+    startDate?: string,
+    endDate?: string
+  ) {
     const discipline = await Discipline.findById(disciplineId);
     if (!discipline) {
       throw new AppError("Disciplina não encontrada.", 404);
@@ -21,8 +26,14 @@ class LogDisciplineService {
       throw new AppError("Acesso negado à disciplina.", 403);
     }
 
-    const logs = await UserAnalysis.find({ userId: { $in: discipline.students } });
+    const query: any = { userId: { $in: discipline.students } };
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
 
+    const logs = await UserAnalysis.find(query);
     return {
       discipline: discipline.name,
       totalStudents: discipline.students.length,
@@ -31,4 +42,4 @@ class LogDisciplineService {
   }
 }
 
-export { LogDisciplineService }
+export { LogDisciplineService };

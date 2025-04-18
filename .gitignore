@@ -8,4 +8,4 @@ node_modules
 backend/express/dotenv
 dotenv
 
-.env_teste
+.env.test

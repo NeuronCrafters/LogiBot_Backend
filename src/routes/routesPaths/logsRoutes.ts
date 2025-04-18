@@ -2,8 +2,8 @@ import { Router } from "express";
 import { LogDisciplineController } from "../../controllers/Logs/LogDisciplineController";
 import { LogCourseController } from "../../controllers/Logs/LogCourseController";
 import { LogClassController } from "../../controllers/Logs/LogClassController";
-import { LogStudentController } from "../../controllers/Logs/LogStudentController";
-import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
+import { LogStudentController } from "@/controllers/Logs/LogStudentController";
+import { isPermissions } from "@/middlewares/isPermissions/isPermissions";
 
 const logRoutes = Router();
 

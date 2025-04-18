@@ -8,11 +8,12 @@ class AssignDisciplineService {
     if (!Types.ObjectId.isValid(studentId)) {
       throw new AppError("ID do aluno inválido!", 400);
     }
-    const studentObjectId = new Types.ObjectId(studentId);
 
     if (!Types.ObjectId.isValid(disciplineId)) {
       throw new AppError("ID da disciplina inválido!", 400);
     }
+
+    const studentObjectId = new Types.ObjectId(studentId);
     const disciplineObjectId = new Types.ObjectId(disciplineId);
 
     const student = await User.findById(studentObjectId);
@@ -25,18 +26,28 @@ class AssignDisciplineService {
       throw new AppError("Disciplina não encontrada.", 404);
     }
 
+    if (!student.class) {
+      throw new AppError("Aluno não está vinculado a nenhuma turma.", 400);
+    }
+
     if (!discipline.classes.some((classId) => classId.equals(student.class))) {
       throw new AppError("A disciplina não pertence à turma do aluno.", 400);
     }
 
+    let updated = false;
+
     if (!discipline.students.some((id) => id.equals(studentObjectId))) {
       discipline.students.push(studentObjectId);
-      await discipline.save();
+      updated = true;
     }
 
     if (!student.disciplines.some((id) => id.equals(disciplineObjectId))) {
       student.disciplines.push(disciplineObjectId);
-      await student.save();
+      updated = true;
+    }
+
+    if (updated) {
+      await Promise.all([discipline.save(), student.save()]);
     }
 
     return {

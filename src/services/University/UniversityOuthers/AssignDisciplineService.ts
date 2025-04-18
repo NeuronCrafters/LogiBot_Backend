@@ -15,7 +15,6 @@ class AssignDisciplineService {
     }
     const disciplineObjectId = new Types.ObjectId(disciplineId);
 
-    // Verificar se o aluno existe
     const student = await User.findById(studentObjectId);
     if (!student || !student.role.includes("student")) {
       throw new AppError("Aluno não encontrado ou não é válido.", 404);

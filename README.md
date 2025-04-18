@@ -1,270 +1,108 @@
-# Backend Chat SAEL - Configuração com Docker
+# 🧠 Chat SAEL - Backend
 
-Este projeto utiliza **NodeJS** e TypeScript juntamente de **Docker** para gerenciar serviços como MongoDB, Rasa e Action Server. Este guia explica como configurar e executar o ambiente.
+Este projeto é a base do backend do sistema de chatbot educacional **Chat SAEL**, construído com **Node.js**, **TypeScript**, **Express** e **MongoDB**.
+
+## 📁 Estrutura de Pastas
+
+Abaixo está um resumo da estrutura do projeto e o propósito de cada pasta e arquivo:
+
+```
+📁 src
+├── 📁 @types
+│   Contém declarações de tipos globais ou personalizados utilizados no projeto.
+│
+├── 📁 config
+│   Configurações gerais da aplicação.
+│   ├── 📁 resetPassword      → Utilitários e lógica de recuperação de senha.
+│   ├── 📁 socialLogin        → Configurações para login com Google OAuth2.
+│   └── 📁 swagger            → Documentação da API com Swagger.
+│
+├── 📁 controllers
+│   Controladores responsáveis por receber as requisições HTTP e chamar os serviços.
+│   ├── 📁 AcademicPublic     → Listagem pública de universidades, cursos, turmas, etc.
+│   ├── 📁 admin              → Administração de professores e alunos.
+│   ├── 📁 google             → Login/cadastro via Google.
+│   ├── 📁 Logs               → Recuperação de logs de interação por aluno, curso, turma, etc.
+│   ├── 📁 password           → Fluxo de recuperação e alteração de senha.
+│   ├── 📁 professor          → Funcionalidades voltadas a professores.
+│   ├── 📁 rasa               → Ações relacionadas ao chatbot (Rasa).
+│   ├── 📁 University         → CRUD de universidade, curso, disciplina e turma.
+│   └── 📁 users              → Cadastro, login, perfil e autenticação.
+│
+├── 📁 exceptions
+│   Define a classe base de erro (`AppError`) usada na aplicação para padronização.
+│
+├── 📁 middlewares
+│   Middlewares de autenticação, autorização e tratamento de erros.
+│   ├── isAuthenticated       → Valida JWT no cookie.
+│   ├── isAuthorized          → Valida se o usuário é o dono do recurso.
+│   └── isPermissions         → Verifica se o usuário possui permissão (por perfil).
+│
+├── 📁 models
+│   Define os esquemas do banco MongoDB com o Mongoose.
+│   Exemplos: `User`, `University`, `Course`, `Class`, `Discipline`, `UserAnalysis`.
+│
+├── 📁 routes
+│   Contém o roteador principal da aplicação (`routes.ts`) e suas divisões por domínio:
+│   └── 📁 routesPaths
+│       ├── academicInstitutionRoute
+│       ├── academicPublicRoutes
+│       ├── adminRoute
+│       ├── authRoute
+│       ├── logsRoutes
+│       ├── passwordRoute
+│       ├── professorRoute
+│       ├── rasaRoute
+│       └── socialLoginRoute
+│
+├── 📁 services
+│   Lógica de negócio da aplicação, separada dos controllers.
+│   ├── 📁 AcademicPublic     → Listagem pública de cursos, turmas, etc.
+│   ├── 📁 admin              → Gerenciamento de professores e alunos.
+│   ├── 📁 google             → Login/cadastro com Google.
+│   ├── 📁 Logs               → Coleta e processamento de logs.
+│   ├── 📁 password           → Reset e alteração de senha.
+│   ├── 📁 professor          → Lógica de listagem de alunos para o professor.
+│   ├── 📁 rasa               → Integrações com o Rasa Open Source (ações customizadas).
+│   ├── 📁 University         → Lógicas de criação, deleção e listagem acadêmica.
+│   └── 📁 users              → Autenticação, cadastro e atualização de perfil.
+│
+├── server.ts                 → Ponto de entrada da aplicação.
+```
+
+## 🧰 Bibliotecas Utilizadas
+
+### Dependências principais
+
+| Pacote                    | Utilidade principal                                     |
+|--------------------------|----------------------------------------------------------|
+| `express`                | Framework para API REST                                 |
+| `mongoose`               | ODM para MongoDB                                        |
+| `jsonwebtoken`           | Geração e verificação de tokens JWT                     |
+| `bcryptjs`               | Criptografia de senhas                                  |
+| `passport`               | Middleware de autenticação                              |
+| `passport-google-oauth20`| Autenticação via conta Google                           |
+| `dotenv`                 | Carrega variáveis de ambiente                          |
+| `swagger-jsdoc`          | Geração de documentação Swagger                         |
+| `swagger-ui-express`     | Interface visual do Swagger                             |
+| `cookie-parser`          | Faz parsing dos cookies de requisições                 |
+| `express-session`        | Gerenciamento de sessão (usado no social login)         |
+| `cors`                   | Liberação de CORS para APIs                            |
+| `axios`                  | Requisições HTTP externas                               |
+| `nodemailer`             | Envio de e-mails (recuperação de senha)                |
+
+### Dependências de desenvolvimento
+
+| Pacote                 | Utilidade principal                                      |
+|-----------------------|-----------------------------------------------------------|
+| `typescript`          | Tipagem estática no JavaScript                           |
+| `jest`                | Testes unitários e integração                            |
+| `ts-jest`             | Suporte do Jest para TypeScript                          |
+| `supertest`           | Testes de integração para rotas HTTP                     |
+| `@types/*`            | Tipagens para as bibliotecas usadas                     |
+| `ts-node-dev`         | Execução de servidor com hot reload                     |
+| `tsconfig-paths`      | Suporte a `@/` como alias nos imports                   |
+| `mongodb-memory-server` | Mongo em memória para testes automatizados            |
+| `cross-env`           | Suporte a variáveis de ambiente multiplataforma         |
 
 ---
-
-## **Bibliotecas Utilizadas no Projeto:**
-- express: Framework web para o backend.
-- mongodb e mongoose: Para gerenciar conexões e modelos do banco de dados MongoDB.
-- jsonwebtoken: Autenticação JWT.
-- axios: Utilizada para requisições a API Rasa.
-- cors: Utilizado para permitir requisições de servers distintos.
-- dotenv: Responsável por gerenciar as variáveis de ambiente.
-- bcryptjs: Hashing de senhas.
-- nodemailer: Envio de e-mails (como recuperação de senha).
-- passport e passport-google-oauth20: Autenticação social com Google.
-- swagger-jsdoc e swagger-ui-express: Documentação interativa da API
-
-## **Bibliotecas de Desenvolvimento Utilizadas no Projeto:**
-- typescript: Tipagem estática para JavaScript.
-- ts-node-dev: Reinicialização automática para desenvolvimento.
-- nodemon: Monitoramento de alterações no código.
-- swagger-autogen: Geração automática de documentação Swagger.
-
-## **Pré-requisitos**
-- **NodeJS** e **TypeScript** instalados:
-  - [Instalar NodeJS](https://nodejs.org/download/release/v22.11.0/)
-  - [Instalar TypeScript](https://www.typescriptlang.org/)
-- **Docker** e **Docker Compose** instalados:
-  - [Instalar Docker](https://docs.docker.com/get-docker/)
-  - [Instalar Docker Compose](https://docs.docker.com/compose/install/)
-
----
-
-## **Estrutura do Projeto**
-```
-└── 📁backend_Chat_SAEL
-    └── 📁src
-        └── 📁@types
-            └── express.d.ts
-        └── 📁config
-            └── database.ts
-            └── 📁resetPassword
-                └── findUserByEmail.ts
-                └── generateResetToken.ts
-                └── mailOptions.ts
-                └── nodemailerTransport.ts
-            └── 📁socialLogin
-                └── allowedDomains.ts
-                └── domainToSchoolMap.json
-                └── googleLoginStrategy.ts
-                └── googleStrategy.ts
-                └── passport.ts
-            └── 📁swagger
-                └── swaggerConfig.ts
-        └── 📁controllers
-            └── 📁AcademicPublic
-                └── getClassesByCourseIdController.ts
-                └── getCoursesByUniversityIdController.ts
-                └── getDisciplinesByCourseIdController.ts
-                └── getProfessorsByUniversityIdController.ts
-                └── getStudentsByClassIdController.ts
-                └── getStudentsByCourseIdController.ts
-                └── getStudentsByDisciplineIdController.ts
-                └── getUniversitiesWithCoursesAndClassesController.ts
-            └── 📁admin
-                └── createProfessorController.ts
-                └── DeleteProfessorController.ts
-                └── ListProfessorsByCourseController.ts
-                └── ListProfessorsController.ts
-                └── ListStudentsProfessorController.ts
-            └── 📁google
-                └── signinGoogleController.ts
-                └── signupGoogleController.ts
-            └── 📁Logs
-                └── LogClassController.ts
-                └── LogCourseController.ts
-                └── LogDisciplineController.ts
-                └── LogUserController.ts
-            └── 📁password
-                └── resetPasswordController.ts
-                └── sendResetPasswordEmailController.ts
-                └── updatePasswordController.ts
-            └── 📁professor
-                └── listStudentsController.ts
-            └── 📁rasa
-                └── 📁ActionController
-                    └── definirNivelController.ts
-                    └── gerarPerguntasController.ts
-                    └── getGabaritoController.ts
-                    └── listarNiveisController.ts
-                    └── listarOpcoesController.ts
-                    └── obterNivelAtualController.ts
-                    └── parseQuestionsFromTextController.ts
-                    └── sendOpcaoEListarSubopcoesController.ts
-                    └── verificarRespostasController.ts
-                └── rasaSendController.ts
-            └── 📁University
-                └── 📁Class
-                    └── CreateClassController.ts
-                    └── DeleteClassController.ts
-                    └── ListClassesByCourseController.ts
-                └── 📁Course
-                    └── CreateCourseController.ts
-                    └── DeleteCourseController.ts
-                    └── ListCoursesByUniversityController.ts
-                └── 📁Discipline
-                    └── CreateDisciplineController.ts
-                    └── DeleteDisciplineController.ts
-                    └── ListDisciplinesController.ts
-                └── 📁University
-                    └── CreateUniversityController.ts
-                    └── DeleteUniversityController.ts
-                    └── ListUniversitiesController.ts
-                └── 📁UniversityOuthers
-                    └── AssignDisciplineController.ts
-                    └── GetClassWithStudentsController.ts
-            └── 📁users
-                └── AuthUserController.ts
-                └── CreateUserController.ts
-                └── DetailsUserController.ts
-                └── LogoutUserController.ts
-                └── UpdateProfileController.ts
-        └── 📁exceptions
-            └── AppError.ts
-        └── 📁middlewares
-            └── errorHandler.ts
-            └── 📁isAuthenticated
-                └── isAuthenticated.ts
-            └── 📁isAuthorized
-                └── isAuthorized.ts
-            └── 📁isPermissions
-                └── isPermissions.ts
-        └── 📁models
-            └── Class.ts
-            └── Course.ts
-            └── Discipline.ts
-            └── FAQStore.ts
-            └── Professor.ts
-            └── University.ts
-            └── User.ts
-            └── UserAnalysis.ts
-        └── 📁routes
-            └── routes.ts
-            └── 📁routesPaths
-                └── academicInstitutionRoute.ts
-                └── academicPublicRoutes.ts
-                └── adminRoute.ts
-                └── authRoute.ts
-                └── logsRoutes.ts
-                └── passwordRoute.ts
-                └── professorRoute.ts
-                └── rasaRoute.ts
-                └── socialLoginRoute.ts
-        └── 📁services
-            └── 📁AcademicPublic
-                └── getClassesByCourseIdService.ts
-                └── getCoursesByUniversityIdService.ts
-                └── getDisciplinesByCourseIdService.ts
-                └── getProfessorsByUniversityIdService.ts
-                └── getStudentsByClassIdService.ts
-                └── getStudentsByCourseIdService.ts
-                └── getStudentsByDisciplineIdService.ts
-                └── getUniversitiesWithCoursesAndClassesService.ts
-            └── 📁admin
-                └── createProfessorService.ts
-                └── deleteProfessorService.ts
-                └── ListProfessorsByCourseService.ts
-                └── ListProfessorsService.ts
-                └── ListStudentsProfessorService.ts
-            └── 📁google
-                └── signinGoogleService.ts
-                └── signupGoogleService.ts
-            └── 📁Logs
-                └── LogClassService.ts
-                └── LogCourseService.ts
-                └── LogDisciplineService.ts
-                └── LogUserService.ts
-            └── 📁password
-                └── resetPasswordService.ts
-                └── sendResetPasswordEmailService.ts
-                └── updatePasswordService.ts
-            └── 📁professor
-                └── listStudentsService.ts
-            └── 📁rasa
-                └── 📁ActionService
-                    └── definirNivelService.ts
-                    └── gerarPerguntasService.ts
-                    └── getGabaritoService.ts
-                    └── listarNiveisService.ts
-                    └── listarOpcoesService.ts
-                    └── obterNivelAtualService.ts
-                    └── parseQuestionsFromTextService.ts
-                    └── sendOpcaoEListarSubopcoesService.ts
-                    └── verificarRespostasService.ts
-                └── rasaSendService.ts
-                └── 📁types
-                    └── RasaSessionData.ts
-                    └── sessionMemory.ts
-            └── 📁University
-                └── 📁Class
-                    └── CreateClassService.ts
-                    └── DeleteClassService.ts
-                    └── ListClassesByCourseService.ts
-                └── 📁Course
-                    └── CreateCourseService.ts
-                    └── DeleteCourseService.ts
-                    └── ListCoursesByUniversityService.ts
-                └── 📁Discipline
-                    └── CreateDisciplineService.ts
-                    └── DeleteDisciplineService.ts
-                    └── ListDisciplinesService.ts
-                └── 📁University
-                    └── CreateUniversityService.ts
-                    └── DeleteUniversityService.ts
-                    └── ListUniversitiesService.ts
-                └── 📁UniversityOuthers
-                    └── AssignDisciplineService.ts
-                    └── GetClassWithStudentsService.ts
-            └── 📁users
-                └── AuthUserService.ts
-                └── CreateUserService.ts
-                └── DetailsUserService.ts
-                └── LogoutUserService.ts
-                └── UpdateProfileService.ts
-        └── server.ts
-    └── .env
-    └── .gitignore
-    └── docker-compose.yml
-    └── package-lock.json
-    └── package.json
-    └── README.md
-    └── tsconfig.json
-```
-
-
----
-
-
-## **Configuração do Docker**
-
-### 1. **Arquivo `.env`**
-Certifique-se de que o arquivo `.env` contém:
-```env
-MONGO_URI
-DB_NAME
-
-JWT_SECRET
-BASE_URL_BACKEND=http://localhost:3000
-```
-
-### 2. **Executar o Projeto:**
-```bash
-docker-compose up -d
-```
-
-```bash
-docker run -d --name mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=example mongo:latest
-```
-
-### 3. Para Acessar Dentro do MongoDB Compass:
-```bash
-mongodb://root:example@localhost:27017
-```
-
-### 4. Rota para o Swagger:
-```bash
-http://localhost:3000/api-docs
-
-```

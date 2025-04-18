@@ -16,13 +16,11 @@ function normalizeRoles(roleField: string | string[] | null | undefined): string
 }
 
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
+  const token = req.cookies.token;
 
-  if (!authHeader) {
-    return res.status(401).json({ error: "Token não fornecido." });
+  if (!token) {
+    return res.status(401).json({ error: "Não autenticado: token ausente" });
   }
-
-  const [, token] = authHeader.split(" ");
 
   try {
     const secret = process.env.JWT_SECRET || "default_secret";

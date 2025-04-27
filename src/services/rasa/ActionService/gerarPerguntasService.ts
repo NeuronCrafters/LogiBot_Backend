@@ -8,7 +8,10 @@ const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
 export async function gerarPerguntasService(pergunta: string, session: RasaSessionData) {
   if (!session.nivelAtual) {
-    throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
+    throw new AppError(
+      "O nível do usuário precisa ser definido antes de gerar perguntas.",
+      400
+    );
   }
 
   try {
@@ -16,7 +19,13 @@ export async function gerarPerguntasService(pergunta: string, session: RasaSessi
 
     const response = await axios.post(RASA_ACTION_URL, {
       next_action: "action_gerar_perguntas_chatgpt",
-      tracker: { sender_id: "user", slots: { pergunta, nivel: session.nivelAtual } },
+      tracker: {
+        sender_id: "user",
+        slots: {
+          subtopico: pergunta,
+          nivel: session.nivelAtual
+        }
+      },
     });
 
     if (!response.data?.responses?.length) {
@@ -44,8 +53,6 @@ export async function gerarPerguntasService(pergunta: string, session: RasaSessi
           nivel: session.nivelAtual,
           assunto: session.lastSubject,
           subassunto: session.lastSubject,
-          questions: jsonData.questions,
-          answer_keys: session.lastAnswerKeys
         },
         {
           $setOnInsert: {
@@ -59,11 +66,12 @@ export async function gerarPerguntasService(pergunta: string, session: RasaSessi
         { upsert: true }
       );
     } catch (err) {
-      console.warn("Perguntas já existentes no FaqStore ou erro ao salvar.");
+      throw new AppError("⚠️ Perguntas já existentes no FaqStore ou erro ao salvar:", err);
     }
 
     return { questions: jsonData.questions };
   } catch (error) {
+
     throw new AppError("Erro ao gerar perguntas", 500);
   }
 }

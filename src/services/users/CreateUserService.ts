@@ -13,12 +13,11 @@ interface CreateUserDTO {
   email: string;
   password: string;
   school: string;
-  course: string;
-  class: string;
+  disciplineCode: string;
 }
 
 class CreateUserService {
-  async createUser({ name, email, password, school, course, class: className }: CreateUserDTO) {
+  async createUser({ name, email, password, school, disciplineCode }: CreateUserDTO) {
     // Verificar se o email já está em uso
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -31,16 +30,25 @@ class CreateUserService {
       throw new AppError("Universidade não encontrada!", 404);
     }
 
-    // Verificar se o curso existe
-    const courseData = await Course.findOne({ _id: course, university: school });
-    if (!courseData) {
-      throw new AppError("Curso não encontrado na universidade especificada.", 404);
+    // Buscar a disciplina pelo código
+    const discipline = await Discipline.findOne({ code: disciplineCode }).populate("course classes professors");
+    if (!discipline) {
+      throw new AppError("Código de disciplina inválido!", 404);
     }
 
-    // Verificar se a turma existe no curso
-    const classData = await Class.findOne({ _id: className, course: courseData._id });
+    // Verificar se a disciplina tem apenas uma turma associada
+    if (!discipline.classes.length) {
+      throw new AppError("Disciplina não vinculada a nenhuma turma!", 400);
+    }
+
+    if (!discipline.course) {
+      throw new AppError("Disciplina sem curso associado!", 400);
+    }
+
+    // Selecionar apenas a primeira turma associada
+    const classData = await Class.findById(discipline.classes[0]);
     if (!classData) {
-      throw new AppError("Turma não encontrada para o curso especificado.", 404);
+      throw new AppError("Turma associada à disciplina não encontrada!", 404);
     }
 
     // Hash da senha
@@ -51,10 +59,11 @@ class CreateUserService {
       name,
       email,
       password: passwordHash,
-      role: "student",
+      role: ["student"],
       school,
-      course: courseData._id,
+      course: discipline.course._id,
       class: classData._id,
+      disciplines: [discipline._id],
     }) as IUser;
 
     // Associar o aluno à turma
@@ -63,31 +72,18 @@ class CreateUserService {
       await classData.save();
     }
 
-    // Buscar disciplinas associadas à turma
-    const disciplines = await Discipline.find({ classes: classData._id });
+    // Associar o aluno à disciplina
+    if (!discipline.students.includes(newStudent._id as Types.ObjectId)) {
+      discipline.students.push(newStudent._id as Types.ObjectId);
+      await discipline.save();
+    }
 
-    // Associar disciplinas ao aluno
-    if (disciplines.length > 0) {
-      const disciplineIds = disciplines.map((discipline) => discipline._id);
-      newStudent.disciplines = disciplineIds as Types.ObjectId[]; // Conversão explícita
-      await newStudent.save();
-
-      // Associar o aluno aos professores das disciplinas
-      const professorIds = disciplines.flatMap((discipline) =>
-        (discipline.professors as Types.ObjectId[]).map((profId) => new Types.ObjectId(profId))
-      );
+    // Associar o aluno aos professores da disciplina
+    if (discipline.professors.length > 0) {
       await Professor.updateMany(
-        { _id: { $in: professorIds } },
+        { _id: { $in: discipline.professors } },
         { $addToSet: { students: newStudent._id } }
       );
-
-      // Associar o aluno às disciplinas (students array)
-      for (const discipline of disciplines) {
-        if (!discipline.students.some((id) => id.equals(newStudent._id as Types.ObjectId))) {
-          discipline.students.push(newStudent._id as Types.ObjectId);
-          await discipline.save();
-        }
-      }
     }
 
     return {
@@ -96,9 +92,9 @@ class CreateUserService {
       email: newStudent.email,
       role: newStudent.role,
       school: university.name,
-      course: courseData.name,
+      course: (discipline.course as any).name,
       class: classData.name,
-      disciplines: disciplines.map((discipline) => discipline.name),
+      disciplines: [discipline.name],
     };
   }
 }

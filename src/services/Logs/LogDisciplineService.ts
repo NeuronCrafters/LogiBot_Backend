@@ -23,8 +23,10 @@ class LogDisciplineService {
       throw new AppError("Acesso negado à disciplina.", 403);
     }
 
+    const studentIds = discipline.students.map(s => s.toString());
+
     if (!startDate && !endDate) {
-      const logs = await UserAnalysis.find({ userId: { $in: discipline.students } });
+      const logs = await UserAnalysis.find({ userId: { $in: studentIds } });
       return {
         discipline: discipline.name,
         totalStudents: discipline.students.length,
@@ -37,7 +39,7 @@ class LogDisciplineService {
     if (endDate) dateFilter.$lte = new Date(endDate);
 
     const pipeline = [
-      { $match: { userId: { $in: discipline.students.map(s => s.toString()) } } },
+      { $match: { userId: { $in: studentIds } } },
       { $unwind: "$sessions" },
       { $match: { "sessions.sessionStart": dateFilter } },
       {
@@ -52,6 +54,10 @@ class LogDisciplineService {
           totalUsageTime: { $first: "$totalUsageTime" },
           totalCorrectAnswers: { $first: "$totalCorrectAnswers" },
           totalWrongAnswers: { $first: "$totalWrongAnswers" },
+          mostAccessedSubject: { $first: "$mostAccessedSubject" },
+          leastAccessedSubject: { $first: "$leastAccessedSubject" },
+          subjectMostCorrect: { $first: "$subjectMostCorrect" },
+          subjectMostWrong: { $first: "$subjectMostWrong" },
           sessions: { $push: "$sessions" },
           __v: { $first: "$__v" }
         }

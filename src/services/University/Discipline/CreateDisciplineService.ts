@@ -4,6 +4,7 @@ import { Class } from "../../../models/Class";
 import { Professor } from "../../../models/Professor";
 import { AppError } from "../../../exceptions/AppError";
 import { Types } from "mongoose";
+import { generateDisciplineCode } from "../../../config/generateCode";
 
 class CreateDisciplineService {
   async execute(name: string, courseId: string, classIds: string[], professorIds: string[]) {
@@ -27,7 +28,7 @@ class CreateDisciplineService {
       throw new AppError("Uma ou mais turmas não foram encontradas!", 404);
     }
 
-    if (!Array.isArray(professorIds)) {
+    if (!Array.isArray(professorIds) || professorIds.some(id => !Types.ObjectId.isValid(id))) {
       throw new AppError("IDs de professor inválidos!", 400);
     }
     const professorObjectIds = professorIds.map(id => new Types.ObjectId(id));
@@ -37,11 +38,15 @@ class CreateDisciplineService {
       throw new AppError("Disciplina já existe para este curso!", 409);
     }
 
+    const accessCode = generateDisciplineCode();
+
     const discipline = await Discipline.create({
       name,
       course: courseObjectId,
       classes: classObjectIds,
       professors: professorObjectIds,
+      students: [],
+      code: accessCode,
     });
 
     course.disciplines.push(discipline._id as Types.ObjectId);
@@ -57,7 +62,10 @@ class CreateDisciplineService {
       { $addToSet: { disciplines: discipline._id } }
     );
 
-    return discipline;
+    return {
+      discipline,
+      accessCode,
+    };
   }
 }
 

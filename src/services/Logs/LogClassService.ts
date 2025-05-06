@@ -48,6 +48,10 @@ class LogClassService {
           totalUsageTime: { $first: "$totalUsageTime" },
           totalCorrectAnswers: { $first: "$totalCorrectAnswers" },
           totalWrongAnswers: { $first: "$totalWrongAnswers" },
+          mostAccessedSubject: { $first: "$mostAccessedSubject" },
+          leastAccessedSubject: { $first: "$leastAccessedSubject" },
+          subjectMostCorrect: { $first: "$subjectMostCorrect" },
+          subjectMostWrong: { $first: "$subjectMostWrong" },
           sessions: { $push: "$sessions" },
           __v: { $first: "$__v" }
         }

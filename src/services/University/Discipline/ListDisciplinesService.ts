@@ -5,7 +5,7 @@ class ListDisciplinesService {
     const disciplines = await Discipline.find()
       .populate("course", "name")
       .populate("classes", "name")
-      .populate("professors", "name");
+      .populate("professors", "name email");
 
     return disciplines;
   }

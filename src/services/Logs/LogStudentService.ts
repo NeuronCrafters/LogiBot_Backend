@@ -40,7 +40,6 @@ class LogStudentService {
       }
     }
 
-    // Se nenhum filtro de data for fornecido, busque o log normalmente
     if (!startDate && !endDate) {
       const studentLog = await UserAnalysis.findOne({ userId: studentId });
       if (!studentLog) {
@@ -49,7 +48,6 @@ class LogStudentService {
       return studentLog;
     }
 
-    // Se houver parâmetros de data, utilize uma aggregation para filtrar as sessões
     let dateFilter: any = {};
     if (startDate) dateFilter.$gte = new Date(startDate);
     if (endDate) dateFilter.$lte = new Date(endDate);
@@ -70,6 +68,10 @@ class LogStudentService {
           totalUsageTime: { $first: "$totalUsageTime" },
           totalCorrectAnswers: { $first: "$totalCorrectAnswers" },
           totalWrongAnswers: { $first: "$totalWrongAnswers" },
+          mostAccessedSubject: { $first: "$mostAccessedSubject" },
+          leastAccessedSubject: { $first: "$leastAccessedSubject" },
+          subjectMostCorrect: { $first: "$subjectMostCorrect" },
+          subjectMostWrong: { $first: "$subjectMostWrong" },
           sessions: { $push: "$sessions" },
           __v: { $first: "$__v" }
         }

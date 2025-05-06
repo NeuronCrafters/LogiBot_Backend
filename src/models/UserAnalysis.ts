@@ -10,6 +10,10 @@ interface IUserAnalysis extends Document {
   totalUsageTime: number;
   totalCorrectAnswers: number;
   totalWrongAnswers: number;
+  mostAccessedSubject?: string | null;
+  leastAccessedSubject?: string | null;
+  subjectMostCorrect?: string | null;
+  subjectMostWrong?: string | null;
   sessions: {
     sessionStart: Date;
     sessionEnd?: Date;
@@ -42,7 +46,6 @@ interface IUserAnalysis extends Document {
   }[];
 }
 
-
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
   userId: { type: String, required: true, index: true },
   name: { type: String, required: true },
@@ -53,6 +56,10 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   totalUsageTime: { type: Number, default: 0 },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
+  mostAccessedSubject: { type: String, default: null },
+  leastAccessedSubject: { type: String, default: null },
+  subjectMostCorrect: { type: String, default: null },
+  subjectMostWrong: { type: String, default: null },
   sessions: [
     {
       sessionStart: { type: Date, required: true, default: Date.now },
@@ -95,7 +102,7 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   ],
 });
 
-
+// calcula a duração da sessão
 UserAnalysisSchema.pre("save", function (next) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
@@ -107,6 +114,7 @@ UserAnalysisSchema.pre("save", function (next) {
   next();
 });
 
+// normaliza campos ausentes
 UserAnalysisSchema.pre("validate", function (next) {
   this.sessions.forEach((session: any) => {
     if (session.answerHistory && Array.isArray(session.answerHistory)) {
@@ -134,6 +142,7 @@ UserAnalysisSchema.pre("validate", function (next) {
   next();
 });
 
+// interações dentro da sessão
 UserAnalysisSchema.methods.addInteraction = function (message: string, botResponse?: string) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
@@ -143,14 +152,11 @@ UserAnalysisSchema.methods.addInteraction = function (message: string, botRespon
         message,
         botResponse: botResponse || "",
       });
-    } else {
-      console.warn("A sessão foi encerrada. Não é possível adicionar novas interações.");
     }
-  } else {
-    console.warn("Nenhuma sessão ativa encontrada. Interação não registrada.");
   }
 };
 
+// histórico de respostas
 UserAnalysisSchema.methods.addAnswerHistory = function (
   question: string,
   selectedOption: string,
@@ -171,20 +177,17 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
               isCorrect: isCorrect || "false",
               isSelected: selectedOption || "false",
             },
-            totalCorrectAnswers: 0,
-            totalWrongAnswers: 0,
+            totalCorrectAnswers: isCorrect === "true" ? 1 : 0,
+            totalWrongAnswers: isCorrect === "false" ? 1 : 0,
             timestamp: new Date(),
           },
         ],
       });
-    } else {
-      console.warn("A sessão foi encerrada. Não é possível adicionar respostas.");
     }
-  } else {
-    console.warn("Nenhuma sessão ativa encontrada. Resposta não registrada.");
   }
 };
 
+// interações fora da sala
 UserAnalysisSchema.methods.addInteractionOutsideClassroom = function (message: string) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
@@ -193,11 +196,7 @@ UserAnalysisSchema.methods.addInteractionOutsideClassroom = function (message: s
         timestamp: new Date(),
         message,
       });
-    } else {
-      console.warn("A sessão foi encerrada. Não é possível adicionar interações fora da sala de aula.");
     }
-  } else {
-    console.warn("Nenhuma sessão ativa encontrada. Interação fora da sala de aula não registrada.");
   }
 };
 

@@ -96,7 +96,6 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
 });
 
 
-// metodo para calcular a duração da sessão antes de salvar
 UserAnalysisSchema.pre("save", function (next) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
@@ -108,7 +107,6 @@ UserAnalysisSchema.pre("save", function (next) {
   next();
 });
 
-// metodo de pré‑validação para corrigir possíveis dados ausentes em answerHistory
 UserAnalysisSchema.pre("validate", function (next) {
   this.sessions.forEach((session: any) => {
     if (session.answerHistory && Array.isArray(session.answerHistory)) {
@@ -136,7 +134,6 @@ UserAnalysisSchema.pre("validate", function (next) {
   next();
 });
 
-// metodo para adicionar interações e answerHistory 
 UserAnalysisSchema.methods.addInteraction = function (message: string, botResponse?: string) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];

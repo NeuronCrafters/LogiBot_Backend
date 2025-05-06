@@ -12,11 +12,18 @@ export async function verificarRespostasService(
     throw new AppError("Gabarito ou perguntas não definidos.", 400);
   }
 
+  const normalizeOption = (value: string) =>
+    value.trim().toLowerCase().replace(/\s+/g, "");
+
   let acertos = 0;
   let erros = 0;
 
   const answerHistoryEntry = respostas.map((resposta, index) => {
-    const isCorrect = resposta === session.lastAnswerKeys[index];
+    const respostaNormalizada = normalizeOption(resposta);
+    const gabaritoNormalizado = normalizeOption(session.lastAnswerKeys[index]);
+
+    const isCorrect = respostaNormalizada === gabaritoNormalizado;
+
     if (isCorrect) acertos++;
     else erros++;
 

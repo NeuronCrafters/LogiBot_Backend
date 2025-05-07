@@ -4,8 +4,18 @@ class ListDisciplinesService {
   async execute() {
     const disciplines = await Discipline.find()
       .populate("course", "name")
-      .populate("classes", "name")
-      .populate("professors", "name email");
+      .populate({
+        path: "classes",
+        select: "name code",
+      })
+      .populate({
+        path: "professors",
+        select: "name email",
+      })
+      .populate({
+        path: "students",
+        select: "name email",
+      });
 
     return disciplines;
   }

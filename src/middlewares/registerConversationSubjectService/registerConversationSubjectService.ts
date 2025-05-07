@@ -1,7 +1,6 @@
 import { UserAnalysis } from "../../models/UserAnalysis";
 import { AppError } from "../../exceptions/AppError";
 
-// palavras-chave e variantes (plural, erro comum, inglês)
 const subjectKeywords = {
   variaveis: ["variavel", "variáveis", "variables", "var", "varíavel", "variaeis"],
   listas: ["lista", "listas", "arrays", "vetores", "list", "vetor", "vetorr", "vetores"],

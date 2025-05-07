@@ -47,6 +47,16 @@ interface IUserAnalysis extends Document {
       message: string;
     }[];
   }[];
+
+  addInteraction: (message: string, botResponse?: string) => void;
+  addAnswerHistory: (
+    question: string,
+    selectedOption: string,
+    isCorrect: string,
+    level: string,
+    subject: string
+  ) => void;
+  addInteractionOutsideClassroom: (message: string) => void;
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({

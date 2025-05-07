@@ -8,24 +8,69 @@ import { sendOpcaoEListarSubopcoesController } from "../../controllers/rasa/Acti
 import { gerarPerguntasController } from "../../controllers/rasa/ActionController/gerarPerguntasController";
 import { getGabaritoController } from "../../controllers/rasa/ActionController/getGabaritoController";
 import { verificarRespostasController } from "../../controllers/rasa/ActionController/verificarRespostasController";
+import { inicioController } from "../../controllers/rasa/ActionChat/inicioController";
+import { conversarController } from "../../controllers/rasa/ActionChat/conversarController";
+import { actionPerguntarController } from "../../controllers/rasa/ActionChat/perguntarController";
 
 const rasaRouter = Router();
 const sendController = new RasaSendController();
 
-
 /**
  * @swagger
  * tags:
- *   name: Rasa
- *   description: Rotas relacionadas ao chatbot Rasa
+ *   - name: Rasa
+ *     description: Comunicação geral com o bot
+ *   - name: Caminho
+ *     description: Definição de caminho: Quiz ou Conversa
+ *   - name: Quiz
+ *     description: Lógica de quiz por nível, categorias e perguntas
+ *   - name: Conversa
+ *     description: Conversa com IA sobre lógica computacional
  */
 
 /**
  * @swagger
- * /sael/talk:
+ * /sael/action/inicio:
+ *   get:
+ *     summary: Inicia o bot com os botões de caminho (quiz ou conversa)
+ *     tags: [Caminho]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Botões retornados com sucesso
+ */
+rasaRouter.get("/action/inicio", ...isPermissions.isAuthenticated(), inicioController);
+
+/**
+ * @swagger
+ * /sael/action/conversar:
  *   post:
- *     summary: Enviar mensagem para o chatbot
- *     tags: [Rasa]
+ *     summary: Informa ao bot que o usuário escolheu conversar
+ *     tags: [Caminho]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               text:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Bot pronto para conversar
+ */
+rasaRouter.post("/action/conversar", ...isPermissions.isAuthenticated(), conversarController);
+
+/**
+ * @swagger
+ * /sael/action/perguntar:
+ *   post:
+ *     summary: Enviar pergunta para a IA sobre lógica computacional
+ *     tags: [Conversa]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -39,34 +84,30 @@ const sendController = new RasaSendController();
  *                 type: string
  *     responses:
  *       200:
- *         description: Resposta do chatbot
+ *         description: Resposta da IA sobre lógica
  */
-// Rota para enviar mensagem ao chatbot (ainda em classe)
-rasaRouter.post("/talk", ...isPermissions.isAuthenticated(), sendController.handle.bind(sendController));
-
+rasaRouter.post("/action/perguntar", ...isPermissions.isAuthenticated(), actionPerguntarController);
 
 /**
  * @swagger
  * /sael/action/listar_niveis:
  *   get:
- *     summary: Listar níveis disponíveis
- *     tags: [Rasa]
+ *     summary: Lista os níveis disponíveis para o quiz
+ *     tags: [Quiz]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lista de níveis
+ *         description: Níveis listados com sucesso
  */
-// Rota: Listar níveis
 rasaRouter.get("/action/listar_niveis", ...isPermissions.isAuthenticated(), listarNiveisController);
-
 
 /**
  * @swagger
  * /sael/action/definir_nivel:
  *   post:
- *     summary: Definir o nível do usuário
- *     tags: [Rasa]
+ *     summary: Define o nível escolhido pelo usuário
+ *     tags: [Quiz]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -82,31 +123,28 @@ rasaRouter.get("/action/listar_niveis", ...isPermissions.isAuthenticated(), list
  *       200:
  *         description: Nível definido com sucesso
  */
-// Rota: Definir nível
 rasaRouter.post("/action/definir_nivel", ...isPermissions.isAuthenticated(), definirNivelController);
 
 /**
  * @swagger
  * /sael/action/listar_opcoes:
  *   get:
- *     summary: Listar opções disponíveis
- *     tags: [Rasa]
+ *     summary: Lista as categorias disponíveis após definir nível
+ *     tags: [Quiz]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lista de opções
+ *         description: Categorias listadas com sucesso
  */
-// Rota: Listar opções
 rasaRouter.get("/action/listar_opcoes", ...isPermissions.isAuthenticated(), listarOpcoesController);
-
 
 /**
  * @swagger
  * /sael/action/listar_subopcoes:
  *   post:
- *     summary: Listar subopções com base na categoria
- *     tags: [Rasa]
+ *     summary: Lista os subassuntos da categoria escolhida
+ *     tags: [Quiz]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -120,18 +158,16 @@ rasaRouter.get("/action/listar_opcoes", ...isPermissions.isAuthenticated(), list
  *                 type: string
  *     responses:
  *       200:
- *         description: Lista de subopções retornada com sucesso
+ *         description: Subopções listadas com sucesso
  */
-// Rota: Listar subopções
 rasaRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), sendOpcaoEListarSubopcoesController);
-
 
 /**
  * @swagger
  * /sael/action/gerar_perguntas:
  *   post:
- *     summary: Gerar perguntas com base no assunto
- *     tags: [Rasa]
+ *     summary: Gera perguntas com base no subassunto
+ *     tags: [Quiz]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -147,32 +183,14 @@ rasaRouter.post("/action/listar_subopcoes", ...isPermissions.isAuthenticated(), 
  *       200:
  *         description: Perguntas geradas com sucesso
  */
-// Rota: Gerar perguntas
 rasaRouter.post("/action/gerar_perguntas", ...isPermissions.isAuthenticated(), gerarPerguntasController);
-
-
-/**
- * @swagger
- * /sael/action/gabarito:
- *   get:
- *     summary: Obter o gabarito das últimas perguntas geradas
- *     tags: [Rasa]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Gabarito retornado com sucesso
- */
-// Rota: Obter gabarito
-rasaRouter.get("/action/gabarito", ...isPermissions.isAdminProfessorOrCoordinator(), getGabaritoController);
-
 
 /**
  * @swagger
  * /sael/action/send:
  *   post:
- *     summary: Verificar respostas do usuário
- *     tags: [Rasa]
+ *     summary: Envia as respostas do usuário para validação
+ *     tags: [Quiz]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -190,7 +208,43 @@ rasaRouter.get("/action/gabarito", ...isPermissions.isAdminProfessorOrCoordinato
  *       200:
  *         description: Resultado da verificação das respostas
  */
-// Rota: Verificar respostas
 rasaRouter.post("/action/send", ...isPermissions.isAuthenticated(), verificarRespostasController);
+
+/**
+ * @swagger
+ * /sael/action/gabarito:
+ *   get:
+ *     summary: Retorna o gabarito das últimas perguntas
+ *     tags: [Quiz]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Gabarito retornado com sucesso
+ */
+rasaRouter.get("/action/gabarito", ...isPermissions.isAdminProfessorOrCoordinator(), getGabaritoController);
+
+/**
+ * @swagger
+ * /sael/talk:
+ *   post:
+ *     summary: Enviar mensagem genérica para o bot (sem lógica de action)
+ *     tags: [Rasa]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Resposta do bot
+ */
+rasaRouter.post("/talk", ...isPermissions.isAuthenticated(), sendController.handle.bind(sendController));
 
 export { rasaRouter };

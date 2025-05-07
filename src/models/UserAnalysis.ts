@@ -14,6 +14,9 @@ interface IUserAnalysis extends Document {
   leastAccessedSubject?: string | null;
   subjectMostCorrect?: string | null;
   subjectMostWrong?: string | null;
+  subjectFrequency?: Record<string, number>;
+  subjectCorrectCount?: Record<string, number>;
+  subjectWrongCount?: Record<string, number>;
   sessions: {
     sessionStart: Date;
     sessionEnd?: Date;
@@ -60,6 +63,9 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   leastAccessedSubject: { type: String, default: null },
   subjectMostCorrect: { type: String, default: null },
   subjectMostWrong: { type: String, default: null },
+  subjectFrequency: { type: Schema.Types.Mixed, default: {} },
+  subjectCorrectCount: { type: Schema.Types.Mixed, default: {} },
+  subjectWrongCount: { type: Schema.Types.Mixed, default: {} },
   sessions: [
     {
       sessionStart: { type: Date, required: true, default: Date.now },
@@ -102,7 +108,6 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   ],
 });
 
-// calcula a duração da sessão
 UserAnalysisSchema.pre("save", function (next) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
@@ -114,7 +119,6 @@ UserAnalysisSchema.pre("save", function (next) {
   next();
 });
 
-// normaliza campos ausentes
 UserAnalysisSchema.pre("validate", function (next) {
   this.sessions.forEach((session: any) => {
     if (session.answerHistory && Array.isArray(session.answerHistory)) {
@@ -142,7 +146,6 @@ UserAnalysisSchema.pre("validate", function (next) {
   next();
 });
 
-// interações dentro da sessão
 UserAnalysisSchema.methods.addInteraction = function (message: string, botResponse?: string) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
@@ -156,7 +159,6 @@ UserAnalysisSchema.methods.addInteraction = function (message: string, botRespon
   }
 };
 
-// histórico de respostas
 UserAnalysisSchema.methods.addAnswerHistory = function (
   question: string,
   selectedOption: string,
@@ -187,7 +189,6 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   }
 };
 
-// interações fora da sala
 UserAnalysisSchema.methods.addInteractionOutsideClassroom = function (message: string) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];

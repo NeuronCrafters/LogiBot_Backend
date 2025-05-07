@@ -11,6 +11,7 @@ import { verificarRespostasController } from "../../controllers/rasa/ActionContr
 import { inicioController } from "../../controllers/rasa/ActionChat/inicioController";
 import { conversarController } from "../../controllers/rasa/ActionChat/conversarController";
 import { actionPerguntarController } from "../../controllers/rasa/ActionChat/perguntarController";
+import { registerConversationSubject } from "../../middlewares/registerConversationSubjectService/registerConversationSubjectService";
 
 const rasaRouter = Router();
 const sendController = new RasaSendController();
@@ -86,7 +87,7 @@ rasaRouter.post("/action/conversar", ...isPermissions.isAuthenticated(), convers
  *       200:
  *         description: Resposta da IA sobre lógica
  */
-rasaRouter.post("/action/perguntar", ...isPermissions.isAuthenticated(), actionPerguntarController);
+rasaRouter.post("/action/perguntar", ...isPermissions.isAuthenticated(), registerConversationSubject, actionPerguntarController);
 
 /**
  * @swagger

@@ -5,6 +5,7 @@ import { ListProfessorsByCourseController } from "../../controllers/admin/ListPr
 import { DeleteProfessorController } from "../../controllers/admin/DeleteProfessorController";
 import { ListProfessorsController } from "../../controllers/admin/ListProfessorsController";
 import { ListStudentsProfessorController } from "../../controllers/admin/ListStudentsProfessorController";
+import { UpdateProfessorRoleController } from "../../controllers/admin/UpdateProfessorRoleController";
 
 const adminRouter = Router();
 
@@ -145,5 +146,53 @@ adminRouter.get("/course/:courseId/professors", ...isPermissions.isAdminOrCoordi
  *         description: Professor não encontrado
  */
 adminRouter.delete("/professor/:professorId", ...isPermissions.isAdmin(), new DeleteProfessorController().handle);
+
+
+/**
+ * @swagger
+ * /admin/professor/{id}/role:
+ *   patch:
+ *     tags: [Admin]
+ *     summary: Atualizar papel de um professor
+ *     description: Adiciona ou remove o papel de coordenador de curso a um professor. Somente administradores podem executar.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do professor
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - action
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [add, remove]
+ *                 description: Define se o papel de "course-coordinator" será adicionado ou removido.
+ *     responses:
+ *       200:
+ *         description: Papel atualizado com sucesso
+ *       400:
+ *         description: Requisição inválida
+ *       403:
+ *         description: Acesso negado ou tentativa de autoalteração
+ *       404:
+ *         description: Professor não encontrado
+ *       409:
+ *         description: Já existe um coordenador no curso
+ */
+adminRouter.patch(
+  "/professor/:id/role",
+  ...isPermissions.isAdmin(),
+  new UpdateProfessorRoleController().handle
+);
 
 export { adminRouter };

@@ -25,20 +25,27 @@ export async function registerConversationSubject(
     const lastSession = userAnalysis.sessions.at(-1);
     if (!lastSession || lastSession.sessionEnd) return next();
 
-    for (const palavra of palavrasEncontradas) {
-      if (!userAnalysis.subjectFrequency) {
-        userAnalysis.subjectFrequency = {};
-      }
-
-      userAnalysis.subjectFrequency[palavra] =
-        (userAnalysis.subjectFrequency[palavra] || 0) + 1;
+    if (!lastSession.sessionBot || lastSession.sessionBot.length === 0) {
+      lastSession.sessionBot = [{ mostAccessedSubject: null, leastAccessedSubject: null, subjectFrequency: {} }];
     }
 
-    const freqEntries = Object.entries(userAnalysis.subjectFrequency);
-    freqEntries.sort((a, b) => b[1] - a[1]);
+    const freq = lastSession.sessionBot[0].subjectFrequency || {};
 
-    userAnalysis.mostAccessedSubject = freqEntries[0]?.[0] || null;
-    userAnalysis.leastAccessedSubject = freqEntries.at(-1)?.[0] || null;
+    for (const palavra of palavrasEncontradas) {
+      freq[palavra] = (freq[palavra] || 0) + 1;
+    }
+
+    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+
+    lastSession.sessionBot[0].subjectFrequency = freq;
+    lastSession.sessionBot[0].mostAccessedSubject = {
+      subject: sorted[0]?.[0] || null,
+      count: sorted[0]?.[1] || 0,
+    };
+    lastSession.sessionBot[0].leastAccessedSubject = {
+      subject: sorted.at(-1)?.[0] || null,
+      count: sorted.at(-1)?.[1] || 0,
+    };
 
     await userAnalysis.save();
     return next();

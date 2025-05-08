@@ -10,23 +10,18 @@ interface IUserAnalysis extends Document {
   totalUsageTime: number;
   totalCorrectAnswers: number;
   totalWrongAnswers: number;
-  mostAccessedSubject?: string | null;
-  leastAccessedSubject?: string | null;
-  subjectMostCorrect?: string | null;
-  subjectMostWrong?: string | null;
-  subjectFrequency?: Record<string, number>;
-  subjectCorrectCount?: Record<string, number>;
-  subjectWrongCount?: Record<string, number>;
   sessions: {
     sessionStart: Date;
     sessionEnd?: Date;
     sessionDuration?: number;
     totalCorrectAnswers: number;
     totalWrongAnswers: number;
+    subjectFrequency?: Record<string, number>;
     interactions: {
       timestamp: Date;
       message: string;
       botResponse?: string;
+      subjectMatched?: string | null;
     }[];
     answerHistory: {
       questions: {
@@ -41,22 +36,23 @@ interface IUserAnalysis extends Document {
         totalWrongAnswers: number;
         timestamp: Date;
       }[];
+      subjectCorrectCount?: Record<string, number>;
+      subjectWrongCount?: Record<string, number>;
     }[];
-    interactionsOutsideTheClassroom: {
-      timestamp: Date;
-      message: string;
+    sessionBot: {
+      mostAccessedSubject?: {
+        subject: string | null;
+        count: number;
+      };
+      leastAccessedSubject?: {
+        subject: string | null;
+        count: number;
+      };
+      subjectFrequency?: Record<string, number>;
     }[];
   }[];
 
-  addInteraction: (message: string, botResponse?: string) => void;
-  addAnswerHistory: (
-    question: string,
-    selectedOption: string,
-    isCorrect: string,
-    level: string,
-    subject: string
-  ) => void;
-  addInteractionOutsideClassroom: (message: string) => void;
+  addInteraction: (message: string, botResponse?: string, subjectMatched?: string | null) => void;
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
@@ -69,13 +65,6 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   totalUsageTime: { type: Number, default: 0 },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
-  mostAccessedSubject: { type: String, default: null },
-  leastAccessedSubject: { type: String, default: null },
-  subjectMostCorrect: { type: String, default: null },
-  subjectMostWrong: { type: String, default: null },
-  subjectFrequency: { type: Schema.Types.Mixed, default: {} },
-  subjectCorrectCount: { type: Schema.Types.Mixed, default: {} },
-  subjectWrongCount: { type: Schema.Types.Mixed, default: {} },
   sessions: [
     {
       sessionStart: { type: Date, required: true, default: Date.now },
@@ -83,11 +72,13 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
       sessionDuration: { type: Number, default: 0 },
       totalCorrectAnswers: { type: Number, default: 0 },
       totalWrongAnswers: { type: Number, default: 0 },
+      subjectFrequency: { type: Schema.Types.Mixed, default: {} },
       interactions: [
         {
           timestamp: { type: Date, required: true, default: Date.now },
           message: { type: String, required: true },
           botResponse: { type: String, default: "" },
+          subjectMatched: { type: String, default: null },
         },
       ],
       answerHistory: [
@@ -106,12 +97,21 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
               timestamp: { type: Date, required: true, default: Date.now },
             },
           ],
+          subjectCorrectCount: { type: Schema.Types.Mixed, default: {} },
+          subjectWrongCount: { type: Schema.Types.Mixed, default: {} },
         },
       ],
-      interactionsOutsideTheClassroom: [
+      sessionBot: [
         {
-          timestamp: { type: Date, required: true, default: Date.now },
-          message: { type: String, required: true },
+          mostAccessedSubject: {
+            subject: { type: String, default: null },
+            count: { type: Number, default: 0 },
+          },
+          leastAccessedSubject: {
+            subject: { type: String, default: null },
+            count: { type: Number, default: 0 },
+          },
+          subjectFrequency: { type: Schema.Types.Mixed, default: {} },
         },
       ],
     },
@@ -129,34 +129,11 @@ UserAnalysisSchema.pre("save", function (next) {
   next();
 });
 
-UserAnalysisSchema.pre("validate", function (next) {
-  this.sessions.forEach((session: any) => {
-    if (session.answerHistory && Array.isArray(session.answerHistory)) {
-      session.answerHistory = session.answerHistory.map((ah: any) => {
-        if (ah.questions && Array.isArray(ah.questions)) {
-          ah.questions = ah.questions.map((q: any) => {
-            return {
-              level: q.level || "Nível desconhecido",
-              subject: q.subject || "Assunto desconhecido",
-              selectedOption: {
-                question: (q.selectedOption && q.selectedOption.question) || "N/A",
-                isCorrect: (q.selectedOption && q.selectedOption.isCorrect) || "false",
-                isSelected: (q.selectedOption && q.selectedOption.isSelected) || "false",
-              },
-              totalCorrectAnswers: q.totalCorrectAnswers || 0,
-              totalWrongAnswers: q.totalWrongAnswers || 0,
-              timestamp: q.timestamp || new Date(),
-            };
-          });
-        }
-        return ah;
-      });
-    }
-  });
-  next();
-});
-
-UserAnalysisSchema.methods.addInteraction = function (message: string, botResponse?: string) {
+UserAnalysisSchema.methods.addInteraction = function (
+  message: string,
+  botResponse?: string,
+  subjectMatched: string | null = null
+) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
     if (!lastSession.sessionEnd) {
@@ -164,10 +141,33 @@ UserAnalysisSchema.methods.addInteraction = function (message: string, botRespon
         timestamp: new Date(),
         message,
         botResponse: botResponse || "",
+        subjectMatched,
       });
+
+      if (subjectMatched) {
+        if (!lastSession.subjectFrequency) lastSession.subjectFrequency = {};
+        lastSession.subjectFrequency[subjectMatched] =
+          (lastSession.subjectFrequency[subjectMatched] || 0) + 1;
+
+        const freq = lastSession.subjectFrequency;
+        const sorted = Object.entries(freq).sort((a, b) => (b[1] as number) - (a[1] as number));
+
+        if (!lastSession.sessionBot) lastSession.sessionBot = [{}];
+
+        lastSession.sessionBot[0].subjectFrequency = freq;
+        lastSession.sessionBot[0].mostAccessedSubject = {
+          subject: sorted[0]?.[0] || null,
+          count: (sorted[0]?.[1] as number) || 0,
+        };
+        lastSession.sessionBot[0].leastAccessedSubject = {
+          subject: sorted.at(-1)?.[0] || null,
+          count: (sorted.at(-1)?.[1] as number) || 0,
+        };
+      }
     }
   }
 };
+
 
 UserAnalysisSchema.methods.addAnswerHistory = function (
   question: string,
@@ -212,5 +212,4 @@ UserAnalysisSchema.methods.addInteractionOutsideClassroom = function (message: s
 };
 
 const UserAnalysis = mongoose.model<IUserAnalysis>("UserAnalysis", UserAnalysisSchema);
-
 export { UserAnalysis, IUserAnalysis };

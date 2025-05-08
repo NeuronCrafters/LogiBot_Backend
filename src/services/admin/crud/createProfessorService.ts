@@ -1,6 +1,6 @@
-import { Professor } from "../../models/Professor";
-import { Course } from "../../models/Course";
-import { AppError } from "../../exceptions/AppError";
+import { Professor } from "../../../models/Professor";
+import { Course } from "../../../models/Course";
+import { AppError } from "../../../exceptions/AppError";
 import { Types } from "mongoose";
 import { hash } from "bcryptjs";
 

@@ -1,5 +1,5 @@
-import { Professor } from "../../models/Professor";
-import { AppError } from "../../exceptions/AppError";
+import { Professor } from "../../../models/Professor";
+import { AppError } from "../../../exceptions/AppError";
 
 class UpdateProfessorRoleService {
   async execute(professorId: string, action: "add" | "remove") {

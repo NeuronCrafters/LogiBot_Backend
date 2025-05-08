@@ -1,5 +1,5 @@
-import { Professor } from "../../models/Professor";
-import { AppError } from "../../exceptions/AppError";
+import { Professor } from "../../../models/Professor";
+import { AppError } from "../../../exceptions/AppError";
 import { Types } from "mongoose";
 
 class DeleteProfessorService {

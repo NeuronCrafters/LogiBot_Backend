@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { UpdateProfessorRoleService } from "../../services/admin/UpdateProfessorRoleService";
-import { AppError } from "../../exceptions/AppError";
+import { UpdateProfessorRoleService } from "../../../services/admin/crud/UpdateProfessorRoleService";
+import { AppError } from "../../../exceptions/AppError";
 
 class UpdateProfessorRoleController {
   async handle(req: Request, res: Response) {

@@ -11,23 +11,9 @@ import { verificarRespostasController } from "../../controllers/rasa/ActionContr
 import { inicioController } from "../../controllers/rasa/ActionChat/inicioController";
 import { conversarController } from "../../controllers/rasa/ActionChat/conversarController";
 import { actionPerguntarController } from "../../controllers/rasa/ActionChat/perguntarController";
-import { registerConversationSubject } from "../../middlewares/registerConversationSubjectService/registerConversationSubjectService";
 
 const rasaRouter = Router();
 const sendController = new RasaSendController();
-
-/**
- * @swagger
- * tags:
- *   - name: Rasa
- *     description: Comunicação geral com o bot
- *   - name: Caminho
- *     description: Definição de caminho: Quiz ou Conversa
- *   - name: Quiz
- *     description: Lógica de quiz por nível, categorias e perguntas
- *   - name: Conversa
- *     description: Conversa com IA sobre lógica computacional
- */
 
 /**
  * @swagger

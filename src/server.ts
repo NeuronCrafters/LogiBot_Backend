@@ -17,11 +17,21 @@ connectDB();
 app.use(cookieParser());
 app.use(express.json());
 
+const allowedOrigins = (process.env.FRONTEND_URLS || "")
+    .split(",")
+    .map(url => url.trim());
+
 const corsOptions = {
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
     credentials: true,
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
-    allowedHeaders: ["content-type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
@@ -41,7 +51,6 @@ app.use(passport.session());
 app.use(routes);
 
 setupSwagger(app);
-
 app.use(errorHandler);
 
 const port = process.env.PORT || 3000;

@@ -15,6 +15,14 @@ import { actionPerguntarController } from "../../controllers/rasa/ActionChat/per
 const rasaRouter = Router();
 const sendController = new RasaSendController();
 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Rasa
+ *   description: Rotas relacionadas ao SAEL 
+ */
+
 /**
  * @swagger
  * /sael/action/inicio:

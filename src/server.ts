@@ -2,11 +2,12 @@ import 'dotenv/config';
 import cors from "cors";
 import express from 'express';
 import cookieParser from "cookie-parser";
-import { setupSwagger } from "./config/swagger/swaggerConfig";
-import passport from 'passport';
-import './config/socialLogin/passport';
 import session from 'express-session';
+import passport from 'passport';
+
 import { connectDB } from './config/database';
+import { setupSwagger } from "./config/swagger/swaggerConfig";
+import './config/socialLogin/passport';
 import { routes } from './routes/routes';
 import { errorHandler } from './middlewares/errorHandler';
 
@@ -19,13 +20,14 @@ app.use(express.json());
 
 const allowedOrigins = (process.env.FRONTEND_URLS || "")
     .split(",")
-    .map(url => url.trim());
+    .map((url) => url.trim());
 
-const corsOptions = {
-    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+const corsOptions: cors.CorsOptions = {
+    origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.warn(`[CORS] Origem bloqueada: ${origin}`);
             callback(new Error("Not allowed by CORS"));
         }
     },

@@ -3,7 +3,6 @@ import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 import { CreateProfessorController } from "../../controllers/admin/createProfessorController";
 import { ListProfessorsByCourseController } from "../../controllers/admin/ListProfessorsByCourseController";
 import { DeleteProfessorController } from "../../controllers/admin/DeleteProfessorController";
-import { ListProfessorsController } from "../../controllers/admin/ListProfessorsController";
 import { ListStudentsProfessorController } from "../../controllers/admin/ListStudentsProfessorController";
 import { UpdateProfessorRoleController } from "../../controllers/admin/UpdateProfessorRoleController";
 
@@ -57,23 +56,6 @@ const adminRouter = Router();
  *         description: Curso não encontrado
  */
 adminRouter.post("/professor", ...isPermissions.isAdmin(), new CreateProfessorController().handle);
-
-/**
- * @swagger
- * /admin/professors:
- *   get:
- *     tags: [Admin]
- *     summary: Listar professores
- *     description: Lista todos os professores cadastrados.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Lista de professores retornada com sucesso
- *       403:
- *         description: Acesso negado
- */
-adminRouter.get("/professors", ...isPermissions.isAdminOrCoordinator(), new ListProfessorsController().handle);
 
 /**
  * @swagger

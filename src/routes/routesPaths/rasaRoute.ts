@@ -87,7 +87,7 @@ rasaRouter.post("/action/conversar", ...isPermissions.isAuthenticated(), convers
  *       200:
  *         description: Resposta da IA sobre lógica
  */
-rasaRouter.post("/action/perguntar", ...isPermissions.isAuthenticated(), registerConversationSubject, actionPerguntarController);
+rasaRouter.post("/action/perguntar", ...isPermissions.isAuthenticated(), actionPerguntarController);
 
 /**
  * @swagger

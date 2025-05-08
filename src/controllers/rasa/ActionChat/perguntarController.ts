@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { actionPerguntarService } from "../../../services/rasa/ActionChat/perguntarService";
 import { UserAnalysis } from "@/models/UserAnalysis";
-import { normalizeSubjectFromMessage } from "@/utils/normalizeSubjectFromMessage";
+import { normalizeSubjectFromMessage } from "../../../utils/normalizeSubject";
 
 export async function actionPerguntarController(req: Request, res: Response) {
   const { message } = req.body;

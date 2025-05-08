@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { UserAnalysis } from "@/models/UserAnalysis";
-import { palavrasChaveConversa } from "@/utils/palavras-chave";
+import { normalizeSubjectFromMessage } from "@/utils/normalizeSubject";
 
 export async function registerConversationSubject(
-  req: Request,
-  res: Response,
-  next: NextFunction
+    req: Request,
+    res: Response,
+    next: NextFunction
 ) {
   try {
     const userId = req.user?.id;
@@ -13,11 +13,9 @@ export async function registerConversationSubject(
 
     if (!userId || !userMessage) return next();
 
-    const palavrasEncontradas = Array.from(palavrasChaveConversa).filter((palavra) =>
-      userMessage.includes(palavra)
-    );
+    const subject = normalizeSubjectFromMessage(userMessage);
 
-    if (palavrasEncontradas.length === 0) return next();
+    if (!subject) return next();
 
     const userAnalysis = await UserAnalysis.findOne({ userId });
     if (!userAnalysis) return next();
@@ -26,14 +24,15 @@ export async function registerConversationSubject(
     if (!lastSession || lastSession.sessionEnd) return next();
 
     if (!lastSession.sessionBot || lastSession.sessionBot.length === 0) {
-      lastSession.sessionBot = [{ mostAccessedSubject: null, leastAccessedSubject: null, subjectFrequency: {} }];
+      lastSession.sessionBot = [{
+        mostAccessedSubject: null,
+        leastAccessedSubject: null,
+        subjectFrequency: {}
+      }];
     }
 
     const freq = lastSession.sessionBot[0].subjectFrequency || {};
-
-    for (const palavra of palavrasEncontradas) {
-      freq[palavra] = (freq[palavra] || 0) + 1;
-    }
+    freq[subject] = (freq[subject] || 0) + 1;
 
     const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
 

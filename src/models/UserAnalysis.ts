@@ -53,6 +53,13 @@ interface IUserAnalysis extends Document {
   }[];
 
   addInteraction: (message: string, botResponse?: string, subjectMatched?: string | null) => void;
+  addAnswerHistory: (
+    question: string,
+    selectedOption: string,
+    isCorrect: string,
+    level: string,
+    subject: string
+  ) => void;
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
@@ -137,6 +144,7 @@ UserAnalysisSchema.methods.addInteraction = function (
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
     if (!lastSession.sessionEnd) {
+      // Sempre adiciona a mensagem
       lastSession.interactions.push({
         timestamp: new Date(),
         message,
@@ -144,6 +152,7 @@ UserAnalysisSchema.methods.addInteraction = function (
         subjectMatched,
       });
 
+      // Se reconheceu o assunto (via normalizeSubjectFromMessage)
       if (subjectMatched) {
         if (!lastSession.subjectFrequency) lastSession.subjectFrequency = {};
         lastSession.subjectFrequency[subjectMatched] =
@@ -167,7 +176,6 @@ UserAnalysisSchema.methods.addInteraction = function (
     }
   }
 };
-
 
 UserAnalysisSchema.methods.addAnswerHistory = function (
   question: string,
@@ -194,18 +202,6 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
             timestamp: new Date(),
           },
         ],
-      });
-    }
-  }
-};
-
-UserAnalysisSchema.methods.addInteractionOutsideClassroom = function (message: string) {
-  if (this.sessions.length > 0) {
-    const lastSession = this.sessions[this.sessions.length - 1];
-    if (!lastSession.sessionEnd) {
-      lastSession.interactionsOutsideTheClassroom.push({
-        timestamp: new Date(),
-        message,
       });
     }
   }

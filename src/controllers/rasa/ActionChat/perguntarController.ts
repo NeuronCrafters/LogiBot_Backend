@@ -1,18 +1,32 @@
 import { Request, Response } from "express";
 import { actionPerguntarService } from "../../../services/rasa/ActionChat/perguntarService";
+import { UserAnalysis } from "@/models/UserAnalysis";
+import { normalizeSubjectFromMessage } from "@/utils/normalizeSubjectFromMessage";
 
 export async function actionPerguntarController(req: Request, res: Response) {
-  const { text } = req.body;
+  const { message } = req.body;
   const senderId = req.user?.id || "user";
 
-  if (!text) {
+  if (!message) {
     return res.status(400).json({ error: "Texto da mensagem é obrigatório." });
   }
 
   try {
-    const result = await actionPerguntarService(text, senderId);
-    res.status(200).json(result);
+    const response = await actionPerguntarService(message, senderId);
+    const botResponse = response?.responses?.[0]?.text || "";
+
+    const userAnalysis = await UserAnalysis.findOne({ userId: senderId });
+    const lastSession = userAnalysis?.sessions.at(-1);
+
+    if (userAnalysis && lastSession && !lastSession.sessionEnd) {
+      const subject = normalizeSubjectFromMessage(message);
+      userAnalysis.addInteraction(message, "", subject);
+      await userAnalysis.save();
+    }
+
+    res.status(200).json(response);
   } catch (error: any) {
+    console.error("Erro ao conversar com o assistente:", error);
     res.status(500).json({ message: "Erro ao conversar com o assistente", error: error.message });
   }
 }

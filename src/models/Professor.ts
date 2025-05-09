@@ -9,7 +9,6 @@ export interface IProfessor extends Document {
   courses: Types.ObjectId[];
   disciplines: Types.ObjectId[];
   students: Types.ObjectId[];
-  level?: string;
   googleId?: string;
   photo?: string;
   resetPasswordToken?: string;
@@ -26,7 +25,6 @@ const ProfessorSchema: Schema = new Schema(
     courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
     disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    level: { type: String, required: false, default: "desconhecido" },
     googleId: { type: String, required: false },
     photo: { type: String, required: false },
     resetPasswordToken: { type: String, required: false },

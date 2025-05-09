@@ -1,5 +1,5 @@
-import { Course } from "../../models/Course";
-import { AppError } from "../../exceptions/AppError";
+import { Course } from "../../../models/Course";
+import { AppError } from "../../../exceptions/AppError";
 
 class ListProfessorsByCourseService {
   async execute(courseId: string) {

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { UpdateProfessorRoleService } from "../../../services/admin/crud/UpdateProfessorRoleService";
+import { UpdateProfessorRoleService } from "../../../services/admin/professor/UpdateProfessorRoleService";
 import { AppError } from "../../../exceptions/AppError";
 
 class UpdateProfessorRoleController {

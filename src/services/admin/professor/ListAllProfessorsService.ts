@@ -1,4 +1,4 @@
-import { Professor } from "../../models/Professor";
+import { Professor } from "../../../models/Professor";
 
 class ListAllProfessorsService {
   async execute() {

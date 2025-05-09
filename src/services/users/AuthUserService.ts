@@ -5,11 +5,17 @@ import { compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { AppError } from "../../exceptions/AppError";
 
-//função para normalizar os papéis do usuário (role)
 function normalizeRoles(roleField: string | string[] | null | undefined): string[] {
   if (!roleField) return [];
   if (Array.isArray(roleField)) return roleField.filter(Boolean);
   return [roleField];
+}
+
+function prioritizeRole(roles: string[]): string[] {
+  if (roles.includes("course-coordinator")) {
+    return ["course-coordinator"];
+  }
+  return roles;
 }
 
 interface AuthRequest {
@@ -36,21 +42,18 @@ class AuthUserService {
       throw new AppError("Credenciais inválidas.", 401);
     }
 
-    //verificação de tentativas de login/logout consecutivas (limitação de 2 vezes)
     const userAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
     if (userAnalysis) {
       const recentSessions = userAnalysis.sessions.filter(
-        (session) => session.sessionStart > new Date(Date.now() - 5 * 60 * 1000) // Últimos 5 minutos
+        (session) => session.sessionStart > new Date(Date.now() - 5 * 60 * 1000)
       );
-
       if (recentSessions.length > 2) {
         throw new AppError("Você excedeu o limite de tentativas. Por favor, aguarde 5 minutos.", 429);
       }
     }
 
-    const roles = normalizeRoles(user.role);
+    const roles = prioritizeRole(normalizeRoles(user.role));
 
-    //login via Google
     if (isSocialLogin) {
       if (!user.googleId) {
         throw new AppError("Credenciais sociais inválidas.", 401);
@@ -70,15 +73,12 @@ class AuthUserService {
       }
     }
 
-    //captura a hora atual da sessão do usuário
     const sessionStart = new Date();
 
-    //define valores padrão para evitar erro de validação
     const school = user.school || null;
     const courses = user.course || null;
     const classes = user.class || null;
 
-    //cria o token JWT
     const token = sign(
       {
         id: user._id.toString(),
@@ -157,7 +157,6 @@ class AuthUserService {
     };
   }
 
-  //método de logout
   async logout(userId: string) {
     try {
       const userAnalysis = await UserAnalysis.findOne({ userId });

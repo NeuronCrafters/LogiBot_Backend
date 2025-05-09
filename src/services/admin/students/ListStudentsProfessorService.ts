@@ -1,5 +1,5 @@
-import { Professor } from "../../models/Professor";
-import { IUser } from "../../models/User";
+import { Professor } from "../../../models/Professor";
+import { IUser } from "../../../models/User";
 
 class ListStudentsProfessorService {
   async execute(professorId: string): Promise<any> {

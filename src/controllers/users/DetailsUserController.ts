@@ -21,8 +21,6 @@ class DetailsUserController {
 
       const primaryRole = getPrimaryRole(role);
 
-      // const roleAsString = Array.isArray(role) ? role[0] : role;
-
       const detailsUserService = new DetailsUserService();
       const userDetails = await detailsUserService.detailsUser(id, primaryRole);
 

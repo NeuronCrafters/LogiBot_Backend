@@ -6,6 +6,7 @@ import { DeleteProfessorController } from "../../controllers/admin/professor/Del
 import { UpdateProfessorRoleController } from "../../controllers/admin/professor/UpdateProfessorRoleController";
 import { ListProfessorsByUniversityController } from "../../controllers/admin/professor/ListProfessorsByUniversityController";
 import { ListAllProfessorsController } from "../../controllers/admin/professor/ListAllProfessorsController";
+import { ListStudentsController } from "../../controllers/admin/students/ListStudentsController";
 
 const adminRouter = Router();
 
@@ -191,6 +192,29 @@ adminRouter.get("/course/:courseId/professors", ...isPermissions.isAdminOrCoordi
 adminRouter.patch("/professor/:id/role", ...isPermissions.isAdmin(), new UpdateProfessorRoleController().handle
 );
 
-
+/**
+ * @swagger
+ * /admin/students:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Listar alunos
+ *     description: 
+ *       - **admin**: vê todos os alunos do sistema, com disciplinas, códigos e professores de cada disciplina.  
+ *       - **course-coordinator**: vê apenas os alunos do(s) curso(s) que coordena, e em quais disciplinas eles estão + nome e email do professor da disciplina.  
+ *       - **professor**: vê apenas os alunos das disciplinas que ministra, com nome, email e disciplina (nome + código).  
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de alunos retornada com sucesso
+ *       401:
+ *         description: Usuário não autenticado
+ *       403:
+ *         description: Permissão insuficiente
+ *       500:
+ *         description: Erro interno
+ */
+// ✅ Listar alunos conforme papel (admin / course-coordinator / professor)
+adminRouter.get("/students", ...isPermissions.isAuthenticated(), new ListStudentsController().handle);
 
 export { adminRouter };

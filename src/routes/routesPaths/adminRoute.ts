@@ -3,7 +3,7 @@ import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 import { CreateProfessorController } from "../../controllers/admin/professor/createProfessorController";
 import { ListProfessorsByCourseController } from "../../controllers/admin/professor/ListProfessorsByCourseController";
 import { DeleteProfessorController } from "../../controllers/admin/professor/DeleteProfessorController";
-import { ListStudentsProfessorController } from "../../controllers/admin/ListStudentsProfessorController";
+import { ListStudentsProfessorController } from "../../controllers/admin/students/ListStudentsProfessorController";
 import { UpdateProfessorRoleController } from "../../controllers/admin/professor/UpdateProfessorRoleController";
 import { ListProfessorsByUniversityController } from "../../controllers/admin/professor/ListProfessorsByUniversityController";
 import { ListAllProfessorsController } from "../../controllers/admin/professor/ListAllProfessorsController";

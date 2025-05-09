@@ -1,9 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
+import { AppError } from '../exceptions/AppError';
 
-export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction): Response => {
+export const errorHandler = (
+  err: any,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+): Response => {
+
+  console.error(err.stack || err);
+
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({ error: err.message });
+  }
+
+  if (err instanceof mongoose.Error.ValidationError) {
+    const details = Object.values(err.errors).map((e: any) => e.message);
+    return res.status(422).json({
+      error: 'Validation error',
+      details,
+    });
+  }
+
+  if (err instanceof mongoose.Error.CastError) {
+    return res.status(400).json({
+      error: `Invalid ${err.path}: ${err.value}`,
+    });
+  }
+
   if (err instanceof Error) {
     return res.status(400).json({ error: err.message });
   }
 
-  return res.status(500).json({ error: 'Internal server error!' });
+  return res.status(500).json({ error: 'Internal server error' });
 };

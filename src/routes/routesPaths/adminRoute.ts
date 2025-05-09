@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 import { CreateProfessorController } from "../../controllers/admin/professor/createProfessorController";
-import { ListProfessorsByCourseController } from "../../controllers/admin/professor/ListProfessorsByCourseController";
 import { DeleteProfessorController } from "../../controllers/admin/professor/DeleteProfessorController";
-import { UpdateProfessorRoleController } from "../../controllers/admin/professor/UpdateProfessorRoleController";
-import { ListProfessorsByUniversityController } from "../../controllers/admin/professor/ListProfessorsByUniversityController";
 import { ListAllProfessorsController } from "../../controllers/admin/professor/ListAllProfessorsController";
+import { ListProfessorsByUniversityController } from "../../controllers/admin/professor/ListProfessorsByUniversityController";
+import { ListProfessorsByCourseController } from "../../controllers/admin/professor/ListProfessorsByCourseController";
+import { UpdateProfessorRoleController } from "../../controllers/admin/professor/UpdateProfessorRoleController";
 import { ListStudentsController } from "../../controllers/admin/students/ListStudentsController";
 
 const adminRouter = Router();
@@ -13,8 +13,8 @@ const adminRouter = Router();
 /**
  * @swagger
  * tags:
- *   name: Admin
- *   description: Rotas relacionadas ao administrador do sistema 
+ *   - name: Admin
+ *     description: Rotas relacionadas ao administrador do sistema
  */
 
 /**
@@ -58,7 +58,11 @@ const adminRouter = Router();
  *         description: Curso não encontrado
  */
 // ✅ Criar um Professor (apenas admin)
-adminRouter.post("/professor", ...isPermissions.isAdmin(), new CreateProfessorController().handle);
+adminRouter.post(
+  "/professor",
+  ...isPermissions.isAdmin(),
+  new CreateProfessorController().handle
+);
 
 /**
  * @swagger
@@ -83,7 +87,11 @@ adminRouter.post("/professor", ...isPermissions.isAdmin(), new CreateProfessorCo
  *         description: Professor não encontrado
  */
 // ✅ Deletar um Professor (apenas admin)
-adminRouter.delete("/professor/:professorId", ...isPermissions.isAdmin(), new DeleteProfessorController().handle);
+adminRouter.delete(
+  "/professor/:professorId",
+  ...isPermissions.isAdmin(),
+  new DeleteProfessorController().handle
+);
 
 /**
  * @swagger
@@ -95,12 +103,17 @@ adminRouter.delete("/professor/:professorId", ...isPermissions.isAdmin(), new De
  *     security:
  *       - bearerAuth: []
  *     responses:
- *       200: { description: Lista retornada com sucesso }
- *       403: { description: Acesso negado }
+ *       200:
+ *         description: Lista de professores retornada com sucesso
+ *       403:
+ *         description: Acesso negado
  */
 // ✅ Listar todos os professores do sistema (apenas admin)
-adminRouter.get("/professors", ...isPermissions.isAdmin(), new ListAllProfessorsController().handle);
-
+adminRouter.get(
+  "/professors",
+  ...isPermissions.isAdmin(),
+  new ListAllProfessorsController().handle
+);
 
 /**
  * @swagger
@@ -115,14 +128,21 @@ adminRouter.get("/professors", ...isPermissions.isAdmin(), new ListAllProfessors
  *       - in: path
  *         name: schoolId
  *         required: true
- *         schema: { type: string }
+ *         schema:
+ *           type: string
  *         description: ID da universidade
  *     responses:
- *       200: { description: Professores retornados }
- *       404: { description: Nenhum professor encontrado }
+ *       200:
+ *         description: Professores retornados com sucesso
+ *       404:
+ *         description: Nenhum professor encontrado
  */
 // ✅ Listar professores por universidade (apenas admin)
-adminRouter.get("/university/:schoolId/professors", ...isPermissions.isAdmin(), new ListProfessorsByUniversityController().handle);
+adminRouter.get(
+  "/university/:schoolId/professors",
+  ...isPermissions.isAdmin(),
+  new ListProfessorsByUniversityController().handle
+);
 
 /**
  * @swagger
@@ -137,15 +157,21 @@ adminRouter.get("/university/:schoolId/professors", ...isPermissions.isAdmin(), 
  *       - in: path
  *         name: courseId
  *         required: true
- *         schema: { type: string }
+ *         schema:
+ *           type: string
  *         description: ID do curso
  *     responses:
- *       200: { description: Professores retornados }
- *       404: { description: Curso não encontrado }
+ *       200:
+ *         description: Professores retornados com sucesso
+ *       404:
+ *         description: Curso não encontrado
  */
 // ✅ Listar professores por curso (admin ou coordenador)
-adminRouter.get("/course/:courseId/professors", ...isPermissions.isAdminOrCoordinator(), new ListProfessorsByCourseController().handle);
-
+adminRouter.get(
+  "/course/:courseId/professors",
+  ...isPermissions.isAdminOrCoordinator(),
+  new ListProfessorsByCourseController().handle
+);
 
 /**
  * @swagger
@@ -153,7 +179,7 @@ adminRouter.get("/course/:courseId/professors", ...isPermissions.isAdminOrCoordi
  *   patch:
  *     tags: [Admin]
  *     summary: Atualizar papel de um professor
- *     description: Adiciona ou remove o papel de coordenador de curso a um professor. Somente administradores podem executar.
+ *     description: Adiciona ou remove o papel de "course-coordinator" a um professor. Somente administradores podem executar.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -186,10 +212,13 @@ adminRouter.get("/course/:courseId/professors", ...isPermissions.isAdminOrCoordi
  *       404:
  *         description: Professor não encontrado
  *       409:
- *         description: Já existe um coordenador no curso
+ *         description: Já existe um coordenador para este curso nesta universidade
  */
-// ✅ Atualizar Professor e dar/remover o papel/role de coordernador de curso
-adminRouter.patch("/professor/:id/role", ...isPermissions.isAdmin(), new UpdateProfessorRoleController().handle
+// ✅ Atualizar Professor e dar/remover o papel/role de coordenador de curso (apenas admin)
+adminRouter.patch(
+  "/professor/:id/role",
+  ...isPermissions.isAdmin(),
+  new UpdateProfessorRoleController().handle
 );
 
 /**
@@ -198,23 +227,26 @@ adminRouter.patch("/professor/:id/role", ...isPermissions.isAdmin(), new UpdateP
  *   get:
  *     tags: [Admin]
  *     summary: Listar alunos
- *     description: 
- *       - **admin**: vê todos os alunos do sistema, com disciplinas, códigos e professores de cada disciplina.  
- *       - **course-coordinator**: vê apenas os alunos do(s) curso(s) que coordena, e em quais disciplinas eles estão + nome e email do professor da disciplina.  
- *       - **professor**: vê apenas os alunos das disciplinas que ministra, com nome, email e disciplina (nome + código).  
+ *     description: Lista alunos de acordo com o perfil do usuário (admin, course-coordinator ou professor).
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de alunos retornada com sucesso
  *       401:
- *         description: Usuário não autenticado
+ *         description: Usuário não autenticado ou sem papel definido
  *       403:
  *         description: Permissão insuficiente
+ *       404:
+ *         description: Professor ou coordenador não encontrado
  *       500:
- *         description: Erro interno
+ *         description: Erro interno ao processar a listagem de alunos
  */
-// ✅ Listar alunos conforme papel (admin / course-coordinator / professor)
-adminRouter.get("/students", ...isPermissions.isAuthenticated(), new ListStudentsController().handle);
+// ✅ Listar alunos (admin, coordenadores e professores)
+adminRouter.get(
+  "/students",
+  ...isPermissions.isAuthenticated(),
+  new ListStudentsController().handle
+);
 
 export { adminRouter };

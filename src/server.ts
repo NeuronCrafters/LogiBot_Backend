@@ -1,3 +1,5 @@
+import "express-async-errors";
+
 import 'dotenv/config';
 import cors from "cors";
 import express from 'express';
@@ -23,13 +25,12 @@ const allowedOrigins = (process.env.FRONTEND_URLS || "")
     .map((url) => url.trim());
 
 const corsOptions: cors.CorsOptions = {
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.warn(`[CORS] Origem bloqueada: ${origin}`);
-            callback(new Error("Not allowed by CORS"));
+            return callback(null, true);
         }
+        console.warn(`[CORS] Origem bloqueada: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
@@ -46,14 +47,22 @@ app.use(
         saveUninitialized: true,
     })
 );
-
 app.use(passport.initialize());
 app.use(passport.session());
 
 app.use(routes);
 
 setupSwagger(app);
+
 app.use(errorHandler);
+
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "\nReason:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception thrown:", err);
+});
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

@@ -2,43 +2,72 @@ import { AppError } from "../../exceptions/AppError";
 import { User } from "../../models/User";
 import { Professor } from "../../models/Professor";
 
+interface Output {
+  _id: string;
+  name: string;
+  email: string;
+  role: string[];
+  schoolId: string;
+  schoolName: string;
+  courseId?: string;
+  courseName?: string;
+  classId?: string;
+  className?: string;
+  courses?: { id: string; name: string }[];
+  disciplines?: any[];
+}
+
 class DetailsUserService {
-  async detailsUser(user_id: string, role: string | string[]) {
-    try {
-      let userDetails;
-      const roles = Array.isArray(role) ? role : [role];
+  async detailsUser(user_id: string, role: string | string[]): Promise<Output> {
+    const roles = Array.isArray(role) ? role : [role];
+    const isCoordinator = roles.includes("course-coordinator");
+    const isProfessor = roles.includes("professor");
+    const isStudent = roles.includes("student");
+    const isAdmin = roles.includes("admin");
 
-      const isCoordinator = roles.includes("course-coordinator");
-      const isProfessor = roles.includes("professor");
-      const isStudent = roles.includes("student");
-      const isAdmin = roles.includes("admin");
+    let raw: any = null;
 
-      if (isCoordinator || isProfessor) {
-        userDetails = await Professor.findById(user_id)
-          .select("name email role school courses disciplines")
-          .lean();
-      } else if (isStudent || isAdmin) {
-        userDetails = await User.findById(user_id)
-          .select("name email role school course class")
-          .lean();
-      } else {
-        throw new AppError("Papel inválido!", 400);
-      }
-
-      if (!userDetails) {
-        throw new AppError("Usuário não encontrado!", 404);
-      }
-
-      return userDetails;
-    } catch (error) {
-      console.error("Erro ao buscar detalhes do usuário:", error);
-
-      if (error instanceof AppError) {
-        throw error;
-      }
-
-      throw new AppError("Erro interno ao buscar usuário.", 500);
+    if (isCoordinator || isProfessor) {
+      raw = await Professor.findById(user_id)
+        .select("name email role school courses disciplines")
+        .populate({ path: "school", select: "name" })
+        .populate({ path: "courses", select: "name" })
+        .lean();
+    } else if (isStudent || isAdmin) {
+      raw = await User.findById(user_id)
+        .select("name email role school course class")
+        .populate({ path: "school", select: "name" })
+        .populate({ path: "course", select: "name" })
+        .populate({ path: "class", select: "name" })
+        .lean();
+    } else {
+      throw new AppError("Papel inválido!", 400);
     }
+
+    if (!raw) {
+      throw new AppError("Usuário não encontrado!", 404);
+    }
+
+    const out: Output = {
+      _id: String(raw._id),
+      name: raw.name,
+      email: raw.email,
+      role: Array.isArray(raw.role) ? raw.role : [raw.role],
+      schoolId: String(raw.school?._id),
+      schoolName: raw.school?.name ?? "",
+
+      courseId: raw.course ? String(raw.course._id) : undefined,
+      courseName: raw.course ? raw.course.name : undefined,
+      classId: raw.class ? String(raw.class._id) : undefined,
+      className: raw.class ? raw.class.name : undefined,
+
+      courses: raw.courses
+        ? (raw.courses as any[]).map(c => ({ id: String(c._id), name: c.name }))
+        : undefined,
+      disciplines: raw.disciplines,
+    };
+
+    return out;
   }
 }
 

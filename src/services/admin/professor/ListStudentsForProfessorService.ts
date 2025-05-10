@@ -8,7 +8,7 @@ import { User, IUser } from "../../../models/User";
  * @param professorId  ID do professor (obtido do token)
  * @returns lista de IUser (role inclui "student")
  */
-export async function listStudentsForProfessorService(
+export async function ListStudentsForProfessorService(
   professorId: string
 ): Promise<IUser[]> {
   const prof = await Professor.findById(professorId).select(

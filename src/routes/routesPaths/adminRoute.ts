@@ -7,6 +7,10 @@ import { ListProfessorsByUniversityController } from "../../controllers/admin/ad
 import { ListProfessorsByCourseController } from "../../controllers/admin/admin/ListProfessorsByCourseController";
 import { UpdateProfessorRoleController } from "../../controllers/admin/admin/UpdateProfessorRoleController";
 import { ListStudentsController } from "../../controllers/admin/professor/ListStudentsController";
+import { ListStudentsForProfessorController } from "../../controllers/admin/professor/ListStudentsForProfessorController";
+import { ListProfessorsForCoordinatorController } from "../../controllers/admin/coordinator/ListProfessorsForCoordinatorController";
+import { ListStudentsForCoordinatorController } from "../../controllers/admin/coordinator/ListStudentsForCoordinatorController";
+import { ListStudentsByDisciplineForCoordinatorController } from "../../controllers/admin/coordinator/ListStudentsByDisciplineForCoordinatorController";
 
 const adminRouter = Router();
 
@@ -248,5 +252,105 @@ adminRouter.get(
   ...isPermissions.isAuthenticated(),
   new ListStudentsController().handle
 );
+
+/**
+ * @swagger
+ * /admin/professor/students:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Listar alunos para professor
+ *     description: Retorna os alunos das disciplinas que o professor ministra.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Alunos retornados com sucesso
+ *       403:
+ *         description: Acesso negado (não é professor)
+ *       404:
+ *         description: Nenhum aluno encontrado
+ */
+adminRouter.get(
+  "/professor/students",
+  ...isPermissions.isAuthenticated(),
+  ListStudentsForProfessorController
+);
+
+/**
+ * @swagger
+ * /admin/coordinator/professors:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Listar professores para coordenador
+ *     description: Retorna os professores que pertencem ao mesmo curso e universidade do coordenador.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Professores retornados com sucesso
+ *       403:
+ *         description: Acesso negado (não é course-coordinator)
+ *       404:
+ *         description: Coordenador ou curso não encontrado
+ */
+adminRouter.get(
+  "/coordinator/professors",
+  ...isPermissions.isAdminOrCoordinator(),
+  ListProfessorsForCoordinatorController
+);
+
+/**
+ * @swagger
+ * /admin/coordinator/students:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Listar alunos para coordenador
+ *     description: Retorna os alunos que pertencem ao mesmo curso e universidade do coordenador.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Alunos retornados com sucesso
+ *       403:
+ *         description: Acesso negado (não é course-coordinator)
+ *       404:
+ *         description: Coordenador ou curso não encontrado
+ */
+adminRouter.get(
+  "/coordinator/students",
+  ...isPermissions.isAdminOrCoordinator(),
+  ListStudentsForCoordinatorController
+);
+
+/**
+ * @swagger
+ * /admin/coordinator/students/discipline/{disciplineId}:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Listar alunos por disciplina para coordenador
+ *     description: Retorna os alunos matriculados em uma disciplina específica, dentro do curso e universidade do coordenador.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: disciplineId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da disciplina
+ *     responses:
+ *       200:
+ *         description: Alunos retornados com sucesso
+ *       403:
+ *         description: Acesso negado (não é course-coordinator)
+ *       404:
+ *         description: Coordenador, curso ou disciplina não encontrados
+ */
+adminRouter.get(
+  "/coordinator/students/discipline/:disciplineId",
+  ...isPermissions.isAdminOrCoordinator(),
+  ListStudentsByDisciplineForCoordinatorController
+);
+
 
 export { adminRouter };

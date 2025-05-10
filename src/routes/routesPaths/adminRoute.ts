@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
 import { CreateProfessorController } from "../../controllers/admin/admin/CreateProfessorController";
-import { DeleteProfessorController } from "../../controllers/admin/coordinator/DeleteProfessorController";
-import { ListAllProfessorsController } from "../../controllers/admin/coordinator/ListAllProfessorsController";
-import { ListProfessorsByUniversityController } from "../../controllers/admin/coordinator/ListProfessorsByUniversityController";
-import { ListProfessorsByCourseController } from "../../controllers/admin/coordinator/ListProfessorsByCourseController";
-import { UpdateProfessorRoleController } from "../../controllers/admin/coordinator/UpdateProfessorRoleController";
+import { DeleteProfessorController } from "../../controllers/admin/admin/DeleteProfessorController";
+import { ListAllProfessorsController } from "../../controllers/admin/admin/ListAllProfessorsController";
+import { ListProfessorsByUniversityController } from "../../controllers/admin/admin/ListProfessorsByUniversityController";
+import { ListProfessorsByCourseController } from "../../controllers/admin/admin/ListProfessorsByCourseController";
+import { UpdateProfessorRoleController } from "../../controllers/admin/admin/UpdateProfessorRoleController";
 import { ListStudentsController } from "../../controllers/admin/professor/ListStudentsController";
 
 const adminRouter = Router();

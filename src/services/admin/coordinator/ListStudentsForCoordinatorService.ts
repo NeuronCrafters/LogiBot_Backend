@@ -1,4 +1,4 @@
-import { User, IUser } from "@/models/User";
+import { User, IUser } from "../../../models/User";
 
 /**
  * Retorna todos os alunos que pertencem à mesma escola e

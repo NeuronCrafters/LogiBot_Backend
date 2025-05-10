@@ -1,4 +1,4 @@
-import { Professor, IProfessor } from "@/models/Professor";
+import { Professor, IProfessor } from "../../../models/Professor";
 
 /**
  * Retorna todos os professores que pertencem à mesma escola e

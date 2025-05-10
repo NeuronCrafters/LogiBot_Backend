@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ListStudentsService } from "@/services/admin/students/ListStudentsService";
+import { ListStudentsService } from "@/services/admin/professor/ListStudentsService";
 import { AppError } from "../../../exceptions/AppError";
 
 class ListStudentsController {

@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
-import { CreateProfessorController } from "../../controllers/admin/professor/createProfessorController";
-import { DeleteProfessorController } from "../../controllers/admin/professor/DeleteProfessorController";
-import { ListAllProfessorsController } from "../../controllers/admin/professor/ListAllProfessorsController";
-import { ListProfessorsByUniversityController } from "../../controllers/admin/professor/ListProfessorsByUniversityController";
-import { ListProfessorsByCourseController } from "../../controllers/admin/professor/ListProfessorsByCourseController";
-import { UpdateProfessorRoleController } from "../../controllers/admin/professor/UpdateProfessorRoleController";
-import { ListStudentsController } from "../../controllers/admin/students/ListStudentsController";
+import { CreateProfessorController } from "../../controllers/admin/admin/CreateProfessorController";
+import { DeleteProfessorController } from "../../controllers/admin/coordinator/DeleteProfessorController";
+import { ListAllProfessorsController } from "../../controllers/admin/coordinator/ListAllProfessorsController";
+import { ListProfessorsByUniversityController } from "../../controllers/admin/coordinator/ListProfessorsByUniversityController";
+import { ListProfessorsByCourseController } from "../../controllers/admin/coordinator/ListProfessorsByCourseController";
+import { UpdateProfessorRoleController } from "../../controllers/admin/coordinator/UpdateProfessorRoleController";
+import { ListStudentsController } from "../../controllers/admin/professor/ListStudentsController";
 
 const adminRouter = Router();
 

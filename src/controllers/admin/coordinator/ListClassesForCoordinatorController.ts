@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
-import { ListDisciplinesForCoordinatorService } from "../../../services/admin/coordinator/ListDisciplinesForCoordinatorService";
+import { ListClassesForCoordinatorService } from "../../../services/admin/coordinator/ListClassesForCoordinatorService";
 import { Professor } from "../../../models/Professor";
-import { AppError } from "../../../exceptions/AppError";
 
-export async function ListDisciplinesForCoordinatorController(
+export async function ListClassesForCoordinatorController(
   req: Request,
   res: Response
 ) {
@@ -13,7 +12,9 @@ export async function ListDisciplinesForCoordinatorController(
     return res.status(403).json({ message: "Acesso negado." });
   }
 
-  const prof = await Professor.findById(authUser.id).select("courses").lean();
+  const prof = await Professor.findById(authUser.id)
+    .select("courses")
+    .lean();
   if (!prof) {
     return res.status(404).json({ message: "Coordenador não encontrado." });
   }
@@ -26,11 +27,11 @@ export async function ListDisciplinesForCoordinatorController(
   }
 
   try {
-    const disciplines = await ListDisciplinesForCoordinatorService(
+    const classes = await ListClassesForCoordinatorService(
       authUser.school,
       courseId
     );
-    return res.json(disciplines);
+    return res.json(classes);
   } catch (err: any) {
     if (err.message.includes("não pertence")) {
       return res.status(403).json({ message: err.message });

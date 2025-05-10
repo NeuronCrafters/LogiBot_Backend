@@ -12,6 +12,7 @@ import { ListProfessorsForCoordinatorController } from "../../controllers/admin/
 import { ListStudentsForCoordinatorController } from "../../controllers/admin/coordinator/ListStudentsForCoordinatorController";
 import { ListStudentsByDisciplineForCoordinatorController } from "../../controllers/admin/coordinator/ListStudentsByDisciplineForCoordinatorController";
 import { ListDisciplinesForCoordinatorController } from "../../controllers/admin/coordinator/ListDisciplinesForCoordinatorController";
+import { ListClassesForCoordinatorController } from "../../controllers/admin/coordinator/ListClassesForCoordinatorController";
 
 const adminRouter = Router();
 
@@ -19,7 +20,7 @@ const adminRouter = Router();
  * @swagger
  * tags:
  *   - name: Admin
- *     description: Rotas relacionadas ao administrador do sistema
+ *     description: Rotas relacionadas ao administrador do sistema, aos Coordernadores de Curso e aos Professores
  */
 
 /**
@@ -378,5 +379,27 @@ adminRouter.get(
   ListDisciplinesForCoordinatorController
 );
 
+/**
+ * @swagger
+ * /admin/coordinator/classes:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Listar turmas para coordenador
+ *     description: Retorna as turmas do curso que o coordenador administra.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Turmas retornadas com sucesso
+ *       403:
+ *         description: Acesso negado (não é course-coordinator)
+ *       404:
+ *         description: Coordenador não encontrado
+ */
+adminRouter.get(
+  "/coordinator/classes",
+  ...isPermissions.isAdminOrCoordinator(),
+  ListClassesForCoordinatorController
+);
 
 export { adminRouter };

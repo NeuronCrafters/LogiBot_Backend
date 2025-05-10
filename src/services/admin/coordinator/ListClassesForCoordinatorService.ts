@@ -1,10 +1,10 @@
-import { Discipline, IDiscipline } from "../../../models/Discipline";
+import { Class, IClass } from "../../../models/Class";
 import { Course } from "../../../models/Course";
 
-export async function ListDisciplinesForCoordinatorService(
+export async function ListClassesForCoordinatorService(
   schoolId: string,
   courseId: string
-): Promise<IDiscipline[]> {
+): Promise<IClass[]> {
 
   const course = await Course.findOne({
     _id: courseId,
@@ -14,5 +14,5 @@ export async function ListDisciplinesForCoordinatorService(
     throw new Error("Curso não pertence à sua universidade.");
   }
 
-  return Discipline.find({ course: courseId }).lean().exec();
+  return Class.find({ course: courseId }).lean().exec();
 }

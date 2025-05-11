@@ -67,24 +67,29 @@ export async function gerarPerguntasService(
       throw new AppError("Formato inesperado de perguntas na resposta.", 500);
     }
 
+    const gabarito = response.data.responses[0]?.custom?.answer_keys || [];
+    const nivel = session.nivelAtual;
+    const assunto = session.lastSubject;
+
+    // Preenche a sessão diretamente aqui também (opcional, redundante com controller)
     session.lastQuestions = jsonData.questions.map((q: any) => q.question);
-    session.lastAnswerKeys = response.data.responses[0]?.custom?.answer_keys || [];
+    session.lastAnswerKeys = gabarito;
 
     // Salva no FaqStore, mas ignora duplicatas
     try {
       await FaqStore.updateOne(
         {
-          nivel: session.nivelAtual,
-          assunto: session.lastSubject,
-          subassunto: session.lastSubject,
+          nivel,
+          assunto,
+          subassunto: assunto,
         },
         {
           $setOnInsert: {
-            nivel: session.nivelAtual,
-            assunto: session.lastSubject,
-            subassunto: session.lastSubject,
+            nivel,
+            assunto,
+            subassunto: assunto,
             questions: jsonData.questions,
-            answer_keys: session.lastAnswerKeys,
+            answer_keys: gabarito,
           },
         },
         { upsert: true }
@@ -97,7 +102,13 @@ export async function gerarPerguntasService(
       }
     }
 
-    return { questions: jsonData.questions };
+    // Retorno agora inclui todos os dados úteis para o controller
+    return {
+      perguntas: jsonData.questions,
+      gabarito,
+      nivel,
+      assunto,
+    };
   } catch (error: any) {
     console.error("✖️ gerarPerguntasService falhou:", error);
     if (error instanceof AppError) throw error;

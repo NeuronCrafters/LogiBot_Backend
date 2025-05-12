@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { LogsCourseAccuracyService } from "../../../../services/Log/Course/Individual/LogsCourseAccuracyService";
+import { LogsCourseAccuracyService } from "services/Logs/Course/Individual/LogsCourseAccuracyService";
 
 export async function LogsCourseAccuracyController(req: Request, res: Response) {
     try {

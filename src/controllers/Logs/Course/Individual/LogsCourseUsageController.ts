@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { LogsCourseUsageService } from "../../../../services/Log/Course/Individual/LogsCourseUsageService";
+import { LogsCourseUsageService } from "services/Logs/Course/Individual/LogsCourseUsageService";
 
 export async function LogsCourseUsageController(req: Request, res: Response) {
     try {

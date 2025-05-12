@@ -1,4 +1,4 @@
-import { LogsUniversitySubjectSummaryService } from "./LogsUniversitySubjectSummaryService";
+import { LogsUniversitySubjectSummaryService } from "services/Logs/University/Individual/LogsUniversitySubjectSummaryService";
 
 export async function LogsUniversityCompareSubjectSummaryService(universityIds: string[]) {
   try {

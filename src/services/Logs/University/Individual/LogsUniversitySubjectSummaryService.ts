@@ -1,5 +1,5 @@
-import { UserAnalysis } from "@/models/UserAnalysis";
-import { User } from "@/models/User";
+import { UserAnalysis } from "../../../../models/UserAnalysis";
+import { User } from "../../../../models/User";
 
 export async function LogsUniversitySubjectSummaryService(universityId: string) {
   try {

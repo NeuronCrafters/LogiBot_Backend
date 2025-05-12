@@ -1,4 +1,4 @@
-import { LogsUniversityAccuracyService } from "./LogsUniversityAccuracyService";
+import { LogsUniversityAccuracyService } from "services/Logs/University/Individual/LogsUniversityAccuracyService";
 
 export async function LogsUniversityCompareAccuracyService(universityIds: string[]) {
   try {

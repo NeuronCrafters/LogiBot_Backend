@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { LogsUniversityCompareUsageService } from "@/services/Log/University/LogsUniversityCompareUsageService";
+import { LogsUniversityCompareUsageService } from "services/Logs/University/Compare/LogsUniversityCompareUsageService"
 
 export async function LogsUniversityCompareUsageController(req: Request, res: Response) {
   try {

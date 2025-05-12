@@ -6,7 +6,7 @@ import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
 import { publicAcademicRoute } from "./routesPaths/academicPublicRoutes";
-import { logRoutes } from "./routesPaths/logsRoutes";
+// import { logRoutes } from "./routesPaths/logsRoutes";
 
 const routes = Router();
 
@@ -26,7 +26,7 @@ routes.use("/password", passwordRouter);
 routes.use("/sael", rasaRouter);
 
 //Rota para pegar os logs do usuario
-routes.use("/logs", logRoutes)
+// routes.use("/logs", logRoutes)
 
 // Rotas de instituições acadêmicas (middlewares já estão dentro do `academicInstitutionRouter.ts`)
 routes.use("/academic-institution", academicInstitutionRouter);

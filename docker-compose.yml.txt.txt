@@ -1,0 +1,74 @@
+services:
+  # ----------------------------------------------------------------
+  # 1) MongoDB com usuário root + volume persistente + seed de mongo-init.js
+  # ----------------------------------------------------------------
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: chatsael
+    volumes:
+      - mongo-data:/data/db
+      - ./backend_Chat_SAEL/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+
+  # ----------------------------------------------------------------
+  # 2) Backend Express + TypeScript (Node 18)
+  # ----------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend_Chat_SAEL
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./backend_Chat_SAEL:/app
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./backend_Chat_SAEL/.env
+    depends_on:
+      - mongo
+
+  # ----------------------------------------------------------------
+  # 3) Rasa NLU / Dialogue Server (Python 3.10.11)
+  # ----------------------------------------------------------------
+  rasa:
+    build:
+      context: ./Rasa_Bot_Chat_SAEL
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./Rasa_Bot_Chat_SAEL:/app
+    ports:
+      - "5005:5005"
+    env_file:
+      - ./Rasa_Bot_Chat_SAEL/.env
+    depends_on:
+      - mongo
+
+  # ----------------------------------------------------------------
+  # 4) Rasa Action Server (Python 3.10.11 + OpenAI)
+  # ----------------------------------------------------------------
+  rasa_actions:
+    build:
+      context: ./Rasa_Bot_Chat_SAEL/actions
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./Rasa_Bot_Chat_SAEL/actions:/app
+    ports:
+      - "5055:5055"
+    env_file:
+      - ./Rasa_Bot_Chat_SAEL/.env
+    depends_on:
+      - rasa
+
+volumes:
+  mongo-data:
+    driver: local

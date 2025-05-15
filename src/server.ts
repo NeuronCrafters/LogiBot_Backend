@@ -20,7 +20,7 @@ const FRONT_URL = process.env.FRONT_URL!;
 const API_KEY   = process.env.API_KEY!;
 
 if (!FRONT_URL || !API_KEY) {
-    console.error('❌ Defina FRONT_URL e API_KEY no seu .env');
+    console.error('Erro de conexão com o servidor');
     process.exit(1);
 }
 

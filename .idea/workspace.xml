@@ -4,17 +4,26 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="">
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="Services e Controller para logs para a page de dashboard/chart">
+      <change afterPath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/backend_Chat_SAEL.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareAccuracyController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareUsageController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareAccuracyService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareSubjectSummaryService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/6943d4d6-8916-47bd-8791-ce9c03f124fb.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/6943d4d6-8916-47bd-8791-ce9c03f124fb.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/routes/routesPaths/rasaRoute.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routesPaths/rasaRoute.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/users/AuthUserService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/users/AuthUserService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ComposerSettings">
+    <execution />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -38,10 +47,16 @@
     &quot;accountId&quot;: &quot;ef98ed35-16e6-40dd-b466-387eb529c405&quot;
   }
 }</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
   <component name="ProjectId" id="2wluStSetGpq2NadFxtOM9JjN8M" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -51,15 +66,18 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ramon/Git/ICC/backend_Chat_SAEL&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\ramon\\AppData\\Local\\JetBrains\\IntelliJ IDEA 2025.1\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.deploy.options&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
   &quot;keyToStringList&quot;: {
@@ -71,8 +89,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.109" />
-        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.109" />
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.129" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.129" />
       </set>
     </attachedChunks>
   </component>
@@ -86,10 +104,74 @@
       <workItem from="1746628487157" duration="19000" />
       <workItem from="1746715204016" duration="207000" />
       <workItem from="1746715428934" duration="6619000" />
+      <workItem from="1747048177515" duration="19000" />
+      <workItem from="1747048240469" duration="968000" />
+      <workItem from="1747049855784" duration="7661000" />
+      <workItem from="1747263109418" duration="237000" />
+      <workItem from="1747263366876" duration="15000" />
+      <workItem from="1747263393029" duration="3032000" />
+      <workItem from="1747319494292" duration="4259000" />
     </task>
+    <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
+      <option name="closed" value="true" />
+      <created>1747050591115</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1747050591115</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Services e Controller para logs para a page de dashboard/chart">
+      <option name="closed" value="true" />
+      <created>1747050600809</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1747050600809</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Services e Controller para logs para a page de dashboard/chart">
+      <option name="closed" value="true" />
+      <created>1747051272513</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1747051272513</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Services e Controller para logs para a page de dashboard/chart">
+      <option name="closed" value="true" />
+      <created>1747051743280</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1747051743280</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Services e Controller para logs para a page de dashboard/chart">
+      <option name="closed" value="true" />
+      <created>1747052032091</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1747052032091</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Services e Controller para logs para a page de dashboard/chart">
+      <option name="closed" value="true" />
+      <created>1747063340371</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1747063340371</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Services e Controller para logs para a page de dashboard/chart" />
+    <option name="LAST_COMMIT_MESSAGE" value="Services e Controller para logs para a page de dashboard/chart" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>

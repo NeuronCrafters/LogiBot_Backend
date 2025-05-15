@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { LogsClassAccuracyService } from "services/Logs/Class/Individual/LogsClassAccuracyService";
+import { LogsClassAccuracyService } from "../../../../services/Logs/Class/Individual/LogsClassAccuracyService";
 
 export async function LogsClassAccuracyController(req: Request, res: Response) {
     const { id } = req.params;

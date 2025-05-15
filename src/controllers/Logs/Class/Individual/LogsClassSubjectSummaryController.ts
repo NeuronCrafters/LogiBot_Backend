@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { LogsClassSubjectSummaryService } from "services/Logs/Class/Individual/LogsClassSubjectSummaryService";
+import { LogsClassSubjectSummaryService } from "../../../../services/Logs/Class/Individual/LogsClassSubjectSummaryService";
 
 export async function LogsClassSubjectSummaryController(req: Request, res: Response) {
     const { id } = req.params;

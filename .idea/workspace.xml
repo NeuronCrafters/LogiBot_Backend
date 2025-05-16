@@ -4,18 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="Services e Controller para logs para a page de dashboard/chart">
-      <change afterPath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/backend_Chat_SAEL.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareAccuracyController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareUsageController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareAccuracyService.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareSubjectSummaryService.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareUsageService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/6943d4d6-8916-47bd-8791-ce9c03f124fb.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/6943d4d6-8916-47bd-8791-ce9c03f124fb.xml" afterDir="false" />
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="rotas para pegar os dados individuais e em conjunto para os gráficos de class/turmas">
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareAccuracyController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareSubjectsSummaryController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareUsageController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineAccuracyController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineSubjectSummaryController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineUsageController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareAccuracyService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareSubjectsSummaryService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareUsageService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineAccuracyService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineSubjectSummaryService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineUsageService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,6 +88,11 @@
     ]
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\ramon\Git\ICC\backend_Chat_SAEL\src\services\Logs\Discipline\Individual" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -110,7 +117,7 @@
       <workItem from="1747263109418" duration="237000" />
       <workItem from="1747263366876" duration="15000" />
       <workItem from="1747263393029" duration="3032000" />
-      <workItem from="1747319494292" duration="4259000" />
+      <workItem from="1747319494292" duration="5269000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -160,15 +167,35 @@
       <option name="project" value="LOCAL" />
       <updated>1747063340371</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="rotas para pegar os dados individuais e em conjunto para os gráficos de class/turmas">
+      <option name="closed" value="true" />
+      <created>1747352837236</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1747352837236</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Services e Controller para logs para a page de dashboard/chart" />
-    <option name="LAST_COMMIT_MESSAGE" value="Services e Controller para logs para a page de dashboard/chart" />
+    <MESSAGE value="rotas para pegar os dados individuais e em conjunto para os gráficos de class/turmas" />
+    <option name="LAST_COMMIT_MESSAGE" value="rotas para pegar os dados individuais e em conjunto para os gráficos de class/turmas" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

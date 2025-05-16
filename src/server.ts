@@ -43,7 +43,7 @@ if (!FRONT_URL || !API_KEY) {
 
 // ---- CORS TEMPORÁRIO ----
 app.use(cors({
-    origin: true, // Aceita qualquer origem (ideal só para dev)
+    origin: "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
@@ -59,7 +59,6 @@ app.use(cors({
 // }
 
 // ---- MIDDLEWARE DE API KEY TEMPORÁRIO ----
-// ---- MIDDLEWARE DE API KEY (ignorado se não enviado) ----
 function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
     const key = req.header('x-api-key');
 

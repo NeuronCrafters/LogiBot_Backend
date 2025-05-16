@@ -4,20 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="rotas para pegar os dados individuais e em conjunto para os gráficos de disciplinas">
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareAccuracyController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareSubjectSummaryController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareUsageController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentAccuracyController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentSubjectSummaryController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentUsageController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareAccuracyService.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareSubjectSummaryService.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareUsageService.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentAccuracyService.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentSubjectSummaryService.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentUsageService.ts" afterDir="false" />
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="rotas para pegar os dados individuais e em conjunto para os gráficos de estudantes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/routesPaths/logsRoutes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routesPaths/logsRoutes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,7 +43,7 @@
   }
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
@@ -63,35 +56,53 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/ramon/Git/ICC/backend_Chat_SAEL&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.deploy.options&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/ramon/Git/ICC/backend_Chat_SAEL",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "npm.dev.executor": "Run",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "reference.settings.deploy.options",
+    "ts.external.directory.path": "C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;mongo&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mongo"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\ramon\Git\ICC\backend_Chat_SAEL\src\services\Logs\Discipline\Individual" />
     </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="dev" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="npm.dev" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -117,7 +128,7 @@
       <workItem from="1747263109418" duration="237000" />
       <workItem from="1747263366876" duration="15000" />
       <workItem from="1747263393029" duration="3032000" />
-      <workItem from="1747319494292" duration="5595000" />
+      <workItem from="1747319494292" duration="11914000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -183,7 +194,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747353792927</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="rotas para pegar os dados individuais e em conjunto para os gráficos de estudantes">
+      <option name="closed" value="true" />
+      <created>1747354116398</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1747354116398</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -204,7 +223,8 @@
     <MESSAGE value="Services e Controller para logs para a page de dashboard/chart" />
     <MESSAGE value="rotas para pegar os dados individuais e em conjunto para os gráficos de class/turmas" />
     <MESSAGE value="rotas para pegar os dados individuais e em conjunto para os gráficos de disciplinas" />
-    <option name="LAST_COMMIT_MESSAGE" value="rotas para pegar os dados individuais e em conjunto para os gráficos de disciplinas" />
+    <MESSAGE value="rotas para pegar os dados individuais e em conjunto para os gráficos de estudantes" />
+    <option name="LAST_COMMIT_MESSAGE" value="rotas para pegar os dados individuais e em conjunto para os gráficos de estudantes" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

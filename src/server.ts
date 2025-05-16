@@ -25,30 +25,58 @@ if (!FRONT_URL || !API_KEY) {
 }
 
 // ---- CORS ----
-const corsOptions: cors.CorsOptions = {
-    origin: (origin, callback) => {
-        if (origin === FRONT_URL) {
-            return callback(null, true);
-        }
-        console.warn(`[CORS] Origem bloqueada: ${origin}`);
-        return callback(new Error("Not allowed by CORS"), false);
-    },
+// const corsOptions: cors.CorsOptions = {
+//     origin: (origin, callback) => {
+//         if (origin === FRONT_URL) {
+//             return callback(null, true);
+//         }
+//         console.warn(`[CORS] Origem bloqueada: ${origin}`);
+//         return callback(new Error("Not allowed by CORS"), false);
+//     },
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
+// };
+
+//app.use(cors(corsOptions));
+//app.options("*", cors(corsOptions));
+
+// ---- CORS TEMPORÁRIO ----
+app.use(cors({
+    origin: true, // Aceita qualquer origem (ideal só para dev)
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+}));
 
 // ---- MIDDLEWARE DE API KEY ----
+// function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
+//     const key = req.header('x-api-key');
+//     if (!key || key !== API_KEY) {
+//         return res.status(403).json({ message: 'Forbidden: Invalid API Key' });
+//     }
+//     next();
+// }
+
+// ---- MIDDLEWARE DE API KEY TEMPORÁRIO ----
+// ---- MIDDLEWARE DE API KEY (ignorado se não enviado) ----
 function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
     const key = req.header('x-api-key');
-    if (!key || key !== API_KEY) {
+
+    // Se nenhuma chave foi enviada, permite continuar (somente em desenvolvimento)
+    if (!key) {
+        console.warn("[API KEY] Nenhuma chave enviada, liberando acesso por ser ambiente de desenvolvimento.");
+        return next();
+    }
+
+    // Se foi enviada mas está errada, bloqueia
+    if (key !== API_KEY) {
         return res.status(403).json({ message: 'Forbidden: Invalid API Key' });
     }
+
     next();
 }
+
 
 // ---- MIDDLEWARES GERAIS ----
 app.use(cookieParser());

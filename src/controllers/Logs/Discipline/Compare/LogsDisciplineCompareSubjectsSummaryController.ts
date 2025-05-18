@@ -1,10 +1,21 @@
 import { Request, Response } from "express";
 import { LogsDisciplineCompareSubjectsSummaryService } from "../../../../services/Logs/Discipline/Compare/LogsDisciplineCompareSubjectsSummaryService";
+import { AppError } from "../../../../exceptions/AppError";
 
 export async function LogsDisciplineCompareSubjectsSummaryController(req: Request, res: Response) {
-    const { disciplineIds } = req.body;
+    try {
+        const { disciplineIds } = req.body;
+        if (!Array.isArray(disciplineIds) || !disciplineIds.length) {
+            return res.status(400).json({ message: "Disciplinas não fornecidas corretamente" });
+        }
 
-    const result = await LogsDisciplineCompareSubjectsSummaryService(disciplineIds);
-
-    return res.status(200).json(result);
+        const result = await LogsDisciplineCompareSubjectsSummaryService(disciplineIds);
+        return res.status(200).json(result);
+    } catch (error) {
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+        console.error("Erro no LogsDisciplineCompareSubjectsSummaryController:", error);
+        return res.status(500).json({ message: "Erro interno do servidor" });
+    }
 }

@@ -19,10 +19,12 @@ export async function LogsClassSubjectSummaryService(classId: string) {
         const wrongCount: Record<string, number> = {};
 
         for (const analysis of analyses) {
+            // Acumular frequência de assuntos
             for (const [subject, count] of Object.entries(analysis.subjectFrequencyGlobal || {})) {
                 frequency[subject] = (frequency[subject] || 0) + Number(count);
             }
 
+            // Acumular acertos/erros por assunto
             for (const session of analysis.sessions) {
                 for (const history of session.answerHistory) {
                     for (const [sub, count] of Object.entries(history.subjectCorrectCount || {})) {
@@ -35,12 +37,39 @@ export async function LogsClassSubjectSummaryService(classId: string) {
             }
         }
 
+        // Ordenar assuntos por frequência
+        const rankedByFrequency = Object.entries(frequency)
+            .sort((a, b) => b[1] - a[1])
+            .map(([subject, count]) => ({ subject, count }));
+
+        // Ordenar assuntos por acertos
+        const rankedByCorrect = Object.entries(correctCount)
+            .sort((a, b) => b[1] - a[1])
+            .map(([subject, count]) => ({ subject, count }));
+
+        // Ordenar assuntos por erros
+        const rankedByWrong = Object.entries(wrongCount)
+            .sort((a, b) => b[1] - a[1])
+            .map(([subject, count]) => ({ subject, count }));
+
+        // Identificar os mais e menos relevantes
+        const mostFrequent = rankedByFrequency.length > 0 ? rankedByFrequency[0] : { subject: null, count: 0 };
+        const mostCorrect = rankedByCorrect.length > 0 ? rankedByCorrect[0] : { subject: null, count: 0 };
+        const mostWrong = rankedByWrong.length > 0 ? rankedByWrong[0] : { subject: null, count: 0 };
+
         return {
             frequency,
             correctCount,
             wrongCount,
+            rankedByFrequency,
+            rankedByCorrect,
+            rankedByWrong,
+            mostFrequent,
+            mostCorrect,
+            mostWrong
         };
     } catch (error) {
-        throw new AppError("Erro ao calcular resumo de assuntos da turma", 500, error);
+        if (error instanceof AppError) throw error;
+        throw new AppError("Erro ao calcular resumo de assuntos da turma", 500);
     }
 }

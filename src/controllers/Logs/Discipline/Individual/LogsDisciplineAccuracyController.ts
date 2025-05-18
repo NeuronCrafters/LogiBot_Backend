@@ -4,18 +4,18 @@ import { AppError } from "../../../../exceptions/AppError";
 
 export async function LogsDisciplineAccuracyController(req: Request, res: Response) {
     try {
-        const { id: disciplineId } = req.params;
-
-        if (!disciplineId) {
+        const { id } = req.params;
+        if (!id) {
             throw new AppError("ID da disciplina é obrigatório", 400);
         }
 
-        const result = await LogsDisciplineAccuracyService(disciplineId);
+        const result = await LogsDisciplineAccuracyService(id);
         return res.status(200).json(result);
     } catch (error) {
-        const status = error instanceof AppError ? error.statusCode : 500;
-        return res.status(status).json({
-            message: error instanceof AppError ? error.message : "Erro interno do servidor",
-        });
+        if (error instanceof AppError) {
+            return res.status(error.statusCode).json({ message: error.message });
+        }
+        console.error("Erro no LogsDisciplineAccuracyController:", error);
+        return res.status(500).json({ message: "Erro interno do servidor" });
     }
 }

@@ -5,9 +5,67 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="rotas para pegar os dados individuais e em conjunto para os gráficos de estudantes">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Compare/LogsClassCompareUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Class/Individual/LogsClassAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Individual/LogsClassAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Class/Individual/LogsClassSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Individual/LogsClassSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Class/Individual/LogsClassUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Class/Individual/LogsClassUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Course/Compare/LogsCourseCompareAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Course/Compare/LogsCourseCompareAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Course/Compare/LogsCourseCompareSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Course/Compare/LogsCourseCompareSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Course/Compare/LogsCourseCompareUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Course/Compare/LogsCourseCompareUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Course/Individual/LogsCourseAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Course/Individual/LogsCourseAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Course/Individual/LogsCourseSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Course/Individual/LogsCourseSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Course/Individual/LogsCourseUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Course/Individual/LogsCourseUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareSubjectsSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareSubjectsSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Compare/LogsDisciplineCompareUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Discipline/Individual/LogsDisciplineUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Compare/LogsStudentCompareUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/Student/Individual/LogsStudentUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/University/Compare/LogsUniversityCompareAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/University/Compare/LogsUniversityCompareAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/University/Compare/LogsUniversityCompareSubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/University/Compare/LogsUniversityCompareSubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/University/Compare/LogsUniversityCompareUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/University/Compare/LogsUniversityCompareUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/University/Individual/LogsUniversityAccuracyController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/University/Individual/LogsUniversityAccuracyController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/University/Individual/LogsUniversitySubjectSummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/University/Individual/LogsUniversitySubjectSummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/University/Individual/LogsUniversityUsageController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/University/Individual/LogsUniversityUsageController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareSubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareSubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/Compare/LogsClassCompareUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassSubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassSubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/Compare/LogsCourseAccuracyCompareService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/Compare/LogsCourseAccuracyCompareService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/Compare/LogsCourseSubjectSummaryCompareService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/Compare/LogsCourseSubjectSummaryCompareService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/Compare/LogsCourseUsageCompareService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/Compare/LogsCourseUsageCompareService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseSubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseSubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareSubjectsSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareSubjectsSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Compare/LogsDisciplineCompareUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineSubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineSubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Discipline/Individual/LogsDisciplineUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareSubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareSubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/Compare/LogsStudentCompareUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentSubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentSubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/Individual/LogsStudentUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/Compare/LogsUniversityCompareAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/Compare/LogsUniversityCompareAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/Compare/LogsUniversityCompareSubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/Compare/LogsUniversityCompareSubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/Compare/LogsUniversityCompareUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/Compare/LogsUniversityCompareUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversityAccuracyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversityAccuracyService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversitySubjectSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversitySubjectSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversityUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversityUsageService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,12 +91,12 @@
     &quot;assignee&quot;: &quot;ramoncbarbosa&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/ramoncbarbosa/backend_Chat_SAEL.git",
-    "accountId": "95f14c2d-447d-426f-9b5d-3be602167553"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ramoncbarbosa/backend_Chat_SAEL.git&quot;,
+    &quot;accountId&quot;: &quot;95f14c2d-447d-426f-9b5d-3be602167553&quot;
   }
-}]]></component>
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -53,32 +111,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/ramon/Git/ICC/backend_Chat_SAEL",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "npm.dev.executor": "Run",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "preferences.editor",
-    "ts.external.directory.path": "C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ramon/Git/ICC/backend_Chat_SAEL&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.sync&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "mongo"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mongo&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\ramon\Git\ICC\backend_Chat_SAEL\src\services\Logs\Discipline\Individual" />
@@ -126,6 +184,8 @@
       <workItem from="1747263393029" duration="3032000" />
       <workItem from="1747319494292" duration="13290000" />
       <workItem from="1747413722882" duration="499000" />
+      <workItem from="1747423587967" duration="306000" />
+      <workItem from="1747519626044" duration="5845000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -207,7 +267,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747370107602</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="rotas para pegar os dados individuais e em conjunto para os gráficos de estudantes">
+      <option name="closed" value="true" />
+      <created>1747420491305</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1747420491305</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

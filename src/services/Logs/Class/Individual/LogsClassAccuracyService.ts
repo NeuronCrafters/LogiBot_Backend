@@ -15,14 +15,24 @@ export async function LogsClassAccuracyService(classId: string) {
 
         const analyses = await UserAnalysis.find({ userId: { $in: studentIds } });
 
-        const totalCorrect = analyses.reduce((sum, a) => sum + a.totalCorrectAnswers, 0);
-        const totalWrong = analyses.reduce((sum, a) => sum + a.totalWrongAnswers, 0);
+        const totalCorrect = analyses.reduce((sum, a) => sum + (a.totalCorrectAnswers || 0), 0);
+        const totalWrong = analyses.reduce((sum, a) => sum + (a.totalWrongAnswers || 0), 0);
+        const totalQuestions = totalCorrect + totalWrong;
+
+        const studentCount = analyses.length;
+        const averageCorrectPerStudent = studentCount > 0 ? totalCorrect / studentCount : 0;
+        const averageWrongPerStudent = studentCount > 0 ? totalWrong / studentCount : 0;
 
         return {
             correctAnswers: totalCorrect,
             wrongAnswers: totalWrong,
+            accuracyRate: totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0,
+            studentCount,
+            averageCorrectPerStudent,
+            averageWrongPerStudent
         };
     } catch (error) {
-        throw new AppError("Erro ao calcular acertos/erros da turma", 500, error);
+        if (error instanceof AppError) throw error;
+        throw new AppError("Erro ao calcular acertos/erros da turma", 500);
     }
 }

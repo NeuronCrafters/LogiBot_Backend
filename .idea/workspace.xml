@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="sei lá, nem sei mais">
+      <change afterPath="$PROJECT_DIR$/src/utils/initFaqStore.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/gerarPerguntasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/gerarPerguntasController.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/models/FAQStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/FAQStore.ts" afterDir="false" />
@@ -21,6 +22,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="JavaScript File" />
         <option value="TypeScript File" />
       </list>
     </option>
@@ -136,6 +138,7 @@
       <workItem from="1747519626044" duration="13674000" />
       <workItem from="1747653830688" duration="7967000" />
       <workItem from="1747662246617" duration="2265000" />
+      <workItem from="1747664829163" duration="5866000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />

@@ -1,5 +1,8 @@
 import { User } from "../../models/User";
 import { Professor } from "../../models/Professor";
+import { University } from "../../models/University";
+import { Course } from "../../models/Course";
+import { Class } from "../../models/Class";
 import { UserAnalysis } from "../../models/UserAnalysis";
 import { compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
@@ -26,133 +29,111 @@ interface AuthRequest {
 
 class AuthUserService {
   async signin({ email, password, googleId }: AuthRequest) {
-    const isSocialLogin = googleId != null;
-
-    let user = isSocialLogin
-      ? await User.findOne({ googleId })
-      : await User.findOne({ email });
-
-    if (!user) {
-      user = isSocialLogin
-        ? await Professor.findOne({ googleId })
-        : await Professor.findOne({ email });
-    }
+    const isSocial = !!googleId;
+    let user = isSocial
+        ? await User.findOne({ googleId })
+        : await User.findOne({ email });
 
     if (!user) {
-      throw new AppError("Credenciais inválidas.", 401);
+      user = isSocial
+          ? await Professor.findOne({ googleId })
+          : await Professor.findOne({ email });
+    }
+    if (!user) throw new AppError("Credenciais inválidas.", 401);
+
+    // verifica senha se for login normal
+    if (!isSocial) {
+      if (!password) throw new AppError("Senha não fornecida.", 400);
+      if (!user.password) throw new AppError("Usuário sem senha cadastrada.", 401);
+      const match = await compare(password, user.password);
+      if (!match) throw new AppError("Credenciais inválidas.", 401);
     }
 
-    const userAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
-    if (userAnalysis) {
-      const recentSessions = userAnalysis.sessions.filter(
-        (session) => session.sessionStart > new Date(Date.now() - 5 * 60 * 1000)
-      );
-      if (recentSessions.length > 2) {
-        throw new AppError("Você excedeu o limite de tentativas. Por favor, aguarde 5 minutos.", 429);
+
+    if (normalizeRoles(user.role).includes("student")) {
+      let ua = await UserAnalysis.findOne({ userId: user._id.toString() });
+      if (!ua) {
+        // busca nomes das entidades referenciadas
+        const schoolDoc = await University.findById(user.school);
+        const courseDoc = await Course.findById(user.course);
+        const classDoc  = await Class.findById(user.class);
+
+        ua = new UserAnalysis({
+          userId: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          schoolId: user.school,
+          schoolName: schoolDoc?.name  || "",
+          courseId: user.course,
+          courseName: courseDoc?.name  || "",
+          classId: user.class,
+          className: classDoc?.name   || "",
+          totalUsageTime: 0,
+          totalCorrectWrongAnswers: {
+            totalCorrectAnswers: 0,
+            totalWrongAnswers:   0,
+          },
+          subjectCounts: {
+            variaveis: 0,
+            tipos: 0,
+            funcoes: 0,
+            loops: 0,
+            verificacoes: 0,
+          },
+          sessions: [
+            {
+              sessionStart: new Date(),
+              totalCorrectAnswers: 0,
+              totalWrongAnswers: 0,
+              subjectFrequency: new Map(),
+              answerHistory: [],
+            },
+          ],
+        });
+        await ua.save();
+      } else {
+        // se já existe, abre nova sessão se a última já tiver sido encerrada
+        const last = ua.sessions.at(-1)!;
+        if (last.sessionEnd) {
+          ua.sessions.push({
+            sessionStart:        new Date(),
+            totalCorrectAnswers: 0,
+            totalWrongAnswers:   0,
+            subjectFrequency:    new Map(),
+            answerHistory:       [],
+          });
+          await ua.save();
+        }
       }
     }
 
     const roles = prioritizeRole(normalizeRoles(user.role));
-
-    if (isSocialLogin) {
-      if (!user.googleId) {
-        throw new AppError("Credenciais sociais inválidas.", 401);
-      }
-    } else {
-      if (!user.password) {
-        throw new AppError("Usuário com erros nas credenciais!", 401);
-      }
-
-      if (!password) {
-        throw new AppError("Senha não fornecida.", 400);
-      }
-
-      const passwordMatch = await compare(password, user.password);
-      if (!passwordMatch) {
-        throw new AppError("Credenciais inválidas.", 401);
-      }
-    }
-
-    const sessionStart = new Date();
-
-    const school = user.school || null;
-    const courses = user.course || null;
-    const classes = user.class || null;
-
     const token = sign(
-      {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: roles,
-        school,
-        courses,
-        classes,
-      },
-      process.env.JWT_SECRET!,
-      {
-        subject: user._id.toString(),
-        expiresIn: "1d",
-      }
-    );
-
-    try {
-      if (roles.includes("student")) {
-        const existingUserAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
-
-        if (existingUserAnalysis) {
-          const lastSession = existingUserAnalysis.sessions[existingUserAnalysis.sessions.length - 1];
-          if (!lastSession.sessionEnd) {
-            console.log(`[UserAnalysis] Sessão já aberta para: ${user.email}`);
-          } else {
-            existingUserAnalysis.sessions.push({
-              sessionStart,
-              totalCorrectAnswers: 0,
-              totalWrongAnswers: 0,
-              interactions: [],
-              answerHistory: [],
-              sessionBot: [],
-            });
-            await existingUserAnalysis.save();
-            console.log(`[UserAnalysis] Nova sessão iniciada para: ${user.email}`);
-          }
-        } else {
-          await UserAnalysis.create({
-            userId: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            school,
-            courses,
-            classes,
-            sessions: [
-              {
-                sessionStart,
-                totalCorrectAnswers: 0,
-                totalWrongAnswers: 0,
-                interactions: [],
-                answerHistory: [],
-                sessionBot: [],
-              },
-            ],
-          });
-          console.log(`[UserAnalysis] Novo usuário registrado e sessão iniciada: ${user.email}`);
+        {
+          id:      user._id.toString(),
+          name:    user.name,
+          email:   user.email,
+          role:    roles,
+          school:  user.school,
+          course:  user.course,
+          class:   user.class,
+        },
+        process.env.JWT_SECRET!,
+        {
+          subject:   user._id.toString(),
+          expiresIn: "1d",
         }
-      } else {
-        console.log(`[UserAnalysis] Role '${roles}' não registrada (apenas alunos são analisados).`);
-      }
-    } catch (error) {
-      console.error("[UserAnalysis] Erro ao registrar usuário:", error);
-    }
+    );
 
     return {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: roles,
-      school,
-      courses,
-      classes,
-      sessionStart,
+      school: user.school,
+      courses: user.course,
+      classes: user.class,
+      sessionStart: new Date(),
       token,
     };
   }

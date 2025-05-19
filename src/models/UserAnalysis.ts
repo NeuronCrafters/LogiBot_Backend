@@ -88,7 +88,7 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   userId: { type: String, required: true, index: true },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: "University", required: true },
   schoolName: { type: String, required: true },
   courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
   courseName: { type: String, required: true },

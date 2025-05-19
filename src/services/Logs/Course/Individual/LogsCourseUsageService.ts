@@ -26,13 +26,35 @@ export async function LogsCourseUsageService(courseId: string) {
         const totalSessions = analyses.reduce((sum, a) => sum + a.sessions.length, 0);
         const averageSessionsPerStudent = studentCount > 0 ? totalSessions / studentCount : 0;
 
+        // NOVO: Calcular dados de uso por dia para o gráfico de linha
+        const usageByDay = new Map<string, number>();
+
+        for (const analysis of analyses) {
+            for (const session of analysis.sessions) {
+                if (session.sessionStart) {
+                    const sessionDate = new Date(session.sessionStart);
+                    const day = sessionDate.toISOString().split('T')[0];
+                    const duration = session.sessionDuration || 0;
+
+                    usageByDay.set(day, (usageByDay.get(day) || 0) + duration);
+                }
+            }
+        }
+
+        // Converter para array para retornar ao front
+        const sessionDetails = Array.from(usageByDay, ([day, minutes]) => ({
+            sessionStart: new Date(day),
+            sessionDuration: minutes
+        }));
+
         return {
             courseName: course.name,
             totalUsageTime,
             studentCount,
             averageTimePerStudent,
             totalSessions,
-            averageSessionsPerStudent
+            averageSessionsPerStudent,
+            sessionDetails // Novo campo para compatibilidade com UsageChart
         };
     } catch (error) {
         if (error instanceof AppError) throw error;

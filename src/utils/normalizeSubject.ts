@@ -1,46 +1,46 @@
-export const palavrasChaveMap: Record<string, string> = {
+function normalizeText(text: string): string {
+    return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+const keywordsMap: Record<string, keyof SubjectCounts> = {
     // VARIÁVEIS
-    "variavel": "variavel", "variáveis": "variavel", "variavél": "variavel", "variaveis": "variavel",
-    "variable": "variavel", "variables": "variavel", "varivel": "variavel",
-
-    // LISTAS
-    "lista": "lista", "listas": "lista", "lissta": "lista", "list": "lista", "lists": "lista",
-
+    "variavel":   "variaveis",
+    "variaveis":  "variaveis",
+    "variable":   "variaveis",
+    // TIPOS (números, strings, texto, caracteres, booleans...)
+    "numero":   "tipos", "numeros":"tipos", "number":"tipos","numbers":"tipos",
+    "string":   "tipos", "texto":  "tipos", "texto":   "tipos", "char":"tipos",
+    "boolean":  "tipos", "booleano":"tipos","true":"tipos","false":"tipos",
     // FUNÇÕES
-    "função": "funcao", "funçoes": "funcao", "funções": "funcao", "funçao": "funcao", "funcoes": "funcao",
-    "function": "funcao", "functions": "funcao", "funçaõ": "funcao",
-
-    // LAÇOS / REPETIÇÃO
-    "laço": "laco", "laços": "laco", "loop": "laco", "loops": "laco", "while": "laco",
-    "dowhile": "laco", "do while": "laco", "for": "laco", "forin": "laco", "for of": "laco",
-    "forof": "laco", "for in": "laco", "repeticao": "laco", "repetição": "laco",
-    "repeticão": "laco", "repetiçao": "laco", "repeat": "laco",
-
-    // TEXTOS / CARACTERES
-    "texto": "texto", "string": "texto", "caractere": "texto", "char": "texto", "text": "texto",
-
-    // NÚMEROS
-    "numero": "numero", "número": "numero", "numeros": "numero", "números": "numero",
-    "int": "numero", "integer": "numero", "integers": "numero", "float": "numero",
-    "floats": "numero", "double": "numero", "number": "numero", "numbers": "numero",
-
-    // CONDICIONAIS
-    "condicional": "condicional", "condicionais": "condicional", "if": "condicional",
-    "else": "condicional", "elif": "condicional", "switch": "condicional", "case": "condicional",
-    "switch case": "condicional", "switchcase": "condicional",
-
-    // VERIFICAÇÕES
-    "verificação": "verificacao", "verificações": "verificacao", "verificacao": "verificacao",
-    "verificacoes": "verificacao", "verifica": "verificacao", "verificaçao": "verificacao",
-    "verificaçãos": "verificacao", "verificaçaos": "verificacao", "verificaçõe": "verificacao",
-    "verificaçães": "verificacao", "verificaçaes": "verificacao", "ifelse": "verificacao"
+    "funcao":    "funcoes", "funcoes":"funcoes", "function":"funcoes",
+    // LOOPS / REPETIÇÃO
+    "laco":      "loops", "lacos":"loops","loop":"loops",
+    "while":"loops","for":"loops","dowhile":"loops","repeat":"loops",
+    // VERIFICAÇÕES / CONDICIONAIS
+    "if":"verificacoes","else":"verificacoes","elif":"verificacoes",
+    "switch":"verificacoes","case":"verificacoes","condicional":"verificacoes",
 };
 
-export function normalizeSubjectFromMessage(text: string): string | null {
-    const msg = text.toLowerCase();
-    for (const termo in palavrasChaveMap) {
-        if (msg.includes(termo)) {
-            return palavrasChaveMap[termo];
+export type SubjectCounts = {
+    variaveis: number;
+    tipos: number;
+    funcoes: number;
+    loops: number;
+    verificacoes: number;
+};
+
+/**
+ * Retorna a chave da categoria (uma das SubjectCounts)
+ * ou null se não encontrar.
+ */
+export function normalizeSubjectFromMessage(text: string): keyof SubjectCounts | null {
+    const norm = normalizeText(text);
+    for (const termo in keywordsMap) {
+        if (norm.includes(termo)) {
+            return keywordsMap[termo];
         }
     }
     return null;

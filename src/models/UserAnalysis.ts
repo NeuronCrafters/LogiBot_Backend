@@ -11,6 +11,15 @@ interface IUserAnalysis extends Document {
   totalCorrectAnswers: number;
   totalWrongAnswers: number;
   subjectFrequencyGlobal?: Record<string, number>;
+
+  subjectCounts: {
+    variaveis: number;
+    tipos: number;
+    funcoes: number;
+    loops: number;
+    verificacoes: number;
+  };
+
   sessions: {
     sessionStart: Date;
     sessionEnd?: Date;
@@ -53,7 +62,11 @@ interface IUserAnalysis extends Document {
     }[];
   }[];
 
-  addInteraction: (message: string, botResponse?: string, subjectMatched?: string | null) => void;
+  addInteraction: (
+      message: string,
+      botResponse?: string,
+      subjectMatched?: string | null
+  ) => void;
   addAnswerHistory: (
       question: string,
       selectedOption: string,
@@ -74,6 +87,16 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
   subjectFrequencyGlobal: { type: Schema.Types.Mixed, default: {} },
+
+  // Novo campo de contadores fixos
+  subjectCounts: {
+    variaveis: { type: Number, default: 0 },
+    tipos: { type: Number, default: 0 },
+    funcoes: { type: Number, default: 0 },
+    loops: { type: Number, default: 0 },
+    verificacoes: { type: Number, default: 0 },
+  },
+
   sessions: [
     {
       sessionStart: { type: Date, required: true, default: Date.now },
@@ -130,6 +153,7 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   ],
 });
 
+// Atualiza sessionDuration antes de salvar
 UserAnalysisSchema.pre("save", function (next) {
   if (this.sessions.length > 0) {
     const lastSession = this.sessions[this.sessions.length - 1];
@@ -186,14 +210,22 @@ UserAnalysisSchema.methods.addInteraction = function (
           const sorted = Object.entries(freq).sort((a, b) => Number(b[1]) - Number(a[1]));
 
           lastSession.sessionBot[0].mostAccessedSubject = {
-            subject: typeof sorted[0]?.[0] === "string" ? sorted[0][0] : null,
-            count: typeof sorted[0]?.[1] === "number" ? sorted[0][1] : Number(sorted[0]?.[1]) || 0,
+            subject:
+                typeof sorted[0]?.[0] === "string" ? sorted[0][0] : null,
+            count:
+                typeof sorted[0]?.[1] === "number"
+                    ? sorted[0][1]
+                    : Number(sorted[0]?.[1]) || 0,
           };
 
           const last = sorted.at(-1);
           lastSession.sessionBot[0].leastAccessedSubject = {
-            subject: typeof last?.[0] === "string" ? last[0] : null,
-            count: typeof last?.[1] === "number" ? last[1] : Number(last?.[1]) || 0,
+            subject:
+                typeof last?.[0] === "string" ? last[0] : null,
+            count:
+                typeof last?.[1] === "number"
+                    ? last[1]
+                    : Number(last?.[1]) || 0,
           };
         }
       }
@@ -201,6 +233,7 @@ UserAnalysisSchema.methods.addInteraction = function (
   }
 };
 
+// Método para registrar histórico de respostas
 UserAnalysisSchema.methods.addAnswerHistory = function (
     question: string,
     selectedOption: string,
@@ -231,5 +264,8 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   }
 };
 
-const UserAnalysis = mongoose.model<IUserAnalysis>("UserAnalysis", UserAnalysisSchema);
+const UserAnalysis = mongoose.model<IUserAnalysis>(
+    "UserAnalysis",
+    UserAnalysisSchema
+);
 export { UserAnalysis, IUserAnalysis };

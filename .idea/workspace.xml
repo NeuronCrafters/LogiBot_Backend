@@ -4,11 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="atualizando o backend e suas rotas de logs para enviar para o front os dados">
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="padronização">
+      <change afterPath="$PROJECT_DIR$/src/controllers/userAnalysis/userAnalysisController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/routes/routesPaths/userAnalysisRoutes.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/userAnalysis/userAnalysisService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/utils/keywordExtractor.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/Individual/LogsClassUsageService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/Individual/LogsCourseUsageService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversityUsageService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/Individual/LogsUniversityUsageService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/UserAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/UserAnalysis.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/normalizeSubject.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/normalizeSubject.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -128,7 +132,7 @@
       <workItem from="1747319494292" duration="13290000" />
       <workItem from="1747413722882" duration="499000" />
       <workItem from="1747423587967" duration="306000" />
-      <workItem from="1747519626044" duration="10790000" />
+      <workItem from="1747519626044" duration="13584000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -226,7 +230,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747585751704</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="padronização">
+      <option name="closed" value="true" />
+      <created>1747613232034</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1747613232034</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -249,7 +261,8 @@
     <MESSAGE value="rotas para pegar os dados individuais e em conjunto para os gráficos de disciplinas" />
     <MESSAGE value="rotas para pegar os dados individuais e em conjunto para os gráficos de estudantes" />
     <MESSAGE value="atualizando o backend e suas rotas de logs para enviar para o front os dados" />
-    <option name="LAST_COMMIT_MESSAGE" value="atualizando o backend e suas rotas de logs para enviar para o front os dados" />
+    <MESSAGE value="padronização" />
+    <option name="LAST_COMMIT_MESSAGE" value="padronização" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

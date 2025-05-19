@@ -20,8 +20,7 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
     if (userAnalysis && lastSession && !lastSession.sessionEnd) {
       const subject = normalizeSubjectFromMessage(message);
-      userAnalysis.addInteraction(message, "", subject);
-      await userAnalysis.save();
+
     }
 
     res.status(200).json(response);

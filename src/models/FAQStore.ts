@@ -1,55 +1,97 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
 interface IQuestion {
-  question: string;
-  options: string[];
+    question: string;
+    options: string[];
 }
 
-interface IFaqStore extends Document {
-  nivel: string;
-  assunto: string;
-  subassunto: string;
-  questions: IQuestion[];
-  answer_keys: string[];
-}
+const QuestionSchema = new Schema<IQuestion>(
+    {
+        question: { type: String, required: true },
+        options: {
+            type: [String],
+            required: true,
+            validate: {
+                validator: (arr: string[]) => arr.length === 5,
+                message: "Cada conjunto de opções deve ter exatamente 5 itens."
+            }
+        }
+    },
+    { _id: false }
+);
 
-const QuestionSchema = new Schema<IQuestion>({
-  question: { type: String, required: true },
-  options: [{ type: String, required: true }]
-});
+interface ILevelBlock {
+    questions: IQuestion[];
+    answer_keys: string[];
+}
+const LevelBlockSchema = new Schema<ILevelBlock>(
+    {
+        questions: {
+            type: [QuestionSchema],
+            required: true,
+            validate: {
+                validator: (arr: IQuestion[]) => arr.length === 5,
+                message: "Cada nível deve ter exatamente 5 perguntas."
+            }
+        },
+        answer_keys: {
+            type: [String],
+            required: true,
+            validate: {
+                validator: (arr: string[]) => arr.length === 5,
+                message: "Cada nível deve ter exatamente 5 gabaritos."
+            }
+        }
+    },
+    { _id: false }
+);
+
+interface ISubsubjectBlock {
+    name: string;
+    levels: Map<string, ILevelBlock>;
+}
+const SubsubjectBlockSchema = new Schema<ISubsubjectBlock>(
+    {
+        name: { type: String, required: true },
+        levels: {
+            type: Map,
+            of: LevelBlockSchema,
+            default: {}
+        }
+    },
+    { _id: false }
+);
+
+export interface IFaqStore extends Document {
+    assunto: string;
+    subassuntos: ISubsubjectBlock[];
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 const FaqStoreSchema = new Schema<IFaqStore>(
-  {
-    nivel: { type: String, required: true },
-    assunto: { type: String, required: true },
-    subassunto: { type: String, required: true },
-    questions: {
-      type: [QuestionSchema],
-      required: true,
-      validate: [arr => arr.length === 5, "São necessárias exatamente 5 perguntas."]
+    {
+        assunto: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true
+        },
+        subassuntos: {
+            type: [SubsubjectBlockSchema],
+            required: true,
+            validate: {
+                validator: (arr: ISubsubjectBlock[]) => arr.length > 0,
+                message: "Deve haver pelo menos um subassunto."
+            }
+        }
     },
-    answer_keys: {
-      type: [String],
-      required: true,
-      validate: [arr => arr.length === 5, "São necessários exatamente 5 gabaritos."]
+    {
+        timestamps: true
     }
-  },
-  {
-    timestamps: true
-  }
 );
 
-FaqStoreSchema.index(
-  {
-    nivel: 1,
-    assunto: 1,
-    subassunto: 1,
-    "questions.question": 1,
-    "questions.options": 1
-  },
-  { unique: true }
+export const FaqStore = mongoose.model<IFaqStore>(
+    "FaqStore",
+    FaqStoreSchema
 );
-
-const FaqStore = mongoose.model<IFaqStore>("FaqStore", FaqStoreSchema);
-
-export { FaqStore, IFaqStore };

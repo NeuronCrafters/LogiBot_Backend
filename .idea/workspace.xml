@@ -6,13 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="sei lá, nem sei mais">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/conversarController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/conversarController.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/perguntarController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/perguntarController.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/models/UserAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/UserAnalysis.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/userAnalysis/userAnalysisService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/userAnalysis/userAnalysisService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/users/AuthUserService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/users/AuthUserService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/gerarPerguntasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/gerarPerguntasController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/FAQStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/FAQStore.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,16 +34,16 @@
     &quot;assignee&quot;: &quot;ramoncbarbosa&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/ramoncbarbosa/backend_Chat_SAEL.git",
-    "accountId": "ab155757-84ad-44de-8640-fa028945adb4"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ramoncbarbosa/backend_Chat_SAEL.git&quot;,
+    &quot;accountId&quot;: &quot;ab155757-84ad-44de-8640-fa028945adb4&quot;
   }
-}]]></component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+}</component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -139,6 +135,7 @@
       <workItem from="1747423587967" duration="306000" />
       <workItem from="1747519626044" duration="13674000" />
       <workItem from="1747653830688" duration="7967000" />
+      <workItem from="1747662246617" duration="2265000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />

@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 import type { Query } from "mongoose";
-import { normalizeSubjectFromMessage } from "../utils/normalizeSubject";
 
 // sub-schema para cada questão respondida
 const QuestionSchema = new Schema({
@@ -9,16 +8,18 @@ const QuestionSchema = new Schema({
   selectedOption: {
     question: { type: String, required: true },
     isCorrect: { type: Boolean, required: true },
-    isSelected: { type: String,  required: true },
+    isSelected: { type: String, required: true },
   },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
-  timestamp: { type: Date,   default: Date.now },
+  timestamp: { type: Date, default: Date.now },
 }, { _id: false });
 
 // sub-schema para cada tentativa de quiz
 const QuizAttemptSchema = new Schema({
   questions: { type: [QuestionSchema], default: [] },
+  subjectCorrectCount: { type: Map, of: Number, default: {} },
+  subjectWrongCount: { type: Map, of: Number, default: {} },
 }, { _id: false });
 
 // sub-schema para cada sessão de uso
@@ -28,8 +29,8 @@ const SessionSchema = new Schema({
   sessionDuration: { type: Number, default: 0 },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
-  frequency: { type: Map, of: Number, default: {} },
-  quizHistory: { type: [QuizAttemptSchema], default: [] },
+  subjectFrequency: { type: Map, of: Number, default: {} },
+  answerHistory: { type: [QuizAttemptSchema], default: [] },
 }, { _id: false });
 
 export interface IUserAnalysis extends Document {
@@ -53,7 +54,6 @@ export interface IUserAnalysis extends Document {
     funcoes: number;
     loops: number;
     verificacoes: number;
-    operacoes: number;
   };
   sessions: Array<{
     sessionStart: Date;
@@ -61,8 +61,8 @@ export interface IUserAnalysis extends Document {
     sessionDuration?: number;
     totalCorrectAnswers: number;
     totalWrongAnswers: number;
-    frequency: Map<string, number>;
-    quizHistory: Array<{
+    subjectFrequency: Map<string, number>;
+    answerHistory: Array<{
       questions: Array<{
         level: string;
         subject: string;
@@ -71,20 +71,21 @@ export interface IUserAnalysis extends Document {
         totalWrongAnswers: number;
         timestamp: Date;
       }>;
+      subjectCorrectCount: Map<string, number>;
+      subjectWrongCount: Map<string, number>;
     }>;
   }>;
   addAnswerHistory: (
-      level: string,
-      question: string,
-      subject: string,
-      selectedOption: string,
-      isCorrect: boolean
+    level: string,
+    question: string,
+    subject: string,
+    selectedOption: string,
+    isCorrect: boolean
   ) => void;
-  addInteraction: (subjectMatched: string) => void;
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
-  userId:   { type: String, required: true, index: true },
+  userId: { type: String, required: true, index: true },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   schoolId: { type: Schema.Types.ObjectId, ref: "University", required: true },
@@ -109,10 +110,10 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
 });
 
 // auto-populate de schoolId, courseId e classId com seus nomes
-UserAnalysisSchema.pre(/^find/, function(this: Query<any, IUserAnalysis>, next) {
-  this.populate("schoolId", "name")
-      .populate("courseId", "name")
-      .populate("classId",  "name");
+UserAnalysisSchema.pre(/^find/, function (this: Query<any, IUserAnalysis>, next) {
+  this.populate("schoolId", "name");
+  this.populate("courseId", "name");
+  this.populate("classId", "name");
   next();
 });
 
@@ -121,66 +122,53 @@ UserAnalysisSchema.pre("save", function (next) {
   const last = this.sessions.at(-1);
   if (last?.sessionStart && last?.sessionEnd) {
     last.sessionDuration =
-        (last.sessionEnd.getTime() - last.sessionStart.getTime()) / 1000;
+      (last.sessionEnd.getTime() - last.sessionStart.getTime()) / 1000;
   }
   next();
 });
 
 // metodo para registrar histórico de respostas
 UserAnalysisSchema.methods.addAnswerHistory = function (
-    level: string,
-    question: string,
-    subject: string,
-    selectedOption: string,
-    isCorrect: boolean
+  level: string,
+  question: string,
+  subject: string,
+  selectedOption: string,
+  isCorrect: boolean
 ) {
   const last = this.sessions.at(-1);
   if (!last || last.sessionEnd) return;
 
-  const newAttempt = { questions: [] };
-  last.quizHistory.push(newAttempt);
-
-  const attempt = newAttempt;
-
+  // cria uma nova tentativa de quiz se necessário
+  let attempt = last.answerHistory.at(-1);
+  if (!attempt) {
+    attempt = { questions: [], subjectCorrectCount: new Map(), subjectWrongCount: new Map() };
+    last.answerHistory.push(attempt);
+  }
 
   const correctCount = isCorrect ? 1 : 0;
-  const wrongCount   = isCorrect ? 0 : 1;
+  const wrongCount = isCorrect ? 0 : 1;
 
   attempt.questions.push({
     level,
     subject,
     selectedOption: { question, isCorrect, isSelected: selectedOption },
     totalCorrectAnswers: correctCount,
-    totalWrongAnswers:   wrongCount,
-    timestamp:           new Date(),
+    totalWrongAnswers: wrongCount,
+    timestamp: new Date(),
   });
 
-  // atualiza totais de sessão também
-  last.totalCorrectAnswers = (last.totalCorrectAnswers || 0) + correctCount;
-  last.totalWrongAnswers   = (last.totalWrongAnswers   || 0) + wrongCount;
+  // atualiza contadores por assunto
+  attempt.subjectCorrectCount.set(
+    subject,
+    (attempt.subjectCorrectCount.get(subject) || 0) + correctCount
+  );
+  attempt.subjectWrongCount.set(
+    subject,
+    (attempt.subjectWrongCount.get(subject) || 0) + wrongCount
+  );
 };
-
-// metodo para registrar apenas os contadores de assunto
-UserAnalysisSchema.methods.addInteraction = function (subjectMatched: string) {
-  const normalized = normalizeSubjectFromMessage(subjectMatched);
-
-  if (!normalized) return;
-
-  // Atualiza o contador global
-  this.subjectCounts[normalized] = (this.subjectCounts[normalized] || 0) + 1;
-
-  // Atualiza o contador da sessão
-  const last = this.sessions.at(-1);
-  if (!last || last.sessionEnd) return;
-
-  const freqMap = last.frequency as Map<string, number>;
-  const prev = freqMap.get(normalized) || 0;
-  freqMap.set(normalized, prev + 1);
-  last.frequency = freqMap;
-};
-
 
 export const UserAnalysis = mongoose.model<IUserAnalysis>(
-    "UserAnalysis",
-    UserAnalysisSchema
+  "UserAnalysis",
+  UserAnalysisSchema
 );

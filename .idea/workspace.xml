@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="sei lá, nem sei mais">
-      <change afterPath="$PROJECT_DIR$/src/utils/initFaqStore.ts" afterDir="false" />
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="ajustes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/gerarPerguntasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/gerarPerguntasController.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/models/FAQStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/FAQStore.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -138,7 +135,7 @@
       <workItem from="1747519626044" duration="13674000" />
       <workItem from="1747653830688" duration="7967000" />
       <workItem from="1747662246617" duration="2265000" />
-      <workItem from="1747664829163" duration="5866000" />
+      <workItem from="1747664829163" duration="6105000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -268,7 +265,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747659582045</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="ajustes">
+      <option name="closed" value="true" />
+      <created>1747670954059</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1747670954059</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -293,7 +298,8 @@
     <MESSAGE value="atualizando o backend e suas rotas de logs para enviar para o front os dados" />
     <MESSAGE value="padronização" />
     <MESSAGE value="sei lá, nem sei mais" />
-    <option name="LAST_COMMIT_MESSAGE" value="sei lá, nem sei mais" />
+    <MESSAGE value="ajustes" />
+    <option name="LAST_COMMIT_MESSAGE" value="ajustes" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

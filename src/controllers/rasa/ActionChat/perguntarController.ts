@@ -29,3 +29,4 @@ export async function actionPerguntarController(req: Request, res: Response) {
     res.status(500).json({ message: "Erro ao conversar com o assistente", error: error.message });
   }
 }
+

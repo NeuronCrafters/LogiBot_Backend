@@ -4,9 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="ajustes">
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/UserAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/UserAnalysis.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/keywordExtractor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/keywordExtractor.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/normalizeSubject.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/normalizeSubject.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,7 +140,7 @@
       <workItem from="1747519626044" duration="13674000" />
       <workItem from="1747653830688" duration="7967000" />
       <workItem from="1747662246617" duration="2265000" />
-      <workItem from="1747664829163" duration="6105000" />
+      <workItem from="1747664829163" duration="8010000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -273,7 +278,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747670954059</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações">
+      <option name="closed" value="true" />
+      <created>1747671026769</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1747671026770</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -299,7 +312,8 @@
     <MESSAGE value="padronização" />
     <MESSAGE value="sei lá, nem sei mais" />
     <MESSAGE value="ajustes" />
-    <option name="LAST_COMMIT_MESSAGE" value="ajustes" />
+    <MESSAGE value="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações" />
+    <option name="LAST_COMMIT_MESSAGE" value="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

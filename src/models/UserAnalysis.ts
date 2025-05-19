@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 import type { Query } from "mongoose";
+import { normalizeSubjectFromMessage } from "../utils/normalizeSubject";
 
 // sub-schema para cada questão respondida
 const QuestionSchema = new Schema({
@@ -52,6 +53,7 @@ export interface IUserAnalysis extends Document {
     funcoes: number;
     loops: number;
     verificacoes: number;
+    operacoes: number;
   };
   sessions: Array<{
     sessionStart: Date;
@@ -135,11 +137,11 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   const last = this.sessions.at(-1);
   if (!last || last.sessionEnd) return;
 
-  let attempt = last.quizHistory.at(-1);
-  if (!attempt) {
-    attempt = { questions: [] };
-    last.quizHistory.push(attempt);
-  }
+  const newAttempt = { questions: [] };
+  last.quizHistory.push(newAttempt);
+
+  const attempt = newAttempt;
+
 
   const correctCount = isCorrect ? 1 : 0;
   const wrongCount   = isCorrect ? 0 : 1;
@@ -160,15 +162,23 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
 
 // metodo para registrar apenas os contadores de assunto
 UserAnalysisSchema.methods.addInteraction = function (subjectMatched: string) {
-  this.subjectCounts[subjectMatched] = (this.subjectCounts[subjectMatched] || 0) + 1;
+  const normalized = normalizeSubjectFromMessage(subjectMatched);
 
+  if (!normalized) return;
+
+  // Atualiza o contador global
+  this.subjectCounts[normalized] = (this.subjectCounts[normalized] || 0) + 1;
+
+  // Atualiza o contador da sessão
   const last = this.sessions.at(-1);
   if (!last || last.sessionEnd) return;
+
   const freqMap = last.frequency as Map<string, number>;
-  const prev    = freqMap.get(subjectMatched) || 0;
-  freqMap.set(subjectMatched, prev + 1);
+  const prev = freqMap.get(normalized) || 0;
+  freqMap.set(normalized, prev + 1);
   last.frequency = freqMap;
 };
+
 
 export const UserAnalysis = mongoose.model<IUserAnalysis>(
     "UserAnalysis",

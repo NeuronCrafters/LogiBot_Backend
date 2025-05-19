@@ -1,15 +1,91 @@
-const KEYWORDS: Record<string, RegExp> = {
-    Função: /\b(função|function)\b/i,
-    Variáveis: /\b(variáveis?|variable)\b/i,
-    Tipos: /\b(números?|strings?|texto|caracteres|numbers?|booleans?|verdadeiro|falso)\b/i,
-    Loops: /\b(for|for in|for of|do\s+while|while|do|enquanto|switch|case)\b/i,
-    Verificações: /\b(if|else|elif|if\s+else)\b/i,
+export type SubjectCounts = {
+    variaveis: number;
+    tipos: number;
+    funcoes: number;
+    loops: number;
+    verificacoes: number;
+    operacoes: number;
 };
 
-export function extractSubject(text: string): string | null {
-    for (const [subject, regex] of Object.entries(KEYWORDS)) {
-        if (regex.test(text)) {
-            return subject;
+function normalizeText(text: string): string {
+    return text
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase();
+}
+
+const keywordsMap: Record<string, keyof SubjectCounts> = {
+    // VARIÁVEIS
+    "variavel": "variaveis",
+    "variaveis": "variaveis",
+    "variable": "variaveis",
+
+    // TIPOS (números, strings, texto, caracteres, booleans...)
+    "numero": "tipos",
+    "numeros": "tipos",
+    "number": "tipos",
+    "numbers": "tipos",
+    "string": "tipos",
+    "texto": "tipos",
+    "char": "tipos",
+    "caractere": "tipos",
+    "caracteres": "tipos",
+    "boolean": "tipos",
+    "booleano": "tipos",
+    "true": "tipos",
+    "false": "tipos",
+
+    // FUNÇÕES
+    "funcao": "funcoes",
+    "funcoes": "funcoes",
+    "function": "funcoes",
+
+    // LOOPS / REPETIÇÃO
+    "laco": "loops",
+    "lacos": "loops",
+    "loop": "loops",
+    "while": "loops",
+    "for": "loops",
+    "dowhile": "loops",
+    "repeat": "loops",
+
+    // VERIFICAÇÕES / CONDICIONAIS
+    "if": "verificacoes",
+    "else": "verificacoes",
+    "elif": "verificacoes",
+    "switch": "verificacoes",
+    "case": "verificacoes",
+    "condicional": "verificacoes",
+
+    // OPERADORES E OPERAÇÕES
+    "mais": "operacoes",
+    "menos": "operacoes",
+    "vezes": "operacoes",
+    "divisao": "operacoes",
+    "soma": "operacoes",
+    "subtracao": "operacoes",
+    "multiplicacao": "operacoes",
+    "divisao_inteira": "operacoes",
+    "divisao_resto": "operacoes",
+    "divisao_normal": "operacoes",
+    "operadores": "operacoes",
+    "operador": "operacoes",
+    "operator": "operacoes",
+    "&&": "operacoes",
+    "||": "operacoes",
+    "!": "operacoes",
+    "ternario": "operacoes"
+};
+
+/**
+ * Retorna a chave da categoria (uma das SubjectCounts)
+ * ou null se não encontrar.
+ */
+export function normalizeSubjectFromMessage(text: string): keyof SubjectCounts | null {
+    const norm = normalizeText(text);
+    for (const termo in keywordsMap) {
+        if (norm.includes(termo)) {
+            return keywordsMap[termo];
         }
     }
     return null;

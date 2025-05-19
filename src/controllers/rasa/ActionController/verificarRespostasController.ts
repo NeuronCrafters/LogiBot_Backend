@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { verificarRespostasService } from "services/rasa/ActionService/verificarRespostasService";
 import { getSession } from "services/rasa/types/sessionMemory";
+import { UserAnalysis } from "@/models/UserAnalysis";
 import { AppError } from "exceptions/AppError";
 
 export async function verificarRespostasController(req: Request, res: Response) {
@@ -22,6 +23,27 @@ export async function verificarRespostasController(req: Request, res: Response) 
         message: "Sessão inválida: perguntas ou gabarito ausentes.",
       });
     }
+
+    // 🔹 Garante que exista uma sessão ativa no UserAnalysis
+    const ua = await UserAnalysis.findOne({ userId, email });
+    if (ua) {
+      const ua = await UserAnalysis.findOne({ userId, email });
+      if (ua) {
+        const ultimaSessao = ua.sessions.at(-1);
+        if (!ultimaSessao || ultimaSessao.sessionEnd) {
+          ua.sessions.push({
+            sessionStart: new Date(),
+            totalCorrectAnswers: 0,
+            totalWrongAnswers: 0,
+            sessionDuration: 0,
+            frequency: new Map(),
+            quizHistory: [],
+          });
+          await ua.save();
+        }
+      }
+    }
+
 
     const result = await verificarRespostasService(
         respostas,

@@ -32,6 +32,11 @@ import { LogsUniversityCompareAccuracyController } from "../../controllers/Logs/
 import { LogsUniversityCompareUsageController } from "../../controllers/Logs/University/Compare/LogsUniversityCompareUsageController";
 import { LogsUniversityCompareSubjectSummaryController } from "../../controllers/Logs/University/Compare/LogsUniversityCompareSubjectSummaryController";
 
+import { LogsUniversitySummaryController } from "../../controllers/Logs/University/LogsUniversitySummaryController";
+import { LogsCourseSummaryController } from "../../controllers/Logs/Course/LogsCourseSummaryController";
+import { LogsClassSummaryController } from "../../controllers/Logs/Class/LogsClassSummaryController";
+import { LogsFilteredStudentSummaryController } from "../../controllers/Logs/Student/LogsFilteredStudentSummaryController";
+
 const logRoutes = Router();
 
 // STUDENT
@@ -73,5 +78,30 @@ logRoutes.get("/university/:id/subjects/summary", isPermissions.isAdminProfessor
 logRoutes.post("/university/compare/accuracy", isPermissions.isAdminProfessorOrCoordinator(), LogsUniversityCompareAccuracyController);
 logRoutes.post("/university/compare/usage", isPermissions.isAdminProfessorOrCoordinator(), LogsUniversityCompareUsageController);
 logRoutes.post("/university/compare/subjects/summary", isPermissions.isAdminProfessorOrCoordinator(), LogsUniversityCompareSubjectSummaryController);
+
+
+logRoutes.get(
+  "/university/:universityId/summary",
+  isPermissions.isAdmin(),
+  LogsUniversitySummaryController
+);
+
+logRoutes.get(
+  "/course/:courseId/summary",
+  isPermissions.isAdminProfessorOrCoordinator(),
+  LogsCourseSummaryController
+);
+
+logRoutes.get(
+  "/class/:classId/summary",
+  isPermissions.isAdminProfessorOrCoordinator(),
+  LogsClassSummaryController
+);
+
+logRoutes.post(
+  "/student/summary/filtered",
+  isPermissions.isAdminProfessorOrCoordinator(),
+  LogsFilteredStudentSummaryController
+);
 
 export { logRoutes };

@@ -7,7 +7,7 @@ export async function verificarRespostasService(
   userId: string,
   email: string,
   session: RasaSessionData,
-  role: string[] | string
+  role: string | string[]
 ) {
   if (
     !session.lastAnswerKeys ||
@@ -32,8 +32,11 @@ export async function verificarRespostasService(
   let acertos = 0;
   let erros = 0;
 
-  // Se não for aluno, calcula e retorna o resultado sem salvar no banco
-  if (role !== "student") {
+  const isStudent = Array.isArray(role)
+    ? role.includes("student")
+    : role === "student";
+
+  if (!isStudent) {
     const detalhes = session.lastQuestions.map((question, index) => {
       const resposta = respostas[index];
       const gabarito = session.lastAnswerKeys[index];
@@ -69,81 +72,70 @@ export async function verificarRespostasService(
     };
   }
 
-  // Fluxo completo para estudantes
+  // — fluxo completo para estudantes —
   const userAnalysis = await UserAnalysis.findOne({ userId, email });
   if (!userAnalysis || !userAnalysis.sessions?.length) {
     throw new AppError("Usuário ou sessão não encontrada.", 404);
   }
 
-  const lastSessionIndex = userAnalysis.sessions.length - 1;
-  const lastSession = userAnalysis.sessions[lastSessionIndex];
+  const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
 
-  for (let index = 0; index < respostas.length; index++) {
-    const resposta = respostas[index];
-    const gabarito = session.lastAnswerKeys[index];
-    const pergunta = session.lastQuestions[index];
+  for (let i = 0; i < respostas.length; i++) {
+    const resposta = respostas[i];
+    const gabarito = session.lastAnswerKeys[i];
+    const pergunta = session.lastQuestions[i];
 
-    const respostaNormalizada = normalizeOption(resposta);
-    const gabaritoNormalizado = normalizeOption(gabarito);
-
-    const isCorrect = respostaNormalizada === gabaritoNormalizado;
-    const isCorrectStr = isCorrect ? "true" : "false";
-
+    const isCorrect = normalizeOption(resposta) === normalizeOption(gabarito);
     if (isCorrect) acertos++;
     else erros++;
 
     userAnalysis.addAnswerHistory(
       pergunta || "Pergunta desconhecida",
       resposta || "resposta vazia",
-      isCorrectStr,
+      isCorrect ? "true" : "false",
       session.nivelAtual || "Nível desconhecido",
       session.lastSubject || "Assunto desconhecido"
     );
   }
 
-  userAnalysis.totalCorrectAnswers = (userAnalysis.totalCorrectAnswers || 0) + acertos;
-  userAnalysis.totalWrongAnswers = (userAnalysis.totalWrongAnswers || 0) + erros;
-
+  userAnalysis.totalCorrectAnswers += acertos;
+  userAnalysis.totalWrongAnswers += erros;
   lastSession.totalCorrectAnswers = (lastSession.totalCorrectAnswers || 0) + acertos;
   lastSession.totalWrongAnswers = (lastSession.totalWrongAnswers || 0) + erros;
 
+  // recalcula estatísticas por assunto
   const subjectStats: Record<string, { accessed: number; correct: number; wrong: number }> = {};
-
-  for (const session of userAnalysis.sessions) {
-    for (const history of session.answerHistory || []) {
-      for (const question of history.questions || []) {
-        const subject = question.subject;
-        if (!subjectStats[subject]) {
-          subjectStats[subject] = { accessed: 0, correct: 0, wrong: 0 };
+  for (const sess of userAnalysis.sessions) {
+    for (const hist of sess.answerHistory || []) {
+      for (const q of hist.questions || []) {
+        const subj = q.subject;
+        if (!subjectStats[subj]) {
+          subjectStats[subj] = { accessed: 0, correct: 0, wrong: 0 };
         }
-        subjectStats[subject].accessed += 1;
-        subjectStats[subject].correct += question.totalCorrectAnswers || 0;
-        subjectStats[subject].wrong += question.totalWrongAnswers || 0;
+        subjectStats[subj].accessed++;
+        subjectStats[subj].correct += q.totalCorrectAnswers || 0;
+        subjectStats[subj].wrong += q.totalWrongAnswers || 0;
       }
     }
   }
 
-  let mostAccessed = null,
-    leastAccessed = null;
-  let maxAccessed = -1,
-    minAccessed = Infinity;
+  let mostAccessed: string | null = null,
+    leastAccessed: string | null = null;
+  let maxAcc = -1,
+    minAcc = Infinity;
 
-  for (const [subject, stats] of Object.entries(subjectStats)) {
-    if (stats.accessed > maxAccessed) {
-      mostAccessed = subject;
-      maxAccessed = stats.accessed;
+  for (const [subj, stats] of Object.entries(subjectStats)) {
+    if (stats.accessed > maxAcc) {
+      mostAccessed = subj;
+      maxAcc = stats.accessed;
     }
-    if (stats.accessed < minAccessed) {
-      leastAccessed = subject;
-      minAccessed = stats.accessed;
+    if (stats.accessed < minAcc) {
+      leastAccessed = subj;
+      minAcc = stats.accessed;
     }
   }
 
-  if (
-    !lastSession.sessionBot ||
-    !Array.isArray(lastSession.sessionBot) ||
-    lastSession.sessionBot.length === 0
-  ) {
+  if (!Array.isArray(lastSession.sessionBot) || lastSession.sessionBot.length === 0) {
     lastSession.sessionBot = [
       {
         mostAccessedSubject: { subject: null, count: 0 },
@@ -152,28 +144,24 @@ export async function verificarRespostasService(
       },
     ];
   }
-
   const botStats = lastSession.sessionBot[0];
-
   botStats.mostAccessedSubject = {
-    subject: typeof mostAccessed === "string" ? mostAccessed : null,
-    count: mostAccessed ? subjectStats[mostAccessed]?.accessed || 0 : 0,
+    subject: mostAccessed,
+    count: mostAccessed ? subjectStats[mostAccessed].accessed : 0,
   };
-
   botStats.leastAccessedSubject = {
-    subject: typeof leastAccessed === "string" ? leastAccessed : null,
-    count: leastAccessed ? subjectStats[leastAccessed]?.accessed || 0 : 0,
+    subject: leastAccessed,
+    count: leastAccessed ? subjectStats[leastAccessed].accessed : 0,
   };
-
   botStats.subjectFrequency = Object.fromEntries(
-    Object.entries(subjectStats).map(([key, value]) => [key, value.accessed])
+    Object.entries(subjectStats).map(([k, v]) => [k, v.accessed])
   );
 
   try {
     await userAnalysis.save();
-  } catch (error: any) {
-    console.error("Erro ao salvar respostas:", error);
-    throw new AppError("Erro ao salvar as respostas: " + error.message, 500);
+  } catch (err: any) {
+    console.error("Erro ao salvar respostas:", err);
+    throw new AppError("Erro ao salvar as respostas: " + err.message, 500);
   }
 
   return {

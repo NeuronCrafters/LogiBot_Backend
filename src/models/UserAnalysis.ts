@@ -4,10 +4,10 @@ import type { Query } from "mongoose";
 // sub-schema para cada questão respondida
 const QuestionSchema = new Schema({
   level: { type: String, required: true },
-  subject:  { type: String, required: true },
+  subject: { type: String, required: true },
   selectedOption: {
     question: { type: String, required: true },
-    isCorrect:  { type: Boolean, required: true },
+    isCorrect: { type: Boolean, required: true },
     isSelected: { type: String,  required: true },
   },
   totalCorrectAnswers: { type: Number, default: 0 },
@@ -18,8 +18,6 @@ const QuestionSchema = new Schema({
 // sub-schema para cada tentativa de quiz
 const QuizAttemptSchema = new Schema({
   questions: { type: [QuestionSchema], default: [] },
-  subjectCorrectCount: { type: Map, of: Number, default: {} },
-  subjectWrongCount: { type: Map, of: Number, default: {} },
 }, { _id: false });
 
 // sub-schema para cada sessão de uso
@@ -29,8 +27,8 @@ const SessionSchema = new Schema({
   sessionDuration: { type: Number, default: 0 },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
-  subjectFrequency: { type: Map, of: Number, default: {} },
-  answerHistory: { type: [QuizAttemptSchema], default: [] },
+  frequency: { type: Map, of: Number, default: {} },
+  quizHistory: { type: [QuizAttemptSchema], default: [] },
 }, { _id: false });
 
 export interface IUserAnalysis extends Document {
@@ -61,8 +59,8 @@ export interface IUserAnalysis extends Document {
     sessionDuration?: number;
     totalCorrectAnswers: number;
     totalWrongAnswers: number;
-    subjectFrequency: Map<string, number>;
-    answerHistory: Array<{
+    frequency: Map<string, number>;
+    quizHistory: Array<{
       questions: Array<{
         level: string;
         subject: string;
@@ -71,8 +69,6 @@ export interface IUserAnalysis extends Document {
         totalWrongAnswers: number;
         timestamp: Date;
       }>;
-      subjectCorrectCount: Map<string, number>;
-      subjectWrongCount: Map<string, number>;
     }>;
   }>;
   addAnswerHistory: (
@@ -82,10 +78,11 @@ export interface IUserAnalysis extends Document {
       selectedOption: string,
       isCorrect: boolean
   ) => void;
+  addInteraction: (subjectMatched: string) => void;
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
-  userId: { type: String, required: true, index: true },
+  userId:   { type: String, required: true, index: true },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   schoolId: { type: Schema.Types.ObjectId, ref: "University", required: true },
@@ -97,7 +94,7 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
   totalUsageTime: { type: Number, default: 0 },
   totalCorrectWrongAnswers: {
     totalCorrectAnswers: { type: Number, default: 0 },
-    totalWrongAnswers:   { type: Number, default: 0 },
+    totalWrongAnswers: { type: Number, default: 0 },
   },
   subjectCounts: {
     variaveis: { type: Number, default: 0 },
@@ -111,9 +108,9 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
 
 // auto-populate de schoolId, courseId e classId com seus nomes
 UserAnalysisSchema.pre(/^find/, function(this: Query<any, IUserAnalysis>, next) {
-  this.populate("schoolId", "name");
-  this.populate("courseId", "name");
-  this.populate("classId",  "name");
+  this.populate("schoolId", "name")
+      .populate("courseId", "name")
+      .populate("classId",  "name");
   next();
 });
 
@@ -138,11 +135,10 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   const last = this.sessions.at(-1);
   if (!last || last.sessionEnd) return;
 
-  // cria uma nova tentativa de quiz se necessário
-  let attempt = last.answerHistory.at(-1);
+  let attempt = last.quizHistory.at(-1);
   if (!attempt) {
-    attempt = { questions: [], subjectCorrectCount: new Map(), subjectWrongCount: new Map() };
-    last.answerHistory.push(attempt);
+    attempt = { questions: [] };
+    last.quizHistory.push(attempt);
   }
 
   const correctCount = isCorrect ? 1 : 0;
@@ -157,15 +153,21 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
     timestamp:           new Date(),
   });
 
-  // atualiza contadores por assunto
-  attempt.subjectCorrectCount.set(
-      subject,
-      (attempt.subjectCorrectCount.get(subject) || 0) + correctCount
-  );
-  attempt.subjectWrongCount.set(
-      subject,
-      (attempt.subjectWrongCount.get(subject)   || 0) + wrongCount
-  );
+  // atualiza totais de sessão também
+  last.totalCorrectAnswers = (last.totalCorrectAnswers || 0) + correctCount;
+  last.totalWrongAnswers   = (last.totalWrongAnswers   || 0) + wrongCount;
+};
+
+// metodo para registrar apenas os contadores de assunto
+UserAnalysisSchema.methods.addInteraction = function (subjectMatched: string) {
+  this.subjectCounts[subjectMatched] = (this.subjectCounts[subjectMatched] || 0) + 1;
+
+  const last = this.sessions.at(-1);
+  if (!last || last.sessionEnd) return;
+  const freqMap = last.frequency as Map<string, number>;
+  const prev    = freqMap.get(subjectMatched) || 0;
+  freqMap.set(subjectMatched, prev + 1);
+  last.frequency = freqMap;
 };
 
 export const UserAnalysis = mongoose.model<IUserAnalysis>(

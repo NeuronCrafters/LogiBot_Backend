@@ -74,6 +74,8 @@ export async function verificarRespostasService(
     };
   }
 
+  // fluxo completo para estudantes
+
   // busca o UserAnalysis e popula schoolId, courseId e classId com seus nomes
   const ua = await UserAnalysis.findOne({ userId, email })
       .populate("schoolId", "name")
@@ -100,9 +102,9 @@ export async function verificarRespostasService(
     // nova assinatura: (level, question, subject, selectedOption, isCorrect)
     ua.addAnswerHistory(
         session.nivelAtual  || "Nível desconhecido",
-        pergunta            || "Pergunta desconhecida",
+        pergunta || "Pergunta desconhecida",
         session.lastSubject || "Assunto desconhecido",
-        resposta            || "",
+        resposta || "",
         certo
     );
   }
@@ -114,8 +116,8 @@ export async function verificarRespostasService(
   // atualiza totais da última sessão
   lastSession.totalCorrectAnswers =
       (lastSession.totalCorrectAnswers || 0) + acertos;
-  lastSession.totalWrongAnswers   =
-      (lastSession.totalWrongAnswers   || 0) + erros;
+  lastSession.totalWrongAnswers =
+      (lastSession.totalWrongAnswers || 0) + erros;
 
   // persiste no banco
   try {
@@ -125,7 +127,6 @@ export async function verificarRespostasService(
     throw new AppError("Erro ao salvar as respostas: " + err.message, 500);
   }
 
-  // retorno final para o front
   return {
     message:
         acertos === respostas.length
@@ -134,7 +135,7 @@ export async function verificarRespostasService(
     totalCorrectAnswers: acertos,
     totalWrongAnswers:   erros,
     detalhes: {
-      questions: lastSession.answerHistory.at(-1)!.questions,
+      questions: lastSession.quizHistory.at(-1)!.questions,
     },
   };
 }

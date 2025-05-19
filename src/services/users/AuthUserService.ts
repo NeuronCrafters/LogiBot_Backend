@@ -49,7 +49,6 @@ class AuthUserService {
       if (!match) throw new AppError("Credenciais inválidas.", 401);
     }
 
-
     if (normalizeRoles(user.role).includes("student")) {
       let ua = await UserAnalysis.findOne({ userId: user._id.toString() });
       if (!ua) {
@@ -96,11 +95,11 @@ class AuthUserService {
         const last = ua.sessions.at(-1)!;
         if (last.sessionEnd) {
           ua.sessions.push({
-            sessionStart:        new Date(),
+            sessionStart: new Date(),
             totalCorrectAnswers: 0,
-            totalWrongAnswers:   0,
-            subjectFrequency:    new Map(),
-            answerHistory:       [],
+            totalWrongAnswers: 0,
+            frequency: new Map(),
+            quizHistory: [],
           });
           await ua.save();
         }

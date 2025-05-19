@@ -2,31 +2,25 @@ import { Request, Response } from "express";
 import { actionPerguntarService } from "../../../services/rasa/ActionChat/perguntarService";
 import { UserAnalysis } from "@/models/UserAnalysis";
 import { normalizeSubjectFromMessage } from "../../../utils/normalizeSubject";
+import { AppError } from "../../../exceptions/AppError";
 
 export async function actionPerguntarController(req: Request, res: Response) {
   const { message } = req.body;
-  const senderId = req.user?.id || "user";
-
-  if (!message) {
-    return res.status(400).json({ error: "Texto da mensagem é obrigatório." });
+  const senderId = req.user?.id;
+  if (!message || !senderId) {
+    throw new AppError("Mensagem ou usuário inválido.", 400);
   }
 
-  try {
-    const response = await actionPerguntarService(message, senderId);
-    const botResponse = response?.responses?.[0]?.text || "";
+  // chama o Rasa
+  const rasaResp = await actionPerguntarService(message, senderId);
 
-    const userAnalysis = await UserAnalysis.findOne({ userId: senderId });
-    const lastSession = userAnalysis?.sessions.at(-1);
-
-    if (userAnalysis && lastSession && !lastSession.sessionEnd) {
-      const subject = normalizeSubjectFromMessage(message);
-      userAnalysis.addInteraction(message, "", subject);
-      await userAnalysis.save();
-    }
-
-    res.status(200).json(response);
-  } catch (error: any) {
-    console.error("Erro ao conversar com o assistente:", error);
-    res.status(500).json({ message: "Erro ao conversar com o assistente", error: error.message });
+  // incrementa apenas o contador de subject
+  const ua = await UserAnalysis.findOne({ userId: senderId });
+  if (ua) {
+    const subject = normalizeSubjectFromMessage(message) || "unknown";
+    ua.addInteraction(subject);
+    await ua.save();
   }
+
+  return res.status(200).json(rasaResp);
 }

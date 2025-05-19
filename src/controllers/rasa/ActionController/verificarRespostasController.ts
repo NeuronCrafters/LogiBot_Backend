@@ -34,12 +34,13 @@ export async function verificarRespostasController(req: Request, res: Response) 
     return res.status(200).json(result);
   } catch (error: any) {
     if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ message: error.message });
+      return res.status(error.statusCode).json({
+        message: error.message
+      });
     }
     console.error("Erro no controller de verificação de respostas:", error);
     return res.status(500).json({
-      message: "Erro ao verificar respostas",
-      error: error.message || "Erro interno",
+      message: error.message || "Erro ao verificar respostas"
     });
   }
 }

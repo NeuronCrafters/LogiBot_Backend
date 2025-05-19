@@ -19,7 +19,7 @@ export async function recordInteraction(
     // incrementa o contador da sessão atual
     const lastSession = ua.sessions.at(-1);
     if (lastSession && !lastSession.sessionEnd) {
-        const freqMap = lastSession.subjectFrequency as Map<string, number>;
+        const freqMap = lastSession.frequency as Map<string, number>;
         const sessCurrent = freqMap.get(category) ?? 0;
         freqMap.set(category, sessCurrent + 1);
     }

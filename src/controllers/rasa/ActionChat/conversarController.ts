@@ -3,10 +3,26 @@ import { conversarService } from "../../../services/rasa/ActionChat/conversarSer
 
 export async function conversarController(req: Request, res: Response) {
   try {
+    // dados vindos do rasa action
     const data = await conversarService();
-    res.status(200).json(data);
+    // extrai a resposta de texto (ajuste conforme o shape real do Rasa)
+    const text =
+        Array.isArray(data.messages) && data.messages[0]?.text
+            ? data.messages[0].text
+            : // ou se vem em data.text
+            (data.text as string) ||
+            // fallback
+            "Desculpe, não entendi.";
+
+    return res.json({ responses: [{ text }] });
   } catch (error) {
     console.error("Erro no conversarController:", error);
-    res.status(500).json({ error: "Erro ao conversar com o bot" });
+    return res.json({
+      responses: [
+        {
+          text: "Desculpe, ocorreu um problema ao conversar com o bot. Tente novamente mais tarde.",
+        },
+      ],
+    });
   }
 }

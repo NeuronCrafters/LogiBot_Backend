@@ -6,8 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="sei lá, nem sei mais">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/users/AuthUserController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/users/AuthUserController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/conversarController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/conversarController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/perguntarController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionChat/perguntarController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/models/UserAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/UserAnalysis.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/userAnalysis/userAnalysisService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/userAnalysis/userAnalysisService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/services/users/AuthUserService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/users/AuthUserService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -134,7 +138,7 @@
       <workItem from="1747413722882" duration="499000" />
       <workItem from="1747423587967" duration="306000" />
       <workItem from="1747519626044" duration="13674000" />
-      <workItem from="1747653830688" duration="5538000" />
+      <workItem from="1747653830688" duration="7967000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -256,7 +260,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747658026333</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="sei lá, nem sei mais">
+      <option name="closed" value="true" />
+      <created>1747659582045</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1747659582045</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

@@ -11,8 +11,8 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
     const userId = req.user.id;
     const userRole: string[] = req.user.role;
 
-    if (!universityId || !courseId || !classId) {
-      return res.status(400).json({ message: "Universidade, curso e turma são obrigatórios." });
+    if (!universityId) {
+      return res.status(400).json({ message: "O ID da universidade é obrigatório." });
     }
 
     if (userRole.includes("admin")) {
@@ -27,18 +27,20 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
 
     const isCoordinator = professor.role.includes("course-coordinator");
     const isProfessor = professor.role.includes("professor");
-    const courseObjectId = new Types.ObjectId(courseId);
 
-    if (isCoordinator && professor.courses.some((c) => c.equals(courseObjectId))) {
+    const courseObjectId = courseId ? new Types.ObjectId(courseId) : null;
+    const classObjectId = classId ? new Types.ObjectId(classId) : null;
+
+    if (isCoordinator && courseObjectId && professor.courses.some((c) => c.equals(courseObjectId))) {
       const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId);
       return res.status(200).json(summary);
     }
 
-    if (isProfessor) {
+    if (isProfessor && courseId && classId) {
       const alunos = await UserAnalysis.find({
         schoolId: universityId,
-        courseId: courseId,
-        classId: classId,
+        courseId,
+        classId,
       });
 
       if (alunos.length === 0) {

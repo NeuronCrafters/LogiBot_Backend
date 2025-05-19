@@ -2,14 +2,15 @@ import { UserAnalysis } from "../../../models/UserAnalysis";
 
 export async function LogsFilteredStudentSummaryService(
   universityId: string,
-  courseId: string,
-  classId: string
+  courseId?: string,
+  classId?: string
 ) {
-  const users = await UserAnalysis.find({
-    schoolId: universityId,
-    courseId,
-    classId,
-  });
+  const query: any = { schoolId: universityId };
+
+  if (courseId) query.courseId = courseId;
+  if (classId) query.classId = classId;
+
+  const users = await UserAnalysis.find(query);
 
   let totalCorrectAnswers = 0;
   let totalWrongAnswers = 0;

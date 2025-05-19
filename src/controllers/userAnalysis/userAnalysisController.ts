@@ -4,6 +4,7 @@ import { recordInteraction } from "services/userAnalysis/userAnalysisService";
 export async function addInteraction(req: Request, res: Response) {
     const { message } = req.body;
     const userId = (req as any).user?.id as string;
+
     if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
     }

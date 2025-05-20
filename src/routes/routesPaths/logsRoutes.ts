@@ -50,7 +50,7 @@ logRoutes.post(
 );
 
 logRoutes.post(
-  "/comparison/classes",
+  "/comparison/class",
   isPermissions.isAdminProfessorOrCoordinator(),
   LogsClassesComparisonController
 );

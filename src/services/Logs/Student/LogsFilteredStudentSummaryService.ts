@@ -9,7 +9,6 @@ export async function LogsFilteredStudentSummaryService(
 ) {
   const query: any = { schoolId: universityId };
 
-  // Adiciona filtros opcionais
   if (courseId) query.courseId = courseId;
   if (classId) query.classId = classId;
   if (studentId) query.userId = studentId;
@@ -20,90 +19,76 @@ export async function LogsFilteredStudentSummaryService(
 
   console.log(`Encontrados ${users.length} registros de análise de usuários`);
 
-  // Verifica se não encontrou nenhum usuário
   if (users.length === 0) {
     return {
       totalCorrectAnswers: 0,
       totalWrongAnswers: 0,
       usageTimeInSeconds: 0,
       usageTime: {
+        totalSeconds: 0,
         formatted: "00:00:00",
         humanized: "0s",
         hours: 0,
         minutes: 0,
         seconds: 0
       },
-      mostAccessedSubjects: {},
-      userCount: 0,
-      subjectCounts: {}
+      subjectCounts: {
+        variaveis: 0,
+        tipos: 0,
+        funcoes: 0,
+        loops: 0,
+        verificacoes: 0
+      }
     };
   }
 
   let totalCorrectAnswers = 0;
   let totalWrongAnswers = 0;
   let totalUsageTime = 0;
-  const subjectFrequency: Record<string, number> = {};
-  const subjectCounts: Record<string, number> = {};
+  const subjectCounts: Record<string, number> = {
+    variaveis: 0,
+    tipos: 0,
+    funcoes: 0,
+    loops: 0,
+    verificacoes: 0
+  };
 
   users.forEach((ua) => {
-    // Soma total de acertos/erros
     totalCorrectAnswers += ua.totalCorrectWrongAnswers?.totalCorrectAnswers || 0;
     totalWrongAnswers += ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
     totalUsageTime += ua.totalUsageTime || 0;
 
-    // Processa subjectCounts (dados acumulados de todos os assuntos)
     if (ua.subjectCounts && typeof ua.subjectCounts === 'object') {
-      for (const subject in ua.subjectCounts) {
-        const count = ua.subjectCounts[subject];
-        subjectCounts[subject] = (subjectCounts[subject] || 0) +
-          (typeof count === 'number' ? count : 0);
-      }
-    }
-
-    // Verifica se sessions existe e é um array
-    if (ua.sessions && Array.isArray(ua.sessions)) {
-      ua.sessions.forEach((session) => {
-        // Verifica se subjectFrequency é um objeto
-        if (session.subjectFrequency && typeof session.subjectFrequency === 'object') {
-          // Iterar sobre as propriedades do objeto
-          for (const subject in session.subjectFrequency) {
-            const count = session.subjectFrequency[subject];
-            subjectFrequency[subject] = (subjectFrequency[subject] || 0) +
-              (typeof count === 'number' ? count : 0);
-          }
-        }
-      });
+      if (typeof ua.subjectCounts.variaveis === 'number') subjectCounts.variaveis += ua.subjectCounts.variaveis;
+      if (typeof ua.subjectCounts.tipos === 'number') subjectCounts.tipos += ua.subjectCounts.tipos;
+      if (typeof ua.subjectCounts.funcoes === 'number') subjectCounts.funcoes += ua.subjectCounts.funcoes;
+      if (typeof ua.subjectCounts.loops === 'number') subjectCounts.loops += ua.subjectCounts.loops;
+      if (typeof ua.subjectCounts.verificacoes === 'number') subjectCounts.verificacoes += ua.subjectCounts.verificacoes;
     }
   });
 
-  // Formatar tempo de uso
   const usageTimeObj = calculateUsageTime(totalUsageTime);
-
-  // Formatar mostAccessedSubjects como um objeto para facilitar o uso no frontend
-  const formattedSubjects: Record<string, number> = {};
-  Object.entries(subjectFrequency)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .forEach(([subject, count]) => {
-      formattedSubjects[subject] = count;
-    });
 
   let result: any = {
     totalCorrectAnswers,
     totalWrongAnswers,
-    usageTimeInSeconds: totalUsageTime,  // Mantém o valor original em segundos
-    usageTime: usageTimeObj,  // Adiciona objeto com formatos humanizados
-    mostAccessedSubjects: formattedSubjects,
-    userCount: users.length,
+    usageTimeInSeconds: totalUsageTime,
+    usageTime: usageTimeObj,
     subjectCounts
   };
 
-  // Se estiver buscando um estudante específico, inclui os dados detalhados
   if (studentId && users.length > 0) {
     const userUsageTime = calculateUsageTime(users[0].totalUsageTime || 0);
 
+    const userSubjectCounts = {
+      variaveis: users[0].subjectCounts?.variaveis || 0,
+      tipos: users[0].subjectCounts?.tipos || 0,
+      funcoes: users[0].subjectCounts?.funcoes || 0,
+      loops: users[0].subjectCounts?.loops || 0,
+      verificacoes: users[0].subjectCounts?.verificacoes || 0
+    };
+
     result.users = {
-      // Inclui apenas os campos necessários do primeiro usuário encontrado
       _id: users[0]._id,
       userId: users[0].userId,
       name: users[0].name,
@@ -115,9 +100,9 @@ export async function LogsFilteredStudentSummaryService(
       classId: users[0].classId,
       className: users[0].className,
       totalUsageTime: users[0].totalUsageTime,
-      usageTime: userUsageTime,  // Adiciona formatação de tempo para o usuário específico
+      usageTime: userUsageTime,
       totalCorrectWrongAnswers: users[0].totalCorrectWrongAnswers,
-      subjectCounts: users[0].subjectCounts || {}
+      subjectCounts: userSubjectCounts
     };
   }
 

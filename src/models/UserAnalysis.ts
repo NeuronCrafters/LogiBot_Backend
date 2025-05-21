@@ -68,6 +68,24 @@ const extractMainSubject = (subject: string): string => {
   return subject;
 };
 
+// Schema para os objetos de contagem de assuntos
+const SubjectCountsSchema = new Schema({
+  variaveis: { type: Number, default: 0 },
+  tipos: { type: Number, default: 0 },
+  funcoes: { type: Number, default: 0 },
+  loops: { type: Number, default: 0 },
+  verificacoes: { type: Number, default: 0 },
+}, { _id: false });
+
+// Criar função para obter objeto de contagem zerado
+const getEmptySubjectCounts = () => ({
+  variaveis: 0,
+  tipos: 0,
+  funcoes: 0,
+  loops: 0,
+  verificacoes: 0
+});
+
 // sub-schema para cada sessão de uso
 const SessionSchema = new Schema({
   sessionStart: { type: Date, default: Date.now },
@@ -75,6 +93,12 @@ const SessionSchema = new Schema({
   sessionDuration: { type: Number, default: 0 },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
+  // Tornando o campo opcional, mas com um default para quando for criado
+  subjectCountsChat: {
+    type: SubjectCountsSchema,
+    default: getEmptySubjectCounts(),
+    required: false  // Tornando explicitamente opcional
+  },
   answerHistory: { type: [QuizAttemptSchema], default: [] },
 }, { _id: false });
 
@@ -93,7 +117,7 @@ export interface IUserAnalysis extends Document {
     totalCorrectAnswers: number;
     totalWrongAnswers: number;
   };
-  subjectCounts: {
+  subjectCountsQuiz: {
     variaveis: number;
     tipos: number;
     funcoes: number;
@@ -106,6 +130,13 @@ export interface IUserAnalysis extends Document {
     sessionDuration?: number;
     totalCorrectAnswers: number;
     totalWrongAnswers: number;
+    subjectCountsChat?: { // Agora é opcional na interface
+      variaveis: number;
+      tipos: number;
+      funcoes: number;
+      loops: number;
+      verificacoes: number;
+    };
     answerHistory: Array<{
       questions: Array<{
         level: string;
@@ -128,7 +159,8 @@ export interface IUserAnalysis extends Document {
       selectedOption: string,
       isCorrect: boolean
   ) => void;
-  updateSubjectCount: (subject: string) => void;
+  updateSubjectCountsQuiz: (subject: string) => void;
+  updateSubjectCountsChat: (subject: string, sessionIndex?: number) => void;
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
@@ -146,7 +178,7 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
     totalCorrectAnswers: { type: Number, default: 0 },
     totalWrongAnswers: { type: Number, default: 0 },
   },
-  subjectCounts: {
+  subjectCountsQuiz: {
     variaveis: { type: Number, default: 0 },
     tipos: { type: Number, default: 0 },
     funcoes: { type: Number, default: 0 },
@@ -174,26 +206,56 @@ UserAnalysisSchema.pre("save", function (next) {
   next();
 });
 
-// Novo método para atualizar o contador de assuntos no nível do documento
-UserAnalysisSchema.methods.updateSubjectCount = function (subject: string) {
+// Método para atualizar o contador de assuntos de quiz no nível do documento
+UserAnalysisSchema.methods.updateSubjectCountsQuiz = function (subject: string) {
   // Extrai o assunto principal do subassunto (se for um subassunto)
   const mainSubject = extractMainSubject(subject);
 
   // Atualiza o contador do assunto principal no nível do documento
-  if (mainSubject in this.subjectCounts) {
-    this.subjectCounts[mainSubject] += 1;
+  if (mainSubject in this.subjectCountsQuiz) {
+    this.subjectCountsQuiz[mainSubject] += 1;
   }
 
   // Se for um subtipo de tipos, também incrementa o contador de "tipos"
-  if (isTypeSubject(mainSubject) && "tipos" in this.subjectCounts) {
-    this.subjectCounts["tipos"] += 1;
+  if (isTypeSubject(mainSubject) && "tipos" in this.subjectCountsQuiz) {
+    this.subjectCountsQuiz["tipos"] += 1;
   }
 
   // Marca o campo como modificado para garantir que o mongoose salve a mudança
-  this.markModified('subjectCounts');
+  this.markModified('subjectCountsQuiz');
 };
 
-// metodo para registrar histórico de respostas
+// Método para atualizar o contador de assuntos de chat no nível da sessão
+UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, sessionIndex?: number) {
+  // Determina qual sessão atualizar (última por padrão)
+  const idx = sessionIndex !== undefined ? sessionIndex : this.sessions.length - 1;
+
+  // Verifica se a sessão existe
+  if (!this.sessions[idx]) return;
+
+  // Extrai o assunto principal do subassunto (se for um subassunto)
+  const mainSubject = extractMainSubject(subject);
+
+  // Inicializa o objeto subjectCountsChat se não existir
+  if (!this.sessions[idx].subjectCountsChat) {
+    this.sessions[idx].subjectCountsChat = getEmptySubjectCounts();
+  }
+
+  // Atualiza o contador do assunto principal no nível da sessão
+  if (mainSubject in this.sessions[idx].subjectCountsChat) {
+    this.sessions[idx].subjectCountsChat[mainSubject] += 1;
+  }
+
+  // Se for um subtipo de tipos, também incrementa o contador de "tipos"
+  if (isTypeSubject(mainSubject) && "tipos" in this.sessions[idx].subjectCountsChat) {
+    this.sessions[idx].subjectCountsChat["tipos"] += 1;
+  }
+
+  // Marca o campo como modificado para garantir que o mongoose salve a mudança
+  this.markModified(`sessions.${idx}.subjectCountsChat`);
+};
+
+// método para registrar histórico de respostas
 UserAnalysisSchema.methods.addAnswerHistory = function (
     level: string,
     question: string,

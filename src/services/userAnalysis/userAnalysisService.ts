@@ -13,15 +13,11 @@ export async function recordInteraction(
         throw new Error("UserAnalysis não encontrado para este userId");
     }
 
-    // incrementa o contador global (cumulativo)
-    ua.subjectCounts[category] = (ua.subjectCounts[category] || 0) + 1;
+    const lastSessionIndex = ua.sessions.length - 1;
+    const lastSession = ua.sessions[lastSessionIndex];
 
-    // incrementa o contador da sessão atual
-    const lastSession = ua.sessions.at(-1);
     if (lastSession && !lastSession.sessionEnd) {
-        const freqMap = lastSession.subjectFrequency as Map<string, number>;
-        const sessCurrent = freqMap.get(category) ?? 0;
-        freqMap.set(category, sessCurrent + 1);
+        ua.updateSubjectCountsChat(category);
     }
 
     await ua.save();

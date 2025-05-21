@@ -137,7 +137,7 @@ export async function verificarRespostasService(
   const newAttemptIndex = ua.sessions[lastSessionIndex].answerHistory.length - 1;
 
   if (session.lastSubject) {
-    ua.updateSubjectCount(session.lastSubject);
+    ua.updateSubjectCountsQuiz(session.lastSubject);
   }
 
   for (let i = 0; i < respostas.length; i++) {
@@ -178,7 +178,7 @@ export async function verificarRespostasService(
   ua.sessions[lastSessionIndex].totalWrongAnswers += erros;
 
   ua.markModified(`sessions.${lastSessionIndex}.answerHistory`);
-  ua.markModified(`subjectCounts`);
+  ua.markModified(`subjectCountsQuiz`);
 
   try {
     await ua.save();

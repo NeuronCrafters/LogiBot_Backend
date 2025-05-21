@@ -78,7 +78,7 @@ const SubjectCountsSchema = new Schema({
 }, { _id: false });
 
 // Criar função para obter objeto de contagem zerado
-const getEmptySubjectCounts = () => ({
+export const getEmptySubjectCounts = () => ({
   variaveis: 0,
   tipos: 0,
   funcoes: 0,

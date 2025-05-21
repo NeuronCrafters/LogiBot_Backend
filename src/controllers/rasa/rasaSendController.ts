@@ -56,8 +56,10 @@ class RasaSendController {
 
       lastSession.answerHistory.push({
         questions: [],
-        subjectCorrectCount: new Map(),
-        subjectWrongCount: new Map(),
+        totalCorrectWrongAnswersSession: {
+          totalCorrectAnswers: 0,
+          totalWrongAnswers: 0
+        }
       });
 
       await userAnalysis.save();

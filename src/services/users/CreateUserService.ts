@@ -11,11 +11,11 @@ interface CreateUserRequest {
   name: string;
   email: string;
   password: string;
-  disciplineCode: string;
+  code: string;
 }
 
 class CreateUserService {
-  async createUser({ name, email, password, disciplineCode }: CreateUserRequest) {
+  async createUser({ name, email, password, code }: CreateUserRequest) {
     // Verificar se já existe usuário com este email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -23,7 +23,7 @@ class CreateUserService {
     }
 
     // Buscar entidades pelo código da disciplina
-    const entities = await findEntitiesByCode(disciplineCode);
+    const entities = await findEntitiesByCode(code);
     if (!entities) {
       throw new AppError("Código de disciplina inválido!", 404);
     }
@@ -50,7 +50,7 @@ class CreateUserService {
           discipline._id.toString()
       );
 
-      if (testCode === disciplineCode) {
+      if (testCode === code) {
         selectedClass = classItem;
         break;
       }

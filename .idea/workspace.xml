@@ -5,9 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="agora não é mais preciso passar manualmente o id da universidade no cadastro">
+      <change afterPath="$PROJECT_DIR$/src/services/University/getAcademicDataService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/users/CreateUserController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/users/CreateUserController.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/users/CreateUserService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/users/CreateUserService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/University/UniversityOuthers/AssignDisciplineController.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/University/UniversityOuthers/GetClassWithStudentsController.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/University/UniversityOuthers/AssignDisciplineService.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/University/UniversityOuthers/GetClassWithStudentsService.ts" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,7 +141,7 @@
       <workItem from="1747662246617" duration="2265000" />
       <workItem from="1747664829163" duration="8010000" />
       <workItem from="1747833842450" duration="11832000" />
-      <workItem from="1747867600767" duration="1897000" />
+      <workItem from="1747867600767" duration="3435000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -356,7 +359,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747869459244</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="agora não é mais preciso passar manualmente o id da universidade no cadastro">
+      <option name="closed" value="true" />
+      <created>1747869522386</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1747869522386</updated>
+    </task>
+    <option name="localTasksCounter" value="29" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

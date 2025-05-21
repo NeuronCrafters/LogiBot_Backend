@@ -9,34 +9,34 @@ export async function verificarRespostasService(
     session: RasaSessionData,
     role: string | string[]
 ) {
-  if (
-      !session.lastAnswerKeys ||
-      !session.lastQuestions ||
-      session.lastAnswerKeys.length === 0 ||
-      session.lastQuestions.length === 0
-  ) {
+  // Validação inicial dos dados de sessão
+  if (!session.lastAnswerKeys || !session.lastQuestions ||
+      session.lastAnswerKeys.length === 0 || session.lastQuestions.length === 0) {
     throw new AppError("Gabarito ou perguntas não definidos.", 400);
   }
 
+  // Verifica se o número de respostas corresponde ao número de perguntas
   if (respostas.length !== session.lastAnswerKeys.length) {
     throw new AppError("Número de respostas não corresponde ao número de perguntas.", 400);
   }
 
+  // Função para normalizar a resposta e comparações de opções
   const normalizeOption = (value: string) =>
       value.replace(/options\s*/i, "").trim().toLowerCase().replace(/\s+/g, "");
 
+  // Contadores de acertos e erros
   let acertos = 0;
   let erros = 0;
 
-  const isStudent = Array.isArray(role)
-      ? role.includes("student")
-      : role === "student";
+  const isStudent = Array.isArray(role) ? role.includes("student") : role === "student";
 
+  // Se não for um aluno, faz o processamento e retorna
   if (!isStudent) {
     const detalhes = session.lastQuestions.map((question, idx) => {
       const resposta = respostas[idx];
       const gabarito = session.lastAnswerKeys[idx];
       const certo = normalizeOption(resposta) === normalizeOption(gabarito);
+
       if (certo) acertos++;
       else erros++;
 
@@ -64,22 +64,52 @@ export async function verificarRespostasService(
     };
   }
 
+  // Se for aluno, busca os dados de análise do usuário
   const ua = await UserAnalysis.findOne({ userId, email })
       .populate("schoolId", "name")
       .populate("courseId", "name")
       .populate("classId", "name")
       .exec();
 
-  if (!ua || ua.sessions.length === 0) {
-    throw new AppError("Usuário ou sessão não encontrada.", 404);
+  // Validação se o usuário existe
+  if (!ua) {
+    throw new AppError("Usuário não encontrado.", 404);
   }
 
-  const lastSession = ua.sessions.at(-1)!;
+  // Verificar se há uma sessão ativa
+  if (ua.sessions.length === 0 || ua.sessions[ua.sessions.length - 1].sessionEnd) {
+    // Não há sessão ativa, criar uma nova
+    ua.sessions.push({
+      sessionStart: new Date(),
+      totalCorrectAnswers: 0,
+      totalWrongAnswers: 0,
+      subjectFrequency: new Map(),
+      answerHistory: []
+    });
+  }
 
-  // 🔹 Cria um novo quizAttempt
-  const newAttempt = { questions: [] };
-  lastSession.quizHistory.push(newAttempt);
+  // Pegar o índice da última sessão para referência direta
+  const lastSessionIndex = ua.sessions.length - 1;
 
+  // Criar novo objeto de tentativa
+  const newAttempt = {
+    questions: [],
+    subjectCorrectCount: new Map<string, number>(),
+    subjectWrongCount: new Map<string, number>()
+  };
+
+  // Adiciona a nova tentativa na história de respostas da última sessão
+  // Aqui, em vez de usar `push` diretamente, modificamos o array usando o operador $
+  if (!ua.sessions[lastSessionIndex].answerHistory) {
+    ua.sessions[lastSessionIndex].answerHistory = [];
+  }
+
+  ua.sessions[lastSessionIndex].answerHistory.push(newAttempt);
+
+  // Índice da nova tentativa
+  const newAttemptIndex = ua.sessions[lastSessionIndex].answerHistory.length - 1;
+
+  // Processa as respostas e atualiza os contadores de acertos/erros
   for (let i = 0; i < respostas.length; i++) {
     const resposta = respostas[i];
     const gabarito = session.lastAnswerKeys[i];
@@ -89,23 +119,68 @@ export async function verificarRespostasService(
     if (certo) acertos++;
     else erros++;
 
-    ua.addInteraction(session.lastSubject || "Assunto desconhecido");
+    // Adiciona a questão no histórico da nova tentativa
+    const question = {
+      level: session.nivelAtual || "Nível desconhecido",
+      subject: session.lastSubject || "Assunto desconhecido",
+      selectedOption: {
+        question: pergunta || "Pergunta desconhecida",
+        isCorrect: certo,
+        isSelected: resposta || "",
+      },
+      totalCorrectAnswers: certo ? 1 : 0,
+      totalWrongAnswers: certo ? 0 : 1,
+      timestamp: new Date(),
+    };
 
-    ua.addAnswerHistory(
-        session.nivelAtual || "Nível desconhecido",
-        pergunta || "Pergunta desconhecida",
-        session.lastSubject || "Assunto desconhecido",
-        resposta || "",
-        certo
-    );
+    ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].questions.push(question);
+
+    // Atualiza os contadores de respostas corretas e erradas por assunto
+    const subject = session.lastSubject || "Assunto desconhecido";
+
+    // Garantir que os Maps existam
+    if (!ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount) {
+      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount = new Map<string, number>();
+    }
+
+    if (!ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount) {
+      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount = new Map<string, number>();
+    }
+
+    // Atualizar os contadores de acertos e erros
+    if (certo) {
+      const currentCount = ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount.get(subject) || 0;
+      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount.set(subject, currentCount + 1);
+    } else {
+      const currentCount = ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount.get(subject) || 0;
+      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount.set(subject, currentCount + 1);
+    }
+
+    // Atualiza a frequência do assunto
+    if (!ua.sessions[lastSessionIndex].subjectFrequency) {
+      ua.sessions[lastSessionIndex].subjectFrequency = new Map<string, number>();
+    }
+
+    const currentFreq = ua.sessions[lastSessionIndex].subjectFrequency.get(subject) || 0;
+    ua.sessions[lastSessionIndex].subjectFrequency.set(subject, currentFreq + 1);
+
+    // Certificando-se que o mongoose entende que o subjectFrequency foi modificado
+    ua.markModified(`sessions.${lastSessionIndex}.subjectFrequency`);
   }
 
+  // Atualiza os totais de respostas corretas e erradas no usuário
   ua.totalCorrectWrongAnswers.totalCorrectAnswers += acertos;
   ua.totalCorrectWrongAnswers.totalWrongAnswers += erros;
 
-  lastSession.totalCorrectAnswers += acertos;
-  lastSession.totalWrongAnswers += erros;
+  // Atualiza os totais de respostas corretas e erradas na última sessão
+  ua.sessions[lastSessionIndex].totalCorrectAnswers += acertos;
+  ua.sessions[lastSessionIndex].totalWrongAnswers += erros;
 
+  // Marcar explicitamente os caminhos modificados para garantir que o Mongoose os salve
+  ua.markModified(`sessions.${lastSessionIndex}.answerHistory`);
+  ua.markModified(`sessions.${lastSessionIndex}.subjectFrequency`);
+
+  // Salva o usuário com as novas informações de tentativas e sessões
   try {
     await ua.save();
   } catch (err: any) {
@@ -113,6 +188,7 @@ export async function verificarRespostasService(
     throw new AppError("Erro ao salvar as respostas: " + err.message, 500);
   }
 
+  // A estrutura de retorno também pode ser simplificada para não expor detalhes internos
   return {
     message: acertos === respostas.length
         ? "🎉 Parabéns! Acertou todas!"
@@ -120,7 +196,7 @@ export async function verificarRespostasService(
     totalCorrectAnswers: acertos,
     totalWrongAnswers: erros,
     detalhes: {
-      questions: lastSession.quizHistory.at(-1)!.questions,
+      questions: ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].questions,
     },
   };
 }

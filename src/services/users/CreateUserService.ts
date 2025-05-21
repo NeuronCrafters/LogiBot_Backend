@@ -1,100 +1,118 @@
+import { User } from "../../../src/models/User";
+import { Discipline } from "../../../src/models/Discipline";
+import { Course } from "../../../src/models/Course";
+import { Class } from "../../../src/models/Class";
+import { University } from "../../../src/models/University";
+import { AppError } from "../../../src/exceptions/AppError";
 import { hash } from "bcryptjs";
-import { AppError } from "../../exceptions/AppError";
-import { User, IUser } from "../../models/User";
-import { Course } from "../../models/Course";
-import { Class } from "../../models/Class";
-import { University } from "../../models/University";
-import { Discipline } from "../../models/Discipline";
-import { Professor } from "../../models/Professor";
-import { Types } from "mongoose";
+import { findEntitiesByCode } from "../../../src/config/generateCode";
 
-interface CreateUserDTO {
+interface CreateUserRequest {
   name: string;
   email: string;
   password: string;
-  school: string;
   disciplineCode: string;
 }
 
 class CreateUserService {
-  async createUser({ name, email, password, school, disciplineCode }: CreateUserDTO) {
-    // Verificar se o email já está em uso
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      throw new AppError("Email já está em uso por outro usuário!", 409);
+  async createUser({ name, email, password, disciplineCode }: CreateUserRequest) {
+    // Verificar se já existe usuário com este email
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new AppError("Usuário já existe com este email!", 409);
     }
 
-    // Verificar se a universidade existe
-    const university = await University.findById(school);
-    if (!university) {
-      throw new AppError("Universidade não encontrada!", 404);
-    }
-
-    // Buscar a disciplina pelo código
-    const discipline = await Discipline.findOne({ code: disciplineCode }).populate("course classes professors");
-    if (!discipline) {
+    // Buscar entidades pelo código da disciplina
+    const entities = await findEntitiesByCode(disciplineCode);
+    if (!entities) {
       throw new AppError("Código de disciplina inválido!", 404);
     }
 
-    // Verificar se a disciplina tem apenas uma turma associada
-    if (!discipline.classes.length) {
-      throw new AppError("Disciplina não vinculada a nenhuma turma!", 400);
+    const { university, course, discipline, classes } = entities;
+
+    // Verificar se a disciplina tem turmas
+    if (!classes || classes.length === 0) {
+      throw new AppError("A disciplina não possui turmas cadastradas!", 400);
     }
 
-    if (!discipline.course) {
-      throw new AppError("Disciplina sem curso associado!", 400);
+    // Para códigos específicos de turma, precisamos identificar qual turma
+    // Vamos buscar qual das turmas da disciplina corresponde ao código
+    let selectedClass = null;
+
+    // Se há múltiplas turmas, vamos procurar qual turma específica o código representa
+    for (const classItem of classes) {
+      // Tentar gerar o mesmo código para verificar se corresponde
+      const { generateDisciplineCode } = await import("../../../src/config/generateCode");
+      const testCode = generateDisciplineCode(
+          university._id.toString(),
+          course._id.toString(),
+          (classItem as any)._id.toString(),
+          discipline._id.toString()
+      );
+
+      if (testCode === disciplineCode) {
+        selectedClass = classItem;
+        break;
+      }
     }
 
-    // Selecionar apenas a primeira turma associada
-    const classData = await Class.findById(discipline.classes[0]);
-    if (!classData) {
-      throw new AppError("Turma associada à disciplina não encontrada!", 404);
+    // Se não encontrou turma específica, usar a primeira
+    if (!selectedClass) {
+      selectedClass = classes[0];
     }
 
-    // Hash da senha
-    const passwordHash = await hash(password, 10);
+    // Criptografar a senha
+    const hashedPassword = await hash(password, 10);
 
-    // Criar o aluno
-    const newStudent = await User.create({
+    // Criar o usuário
+    const user = await User.create({
       name,
       email,
-      password: passwordHash,
-      role: ["student"],
-      school,
-      course: discipline.course._id,
-      class: classData._id,
+      password: hashedPassword,
+      school: university._id,
+      course: course._id,
+      class: (selectedClass as any)._id,
       disciplines: [discipline._id],
-    }) as IUser;
+      role: ["student"],
+      status: "active"
+    });
 
-    // Associar o aluno à turma
-    if (!classData.students.includes(newStudent._id as Types.ObjectId)) {
-      classData.students.push(newStudent._id as Types.ObjectId);
-      await classData.save();
-    }
+    // Adicionar o usuário à disciplina
+    await Discipline.findByIdAndUpdate(discipline._id, {
+      $addToSet: { students: user._id }
+    });
 
-    // Associar o aluno à disciplina
-    if (!discipline.students.includes(newStudent._id as Types.ObjectId)) {
-      discipline.students.push(newStudent._id as Types.ObjectId);
-      await discipline.save();
-    }
+    // Adicionar o usuário à turma específica
+    await Class.findByIdAndUpdate((selectedClass as any)._id, {
+      $addToSet: { students: user._id }
+    });
 
-    // Associar o aluno aos professores da disciplina
-    if (discipline.professors.length > 0) {
-      await Professor.updateMany(
-        { _id: { $in: discipline.professors } },
-        { $addToSet: { students: newStudent._id } }
-      );
-    }
+    // Retornar dados do usuário (sem a senha) com informações completas
+    const userResponse = await User.findById(user._id)
+        .populate('school', 'name')
+        .populate('course', 'name')
+        .populate('class', 'name')
+        .populate('disciplines', 'name code')
+        .select('-password');
 
     return {
-      id: newStudent._id,
-      name: newStudent.name,
-      email: newStudent.email,
-      role: newStudent.role,
-      school: university.name,
-      course: (discipline.course as any).name,
-      class: classData.name,
-      disciplines: [discipline.name],
+      user: userResponse,
+      assignedClass: {
+        id: (selectedClass as any)._id,
+        name: (selectedClass as any).name
+      },
+      discipline: {
+        id: discipline._id,
+        name: discipline.name
+      },
+      course: {
+        id: course._id,
+        name: course.name
+      },
+      university: {
+        id: university._id,
+        name: university.name
+      }
     };
   }
 }

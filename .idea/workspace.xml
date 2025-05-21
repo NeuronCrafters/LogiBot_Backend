@@ -6,13 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="pequenos ajustes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/LogsClassComparisonService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/LogsClassComparisonService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/LogsClassSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/LogsClassSummaryService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/LogsCourseSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/LogsCourseSummaryService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/LogsCoursesComparisonService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/LogsCoursesComparisonService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/LogsFilteredStudentSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/LogsFilteredStudentSummaryService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/LogsStudentsComparisonService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/LogsStudentsComparisonService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/LogsUniversitiesComparisonService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/LogsUniversitiesComparisonService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config/generateCode.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/generateCode.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/users/CreateUserController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/users/CreateUserController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/University/Discipline/CreateDisciplineService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/University/Discipline/CreateDisciplineService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/users/CreateUserService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/users/CreateUserService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -142,7 +139,8 @@
       <workItem from="1747653830688" duration="7967000" />
       <workItem from="1747662246617" duration="2265000" />
       <workItem from="1747664829163" duration="8010000" />
-      <workItem from="1747833842450" duration="11690000" />
+      <workItem from="1747833842450" duration="11832000" />
+      <workItem from="1747867600767" duration="1795000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -344,7 +342,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747855667538</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="pequenos ajustes">
+      <option name="closed" value="true" />
+      <created>1747856003936</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1747856003936</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

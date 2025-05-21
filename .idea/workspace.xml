@@ -4,13 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="agora não é mais preciso passar manualmente o id da universidade no cadastro">
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="apagando arquivos antigos sobre gets de dados para filtros no front-end">
+      <change afterPath="$PROJECT_DIR$/src/routes/routesPaths/academicRoutes.ts" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/src/services/University/getAcademicDataService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/University/UniversityOuthers/AssignDisciplineController.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/University/UniversityOuthers/GetClassWithStudentsController.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/University/UniversityOuthers/AssignDisciplineService.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/University/UniversityOuthers/GetClassWithStudentsService.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/routesPaths/academicPublicRoutes.ts" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -141,7 +140,7 @@
       <workItem from="1747662246617" duration="2265000" />
       <workItem from="1747664829163" duration="8010000" />
       <workItem from="1747833842450" duration="11832000" />
-      <workItem from="1747867600767" duration="3435000" />
+      <workItem from="1747867600767" duration="3841000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -367,7 +366,23 @@
       <option name="project" value="LOCAL" />
       <updated>1747869522386</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="refatorando as rotas para os filtros">
+      <option name="closed" value="true" />
+      <created>1747871278402</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1747871278402</updated>
+    </task>
+    <task id="LOCAL-00030" summary="apagando arquivos antigos sobre gets de dados para filtros no front-end">
+      <option name="closed" value="true" />
+      <created>1747871422577</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1747871422577</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -399,7 +414,9 @@
     <MESSAGE value="removido antigo arquivo de rotas" />
     <MESSAGE value="pequenos ajustes" />
     <MESSAGE value="agora não é mais preciso passar manualmente o id da universidade no cadastro" />
-    <option name="LAST_COMMIT_MESSAGE" value="agora não é mais preciso passar manualmente o id da universidade no cadastro" />
+    <MESSAGE value="refatorando as rotas para os filtros" />
+    <MESSAGE value="apagando arquivos antigos sobre gets de dados para filtros no front-end" />
+    <option name="LAST_COMMIT_MESSAGE" value="apagando arquivos antigos sobre gets de dados para filtros no front-end" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

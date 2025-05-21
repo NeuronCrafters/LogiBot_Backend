@@ -76,12 +76,12 @@ async function fetchClassData(classId: string) {
     totalWrongAnswers += ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
     totalUsageTime += ua.totalUsageTime || 0;
 
-    if (ua.subjectCounts && typeof ua.subjectCounts === 'object') {
-      if (typeof ua.subjectCounts.variaveis === 'number') subjectCounts.variaveis += ua.subjectCounts.variaveis;
-      if (typeof ua.subjectCounts.tipos === 'number') subjectCounts.tipos += ua.subjectCounts.tipos;
-      if (typeof ua.subjectCounts.funcoes === 'number') subjectCounts.funcoes += ua.subjectCounts.funcoes;
-      if (typeof ua.subjectCounts.loops === 'number') subjectCounts.loops += ua.subjectCounts.loops;
-      if (typeof ua.subjectCounts.verificacoes === 'number') subjectCounts.verificacoes += ua.subjectCounts.verificacoes;
+    if (ua.subjectCountsQuiz && typeof ua.subjectCountsQuiz === 'object') {
+      if (typeof ua.subjectCountsQuiz.variaveis === 'number') subjectCounts.variaveis += ua.subjectCountsQuiz.variaveis;
+      if (typeof ua.subjectCountsQuiz.tipos === 'number') subjectCounts.tipos += ua.subjectCountsQuiz.tipos;
+      if (typeof ua.subjectCountsQuiz.funcoes === 'number') subjectCounts.funcoes += ua.subjectCountsQuiz.funcoes;
+      if (typeof ua.subjectCountsQuiz.loops === 'number') subjectCounts.loops += ua.subjectCountsQuiz.loops;
+      if (typeof ua.subjectCountsQuiz.verificacoes === 'number') subjectCounts.verificacoes += ua.subjectCountsQuiz.verificacoes;
     }
   });
 

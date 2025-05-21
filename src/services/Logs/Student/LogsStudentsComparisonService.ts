@@ -37,12 +37,12 @@ async function fetchStudentData(studentId: string, classId: string) {
   const usageTimeObj = calculateUsageTime(user.totalUsageTime || 0);
 
   // Filtrar apenas os assuntos desejados
-  const subjectCounts = {
-    variaveis: user.subjectCounts?.variaveis || 0,
-    tipos: user.subjectCounts?.tipos || 0,
-    funcoes: user.subjectCounts?.funcoes || 0,
-    loops: user.subjectCounts?.loops || 0,
-    verificacoes: user.subjectCounts?.verificacoes || 0
+  const subjectCountsQuiz = {
+    variaveis: user.subjectCountsQuiz?.variaveis || 0,
+    tipos: user.subjectCountsQuiz?.tipos || 0,
+    funcoes: user.subjectCountsQuiz?.funcoes || 0,
+    loops: user.subjectCountsQuiz?.loops || 0,
+    verificacoes: user.subjectCountsQuiz?.verificacoes || 0
   };
 
   return {
@@ -54,6 +54,6 @@ async function fetchStudentData(studentId: string, classId: string) {
     totalWrongAnswers: user.totalCorrectWrongAnswers?.totalWrongAnswers || 0,
     usageTimeInSeconds: user.totalUsageTime || 0,
     usageTime: usageTimeObj,
-    subjectCounts
+    subjectCountsQuiz
   };
 }

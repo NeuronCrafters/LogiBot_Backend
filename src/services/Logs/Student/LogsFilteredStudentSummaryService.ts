@@ -58,12 +58,12 @@ export async function LogsFilteredStudentSummaryService(
     totalWrongAnswers += ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
     totalUsageTime += ua.totalUsageTime || 0;
 
-    if (ua.subjectCounts && typeof ua.subjectCounts === 'object') {
-      if (typeof ua.subjectCounts.variaveis === 'number') subjectCounts.variaveis += ua.subjectCounts.variaveis;
-      if (typeof ua.subjectCounts.tipos === 'number') subjectCounts.tipos += ua.subjectCounts.tipos;
-      if (typeof ua.subjectCounts.funcoes === 'number') subjectCounts.funcoes += ua.subjectCounts.funcoes;
-      if (typeof ua.subjectCounts.loops === 'number') subjectCounts.loops += ua.subjectCounts.loops;
-      if (typeof ua.subjectCounts.verificacoes === 'number') subjectCounts.verificacoes += ua.subjectCounts.verificacoes;
+    if (ua.subjectCountsQuiz && typeof ua.subjectCountsQuiz === 'object') {
+      if (typeof ua.subjectCountsQuiz.variaveis === 'number') subjectCounts.variaveis += ua.subjectCountsQuiz.variaveis;
+      if (typeof ua.subjectCountsQuiz.tipos === 'number') subjectCounts.tipos += ua.subjectCountsQuiz.tipos;
+      if (typeof ua.subjectCountsQuiz.funcoes === 'number') subjectCounts.funcoes += ua.subjectCountsQuiz.funcoes;
+      if (typeof ua.subjectCountsQuiz.loops === 'number') subjectCounts.loops += ua.subjectCountsQuiz.loops;
+      if (typeof ua.subjectCountsQuiz.verificacoes === 'number') subjectCounts.verificacoes += ua.subjectCountsQuiz.verificacoes;
     }
   });
 
@@ -81,11 +81,11 @@ export async function LogsFilteredStudentSummaryService(
     const userUsageTime = calculateUsageTime(users[0].totalUsageTime || 0);
 
     const userSubjectCounts = {
-      variaveis: users[0].subjectCounts?.variaveis || 0,
-      tipos: users[0].subjectCounts?.tipos || 0,
-      funcoes: users[0].subjectCounts?.funcoes || 0,
-      loops: users[0].subjectCounts?.loops || 0,
-      verificacoes: users[0].subjectCounts?.verificacoes || 0
+      variaveis: users[0].subjectCountsQuiz?.variaveis || 0,
+      tipos: users[0].subjectCountsQuiz?.tipos || 0,
+      funcoes: users[0].subjectCountsQuiz?.funcoes || 0,
+      loops: users[0].subjectCountsQuiz?.loops || 0,
+      verificacoes: users[0].subjectCountsQuiz?.verificacoes || 0
     };
 
     result.users = {

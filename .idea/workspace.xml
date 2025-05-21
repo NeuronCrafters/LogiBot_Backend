@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="remoção do faqstore">
-      <change afterPath="$PROJECT_DIR$/src/controllers/University/getAcademicDataController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/routes/routesPaths/academicRoutes.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/University/getAcademicDataService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/routes/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routes.ts" afterDir="false" />
-    </list>
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="novas rotas para os filtros" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -140,7 +134,7 @@
       <workItem from="1747662246617" duration="2265000" />
       <workItem from="1747664829163" duration="8010000" />
       <workItem from="1747833842450" duration="11832000" />
-      <workItem from="1747867600767" duration="4234000" />
+      <workItem from="1747867600767" duration="4274000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -390,7 +384,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747871674803</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="novas rotas para os filtros">
+      <option name="closed" value="true" />
+      <created>1747871893545</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1747871893545</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -425,7 +427,8 @@
     <MESSAGE value="refatorando as rotas para os filtros" />
     <MESSAGE value="apagando arquivos antigos sobre gets de dados para filtros no front-end" />
     <MESSAGE value="remoção do faqstore" />
-    <option name="LAST_COMMIT_MESSAGE" value="remoção do faqstore" />
+    <MESSAGE value="novas rotas para os filtros" />
+    <option name="LAST_COMMIT_MESSAGE" value="novas rotas para os filtros" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getAcademicDataService } from "../../services/University/getAcademicDataService";
+import { getAcademicDataService } from "../../services/Academic/getAcademicDataService";
 import { Professor } from "../../models/Professor";
 import { User } from "../../models/User";
 

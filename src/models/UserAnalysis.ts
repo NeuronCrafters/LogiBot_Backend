@@ -18,9 +18,55 @@ const QuestionSchema = new Schema({
 // sub-schema para cada tentativa de quiz
 const QuizAttemptSchema = new Schema({
   questions: { type: [QuestionSchema], default: [] },
-  subjectCorrectCount: { type: Map, of: Number, default: {} },
-  subjectWrongCount: { type: Map, of: Number, default: {} },
+  totalCorrectWrongAnswersSession: {
+    totalCorrectAnswers: { type: Number, default: 0 },
+    totalWrongAnswers: { type: Number, default: 0 },
+  },
 }, { _id: false });
+
+// Lista de todos os assuntos principais disponíveis
+const mainSubjects = [
+  "variaveis",
+  "listas",
+  "condicionais",
+  "verificacoes",
+  "tipos",
+  "funcoes",
+  "loops"
+];
+
+// Assuntos que são subcategorias de "tipos"
+const typeSubjects = [
+  "textos",
+  "caracteres",
+  "numeros",
+  "operadores_matematicos",
+  "operadores_logicos",
+  "operadores_ternarios",
+  "soma",
+  "subtracao",
+  "multiplicacao",
+  "divisao_inteira",
+  "divisao_resto",
+  "divisao_normal"
+];
+
+// Lista completa de todos os assuntos disponíveis
+const allSubjects = [...mainSubjects, ...typeSubjects];
+
+// Função para verificar se um assunto é uma subcategoria de tipos
+const isTypeSubject = (subject: string) => typeSubjects.includes(subject);
+
+// Função para extrair o assunto principal de um subassunto (ex: "variaveis_o_que_e" -> "variaveis")
+const extractMainSubject = (subject: string): string => {
+  if (subject.includes('_')) {
+    const mainPart = subject.split('_')[0];
+    if (mainSubjects.includes(mainPart) || typeSubjects.includes(mainPart)) {
+      return mainPart;
+    }
+  }
+  return subject;
+};
 
 // sub-schema para cada sessão de uso
 const SessionSchema = new Schema({
@@ -29,7 +75,6 @@ const SessionSchema = new Schema({
   sessionDuration: { type: Number, default: 0 },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
-  subjectFrequency: { type: Map, of: Number, default: {} },
   answerHistory: { type: [QuizAttemptSchema], default: [] },
 }, { _id: false });
 
@@ -61,7 +106,6 @@ export interface IUserAnalysis extends Document {
     sessionDuration?: number;
     totalCorrectAnswers: number;
     totalWrongAnswers: number;
-    subjectFrequency: Map<string, number>;
     answerHistory: Array<{
       questions: Array<{
         level: string;
@@ -71,17 +115,20 @@ export interface IUserAnalysis extends Document {
         totalWrongAnswers: number;
         timestamp: Date;
       }>;
-      subjectCorrectCount: Map<string, number>;
-      subjectWrongCount: Map<string, number>;
+      totalCorrectWrongAnswersSession: {
+        totalCorrectAnswers: number;
+        totalWrongAnswers: number;
+      };
     }>;
   }>;
   addAnswerHistory: (
-    level: string,
-    question: string,
-    subject: string,
-    selectedOption: string,
-    isCorrect: boolean
+      level: string,
+      question: string,
+      subject: string,
+      selectedOption: string,
+      isCorrect: boolean
   ) => void;
+  updateSubjectCount: (subject: string) => void;
 }
 
 const UserAnalysisSchema = new Schema<IUserAnalysis>({
@@ -122,18 +169,37 @@ UserAnalysisSchema.pre("save", function (next) {
   const last = this.sessions.at(-1);
   if (last?.sessionStart && last?.sessionEnd) {
     last.sessionDuration =
-      (last.sessionEnd.getTime() - last.sessionStart.getTime()) / 1000;
+        (last.sessionEnd.getTime() - last.sessionStart.getTime()) / 1000;
   }
   next();
 });
 
+// Novo método para atualizar o contador de assuntos no nível do documento
+UserAnalysisSchema.methods.updateSubjectCount = function (subject: string) {
+  // Extrai o assunto principal do subassunto (se for um subassunto)
+  const mainSubject = extractMainSubject(subject);
+
+  // Atualiza o contador do assunto principal no nível do documento
+  if (mainSubject in this.subjectCounts) {
+    this.subjectCounts[mainSubject] += 1;
+  }
+
+  // Se for um subtipo de tipos, também incrementa o contador de "tipos"
+  if (isTypeSubject(mainSubject) && "tipos" in this.subjectCounts) {
+    this.subjectCounts["tipos"] += 1;
+  }
+
+  // Marca o campo como modificado para garantir que o mongoose salve a mudança
+  this.markModified('subjectCounts');
+};
+
 // metodo para registrar histórico de respostas
 UserAnalysisSchema.methods.addAnswerHistory = function (
-  level: string,
-  question: string,
-  subject: string,
-  selectedOption: string,
-  isCorrect: boolean
+    level: string,
+    question: string,
+    subject: string,
+    selectedOption: string,
+    isCorrect: boolean
 ) {
   const last = this.sessions.at(-1);
   if (!last || last.sessionEnd) return;
@@ -141,7 +207,13 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   // cria uma nova tentativa de quiz se necessário
   let attempt = last.answerHistory.at(-1);
   if (!attempt) {
-    attempt = { questions: [], subjectCorrectCount: new Map(), subjectWrongCount: new Map() };
+    attempt = {
+      questions: [],
+      totalCorrectWrongAnswersSession: {
+        totalCorrectAnswers: 0,
+        totalWrongAnswers: 0
+      }
+    };
     last.answerHistory.push(attempt);
   }
 
@@ -157,18 +229,12 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
     timestamp: new Date(),
   });
 
-  // atualiza contadores por assunto
-  attempt.subjectCorrectCount.set(
-    subject,
-    (attempt.subjectCorrectCount.get(subject) || 0) + correctCount
-  );
-  attempt.subjectWrongCount.set(
-    subject,
-    (attempt.subjectWrongCount.get(subject) || 0) + wrongCount
-  );
+  // atualiza contadores gerais da sessão de quiz
+  attempt.totalCorrectWrongAnswersSession.totalCorrectAnswers += correctCount;
+  attempt.totalCorrectWrongAnswersSession.totalWrongAnswers += wrongCount;
 };
 
 export const UserAnalysis = mongoose.model<IUserAnalysis>(
-  "UserAnalysis",
-  UserAnalysisSchema
+    "UserAnalysis",
+    UserAnalysisSchema
 );

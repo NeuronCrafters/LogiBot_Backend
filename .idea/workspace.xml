@@ -4,10 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="adequando para o novo nome no model de logs">
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="removido antigo arquivo de rotas">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/rasaSendController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/rasaSendController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/UserAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/UserAnalysis.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -138,7 +138,7 @@
       <workItem from="1747653830688" duration="7967000" />
       <workItem from="1747662246617" duration="2265000" />
       <workItem from="1747664829163" duration="8010000" />
-      <workItem from="1747833842450" duration="6346000" />
+      <workItem from="1747833842450" duration="9396000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -292,7 +292,23 @@
       <option name="project" value="LOCAL" />
       <updated>1747837800353</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="ajustes para registrar dados no backend">
+      <option name="closed" value="true" />
+      <created>1747850886745</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1747850886745</updated>
+    </task>
+    <task id="LOCAL-00021" summary="removido antigo arquivo de rotas">
+      <option name="closed" value="true" />
+      <created>1747850978882</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1747850978882</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -320,7 +336,9 @@
     <MESSAGE value="ajustes" />
     <MESSAGE value="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações" />
     <MESSAGE value="adequando para o novo nome no model de logs" />
-    <option name="LAST_COMMIT_MESSAGE" value="adequando para o novo nome no model de logs" />
+    <MESSAGE value="ajustes para registrar dados no backend" />
+    <MESSAGE value="removido antigo arquivo de rotas" />
+    <option name="LAST_COMMIT_MESSAGE" value="removido antigo arquivo de rotas" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

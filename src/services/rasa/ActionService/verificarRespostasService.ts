@@ -2,6 +2,49 @@ import { AppError } from "../../../exceptions/AppError";
 import { UserAnalysis } from "../../../models/UserAnalysis";
 import { RasaSessionData } from "../types/RasaSessionData";
 
+const mainSubjects = [
+  "variaveis",
+  "listas",
+  "condicionais",
+  "verificacoes",
+  "tipos",
+  "funcoes",
+  "loops"
+];
+
+// Assuntos que são subcategorias de "tipos"
+const typeSubjects = [
+  "textos",
+  "caracteres",
+  "numeros",
+  "operadores_matematicos",
+  "operadores_logicos",
+  "operadores_ternarios",
+  "soma",
+  "subtracao",
+  "multiplicacao",
+  "divisao_inteira",
+  "divisao_resto",
+  "divisao_normal"
+];
+
+// Lista completa de todos os assuntos disponíveis
+const allSubjects = [...mainSubjects, ...typeSubjects];
+
+// Função para verificar se um assunto é uma subcategoria de tipos
+const isTypeSubject = (subject: string) => typeSubjects.includes(subject);
+
+// Função para extrair o assunto principal de um subassunto (ex: "variaveis_o_que_e" -> "variaveis")
+const extractMainSubject = (subject: string): string => {
+  if (subject.includes('_')) {
+    const mainPart = subject.split('_')[0];
+    if (mainSubjects.includes(mainPart) || typeSubjects.includes(mainPart)) {
+      return mainPart;
+    }
+  }
+  return subject;
+};
+
 export async function verificarRespostasService(
     respostas: string[],
     userId: string,
@@ -78,12 +121,11 @@ export async function verificarRespostasService(
 
   // Verificar se há uma sessão ativa
   if (ua.sessions.length === 0 || ua.sessions[ua.sessions.length - 1].sessionEnd) {
-    // Não há sessão ativa, criar uma nova
+    // Não há sessão ativa, criar uma nova sessão
     ua.sessions.push({
       sessionStart: new Date(),
       totalCorrectAnswers: 0,
       totalWrongAnswers: 0,
-      subjectFrequency: new Map(),
       answerHistory: []
     });
   }
@@ -94,12 +136,13 @@ export async function verificarRespostasService(
   // Criar novo objeto de tentativa
   const newAttempt = {
     questions: [],
-    subjectCorrectCount: new Map<string, number>(),
-    subjectWrongCount: new Map<string, number>()
+    totalCorrectWrongAnswersSession: {
+      totalCorrectAnswers: 0,
+      totalWrongAnswers: 0
+    }
   };
 
   // Adiciona a nova tentativa na história de respostas da última sessão
-  // Aqui, em vez de usar `push` diretamente, modificamos o array usando o operador $
   if (!ua.sessions[lastSessionIndex].answerHistory) {
     ua.sessions[lastSessionIndex].answerHistory = [];
   }
@@ -108,6 +151,12 @@ export async function verificarRespostasService(
 
   // Índice da nova tentativa
   const newAttemptIndex = ua.sessions[lastSessionIndex].answerHistory.length - 1;
+
+  // Atualiza o subjectCounts uma única vez por sessão, com o assunto principal atual
+  // Isso é feito aqui, antes de processar as respostas individuais
+  if (session.lastSubject) {
+    ua.updateSubjectCount(session.lastSubject);
+  }
 
   // Processa as respostas e atualiza os contadores de acertos/erros
   for (let i = 0; i < respostas.length; i++) {
@@ -135,37 +184,12 @@ export async function verificarRespostasService(
 
     ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].questions.push(question);
 
-    // Atualiza os contadores de respostas corretas e erradas por assunto
-    const subject = session.lastSubject || "Assunto desconhecido";
-
-    // Garantir que os Maps existam
-    if (!ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount) {
-      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount = new Map<string, number>();
-    }
-
-    if (!ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount) {
-      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount = new Map<string, number>();
-    }
-
-    // Atualizar os contadores de acertos e erros
+    // Atualiza os contadores de respostas corretas e erradas
     if (certo) {
-      const currentCount = ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount.get(subject) || 0;
-      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectCorrectCount.set(subject, currentCount + 1);
+      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].totalCorrectWrongAnswersSession.totalCorrectAnswers += 1;
     } else {
-      const currentCount = ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount.get(subject) || 0;
-      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].subjectWrongCount.set(subject, currentCount + 1);
+      ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].totalCorrectWrongAnswersSession.totalWrongAnswers += 1;
     }
-
-    // Atualiza a frequência do assunto
-    if (!ua.sessions[lastSessionIndex].subjectFrequency) {
-      ua.sessions[lastSessionIndex].subjectFrequency = new Map<string, number>();
-    }
-
-    const currentFreq = ua.sessions[lastSessionIndex].subjectFrequency.get(subject) || 0;
-    ua.sessions[lastSessionIndex].subjectFrequency.set(subject, currentFreq + 1);
-
-    // Certificando-se que o mongoose entende que o subjectFrequency foi modificado
-    ua.markModified(`sessions.${lastSessionIndex}.subjectFrequency`);
   }
 
   // Atualiza os totais de respostas corretas e erradas no usuário
@@ -178,7 +202,7 @@ export async function verificarRespostasService(
 
   // Marcar explicitamente os caminhos modificados para garantir que o Mongoose os salve
   ua.markModified(`sessions.${lastSessionIndex}.answerHistory`);
-  ua.markModified(`sessions.${lastSessionIndex}.subjectFrequency`);
+  ua.markModified(`subjectCounts`);
 
   // Salva o usuário com as novas informações de tentativas e sessões
   try {

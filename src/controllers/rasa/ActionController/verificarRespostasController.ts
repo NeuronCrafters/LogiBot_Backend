@@ -1,8 +1,35 @@
 import { Request, Response } from "express";
-import { verificarRespostasService } from "services/rasa/ActionService/verificarRespostasService";
-import { getSession } from "services/rasa/types/sessionMemory";
-import { UserAnalysis } from "@/models/UserAnalysis";
-import { AppError } from "exceptions/AppError";
+import { verificarRespostasService } from "../../../services/rasa/ActionService/verificarRespostasService";
+import { getSession } from "../../../services/rasa/types/sessionMemory";
+import { UserAnalysis } from "../../../models/UserAnalysis";
+import { AppError } from "../../../exceptions/AppError";
+
+// Lista de todos os assuntos principais disponíveis
+const mainSubjects = [
+  "variaveis",
+  "listas",
+  "condicionais",
+  "verificacoes",
+  "tipos",
+  "funcoes",
+  "loops"
+];
+
+// Assuntos que são subcategorias de "tipos"
+const typeSubjects = [
+  "textos",
+  "caracteres",
+  "numeros",
+  "operadores_matematicos",
+  "operadores_logicos",
+  "operadores_ternarios",
+  "soma",
+  "subtracao",
+  "multiplicacao",
+  "divisao_inteira",
+  "divisao_resto",
+  "divisao_normal"
+];
 
 export async function verificarRespostasController(req: Request, res: Response) {
   try {
@@ -48,12 +75,11 @@ export async function verificarRespostasController(req: Request, res: Response) 
 
     if (needsNewSession) {
       console.log("Criando nova sessão para o usuário", userId);
-      // Criar nova sessão com maps inicializados corretamente
+      // Criar nova sessão inicializada corretamente
       ua.sessions.push({
         sessionStart: new Date(),
         totalCorrectAnswers: 0,
         totalWrongAnswers: 0,
-        subjectFrequency: new Map(),
         answerHistory: []
       });
 

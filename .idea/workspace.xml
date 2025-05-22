@@ -4,7 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="novas rotas para os filtros" />
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="novas rotas para os filtros">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/Logs/University/LogsUniversitySummaryController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/Logs/University/LogsUniversitySummaryController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/UserAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/UserAnalysis.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Class/LogsClassSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Class/LogsClassSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Course/LogsCourseSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Course/LogsCourseSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/Student/LogsFilteredStudentSummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/Student/LogsFilteredStudentSummaryService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/Logs/University/LogsUniversitySummaryService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/Logs/University/LogsUniversitySummaryService.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -54,32 +62,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/ramon/Git/ICC/backend_Chat_SAEL&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.sync&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/ramon/Git/ICC/backend_Chat_SAEL",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "npm.dev.executor": "Run",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "ts.external.directory.path": "C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;mongo&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mongo"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\ramon\Git\ICC\backend_Chat_SAEL\src\services\Logs\Discipline\Individual" />
@@ -135,6 +143,8 @@
       <workItem from="1747664829163" duration="8010000" />
       <workItem from="1747833842450" duration="11832000" />
       <workItem from="1747867600767" duration="4274000" />
+      <workItem from="1747917549557" duration="9000" />
+      <workItem from="1747918253433" duration="4914000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />

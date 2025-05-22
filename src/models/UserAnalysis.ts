@@ -130,7 +130,7 @@ export interface IUserAnalysis extends Document {
     sessionDuration?: number;
     totalCorrectAnswers: number;
     totalWrongAnswers: number;
-    subjectCountsChat?: { // Agora é opcional na interface
+    subjectCountsChat?: {
       variaveis: number;
       tipos: number;
       funcoes: number;

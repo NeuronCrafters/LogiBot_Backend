@@ -13,6 +13,8 @@ import { ListStudentsForCoordinatorController } from "../../controllers/admin/co
 import { ListStudentsByDisciplineForCoordinatorController } from "../../controllers/admin/coordinator/ListStudentsByDisciplineForCoordinatorController";
 import { ListDisciplinesForCoordinatorController } from "../../controllers/admin/coordinator/ListDisciplinesForCoordinatorController";
 import { ListClassesForCoordinatorController } from "../../controllers/admin/coordinator/ListClassesForCoordinatorController";
+import {deleteStudentController} from "../../controllers/admin/admin/DeleteStudenetController";
+
 
 const adminRouter = Router();
 
@@ -401,5 +403,8 @@ adminRouter.get(
   ...isPermissions.isAdminOrCoordinator(),
   ListClassesForCoordinatorController
 );
+
+
+adminRouter.delete("/coordinator/student", ...isPermissions.isAdmin(), deleteStudentController)
 
 export { adminRouter };

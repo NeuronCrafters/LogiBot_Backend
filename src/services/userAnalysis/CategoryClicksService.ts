@@ -1,4 +1,5 @@
 import { UserAnalysis } from "../../models/UserAnalysis";
+import { normalizeSubjectFromMessage } from "../../utils/normalizeSubject";
 
 export async function updateCategoryClicksService(
     userId: string,
@@ -9,13 +10,13 @@ export async function updateCategoryClicksService(
         throw new Error(`UserAnalysis não encontrado para userId=${userId}`);
     }
 
-    // Para cada categoria, invoca o método de instância
     for (const [rawSubject, count] of Object.entries(clicks)) {
+        const categoryKey = normalizeSubjectFromMessage(rawSubject) || "tipos";
+
         for (let i = 0; i < count; i++) {
-            ua.updateSubjectCountsQuiz(rawSubject);
+            ua.updateSubjectCountsQuiz(categoryKey);
         }
     }
 
-    // Salva as alterações
     await ua.save();
 }

@@ -4,12 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="rota para deletar aluno">
-      <change afterPath="$PROJECT_DIR$/src/controllers/userAnalysis/CategoryClicksController.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/userAnalysis/CategoryClicksService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="normalização de dados recebidos do front-end">
+      <change afterPath="$PROJECT_DIR$/src/controllers/admin/coordinator/ListStudentsByClassControllerForCoordinatorController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/admin/coordinator/ListStudentsByClassForCoordinatorService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/routes/routesPaths/userAnalysisRoutes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routesPaths/userAnalysisRoutes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/userAnalysis/CategoryClicksController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/userAnalysis/CategoryClicksController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/routesPaths/adminRoute.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routesPaths/adminRoute.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/userAnalysis/CategoryClicksService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/userAnalysis/CategoryClicksService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -152,7 +153,7 @@
       <workItem from="1748144317849" duration="42000" />
       <workItem from="1748235501718" duration="611000" />
       <workItem from="1748236408147" duration="109000" />
-      <workItem from="1748259414313" duration="4377000" />
+      <workItem from="1748259414313" duration="13196000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -426,7 +427,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748007695626</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="normalização de dados recebidos do front-end">
+      <option name="closed" value="true" />
+      <created>1748266078528</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1748266078528</updated>
+    </task>
+    <option name="localTasksCounter" value="36" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -464,7 +473,8 @@
     <MESSAGE value="novas rotas para os filtros" />
     <MESSAGE value="retornar mais dados necessarios" />
     <MESSAGE value="rota para deletar aluno" />
-    <option name="LAST_COMMIT_MESSAGE" value="rota para deletar aluno" />
+    <MESSAGE value="normalização de dados recebidos do front-end" />
+    <option name="LAST_COMMIT_MESSAGE" value="normalização de dados recebidos do front-end" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

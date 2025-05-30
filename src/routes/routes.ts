@@ -5,7 +5,7 @@ import { adminRouter } from "./routesPaths/adminRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
-import { publicAcademicRoute } from "./routesPaths/academicPublicRoutes";
+import { academicRoutes } from "./routesPaths/academicRoutes";
 import { logRoutes } from "./routesPaths/logsRoutes";
 import {useAnalysis} from "./routesPaths/userAnalysisRoutes";
 
@@ -33,7 +33,7 @@ routes.use("/logs", logRoutes)
 routes.use("/academic-institution", academicInstitutionRouter);
 
 // Rota pública para consultar a lista de universidades, cursos e turmas para usar na rota de cadastro
-routes.use("/public", publicAcademicRoute);
+routes.use("/academicFilters", academicRoutes);
 
 routes.use("/useranalysis", useAnalysis);
 

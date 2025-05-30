@@ -54,10 +54,12 @@ class RasaSendController {
         throw new AppError("A sessão do usuário já foi encerrada.", 400);
       }
 
-      lastSession.interactions.push({
-        timestamp: new Date(),
-        message,
-        botResponse,
+      lastSession.answerHistory.push({
+        questions: [],
+        totalCorrectWrongAnswersSession: {
+          totalCorrectAnswers: 0,
+          totalWrongAnswers: 0
+        }
       });
 
       await userAnalysis.save();

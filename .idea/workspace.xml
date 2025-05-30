@@ -4,14 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações">
+    <list default="true" id="e741146a-bfd5-4d34-8798-e097d544b63d" name="Changes" comment="normalização de dados recebidos do front-end">
+      <change afterPath="$PROJECT_DIR$/src/controllers/admin/coordinator/ListStudentsByClassControllerForCoordinatorController.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/admin/coordinator/ListStudentsByClassForCoordinatorService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/rasa/ActionController/verificarRespostasController.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/models/UserAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/UserAnalysis.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/gerarPerguntasService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/rasa/ActionService/verificarRespostasService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/keywordExtractor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/keywordExtractor.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/normalizeSubject.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/normalizeSubject.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controllers/userAnalysis/CategoryClicksController.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/userAnalysis/CategoryClicksController.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/routesPaths/adminRoute.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/routesPaths/adminRoute.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/userAnalysis/CategoryClicksService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/userAnalysis/CategoryClicksService.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,12 +37,12 @@
     &quot;assignee&quot;: &quot;ramoncbarbosa&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/ramoncbarbosa/backend_Chat_SAEL.git&quot;,
-    &quot;accountId&quot;: &quot;ab155757-84ad-44de-8640-fa028945adb4&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/ramoncbarbosa/backend_Chat_SAEL.git",
+    "accountId": "95f14c2d-447d-426f-9b5d-3be602167553"
   }
-}</component>
+}]]></component>
   <component name="KubernetesApiPersistence">{}</component>
   <component name="KubernetesApiProvider">{
   &quot;isMigrated&quot;: true
@@ -68,6 +67,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/ramon/Git/ICC/backend_Chat_SAEL&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -78,7 +78,7 @@
     &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
     &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
     &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.sync&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMConfigurable&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\ramon\\Git\\ICC\\backend_Chat_SAEL\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
@@ -113,8 +113,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.129" />
-        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.129" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-WS-251.25410.117" />
       </set>
     </attachedChunks>
   </component>
@@ -141,6 +140,20 @@
       <workItem from="1747653830688" duration="7967000" />
       <workItem from="1747662246617" duration="2265000" />
       <workItem from="1747664829163" duration="8010000" />
+      <workItem from="1747833842450" duration="11832000" />
+      <workItem from="1747867600767" duration="4274000" />
+      <workItem from="1747917549557" duration="9000" />
+      <workItem from="1747918253433" duration="7475000" />
+      <workItem from="1748000770446" duration="3837000" />
+      <workItem from="1748010487321" duration="11000" />
+      <workItem from="1748010539516" duration="66000" />
+      <workItem from="1748010616858" duration="1057000" />
+      <workItem from="1748102579936" duration="643000" />
+      <workItem from="1748144305184" duration="4000" />
+      <workItem from="1748144317849" duration="42000" />
+      <workItem from="1748235501718" duration="611000" />
+      <workItem from="1748236408147" duration="109000" />
+      <workItem from="1748259414313" duration="13196000" />
     </task>
     <task id="LOCAL-00001" summary="Services e Controller para logs para a page de dashboard/chart">
       <option name="closed" value="true" />
@@ -286,7 +299,143 @@
       <option name="project" value="LOCAL" />
       <updated>1747671026770</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="adequando para o novo nome no model de logs">
+      <option name="closed" value="true" />
+      <created>1747837800353</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1747837800353</updated>
+    </task>
+    <task id="LOCAL-00020" summary="ajustes para registrar dados no backend">
+      <option name="closed" value="true" />
+      <created>1747850886745</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1747850886745</updated>
+    </task>
+    <task id="LOCAL-00021" summary="removido antigo arquivo de rotas">
+      <option name="closed" value="true" />
+      <created>1747850978882</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1747850978882</updated>
+    </task>
+    <task id="LOCAL-00022" summary="pequenos ajustes">
+      <option name="closed" value="true" />
+      <created>1747853748359</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1747853748359</updated>
+    </task>
+    <task id="LOCAL-00023" summary="pequenos ajustes">
+      <option name="closed" value="true" />
+      <created>1747853910978</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1747853910978</updated>
+    </task>
+    <task id="LOCAL-00024" summary="pequenos ajustes">
+      <option name="closed" value="true" />
+      <created>1747854817307</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1747854817307</updated>
+    </task>
+    <task id="LOCAL-00025" summary="pequenos ajustes">
+      <option name="closed" value="true" />
+      <created>1747855667538</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1747855667538</updated>
+    </task>
+    <task id="LOCAL-00026" summary="pequenos ajustes">
+      <option name="closed" value="true" />
+      <created>1747856003936</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1747856003936</updated>
+    </task>
+    <task id="LOCAL-00027" summary="agora não é mais preciso passar manualmente o id da universidade no cadastro">
+      <option name="closed" value="true" />
+      <created>1747869459244</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1747869459244</updated>
+    </task>
+    <task id="LOCAL-00028" summary="agora não é mais preciso passar manualmente o id da universidade no cadastro">
+      <option name="closed" value="true" />
+      <created>1747869522386</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1747869522386</updated>
+    </task>
+    <task id="LOCAL-00029" summary="refatorando as rotas para os filtros">
+      <option name="closed" value="true" />
+      <created>1747871278402</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1747871278402</updated>
+    </task>
+    <task id="LOCAL-00030" summary="apagando arquivos antigos sobre gets de dados para filtros no front-end">
+      <option name="closed" value="true" />
+      <created>1747871422577</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1747871422577</updated>
+    </task>
+    <task id="LOCAL-00031" summary="remoção do faqstore">
+      <option name="closed" value="true" />
+      <created>1747871674803</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1747871674803</updated>
+    </task>
+    <task id="LOCAL-00032" summary="novas rotas para os filtros">
+      <option name="closed" value="true" />
+      <created>1747871893545</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1747871893545</updated>
+    </task>
+    <task id="LOCAL-00033" summary="retornar mais dados necessarios">
+      <option name="closed" value="true" />
+      <created>1747930420285</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1747930420285</updated>
+    </task>
+    <task id="LOCAL-00034" summary="rota para deletar aluno">
+      <option name="closed" value="true" />
+      <created>1748007695626</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1748007695626</updated>
+    </task>
+    <task id="LOCAL-00035" summary="normalização de dados recebidos do front-end">
+      <option name="closed" value="true" />
+      <created>1748266078528</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1748266078528</updated>
+    </task>
+    <option name="localTasksCounter" value="36" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -313,7 +462,19 @@
     <MESSAGE value="sei lá, nem sei mais" />
     <MESSAGE value="ajustes" />
     <MESSAGE value="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações" />
-    <option name="LAST_COMMIT_MESSAGE" value="reserva para teste do gerarPerguntasController.ts e gerarPerguntasService.ts antes das novas alterações" />
+    <MESSAGE value="adequando para o novo nome no model de logs" />
+    <MESSAGE value="ajustes para registrar dados no backend" />
+    <MESSAGE value="removido antigo arquivo de rotas" />
+    <MESSAGE value="pequenos ajustes" />
+    <MESSAGE value="agora não é mais preciso passar manualmente o id da universidade no cadastro" />
+    <MESSAGE value="refatorando as rotas para os filtros" />
+    <MESSAGE value="apagando arquivos antigos sobre gets de dados para filtros no front-end" />
+    <MESSAGE value="remoção do faqstore" />
+    <MESSAGE value="novas rotas para os filtros" />
+    <MESSAGE value="retornar mais dados necessarios" />
+    <MESSAGE value="rota para deletar aluno" />
+    <MESSAGE value="normalização de dados recebidos do front-end" />
+    <option name="LAST_COMMIT_MESSAGE" value="normalização de dados recebidos do front-end" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

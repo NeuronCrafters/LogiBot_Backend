@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { isPermissions } from "../../middlewares/isPermissions/isPermissions";
-import { AssignDisciplineController } from "../../controllers/University/UniversityOuthers/AssignDisciplineController";
 import { CreateClassController } from "../../controllers/University/Class/CreateClassController";
 import { DeleteClassController } from "../../controllers/University/Class/DeleteClassController";
 import { ListClassesByCourseController } from "../../controllers/University/Class/ListClassesByCourseController";
@@ -13,7 +12,6 @@ import { ListDisciplinesController } from "../../controllers/University/Discipli
 import { CreateUniversityController } from "../../controllers/University/University/CreateUniversityController";
 import { DeleteUniversityController } from "../../controllers/University/University/DeleteUniversityController";
 import { ListUniversitiesController } from "../../controllers/University/University/ListUniversitiesController";
-import { GetClassWithStudentsController } from "../../controllers/University/UniversityOuthers/GetClassWithStudentsController";
 
 const academicInstitutionRouter = Router();
 
@@ -290,53 +288,5 @@ academicInstitutionRouter.get("/discipline", ...isPermissions.isAdminOrCoordinat
  *         description: Disciplina deletada com sucesso
  */
 academicInstitutionRouter.delete("/discipline/:disciplineId", ...isPermissions.isAdminOrCoordinator(), new DeleteDisciplineController().handle);
-
-/**
- * @swagger
- * /academic-institution/assign-discipline:
- *   post:
- *     tags: [Universidade]
- *     summary: Associar aluno a disciplina
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               studentId:
- *                 type: string
- *               disciplineId:
- *                 type: string
- *     responses:
- *       200:
- *         description: Aluno associado à disciplina com sucesso
- */
-// Rota para associar um aluno a uma disciplina (Admin e Coordenadores)
-academicInstitutionRouter.post("/assign-discipline", ...isPermissions.isAdminOrCoordinator(), new AssignDisciplineController().handle);
-
-
-/**
- * @swagger
- * /academic-institution/class/{classId}/students:
- *   get:
- *     tags: [Universidade]
- *     summary: Listar alunos de uma turma
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: classId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Lista de alunos da turma
- */
-// Rota para listar alunos de uma turma específica (Admin e Coordenadores)
-academicInstitutionRouter.get("/class/:classId/students", ...isPermissions.isAdminOrCoordinator(), new GetClassWithStudentsController().handle);
 
 export { academicInstitutionRouter };

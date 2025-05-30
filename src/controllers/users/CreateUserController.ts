@@ -4,11 +4,10 @@ import { CreateUserService } from "../../services/users/CreateUserService";
 class CreateUserController {
   async handle(req: Request, res: Response): Promise<Response> {
     try {
-      const { name, email, password, school, disciplineCode } = req.body;
-
-      if (!name || !email || !password || !school || !disciplineCode) {
+      const { name, email, password, code } = req.body;
+      if (!name || !email || !password || !code) {
         return res.status(400).json({
-          message: "Os campos name, email, password, school e disciplineCode são obrigatórios.",
+          message: "Os campos name, email, password e disciplineCode são obrigatórios.",
         });
       }
 
@@ -18,8 +17,7 @@ class CreateUserController {
         name,
         email,
         password,
-        school,
-        disciplineCode,
+        code,
       });
 
       return res.status(201).json({

@@ -3,7 +3,7 @@ import { Professor } from "../../models/Professor";
 import { University } from "../../models/University";
 import { Course } from "../../models/Course";
 import { Class } from "../../models/Class";
-import { UserAnalysis } from "../../models/UserAnalysis";
+import { UserAnalysis, getEmptySubjectCounts } from "../../models/UserAnalysis";
 import { compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { AppError } from "../../exceptions/AppError";
@@ -52,27 +52,26 @@ class AuthUserService {
     if (normalizeRoles(user.role).includes("student")) {
       let ua = await UserAnalysis.findOne({ userId: user._id.toString() });
       if (!ua) {
-        // busca nomes das entidades referenciadas
         const schoolDoc = await University.findById(user.school);
         const courseDoc = await Course.findById(user.course);
-        const classDoc  = await Class.findById(user.class);
+        const classDoc = await Class.findById(user.class);
 
         ua = new UserAnalysis({
           userId: user._id.toString(),
           name: user.name,
           email: user.email,
           schoolId: user.school,
-          schoolName: schoolDoc?.name  || "",
+          schoolName: schoolDoc?.name || "",
           courseId: user.course,
-          courseName: courseDoc?.name  || "",
+          courseName: courseDoc?.name || "",
           classId: user.class,
-          className: classDoc?.name   || "",
+          className: classDoc?.name || "",
           totalUsageTime: 0,
           totalCorrectWrongAnswers: {
             totalCorrectAnswers: 0,
-            totalWrongAnswers:   0,
+            totalWrongAnswers: 0,
           },
-          subjectCounts: {
+          subjectCountsQuiz: {
             variaveis: 0,
             tipos: 0,
             funcoes: 0,
@@ -84,22 +83,21 @@ class AuthUserService {
               sessionStart: new Date(),
               totalCorrectAnswers: 0,
               totalWrongAnswers: 0,
-              subjectFrequency: new Map(),
+              subjectCountsChat: getEmptySubjectCounts(),
               answerHistory: [],
             },
           ],
         });
         await ua.save();
       } else {
-        // se já existe, abre nova sessão se a última já tiver sido encerrada
         const last = ua.sessions.at(-1)!;
         if (last.sessionEnd) {
           ua.sessions.push({
             sessionStart: new Date(),
             totalCorrectAnswers: 0,
             totalWrongAnswers: 0,
-            frequency: new Map(),
-            quizHistory: [],
+            subjectCountsChat: getEmptySubjectCounts(),
+            answerHistory: [],
           });
           await ua.save();
         }

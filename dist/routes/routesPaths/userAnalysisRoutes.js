@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.useAnalysis = void 0;
+const express_1 = require("express");
+const userAnalysisController_1 = require("../../controllers/userAnalysis/userAnalysisController");
+const CategoryClicksController_1 = require("../../controllers/userAnalysis/CategoryClicksController");
+const isPermissions_1 = require("../../middlewares/isPermissions/isPermissions");
+const useAnalysis = (0, express_1.Router)();
+exports.useAnalysis = useAnalysis;
+useAnalysis.post("/interaction", ...isPermissions_1.isPermissions.isAuthenticated(), userAnalysisController_1.addInteraction);
+useAnalysis.post("/subject-clicks", ...isPermissions_1.isPermissions.isAuthenticated(), CategoryClicksController_1.categoryClicksController);

@@ -16,8 +16,12 @@ exports.passport = void 0;
 const passport_1 = __importDefault(require("passport"));
 exports.passport = passport_1.default;
 const googleStrategy_1 = require("./googleStrategy");
+const googleLoginStrategy_1 = require("./googleLoginStrategy");
 const User_1 = require("../../models/User");
-passport_1.default.use(googleStrategy_1.googleStrategy);
+// Loga um usuário no sistema Google
+passport_1.default.use('google-login', googleLoginStrategy_1.googleLoginStrategy);
+// Registra um usuário no sistema via Google
+passport_1.default.use('google-signup', googleStrategy_1.googleStrategy);
 passport_1.default.serializeUser((user, done) => {
     done(null, user.id);
 });

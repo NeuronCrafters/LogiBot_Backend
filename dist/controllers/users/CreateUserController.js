@@ -15,14 +15,18 @@ class CreateUserController {
     handle(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { name, email, password, role, school } = req.body;
-                const createUser = new CreateUserService_1.CreateUserService();
-                const user = yield createUser.createUser({
+                const { name, email, password, code } = req.body;
+                if (!name || !email || !password || !code) {
+                    return res.status(400).json({
+                        message: "Os campos name, email, password e disciplineCode são obrigatórios.",
+                    });
+                }
+                const createUserService = new CreateUserService_1.CreateUserService();
+                const user = yield createUserService.createUser({
                     name,
                     email,
                     password,
-                    role,
-                    school,
+                    code,
                 });
                 return res.status(201).json({
                     message: "Usuário criado com sucesso!",
@@ -30,7 +34,7 @@ class CreateUserController {
                 });
             }
             catch (error) {
-                console.error("Erro ao criar usuário:", error);
+                console.error("Erro ao criar usuário:", error.message);
                 return res.status(error.statusCode || 500).json({
                     message: error.message || "Erro inesperado!",
                 });

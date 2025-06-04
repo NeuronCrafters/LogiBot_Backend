@@ -39,10 +39,21 @@ const UserSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: false },
-    role: { type: String, default: "student" },
-    school: { type: String, required: true },
+    role: { type: [String], default: ["student"] },
+    school: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "University", required: true },
+    course: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "Course", required: true },
+    class: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "Class", required: true },
+    disciplines: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: "Discipline" }],
+    level: { type: String, required: false, default: "desconhecido" },
+    status: {
+        type: String,
+        enum: ["active", "graduated", "dropped"],
+        default: "active",
+    },
     googleId: { type: String, required: false },
     photo: { type: String, required: false },
+    resetPasswordToken: { type: String, required: false },
+    resetPasswordExpires: { type: Date, required: false },
 }, {
     timestamps: true,
 });

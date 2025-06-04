@@ -10,19 +10,32 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DetailsUserController = void 0;
+const AppError_1 = require("../../exceptions/AppError");
 const DetailsUserService_1 = require("../../services/users/DetailsUserService");
+function getPrimaryRole(roles) {
+    const priority = ["admin", "course-coordinator", "professor", "student"];
+    if (Array.isArray(roles)) {
+        for (const r of priority)
+            if (roles.includes(r))
+                return r;
+        return roles[0];
+    }
+    return roles;
+}
 class DetailsUserController {
     handle(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { id, role } = req.user;
-                const detailsUserService = new DetailsUserService_1.DetailsUserService();
-                const userDetails = yield detailsUserService.detailsUser(id, role);
+                const primaryRole = getPrimaryRole(role);
+                const svc = new DetailsUserService_1.DetailsUserService();
+                const userDetails = yield svc.detailsUser(id, primaryRole);
                 return res.json(userDetails);
             }
-            catch (error) {
-                console.error("Erro ao buscar detalhes do usuário:", error);
-                return res.status(error.statusCode || 500).json({ error: error.message });
+            catch (err) {
+                console.error(err);
+                const status = err instanceof AppError_1.AppError ? err.statusCode : 500;
+                return res.status(status).json({ error: err.message });
             }
         });
     }

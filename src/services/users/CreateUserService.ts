@@ -1,11 +1,11 @@
-import { User } from "../../../src/models/User";
-import { Discipline } from "../../../src/models/Discipline";
-import { Course } from "../../../src/models/Course";
-import { Class } from "../../../src/models/Class";
-import { University } from "../../../src/models/University";
-import { AppError } from "../../../src/exceptions/AppError";
+import { User } from "@/models/User";
+import { Discipline } from "@/models/Discipline";
+import { Course } from "@/models/Course";
+import { Class } from "@/models/Class";
+import { University } from "@/models/University";
+import { AppError } from "@/exceptions/AppError";
 import { hash } from "bcryptjs";
-import { findEntitiesByCode } from "../../../src/config/generateCode";
+import { findEntitiesByCode } from "@/config/generateCode";
 
 interface CreateUserRequest {
   name: string;
@@ -42,7 +42,7 @@ class CreateUserService {
     // Se há múltiplas turmas, vamos procurar qual turma específica o código representa
     for (const classItem of classes) {
       // Tentar gerar o mesmo código para verificar se corresponde
-      const { generateDisciplineCode } = await import("../../../src/config/generateCode");
+      const { generateDisciplineCode } = await import("@/config/generateCode");
       const testCode = generateDisciplineCode(
           university._id.toString(),
           course._id.toString(),

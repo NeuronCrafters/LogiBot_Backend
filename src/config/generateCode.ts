@@ -24,7 +24,7 @@ export function generateDisciplineCode(
 
 // Função para buscar entidades pelo código (já que não podemos decodificar hash)
 export async function findEntitiesByCode(code: string) {
-  const { Discipline } = await import("../../src/models/Discipline");
+  const { Discipline } = await import("@/models/Discipline");
 
   try {
     // Buscar disciplina pelo código e popular todas as referências necessárias

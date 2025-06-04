@@ -1,8 +1,8 @@
-# Usa imagem oficial Node.js 18 LTS
+# Usa imagem oficial Node.js 18 LTS com Alpine
 FROM node:18-alpine
 
 # Definindo o maintainer
-LABEL maintainer="seunome@seudominio.com"
+LABEL maintainer="ramoncbarbosa@unifesspa.edu.br"
 
 # Define o diretório de trabalho no container
 WORKDIR /app

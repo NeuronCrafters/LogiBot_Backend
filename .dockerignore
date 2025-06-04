@@ -1,11 +1,32 @@
+# Ignora node_modules (vamos instalar dentro do container)
 node_modules
+
+# Ignora dist (vai ser gerado no build do container)
 dist
-Dockerfile
+
+# Ignora arquivos de log
+*.log
+
+# Ignora arquivos de configuração do editor
+.vscode
+.idea
 .dockerignore
 .git
-.idea
-.vscode
+
+# Ignora sistema operacional
+.DS_Store
+
+# Ignora testes (não precisa pro build de produção)
+test
 tests
+coverage
+__tests__
+
+# Ignora arquivos de ambiente locais (opcional)
+.env
 .env.local
-.env.development
-.env.test
+.env.*.local
+
+# Ignora arquivos temporários
+tmp
+*.swp

@@ -15,7 +15,6 @@ dist
 .gitignore
 Dockerfile.dev
 docker-compose.dev.yml
-.env
 
 # Ignora sistema operacional
 .DS_Store
@@ -27,7 +26,6 @@ coverage
 __tests__
 
 # Ignora arquivos de ambiente locais (opcional)
-.env
 .env.local
 .env.*.local
 

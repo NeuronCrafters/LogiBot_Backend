@@ -15,7 +15,7 @@ const app = express();
 connectDB();
 
 // ---- Verificação obrigatória de variáveis de ambiente ----
-const requiredEnvVars = ['FRONT_URL', 'API_KEY', 'MONGO_URI', 'SESSION_SECRET'];
+const requiredEnvVars = ['FRONT_URL', 'API_KEY', 'MONGO_URI', 'JWT_SECRET'];
 for (const varName of requiredEnvVars) {
     if (!process.env[varName]) {
         console.error(`Variável de ambiente ${varName} não definida.`);
@@ -68,7 +68,7 @@ app.use(apiKeyMiddleware);
 
 // Sessão e autenticação
 app.use(session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.JWT_SECRET!,
     resave: false,
     saveUninitialized: true,
 }));

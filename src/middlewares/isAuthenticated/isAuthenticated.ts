@@ -5,7 +5,7 @@ import { Professor } from "../../models/Professor";
 
 // Corrigindo a tipagem para o que de fato existe no token
 interface DecodedToken extends JwtPayload {
-  id: string; // <-- aqui o id correto que você está injetando no JWT
+  id: string;
   name: string;
   email: string;
   role: string | string[];
@@ -29,16 +29,64 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
     const secret = process.env.JWT_SECRET || "default_secret";
     const decoded = jwt.verify(token, secret) as DecodedToken;
 
-    // Agora buscamos o usuário no banco usando decoded.id (e não sub)
-    let user: any = await User.findById(decoded.id);
-    let isProfessor = false;
+    console.log("[isAuthenticated] Token decodificado:", {
+      id: decoded.id,
+      name: decoded.name,
+      email: decoded.email,
+      role: decoded.role
+    });
 
-    if (!user) {
-      user = await Professor.findById(decoded.id);
-      isProfessor = true;
+    // Verifica se é admin (está no model User)
+    if (normalizeRoles(decoded.role).includes("admin")) {
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        console.log("[isAuthenticated] Admin não encontrado no modelo User");
+        return res.status(401).json({ error: "Usuário admin não encontrado." });
+      }
+
+      req.user = {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: normalizeRoles(decoded.role),
+        school: user.school?.toString() || null,
+        courses: null,
+        classes: null
+      };
+
+      console.log("[isAuthenticated] Admin autenticado:", req.user);
+      return next();
     }
 
+    // Se for professor ou course-coordinator, busca no model Professor
+    if (normalizeRoles(decoded.role).some(r => ["professor", "course-coordinator"].includes(r))) {
+      const professor = await Professor.findById(decoded.id);
+
+      if (!professor) {
+        console.log("[isAuthenticated] Professor não encontrado no modelo Professor");
+        return res.status(401).json({ error: "Professor não encontrado." });
+      }
+
+      req.user = {
+        id: professor._id.toString(),
+        name: professor.name,
+        email: professor.email,
+        role: normalizeRoles(decoded.role),
+        school: professor.school?.toString() || null,
+        courses: professor.courses?.map(c => c.toString()) || null,
+        classes: null
+      };
+
+      console.log("[isAuthenticated] Professor autenticado:", req.user);
+      return next();
+    }
+
+    // Para outros tipos de usuário (estudantes), busca no model User
+    const user = await User.findById(decoded.id);
+
     if (!user) {
+      console.log("[isAuthenticated] Usuário não encontrado em nenhum modelo");
       return res.status(401).json({ error: "Usuário não encontrado." });
     }
 
@@ -47,11 +95,12 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
       name: user.name,
       email: user.email,
       role: normalizeRoles(decoded.role),
-      school: user.school || null,
-      courses: isProfessor ? user.courses : user.course,
-      classes: isProfessor ? undefined : user.class
+      school: user.school?.toString() || null,
+      courses: user.course?.toString() || null,
+      classes: user.class?.toString() || null
     };
 
+    console.log("[isAuthenticated] Usuário autenticado:", req.user);
     return next();
   } catch (error) {
     console.error("[isAuthenticated] Erro:", error);

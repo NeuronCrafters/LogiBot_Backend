@@ -12,44 +12,81 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
     const userId = req.user.id;
     const userRole: string[] = req.user.role;
 
-    console.log("Requisição para filtrar dados de estudante:", {
-      universityId, courseId, classId, studentId
+    console.log("[LogsFilteredStudentSummaryController] Requisição recebida:", {
+      universityId,
+      courseId,
+      classId,
+      studentId,
+      userId,
+      userRole,
+      userEmail: req.user.email
     });
 
     if (!universityId) {
       return res.status(400).json({ message: "O ID da universidade é obrigatório." });
     }
 
+    // Se for admin, permite acesso total
     if (isAdmin(userRole)) {
       const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
       return res.status(200).json(summary);
     }
 
-    const professor = await Professor.findById(userId);
+    // Para professores e coordenadores, busca diretamente pelo _id
+    const professor = await Professor.findById(userId).populate('courses disciplines');
+
     if (!professor) {
-      return res.status(403).json({ message: "Professor não encontrado." });
+      console.log("[LogsFilteredStudentSummaryController] Professor não encontrado com ID:", userId);
+      console.log("[LogsFilteredStudentSummaryController] Tentando buscar por email:", req.user.email);
+
+      // Tenta buscar por email como fallback
+      const professorByEmail = await Professor.findOne({ email: req.user.email }).populate('courses disciplines');
+
+      if (!professorByEmail) {
+        return res.status(403).json({ message: "Professor não encontrado." });
+      }
+
+      // Se encontrou por email, usa esse professor
+      console.log("[LogsFilteredStudentSummaryController] Professor encontrado por email:", professorByEmail.email);
     }
+
+    const professorData = professor || (await Professor.findOne({ email: req.user.email }).populate('courses disciplines'));
+
+    console.log("[LogsFilteredStudentSummaryController] Professor encontrado:", {
+      id: professorData._id,
+      name: professorData.name,
+      email: professorData.email,
+      courses: professorData.courses.map(c => c._id),
+      disciplines: professorData.disciplines.map(d => d._id)
+    });
 
     const courseObjectId = courseId ? new Types.ObjectId(courseId) : null;
     const classObjectId = classId ? new Types.ObjectId(classId) : null;
 
+    // Se for coordenador de curso
     if (isCourseCoordinator(userRole) && courseObjectId) {
-      if (professor.courses.some(c => c.equals(courseObjectId))) {
+      if (professorData.courses.some(c => c.equals(courseObjectId))) {
         const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
         return res.status(200).json(summary);
       }
+      console.log("[LogsFilteredStudentSummaryController] Coordenador não tem acesso a este curso");
     }
 
+    // Se for professor
     if (isProfessor(userRole) && courseId && classId) {
+      // Verifica se o professor leciona alguma disciplina nesta turma
       const disciplinas = await Discipline.find({
-        _id: { $in: professor.disciplines },
+        _id: { $in: professorData.disciplines },
         classes: classId
       });
 
+      console.log("[LogsFilteredStudentSummaryController] Disciplinas encontradas para o professor nesta turma:", disciplinas.length);
+
       if (disciplinas.length === 0) {
-        return res.status(403).json({ message: "Acesso negado. Nenhuma disciplina encontrada." });
+        return res.status(403).json({ message: "Acesso negado. Professor não leciona nesta turma." });
       }
 
+      // Se especificou um studentId, verifica se o aluno existe
       if (studentId) {
         const aluno = await UserAnalysis.findOne({
           userId: studentId,
@@ -59,15 +96,24 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         });
 
         if (!aluno) {
-          return res.status(403).json({ message: "Acesso negado ao aluno específico." });
+          console.log("Aluno não encontrado com os critérios especificados");
+          return res.status(404).json({ message: "Aluno não encontrado nesta turma." });
         }
+
+        console.log("[LogsFilteredStudentSummaryController] Aluno encontrado:", {
+          userId: aluno.userId,
+          name: aluno.name,
+          email: aluno.email
+        });
       }
 
+      // Professor tem acesso, retorna os dados
       const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
+      console.log("[LogsFilteredStudentSummaryController] Retornando dados do resumo");
       return res.status(200).json(summary);
     }
 
-    return res.status(403).json({ message: "Acesso negado." });
+    return res.status(403).json({ message: "Acesso negado. Permissões insuficientes." });
   } catch (error) {
     console.error("[LogsFilteredStudentSummaryController] Erro:", error);
     return res.status(500).json({ message: "Erro ao obter dados filtrados do aluno." });

@@ -20,15 +20,12 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
       return res.status(400).json({ message: "O ID da universidade é obrigatório." });
     }
 
-    // Admin pode tudo
     if (isAdmin(userRole)) {
-      const summary = await LogsFilteredStudentSummaryService(
-        universityId, courseId, classId, studentId
-      );
+      const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
       return res.status(200).json(summary);
     }
 
-    const professor = await Professor.findOne({ userId });
+    const professor = await Professor.findById(userId);
     if (!professor) {
       return res.status(403).json({ message: "Professor não encontrado." });
     }
@@ -36,17 +33,13 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
     const courseObjectId = courseId ? new Types.ObjectId(courseId) : null;
     const classObjectId = classId ? new Types.ObjectId(classId) : null;
 
-    // Coordenador de curso
     if (isCourseCoordinator(userRole) && courseObjectId) {
       if (professor.courses.some(c => c.equals(courseObjectId))) {
-        const summary = await LogsFilteredStudentSummaryService(
-          universityId, courseId, classId, studentId
-        );
+        const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
         return res.status(200).json(summary);
       }
     }
 
-    // Professor comum (disciplinas)
     if (isProfessor(userRole) && courseId && classId) {
       const disciplinas = await Discipline.find({
         _id: { $in: professor.disciplines },
@@ -57,7 +50,6 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         return res.status(403).json({ message: "Acesso negado. Nenhuma disciplina encontrada." });
       }
 
-      // Se houver filtro de aluno, verificar se o aluno pertence à turma
       if (studentId) {
         const aluno = await UserAnalysis.findOne({
           userId: studentId,
@@ -71,9 +63,7 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         }
       }
 
-      const summary = await LogsFilteredStudentSummaryService(
-        universityId, courseId, classId, studentId
-      );
+      const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
       return res.status(200).json(summary);
     }
 

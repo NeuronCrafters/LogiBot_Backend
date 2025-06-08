@@ -2,9 +2,8 @@ import { Request, Response } from "express";
 import { LogsClassSummaryService } from "../../../services/Logs/Class/LogsClassSummaryService";
 import { Professor } from "../../../models/Professor";
 import { Class } from "../../../models/Class";
-import { Types } from "mongoose";
-import { isAdmin, isCourseCoordinator, isProfessor } from "../../../utils/RoleChecker";
 import { Discipline } from "../../../models/Discipline";
+import { isAdmin, isCourseCoordinator, isProfessor } from "../../../utils/RoleChecker";
 
 export async function LogsClassSummaryController(req: Request, res: Response) {
   try {
@@ -21,7 +20,7 @@ export async function LogsClassSummaryController(req: Request, res: Response) {
       return res.status(200).json(summary);
     }
 
-    const professor = await Professor.findOne({ userId });
+    const professor = await Professor.findById(userId);
     if (!professor) return res.status(403).json({ message: "Professor não encontrado." });
 
     const classObj = await Class.findById(classId);
@@ -50,6 +49,7 @@ export async function LogsClassSummaryController(req: Request, res: Response) {
 
     return res.status(403).json({ message: "Acesso negado." });
   } catch (error) {
+    console.error("[LogsClassSummaryController] Erro:", error);
     return res.status(500).json({ message: "Erro ao obter dados da turma." });
   }
 }

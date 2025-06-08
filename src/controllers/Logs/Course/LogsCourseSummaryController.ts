@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { LogsCourseSummaryService } from "../../../services/Logs/Course/LogsCourseSummaryService";
 import { Professor } from "../../../models/Professor";
-import { Types } from "mongoose";
 import { isAdmin, isCourseCoordinator } from "../../../utils/RoleChecker";
 
 export async function LogsCourseSummaryController(req: Request, res: Response) {
@@ -22,12 +21,10 @@ export async function LogsCourseSummaryController(req: Request, res: Response) {
     }
 
     if (isCourseCoordinator(userRole)) {
-      // const professor = await Professor.findOne({ userId });
       const professor = await Professor.findById(userId);
       if (!professor) return res.status(403).json({ message: "Professor não encontrado." });
 
-      const courseObjectId = new Types.ObjectId(courseId);
-      if (professor.courses.some((c) => c.equals(courseObjectId))) {
+      if (professor.courses.some((c) => c.toString() === courseId)) {
         const summary = await LogsCourseSummaryService(courseId);
         return res.status(200).json(summary);
       }

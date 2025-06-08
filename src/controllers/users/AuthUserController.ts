@@ -34,7 +34,6 @@ class AuthUserController {
 
   async logout(req: Request, res: Response) {
     try {
-      // Agora pega o id direto do token (já decodificado pelo middleware de auth)
       const userId = req.user?.id;
 
       if (!userId) {

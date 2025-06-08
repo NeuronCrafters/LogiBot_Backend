@@ -24,12 +24,17 @@ for (const varName of requiredEnvVars) {
 }
 
 const FRONT_URL = process.env.FRONT_URL!;
-const FRONT_URL_TESTE = process.env.FRONT_URL_TESTE!;
+const FRONT_URL_TESTE = process.env.FRONT_URL_TESTE || "http://localhost:5173";
 const API_KEY = process.env.API_KEY!;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // ---- CORS Dinâmico ----
-const allowedOrigins = [FRONT_URL, FRONT_URL_TESTE, "http://localhost:5173", "http://127.0.0.1:5173"];
+const allowedOrigins = [
+    FRONT_URL,
+    FRONT_URL_TESTE,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+];
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -37,7 +42,7 @@ app.use(cors({
             callback(null, true);
         } else {
             console.warn(`[CORS] Origem bloqueada: ${origin}`);
-            callback(new Error("Not allowed by CORS"), false);
+            callback(new Error("Not allowed by CORS"));
         }
     },
     credentials: true,
@@ -71,6 +76,10 @@ app.use(session({
     secret: process.env.JWT_SECRET!,
     resave: false,
     saveUninitialized: true,
+    cookie: {
+        sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: NODE_ENV === 'production'
+    }
 }));
 app.use(passport.initialize());
 app.use(passport.session());

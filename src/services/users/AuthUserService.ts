@@ -126,8 +126,6 @@ class AuthUserService {
         email: user.email,
         role: roles,
         school: user.school,
-        course: user.course,
-        class: user.class,
       },
       process.env.JWT_SECRET!,
       {
@@ -142,8 +140,8 @@ class AuthUserService {
       email: user.email,
       role: roles,
       school: user.school,
-      courses: user.course,
-      classes: user.class,
+      courses: isProfessor ? user.courses : user.course,
+      classes: isProfessor ? undefined : user.class,
       sessionStart: new Date(),
       token,
     };

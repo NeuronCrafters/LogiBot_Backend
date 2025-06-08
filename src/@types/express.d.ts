@@ -6,6 +6,8 @@ declare namespace Express {
       email: string;
       role: string[];
       school: string | null;
+      courses?: string[] | string | null;
+      classes?: string[] | string | null;
     };
     useragent?: useragent.Details;
   }

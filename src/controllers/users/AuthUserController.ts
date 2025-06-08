@@ -6,6 +6,7 @@ class AuthUserController {
   async handle(req: Request, res: Response) {
     try {
       const { email, password, googleId } = req.body;
+
       const authUserService = new AuthUserService();
       const result = await authUserService.signin({ email, password, googleId });
 
@@ -33,9 +34,11 @@ class AuthUserController {
 
   async logout(req: Request, res: Response) {
     try {
-      const { userId } = req.body;
+      // Agora pega o id direto do token (já decodificado pelo middleware de auth)
+      const userId = req.user?.id;
+
       if (!userId) {
-        return res.status(400).json({ error: "userId é obrigatório para logout." });
+        return res.status(400).json({ error: "ID do usuário não encontrado na sessão." });
       }
 
       const authUserService = new AuthUserService();

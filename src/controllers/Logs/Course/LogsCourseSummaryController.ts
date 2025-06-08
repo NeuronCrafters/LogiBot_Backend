@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { LogsCourseSummaryService } from "../../../services/Logs/Course/LogsCourseSummaryService";
 import { Professor } from "../../../models/Professor";
-import { isAdmin, isCourseCoordinator } from "../../../utils/RoleChecker";
+import { isAdmin, isCourseCoordinator, isProfessor } from "../../../utils/RoleChecker";
 
 export async function LogsCourseSummaryController(req: Request, res: Response) {
   try {
@@ -15,15 +15,25 @@ export async function LogsCourseSummaryController(req: Request, res: Response) {
       return res.status(400).json({ message: "O ID do curso é obrigatório." });
     }
 
+    // Admin tem acesso total
     if (isAdmin(userRole)) {
       const summary = await LogsCourseSummaryService(courseId);
       return res.status(200).json(summary);
     }
 
-    if (isCourseCoordinator(userRole)) {
-      const professor = await Professor.findById(userId);
-      if (!professor) return res.status(403).json({ message: "Professor não encontrado." });
+    const professor = await Professor.findById(userId);
+    if (!professor) return res.status(403).json({ message: "Professor não encontrado." });
 
+    // Coordenador: verifica se o curso está nos cursos dele
+    if (isCourseCoordinator(userRole)) {
+      if (professor.courses.some((c) => c.toString() === courseId)) {
+        const summary = await LogsCourseSummaryService(courseId);
+        return res.status(200).json(summary);
+      }
+    }
+
+    // Professor: idem
+    if (isProfessor(userRole)) {
       if (professor.courses.some((c) => c.toString() === courseId)) {
         const summary = await LogsCourseSummaryService(courseId);
         return res.status(200).json(summary);

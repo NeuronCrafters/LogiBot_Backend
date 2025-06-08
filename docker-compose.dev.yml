@@ -3,10 +3,13 @@ version: "3"
 services:
   backend:
     container_name: LogiBot_Backend
-    build:
-      context: .
+    image: node:22.16.0-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
     ports:
       - "3000:3000"
     env_file:
       - .env
+    command: sh -c "npm install && npm run dev"
     restart: always

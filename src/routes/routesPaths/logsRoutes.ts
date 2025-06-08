@@ -5,10 +5,6 @@ import { LogsUniversitySummaryController } from "../../controllers/Logs/Universi
 import { LogsCourseSummaryController } from "../../controllers/Logs/Course/LogsCourseSummaryController";
 import { LogsClassSummaryController } from "../../controllers/Logs/Class/LogsClassSummaryController";
 import { LogsFilteredStudentSummaryController } from "../../controllers/Logs/Student/LogsFilteredStudentSummaryController";
-import { LogsUniversitiesComparisonController } from "../../controllers/Logs/University/LogsUniversitiesComparisonController";
-import { LogsCoursesComparisonController } from "../../controllers/Logs/Course/LogsCoursesComparisonController";
-import { LogsClassesComparisonController } from "../../controllers/Logs/Class/LogsClassComparisonController";
-import { LogsStudentsComparisonController } from "../../controllers/Logs/Student/LogsStudentsComparisonController";
 
 const logRoutes = Router();
 //ROTAS DE DADOS INDIVIDUAIS
@@ -34,31 +30,6 @@ logRoutes.post(
   "/student/summary/filtered",
   isPermissions.isAdminProfessorOrCoordinator(),
   LogsFilteredStudentSummaryController
-);
-
-// ROTAS PARA COMPARAÇÃO
-logRoutes.post(
-  "/comparison/universities",
-  isPermissions.isAdmin(),
-  LogsUniversitiesComparisonController
-);
-
-logRoutes.post(
-  "/comparison/courses",
-  isPermissions.isAdminProfessorOrCoordinator(),
-  LogsCoursesComparisonController
-);
-
-logRoutes.post(
-  "/comparison/class",
-  isPermissions.isAdminProfessorOrCoordinator(),
-  LogsClassesComparisonController
-);
-
-logRoutes.post(
-  "/comparison/students",
-  isPermissions.isAdminProfessorOrCoordinator(),
-  LogsStudentsComparisonController
 );
 
 export { logRoutes };

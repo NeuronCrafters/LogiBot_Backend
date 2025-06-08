@@ -30,15 +30,27 @@ interface AuthRequest {
 class AuthUserService {
   async signin({ email, password, googleId }: AuthRequest) {
     const isSocial = !!googleId;
-    let user = isSocial
-        ? await User.findOne({ googleId })
-        : await User.findOne({ email });
 
-    if (!user) {
-      user = isSocial
-          ? await Professor.findOne({ googleId })
-          : await Professor.findOne({ email });
+    // Aqui está a correção: tentamos buscar primeiro no Professor
+    let user;
+    let isProfessor = false;
+
+    if (isSocial) {
+      user = await Professor.findOne({ googleId });
+      isProfessor = !!user;
+
+      if (!user) {
+        user = await User.findOne({ googleId });
+      }
+    } else {
+      user = await Professor.findOne({ email });
+      isProfessor = !!user;
+
+      if (!user) {
+        user = await User.findOne({ email });
+      }
     }
+
     if (!user) throw new AppError("Credenciais inválidas.", 401);
 
     // verifica senha se for login normal
@@ -49,7 +61,8 @@ class AuthUserService {
       if (!match) throw new AppError("Credenciais inválidas.", 401);
     }
 
-    if (normalizeRoles(user.role).includes("student")) {
+    // se for aluno, cria análise se não existir
+    if (!isProfessor && normalizeRoles(user.role).includes("student")) {
       let ua = await UserAnalysis.findOne({ userId: user._id.toString() });
       if (!ua) {
         const schoolDoc = await University.findById(user.school);
@@ -105,21 +118,22 @@ class AuthUserService {
     }
 
     const roles = prioritizeRole(normalizeRoles(user.role));
+
     const token = sign(
-        {
-          id:      user._id.toString(),
-          name:    user.name,
-          email:   user.email,
-          role:    roles,
-          school:  user.school,
-          course:  user.course,
-          class:   user.class,
-        },
-        process.env.JWT_SECRET!,
-        {
-          subject:   user._id.toString(),
-          expiresIn: "1d",
-        }
+      {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: roles,
+        school: user.school,
+        course: user.course,
+        class: user.class,
+      },
+      process.env.JWT_SECRET!,
+      {
+        subject: user._id.toString(),
+        expiresIn: "1d",
+      }
     );
 
     return {

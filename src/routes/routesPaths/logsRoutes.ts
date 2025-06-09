@@ -61,9 +61,5 @@ logRoutes.get(
   ProfessorStudentsStatsController
 );
 
-// ROTA DE DEBUG - REMOVER DEPOIS
-logRoutes.get("/test", (req, res) => {
-  res.json({ message: "Log routes are working!" });
-});
 
 export { logRoutes };

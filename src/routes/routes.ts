@@ -7,7 +7,7 @@ import { rasaRouter } from "./routesPaths/rasaRoute";
 import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
 import { academicRoutes } from "./routesPaths/academicRoutes";
 import { logRoutes } from "./routesPaths/logsRoutes";
-import {useAnalysis} from "./routesPaths/userAnalysisRoutes";
+import { useAnalysis } from "./routesPaths/userAnalysisRoutes";
 
 const routes = Router();
 

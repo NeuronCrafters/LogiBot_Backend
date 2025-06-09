@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { RasaVerificationService, QuizResultData } from "../../../services/rasa/ActionService/RasaVerificationService";
+import { RasaVerificationService, QuizResultData } from "../../../services/rasa/ActionService/verificarRespostasService";
 import { verificarRespostasService } from "../../../services/rasa/ActionService/verificarRespostasService";
 import { getSession } from "../../../services/rasa/types/sessionMemory";
 import { UserAnalysis } from "../../../models/UserAnalysis";
@@ -49,10 +49,10 @@ export async function verificarRespostasController(req: Request, res: Response) 
 
             // Salvar os dados no banco usando uma versão adaptada do service original
             await salvarResultadoNoBanco(
-                resultadoRasa,
-                respostas,
-                userId,
-                email
+              resultadoRasa,
+              respostas,
+              userId,
+              email
             );
           }
 
@@ -99,7 +99,7 @@ export async function verificarRespostasController(req: Request, res: Response) 
     }
 
     const needsNewSession = ua.sessions.length === 0 ||
-        (ua.sessions[ua.sessions.length - 1].sessionEnd !== undefined);
+      (ua.sessions[ua.sessions.length - 1].sessionEnd !== undefined);
 
     if (needsNewSession) {
       console.log("📝 Criando nova sessão para o usuário", userId);
@@ -126,11 +126,11 @@ export async function verificarRespostasController(req: Request, res: Response) 
 
     // Usar o service tradicional
     const result = await verificarRespostasService(
-        respostas,
-        userId,
-        email,
-        session,
-        role
+      respostas,
+      userId,
+      email,
+      session,
+      role
     );
 
     console.log("✅ Verificação tradicional concluída");
@@ -170,7 +170,7 @@ async function ensureUserAnalysisSession(userId: string, email: string): Promise
   }
 
   const needsNewSession = ua.sessions.length === 0 ||
-      (ua.sessions[ua.sessions.length - 1].sessionEnd !== undefined);
+    (ua.sessions[ua.sessions.length - 1].sessionEnd !== undefined);
 
   if (needsNewSession) {
     ua.sessions.push({
@@ -195,10 +195,10 @@ async function ensureUserAnalysisSession(userId: string, email: string): Promise
  * Salva o resultado do Rasa no banco de dados do usuário
  */
 async function salvarResultadoNoBanco(
-    resultadoRasa: QuizResultData,
-    respostas: string[],
-    userId: string,
-    email: string
+  resultadoRasa: QuizResultData,
+  respostas: string[],
+  userId: string,
+  email: string
 ): Promise<void> {
   const ua = await UserAnalysis.findOne({ userId, email }).exec();
 

@@ -24,53 +24,26 @@ for (const varName of requiredEnvVars) {
 }
 
 const FRONT_URL = process.env.FRONT_URL!;
-const FRONT_URL_TESTE = process.env.FRONT_URL_TESTE || "http://localhost:5173";
 const API_KEY = process.env.API_KEY!;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// ---- CORS Dinâmico ----
-const allowedOrigins = [
-    FRONT_URL,
-    FRONT_URL_TESTE,
-];
-
+// ---- CORS com origem fixa ----
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.warn(`[CORS] Origem bloqueada: ${origin}`);
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
+    origin: "https://saellogibot.com",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
 }));
 
-// app.use(cors({
-//     origin: (origin, callback) => {
-//         callback(null, true);
-//     },
-//     credentials: true,
-//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
-// }));
-
-
 // ---- Middleware de API Key ----
 function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
     const key = req.header('x-api-key');
 
-    if (!key && NODE_ENV !== 'production') {
-        console.warn("[API KEY] Nenhuma chave enviada, liberando acesso (somente dev).");
-        return next();
+    if (NODE_ENV === 'production') {
+        if (!key || key !== API_KEY) {
+            return res.status(403).json({ message: 'Forbidden: Invalid API Key' });
+        }
     }
-
-    if (key !== API_KEY) {
-        return res.status(403).json({ message: 'Forbidden: Invalid API Key' });
-    }
-
     next();
 }
 

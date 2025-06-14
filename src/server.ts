@@ -36,28 +36,28 @@ const allowedOrigins = [
     "http://127.0.0.1:5173"
 ];
 
-// app.use(cors({
-//     origin: (origin, callback) => {
-//         if (!origin || allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             console.warn(`[CORS] Origem bloqueada: ${origin}`);
-//             callback(new Error("Not allowed by CORS"));
-//         }
-//     },
-//     credentials: true,
-//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
-// }));
-
 app.use(cors({
     origin: (origin, callback) => {
-        callback(null, true);
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.warn(`[CORS] Origem bloqueada: ${origin}`);
+            callback(new Error("Not allowed by CORS"));
+        }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
 }));
+
+// app.use(cors({
+//     origin: (origin, callback) => {
+//         callback(null, true);
+//     },
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
+// }));
 
 
 // ---- Middleware de API Key ----

@@ -15,7 +15,7 @@ const app = express();
 connectDB();
 
 // ---- Verificação obrigatória de variáveis de ambiente ----
-const requiredEnvVars = ['FRONT_URL', 'API_KEY', 'MONGO_URI', 'JWT_SECRET'];
+const requiredEnvVars = ['FRONT_URL', 'MONGO_URI', 'JWT_SECRET'];
 for (const varName of requiredEnvVars) {
     if (!process.env[varName]) {
         console.error(`Variável de ambiente ${varName} não definida.`);
@@ -24,7 +24,6 @@ for (const varName of requiredEnvVars) {
 }
 
 const FRONT_URL = process.env.FRONT_URL!;
-const API_KEY = process.env.API_KEY!;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // ---- CORS com origem fixa ----
@@ -32,25 +31,12 @@ app.use(cors({
     origin: "https://saellogibot.com",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
-
-// ---- Middleware de API Key ----
-function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
-    const key = req.header('x-api-key');
-
-    if (NODE_ENV === 'production') {
-        if (!key || key !== API_KEY) {
-            return res.status(403).json({ message: 'Forbidden: Invalid API Key' });
-        }
-    }
-    next();
-}
 
 // ---- Middlewares gerais ----
 app.use(cookieParser());
 app.use(express.json());
-app.use(apiKeyMiddleware);
 
 // Sessão e autenticação
 app.use(session({

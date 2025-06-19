@@ -28,10 +28,10 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // ---- CORS com origem fixa ----
 app.use(cors({
-    origin: "https://saellogibot.com",
+    origin: ["http://localhost:5173", "https://saellogibot.com"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
 }));
 
 // ---- Middlewares gerais ----

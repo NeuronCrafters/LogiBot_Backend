@@ -10,8 +10,9 @@ class ResetPasswordController {
       await service.resetPassword(token, newPassword);
 
       return res.status(200).json({ message: "Senha redefinida com sucesso." });
-    } catch (error) {
-      return res.status(400).json({ error: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao redefinir senha.";
+      return res.status(400).json({ error: errorMessage });
     }
   }
 }

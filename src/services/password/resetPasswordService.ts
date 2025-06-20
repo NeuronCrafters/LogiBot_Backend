@@ -7,11 +7,15 @@ class ResetPasswordService {
     const secret = process.env.JWT_SECRET || "default_secret";
 
     try {
-      const decoded = jwt.verify(token, secret) as { id: string };
+      const decoded = jwt.verify(token, secret) as { email: string };
+      const user = await findUserByEmail(decoded.email);
 
-      const user = await findUserByEmail(decoded.id);
-
-      if (!user || user.resetPasswordToken !== token || user.resetPasswordExpires <= new Date()) {
+      if (
+          !user ||
+          user.resetPasswordToken !== token ||
+          !user.resetPasswordExpires ||
+          new Date() > user.resetPasswordExpires
+      ) {
         throw new Error("Token inválido ou expirado.");
       }
 
@@ -23,9 +27,10 @@ class ResetPasswordService {
       user.password = await bcrypt.hash(newPassword, 10);
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
+
       await user.save();
-    } catch (error) {
-      throw new Error("Falha ao redefinir senha. Verifique o token.");
+    } catch (error: any) {
+      throw new Error(error?.message || "Falha ao redefinir senha.");
     }
   }
 }

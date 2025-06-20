@@ -1,13 +1,14 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
-import { User } from "../../models/User";
-import { Professor } from "../../models/Professor";
+import { User, IUser } from "../../models/User";
+import { Professor, IProfessor } from "../../models/Professor";
+
+type AllowedRoles = "professor" | "student" | "admin";
 
 interface IUserAuth {
   password: string;
+  previousPasswords?: { hash: string; changedAt: Date }[];
 }
-
-type AllowedRoles = "professor" | "student" | "admin";
 
 class UpdatePasswordService {
   async updatePassword(
@@ -20,18 +21,17 @@ class UpdatePasswordService {
       throw new Error("ID inválido.");
     }
 
-    /* Carrega o hash da senha atual, SEM criar interseções de Modelos */
     let userData: IUserAuth | null = null;
 
     if (role === "professor") {
       userData = await Professor
           .findById(userId)
-          .select("password")
+          .select("password previousPasswords")
           .lean<IUserAuth>();
     } else {
       userData = await User
           .findById(userId)
-          .select("password")
+          .select("password previousPasswords")
           .lean<IUserAuth>();
     }
 
@@ -39,26 +39,54 @@ class UpdatePasswordService {
       throw new Error("Usuário não encontrado.");
     }
 
-    /* Valida senha atual e garante que a nova é diferente             */
-    const { password: storedHash } = userData;
+    const storedHash = userData.password;
 
+    // Valida senha atual
     const isCurrentValid = await bcrypt.compare(currentPassword, storedHash);
     if (!isCurrentValid) {
       throw new Error("Senha atual incorreta.");
     }
 
+    // Impede reutilização da senha atual
     const isSamePassword = await bcrypt.compare(newPassword, storedHash);
     if (isSamePassword) {
       throw new Error("A nova senha deve ser diferente da senha atual.");
     }
 
-    /* Salva a nova senha (hash)                                       */
+    // Impede senhas já usadas nos últimos 3 meses
+    const history = userData.previousPasswords || [];
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    for (const entry of history) {
+      const reused = await bcrypt.compare(newPassword, entry.hash);
+      const recent = entry.changedAt > threeMonthsAgo;
+
+      if (reused && recent) {
+        throw new Error("A nova senha não pode ser igual a uma das últimas utilizadas nos últimos 3 meses.");
+      }
+    }
+
+    // Gera novo hash
     const newHash = await bcrypt.hash(newPassword, 10);
 
+    // Prepara histórico truncado (até 15 registros)
+    const updatedHistory = [
+      ...history,
+      { hash: storedHash, changedAt: new Date() },
+    ].slice(-15);
+
+    // Atualiza no banco
     if (role === "professor") {
-      await Professor.findByIdAndUpdate(userId, { password: newHash });
+      await Professor.findByIdAndUpdate(userId, {
+        password: newHash,
+        previousPasswords: updatedHistory,
+      });
     } else {
-      await User.findByIdAndUpdate(userId, { password: newHash });
+      await User.findByIdAndUpdate(userId, {
+        password: newHash,
+        previousPasswords: updatedHistory,
+      });
     }
   }
 }

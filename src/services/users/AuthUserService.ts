@@ -31,37 +31,51 @@ class AuthUserService {
   async signin({ email, password, googleId }: AuthRequest) {
     const isSocial = !!googleId;
 
-    // Aqui está a correção: tentamos buscar primeiro no Professor
     let user;
     let isProfessor = false;
 
     if (isSocial) {
       user = await Professor.findOne({ googleId });
       isProfessor = !!user;
+      console.log(`[DEBUG] Login social - Professor encontrado: ${!!user}`);
 
       if (!user) {
         user = await User.findOne({ googleId });
+        console.log(`[DEBUG] Login social - User encontrado: ${!!user}`);
       }
     } else {
-      user = await Professor.findOne({ email });
+      //user = await Professor.findOne({ email });
+      user = await Professor.findOne({ email }).select('+password +previousPasswords')
       isProfessor = !!user;
+      console.log(`[DEBUG] Login tradicional - Professor encontrado: ${!!user}`);
+
+      if (user) {
+        console.log(`[DEBUG] Professor encontrado - Tem senha: ${!!user.password}`);
+      }
 
       if (!user) {
-        user = await User.findOne({ email });
+        user = await User.findOne({ email }).select('+password');
+        console.log(`[DEBUG] Login tradicional - User encontrado: ${!!user}`);
+
+        if (user) {
+          console.log(`[DEBUG] User encontrado - Tem senha: ${!!user.password}`);
+        }
       }
     }
 
     if (!user) throw new AppError("Credenciais inválidas.", 401);
 
-    // verifica senha se for login normal
     if (!isSocial) {
       if (!password) throw new AppError("Senha não fornecida.", 400);
-      if (!user.password) throw new AppError("Usuário sem senha cadastrada.", 401);
+      if (!user.password) {
+        console.error(`Usuário ${email} existe mas não possui senha cadastrada`);
+        throw new AppError("Este usuário precisa redefinir sua senha. Entre em contato com o administrador.", 401);
+      }
+
       const match = await compare(password, user.password);
       if (!match) throw new AppError("Credenciais inválidas.", 401);
     }
 
-    // se for aluno, cria análise se não existir
     if (!isProfessor && normalizeRoles(user.role).includes("student")) {
       let ua = await UserAnalysis.findOne({ userId: user._id.toString() });
       if (!ua) {
@@ -103,8 +117,8 @@ class AuthUserService {
         });
         await ua.save();
       } else {
-        const last = ua.sessions.at(-1)!;
-        if (last.sessionEnd) {
+        const last = ua.sessions.at(-1);
+        if (last && last.sessionEnd) {
           ua.sessions.push({
             sessionStart: new Date(),
             totalCorrectAnswers: 0,
@@ -120,18 +134,18 @@ class AuthUserService {
     const roles = prioritizeRole(normalizeRoles(user.role));
 
     const token = sign(
-      {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: roles,
-        school: user.school,
-      },
-      process.env.JWT_SECRET!,
-      {
-        subject: user._id.toString(),
-        expiresIn: "1d",
-      }
+        {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          role: roles,
+          school: user.school,
+        },
+        process.env.JWT_SECRET!,
+        {
+          subject: user._id.toString(),
+          expiresIn: "1d",
+        }
     );
 
     return {
@@ -157,7 +171,7 @@ class AuthUserService {
         if (!lastSession.sessionEnd) {
           lastSession.sessionEnd = new Date();
           lastSession.sessionDuration =
-            (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+              (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
 
           await userAnalysis.save();
           console.log(`[UserAnalysis] Sessão encerrada para usuário: ${userId}`);

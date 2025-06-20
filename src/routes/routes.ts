@@ -16,12 +16,14 @@ const routes = Router();
 routes.use("/", authRoute);
 routes.use("/", socialLoginRoute);
 
+// Rota parcialmente protegida
+routes.use("/password", passwordRouter);
+
 // A partir daqui exige autenticação para as rotas
 routes.use(isAuthenticated);
 
 // Rotas protegidas
 routes.use("/admin", adminRouter);
-routes.use("/password", passwordRouter);
 routes.use("/sael", rasaRouter);
 routes.use("/logs", logRoutes);
 routes.use("/academic-institution", academicInstitutionRouter);

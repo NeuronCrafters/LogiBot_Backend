@@ -28,26 +28,26 @@ socialLoginRoute.get(
 
                 const { user, token } = data as any;
 
-                /* ✅ Define cookie seguro com JWT */
+                // 🔒 Define cookie seguro com JWT
                 res.cookie("token", token, {
                     httpOnly: true,
-                    secure: true,          // ✔️ ok, porque seu NGINX está em HTTPS
-                    sameSite: "none",      // ✔️ necessário quando frontend e backend têm domínios diferentes
-                    maxAge: 24 * 60 * 60 * 1000, // 1 dia
+                    secure: true,
+                    sameSite: "none",
+                    maxAge: 24 * 60 * 60 * 1000,
                 });
 
-                /* ✅ Redirecionamento após login */
+                // 🔁 Redirecionamento pós-login
                 const redirectTo =
                     (req.query.redirect as string | undefined) ||
                     process.env.GOOGLE_LOGIN_REDIRECT ||
-                    "https://seu-frontend.com/painel"; // fallback seguro
+                    "https://saellogibot.com/chat";
 
                 return res.redirect(redirectTo);
             }
         )(req, res, next)
 );
 
-/* ---------- PROFILE (debug opcional) ---------- */
+/* ---------- PROFILE (debug) ---------- */
 socialLoginRoute.get("/profile", (req, res) => {
     if (!req.isAuthenticated?.() || !req.user) {
         return res.status(401).json({ message: "Usuário não autenticado." });

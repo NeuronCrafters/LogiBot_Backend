@@ -1,4 +1,3 @@
-// src/services/users/DetailsUserService.ts
 import { AppError } from "../../exceptions/AppError";
 import { User } from "../../models/User";
 import { Professor } from "../../models/Professor";
@@ -22,7 +21,7 @@ interface Output {
   /* coleções completas (professor / coordenador) ------------------------- */
   courses?: { id: string; name: string }[];
   classes?: { id: string; name: string }[];
-  disciplines?: { id: string; name: string }[];
+  disciplines?: { id: string; name: string; code: string }[]; // ⬅ atualizado
 }
 
 class DetailsUserService {
@@ -46,8 +45,8 @@ class DetailsUserService {
           .select("name email role school courses classes disciplines")
           .populate({ path: "school",      select: "name" })
           .populate({ path: "courses",     select: "name" })
-          .populate({ path: "classes",     select: "name" })   // ✅ agora traz turmas
-          .populate({ path: "disciplines", select: "name" })   // (nome da disciplina)
+          .populate({ path: "classes",     select: "name" })
+          .populate({ path: "disciplines", select: "name code" }) // ⬅ inclui o code
           .lean();
     } else if (isStudent || isAdmin) {
       raw = await User.findById(user_id)
@@ -63,7 +62,7 @@ class DetailsUserService {
     if (!raw) throw new AppError("Usuário não encontrado!", 404);
 
     /* ------------------------------------------------------------------ */
-    /* monta objeto de saída padronizado                                   */
+    /* monta objeto de saída padronizado                                 */
     /* ------------------------------------------------------------------ */
     const out: Output = {
       _id:       String(raw._id),
@@ -74,23 +73,31 @@ class DetailsUserService {
       schoolId:   String(raw.school?._id),
       schoolName: raw.school?.name ?? "",
 
-      /* campos “simples” (existem para estudante/admin) ---------------- */
-      courseId: raw.course ? String(raw.course._id) : undefined,
+      courseId:   raw.course ? String(raw.course._id) : undefined,
       courseName: raw.course ? raw.course.name : undefined,
-      classId:  raw.class  ? String(raw.class._id)  : undefined,
-      className: raw.class ? raw.class.name         : undefined,
+      classId:    raw.class  ? String(raw.class._id)  : undefined,
+      className:  raw.class  ? raw.class.name         : undefined,
 
-      /* coleções (existem p/ professor/coordenador) -------------------- */
-      courses:    raw.courses
-          ? (raw.courses as any[]).map(c => ({ id: String(c._id), name: c.name }))
+      courses: raw.courses
+          ? (raw.courses as any[]).map(c => ({
+            id: String(c._id),
+            name: c.name,
+          }))
           : undefined,
 
-      classes:    raw.classes
-          ? (raw.classes as any[]).map(cl => ({ id: String(cl._id), name: cl.name }))
+      classes: raw.classes
+          ? (raw.classes as any[]).map(cl => ({
+            id: String(cl._id),
+            name: cl.name,
+          }))
           : undefined,
 
       disciplines: raw.disciplines
-          ? (raw.disciplines as any[]).map(d => ({ id: String(d._id), name: d.name }))
+          ? (raw.disciplines as any[]).map(d => ({
+            id: String(d._id),
+            name: d.name,
+            code: d.code || "",
+          }))
           : undefined,
     };
 

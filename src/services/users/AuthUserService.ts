@@ -31,7 +31,7 @@ class AuthUserService {
   async signin({ email, password, googleId }: AuthRequest) {
     const isSocial = !!googleId;
 
-    let user;
+    let user: any;
     let isProfessor = false;
 
     if (isSocial) {
@@ -44,27 +44,23 @@ class AuthUserService {
         console.log(`[DEBUG] Login social - User encontrado: ${!!user}`);
       }
     } else {
-      //user = await Professor.findOne({ email });
-      user = await Professor.findOne({ email }).select('+password +previousPasswords')
+      user = await Professor
+          .findOne({ email })
+          .select("name email role school courses classes password previousPasswords");
       isProfessor = !!user;
       console.log(`[DEBUG] Login tradicional - Professor encontrado: ${!!user}`);
 
-      if (user) {
-        console.log(`[DEBUG] Professor encontrado - Tem senha: ${!!user.password}`);
-      }
-
       if (!user) {
-        user = await User.findOne({ email }).select('+password');
+        user = await User
+            .findOne({ email })
+            .select("name email role school course class password");
         console.log(`[DEBUG] Login tradicional - User encontrado: ${!!user}`);
-
-        if (user) {
-          console.log(`[DEBUG] User encontrado - Tem senha: ${!!user.password}`);
-        }
       }
     }
 
     if (!user) throw new AppError("Credenciais inválidas.", 401);
 
+    // Verificação de senha (apenas se não for login social)
     if (!isSocial) {
       if (!password) throw new AppError("Senha não fornecida.", 400);
       if (!user.password) {
@@ -76,6 +72,7 @@ class AuthUserService {
       if (!match) throw new AppError("Credenciais inválidas.", 401);
     }
 
+    // Inicialização de análise para alunos (estudantes)
     if (!isProfessor && normalizeRoles(user.role).includes("student")) {
       let ua = await UserAnalysis.findOne({ userId: user._id.toString() });
       if (!ua) {
@@ -94,10 +91,7 @@ class AuthUserService {
           classId: user.class,
           className: classDoc?.name || "",
           totalUsageTime: 0,
-          totalCorrectWrongAnswers: {
-            totalCorrectAnswers: 0,
-            totalWrongAnswers: 0,
-          },
+          totalCorrectWrongAnswers: { totalCorrectAnswers: 0, totalWrongAnswers: 0 },
           subjectCountsQuiz: {
             variaveis: 0,
             tipos: 0,
@@ -132,7 +126,6 @@ class AuthUserService {
     }
 
     const roles = prioritizeRole(normalizeRoles(user.role));
-
     const token = sign(
         {
           id: user._id.toString(),
@@ -155,7 +148,8 @@ class AuthUserService {
       role: roles,
       school: user.school,
       courses: isProfessor ? user.courses : user.course,
-      classes: isProfessor ? undefined : user.class,
+      classes: isProfessor ? (Array.isArray(user.classes) ? user.classes : []) : undefined,
+      class: isProfessor ? undefined : user.class,
       sessionStart: new Date(),
       token,
     };
@@ -166,17 +160,14 @@ class AuthUserService {
       const userAnalysis = await UserAnalysis.findOne({ userId });
 
       if (userAnalysis && userAnalysis.sessions.length > 0) {
-        const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
-
-        if (!lastSession.sessionEnd) {
+        const lastSession = userAnalysis.sessions.at(-1);
+        if (lastSession && !lastSession.sessionEnd) {
           lastSession.sessionEnd = new Date();
           lastSession.sessionDuration =
               (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
 
           await userAnalysis.save();
           console.log(`[UserAnalysis] Sessão encerrada para usuário: ${userId}`);
-        } else {
-          console.log(`[UserAnalysis] Nenhuma sessão ativa encontrada para ${userId}`);
         }
       }
     } catch (error) {

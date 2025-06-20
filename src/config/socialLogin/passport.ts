@@ -1,21 +1,18 @@
 import passport from 'passport';
-import { googleStrategy } from './googleStrategy';
 import { googleLoginStrategy } from './googleLoginStrategy';
 import { User } from '../../models/User';
+import { Professor } from '../../models/Professor';
 
-// Loga um usuário no sistema Google
 passport.use('google-login', googleLoginStrategy);
 
-// Registra um usuário no sistema via Google
-passport.use('google-signup', googleStrategy);
-
-passport.serializeUser((user: any, done) => {
-  done(null, user.id);
+passport.serializeUser((data: any, done) => {
+  const userId = data?.user?.id || data?.id;
+  done(null, userId);
 });
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    let user = await User.findById(id) || await Professor.findById(id);
     if (!user) {
       return done(new Error('Usuário não encontrado durante a deserialização.'), null);
     }

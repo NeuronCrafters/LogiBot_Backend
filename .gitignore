@@ -9,4 +9,5 @@ backend/express/dotenv
 dotenv
 .xml
 .iml
+.idea
 .env.test

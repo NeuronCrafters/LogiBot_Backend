@@ -128,7 +128,7 @@ async function getUserCompleteData(userId: string, roles: string[]) {
                 role: roles,
                 school: professor.school._id.toString(),
                 course: professor.courses?.[0]?._id?.toString(),
-                class: undefined,
+                classes: professor.classes?.map(c => c.toString()) || [],
                 disciplines: professor.disciplines?.map(d => d._id.toString()) || []
             };
         } else {

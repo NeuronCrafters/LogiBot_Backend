@@ -28,11 +28,22 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // ---- CORS com origem fixa ----
 app.use(cors({
-    origin: ["http://localhost:5173", "https://saellogibot.com"],
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            "http://localhost:5173",
+            "https://saellogibot.com"
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Origem não permitida pelo CORS"));
+        }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"]
 }));
+
 
 // ---- Middlewares gerais ----
 app.use(cookieParser());

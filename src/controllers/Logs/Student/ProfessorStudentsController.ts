@@ -3,53 +3,55 @@ import { ProfessorStudentsService } from "../../../services/Logs/Student/Profess
 import { Professor } from "../../../models/Professor";
 import { isProfessor, isCourseCoordinator } from "../../../utils/RoleChecker";
 
-/**
- * Controller para listar dados agregados dos alunos do professor
- */
 export async function ProfessorListStudentsController(req: Request, res: Response) {
   try {
-    const { disciplineId, classId } = req.query;
+    const { disciplineId, classId, summary } = req.query;
     const professorId = req.user?.id;
     const userEmail = req.user?.email;
     const userRole = req.user?.role || [];
 
     if (!isProfessor(userRole) && !isCourseCoordinator(userRole)) {
-      return res.status(403).json({
-        message: "Acesso negado. Apenas professores podem acessar esta funcionalidade."
-      });
+      return res.status(403).json({ message: "Acesso negado." });
     }
 
     let professor = await Professor.findById(professorId)
-      .populate('school')
-      .populate('courses')
-      .populate('disciplines');
+        .populate("school")
+        .populate("courses")
+        .populate("disciplines");
 
     if (!professor) {
       professor = await Professor.findOne({ email: userEmail })
-        .populate('school')
-        .populate('courses')
-        .populate('disciplines');
+          .populate("school")
+          .populate("courses")
+          .populate("disciplines");
     }
 
     if (!professor) {
-      return res.status(403).json({ message: "Professor não encontrado." });
+      return res.status(404).json({ message: "Professor não encontrado." });
+    }
+
+    if (summary === "true") {
+      const result = await ProfessorStudentsService.getStudentsList({
+        professor,
+        disciplineId: disciplineId as string,
+        classId: classId as string,
+      });
+      return res.status(200).json(result);
     }
 
     const result = await ProfessorStudentsService.getStudentData({
       professor,
       disciplineId: disciplineId as string,
-      classId: classId as string
+      classId: classId as string,
     });
 
     return res.status(200).json(result);
   } catch (error) {
+    console.error("Erro em ProfessorListStudentsController:", error);
     return res.status(500).json({ message: "Erro ao listar alunos." });
   }
 }
 
-/**
- * Controller para obter dados de um aluno específico
- */
 export async function ProfessorGetStudentDetailsController(req: Request, res: Response) {
   try {
     const { studentId } = req.params;
@@ -63,47 +65,43 @@ export async function ProfessorGetStudentDetailsController(req: Request, res: Re
     }
 
     if (!isProfessor(userRole) && !isCourseCoordinator(userRole)) {
-      return res.status(403).json({
-        message: "Acesso negado. Apenas professores podem acessar esta funcionalidade."
-      });
+      return res.status(403).json({ message: "Acesso negado." });
     }
 
     let professor = await Professor.findById(professorId)
-      .populate('school')
-      .populate('courses')
-      .populate('disciplines');
+        .populate("school")
+        .populate("courses")
+        .populate("disciplines");
 
     if (!professor) {
       professor = await Professor.findOne({ email: userEmail })
-        .populate('school')
-        .populate('courses')
-        .populate('disciplines');
+          .populate("school")
+          .populate("courses")
+          .populate("disciplines");
     }
 
     if (!professor) {
-      return res.status(403).json({ message: "Professor não encontrado." });
+      return res.status(404).json({ message: "Professor não encontrado." });
     }
 
     const result = await ProfessorStudentsService.getStudentData({
       professor,
       studentId,
       disciplineId: disciplineId as string,
-      classId: classId as string
+      classId: classId as string,
     });
 
-    if (result.message?.includes("não encontrado")) {
+    if (result.message) {
       return res.status(404).json({ message: result.message });
     }
 
     return res.status(200).json(result);
   } catch (error) {
+    console.error("Erro em ProfessorGetStudentDetailsController:", error);
     return res.status(500).json({ message: "Erro ao obter detalhes do aluno." });
   }
 }
 
-/**
- * Controller para obter estatísticas gerais dos alunos
- */
 export async function ProfessorStudentsStatsController(req: Request, res: Response) {
   try {
     const { disciplineId, classId } = req.query;
@@ -112,35 +110,51 @@ export async function ProfessorStudentsStatsController(req: Request, res: Respon
     const userRole = req.user?.role || [];
 
     if (!isProfessor(userRole) && !isCourseCoordinator(userRole)) {
-      return res.status(403).json({
-        message: "Acesso negado. Apenas professores podem acessar esta funcionalidade."
-      });
+      return res.status(403).json({ message: "Acesso negado." });
     }
 
     let professor = await Professor.findById(professorId)
-      .populate('school')
-      .populate('courses')
-      .populate('disciplines');
+        .populate("school")
+        .populate("courses")
+        .populate("disciplines");
 
     if (!professor) {
       professor = await Professor.findOne({ email: userEmail })
-        .populate('school')
-        .populate('courses')
-        .populate('disciplines');
+          .populate("school")
+          .populate("courses")
+          .populate("disciplines");
     }
 
     if (!professor) {
-      return res.status(403).json({ message: "Professor não encontrado." });
+      return res.status(404).json({ message: "Professor não encontrado." });
     }
 
     const result = await ProfessorStudentsService.getStudentData({
       professor,
       disciplineId: disciplineId as string,
-      classId: classId as string
+      classId: classId as string,
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+      totalCorrectAnswers: result.totalCorrectAnswers,
+      totalWrongAnswers: result.totalWrongAnswers,
+      usageTimeInSeconds: result.usageTimeInSeconds,
+      usageTime: result.usageTime,
+      subjectCounts: result.subjectCounts,
+      dailyUsage: result.dailyUsage,
+      studentsOverview: result.students.map(student => ({
+        _id: student._id,
+        name: student.name,
+        courseName: student.courseName,
+        className: student.className,
+        totalUsageTime: student.totalUsageTime,
+        totalCorrectAnswers: student.totalCorrectAnswers,
+        totalWrongAnswers: student.totalWrongAnswers
+      })),
+      totalStudents: result.totalStudents
+    });
   } catch (error) {
+    console.error("Erro em ProfessorStudentsStatsController:", error);
     return res.status(500).json({ message: "Erro ao obter estatísticas dos alunos." });
   }
 }

@@ -7,6 +7,7 @@ export interface IProfessor extends Document {
   role: string[];
   school: Types.ObjectId;
   courses: Types.ObjectId[];
+  classes: Types.ObjectId[];
   disciplines: Types.ObjectId[];
   students: Types.ObjectId[];
   googleId?: string;
@@ -22,6 +23,7 @@ const ProfessorSchema: Schema = new Schema(
     password: { type: String, required: true },
     role: { type: [String], enum: ["professor", "course-coordinator"], default: ["professor"] },
     school: { type: mongoose.Schema.Types.ObjectId, ref: "University", required: true },
+    classes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],
     courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
     disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

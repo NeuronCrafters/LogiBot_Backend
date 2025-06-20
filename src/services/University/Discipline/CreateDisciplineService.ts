@@ -13,8 +13,7 @@ class CreateDisciplineService {
     }
     const courseObjectId = new Types.ObjectId(courseId);
 
-    // Buscar curso com universidade populada
-    const course = await Course.findById(courseObjectId).populate('university');
+    const course = await Course.findById(courseObjectId).populate("university");
     if (!course) {
       throw new AppError("Curso não encontrado!", 404);
     }
@@ -39,26 +38,22 @@ class CreateDisciplineService {
       throw new AppError("Disciplina já existe para este curso!", 409);
     }
 
-    // Criar disciplina primeiro para ter o ID
     const discipline = await Discipline.create({
       name,
       course: courseObjectId,
       classes: classObjectIds,
       professors: professorObjectIds,
       students: [],
-      code: "TEMP", // código temporário
+      code: "TEMP",
     });
 
-    // Obter o ID da universidade
     const universityId = (course.university as any)._id.toString();
 
-    // Gerar códigos únicos para cada turma desta disciplina
     const classCodes = [];
     for (const classItem of classes) {
       let classCode;
       let attempts = 0;
 
-      // Gerar código único, verificando se já existe
       do {
         classCode = generateDisciplineCode(
             universityId,
@@ -83,11 +78,9 @@ class CreateDisciplineService {
       });
     }
 
-    // Usar o primeiro código como código principal da disciplina
     discipline.code = classCodes[0].code;
     await discipline.save();
 
-    // Atualizar relacionamentos
     course.disciplines.push(discipline._id as Types.ObjectId);
     await course.save();
 
@@ -98,12 +91,17 @@ class CreateDisciplineService {
 
     await Professor.updateMany(
         { _id: { $in: professorObjectIds } },
-        { $addToSet: { disciplines: discipline._id } }
+        {
+          $addToSet: {
+            disciplines: discipline._id,
+            classes: { $each: classObjectIds }
+          }
+        }
     );
 
     return {
-      discipline: await discipline.populate(['course', 'classes', 'professors']),
-      classCodes: classCodes,
+      discipline: await discipline.populate(["course", "classes", "professors"]),
+      classCodes,
       universityName: (course.university as any).name,
       courseName: course.name
     };

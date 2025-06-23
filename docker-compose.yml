@@ -1,12 +1,13 @@
-version: "3"
+version: "3.8"
 
 services:
   backend:
-    container_name: LogiBot_Backend
+    container_name: logibot_backend
     build:
       context: .
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     env_file:
       - .env
-    restart: always
+    restart: unless-stopped

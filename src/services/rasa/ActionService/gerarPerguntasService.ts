@@ -1,21 +1,41 @@
 import axios from "axios";
 import { AppError } from "../../../exceptions/AppError";
-import { parseQuestionsFromTextService } from "./parseQuestionsFromTextService";
 import { RasaSessionData } from "../types/RasaSessionData";
 
 const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
+interface RasaQuestion {
+  question: string;
+  options: string[];
+}
+
+interface RasaResponse {
+  questions: RasaQuestion[];
+  answer_keys: string[];
+  metadata?: {
+    subject: string;
+    level: string;
+    generated_at: string;
+  };
+}
+
 export async function gerarPerguntasService(
-    pergunta: string,
-    session: RasaSessionData
+  pergunta: string,
+  session: RasaSessionData
 ) {
+  // Validação do nível
   if (!session.nivelAtual) {
-    throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
+    throw new AppError(
+      "O nível do usuário precisa ser definido antes de gerar perguntas.",
+      400
+    );
   }
 
+  // Atualiza o assunto na sessão
   session.lastSubject = pergunta;
 
   try {
+    console.log("📡 Enviando requisição para o Rasa...");
     const response = await axios.post(RASA_ACTION_URL, {
       next_action: "action_gerar_perguntas_chatgpt",
       tracker: {
@@ -27,41 +47,106 @@ export async function gerarPerguntasService(
       },
     });
 
-    if (!response.data?.responses?.length) {
-      throw new AppError("Resposta do Rasa não contém texto válido.", 500);
+    console.log(
+      "📦 Resposta recebida do Rasa:",
+      JSON.stringify(response.data, null, 2)
+    );
+
+    // Procura na lista de respostas aquela que trouxe o JSON das perguntas
+    const matched = response.data.responses?.find((r: any) =>
+      Array.isArray(r.custom?.questions)
+    );
+
+    const payload: RasaResponse = matched?.custom;
+
+    if (!payload) {
+      console.error("❌ Payload vazio ou mal formatado da resposta do Rasa");
+      throw new AppError("Resposta do servidor de perguntas mal formatada", 500);
     }
 
-    const rawText = response.data.responses[0]?.text;
+    console.log("🔍 Validando estrutura das perguntas...");
 
-    if (!rawText) {
-      throw new AppError("Resposta do Rasa não contém texto.", 500);
+    // Validação flexível das perguntas
+    if (!Array.isArray(payload.questions)) {
+      console.error("❌ Campo 'questions' não é uma array");
+      throw new AppError("Formato inválido: perguntas não são uma lista", 500);
     }
 
-    let jsonData: { questions: any[] };
-    try {
-      jsonData = JSON.parse(rawText);
-    } catch {
-      jsonData = parseQuestionsFromTextService(rawText);
+    if (payload.questions.length === 0) {
+      console.error("❌ Lista de perguntas vazia");
+      throw new AppError("Nenhuma pergunta foi gerada", 500);
     }
 
-    if (!Array.isArray(jsonData.questions) || jsonData.questions.length !== 5) {
-      throw new AppError("Formato inesperado de perguntas na resposta.", 500);
+    // Validação das questões individuais
+    for (const [index, question] of payload.questions.entries()) {
+      if (!question.question || typeof question.question !== "string") {
+        console.error(`❌ Pergunta ${index + 1} sem texto válido`);
+        throw new AppError(`Pergunta ${index + 1} sem texto válido`, 500);
+      }
+
+      if (!Array.isArray(question.options)) {
+        console.error(`❌ Opções da pergunta ${index + 1} não são uma lista`);
+        throw new AppError(
+          `Opções da pergunta ${index + 1} inválidas`,
+          500
+        );
+      }
     }
 
-    const gabarito = response.data.responses[0]?.custom?.answer_keys || [];
+    // Validação do gabarito (pode ser vazio no pior caso)
+    if (!Array.isArray(payload.answer_keys)) {
+      console.warn(
+        "⚠️ Campo 'answer_keys' não é uma array, usando array vazia"
+      );
+      payload.answer_keys = [];
+    }
 
-    session.lastQuestions = jsonData.questions.map((q: any) => q.question);
+    // Prepara os dados para retorno
+    const perguntas = payload.questions;
+    const gabarito = payload.answer_keys;
+
+    // Atualiza a sessão
+    session.lastQuestions = perguntas.map((q) => q.question);
     session.lastAnswerKeys = gabarito;
 
+    console.log("✅ Perguntas validadas com sucesso");
+
     return {
-      perguntas: jsonData.questions,
+      perguntas,
       gabarito,
       nivel: session.nivelAtual,
       assunto: pergunta,
+      metadata: payload.metadata,
     };
   } catch (error: any) {
-    console.error("gerarPerguntasService falhou:", error);
-    if (error instanceof AppError) throw error;
-    throw new AppError(error.message || "Erro ao gerar perguntas", 500);
+    console.error("❌ Erro no gerarPerguntasService:", {
+      error: error.message,
+      stack: error.stack,
+      response: error.response?.data,
+    });
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    if (error.response) {
+      // Erro da API do Rasa
+      throw new AppError(
+        `Erro no servidor de perguntas: ${error.response.statusText}`,
+        502
+      );
+    } else if (error.request) {
+      // Falha na requisição
+      throw new AppError(
+        "Não foi possível conectar ao servidor de perguntas",
+        503
+      );
+    } else {
+      // Outros erros
+      throw new AppError(
+        error.message || "Erro desconhecido ao gerar perguntas",
+        500
+      );
+    }
   }
 }

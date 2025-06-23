@@ -1,28 +1,26 @@
-// src/services/rasa/ActionService/verificarRespostasService.ts
-
+import axios from "axios";
 import { AppError } from "../../../exceptions/AppError";
 import { UserAnalysis } from "../../../models/UserAnalysis";
 import { RasaSessionData } from "../types/RasaSessionData";
 
-const normalizeOption = (value: string) =>
-  value.replace(/options\s*/i, "").trim().toLowerCase().replace(/\s+/g, "");
+const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
-function gerarFeedback(acertos: number, total: number, subject: string): string {
-  const percentual = (acertos / total) * 100;
-  if (percentual === 100) {
-    return `🏆 Excelente! Você acertou todas as ${total} perguntas sobre ${subject}!`;
-  } else if (percentual >= 80) {
-    return `👏 Muito bom! ${acertos}/${total} certas em ${subject}.`;
-  } else if (percentual >= 60) {
-    return `📚 ${acertos}/${total} certas. Continue praticando ${subject}!`;
-  } else {
-    return `🔄 ${acertos}/${total} certas. Ainda há bastante espaço para melhorar em ${subject}!`;
-  }
+interface QuizResultData {
+  message: string;
+  totalCorrectAnswers: number;
+  totalWrongAnswers: number;
+  feedback: string[];
+  detalhes: Array<{
+    question: string;
+    selected: string;
+    correct: string;
+    isCorrect: boolean;
+  }>;
+  subject: string;
+  nivel: string;
 }
 
-function gerarExplicacaoErro(pergunta: string, respostaUsuario: string, respostaCorreta: string): string {
-  return `❌ Pergunta: "${pergunta}" | Você respondeu: "${respostaUsuario.toUpperCase()}", mas a correta era: "${respostaCorreta.toUpperCase()}".`;
-}
+// Alteração no método `verificarRespostasService` para lidar com a explicação do Rasa
 
 export async function verificarRespostasService(
   respostas: string[],
@@ -30,131 +28,122 @@ export async function verificarRespostasService(
   email: string,
   session: RasaSessionData,
   role: string | string[]
-) {
-  if (!session.lastAnswerKeys || !session.lastQuestions || session.lastAnswerKeys.length === 0 || session.lastQuestions.length === 0) {
-    throw new AppError("Gabarito ou perguntas não definidos.", 400);
+): Promise<QuizResultData & { source: "rasa" }> {
+  // 1) Validações básicas
+  if (
+    !session.lastAnswerKeys?.length ||
+    !session.lastQuestions?.length
+  ) {
+    throw new AppError("Sessão inválida: perguntas ou gabarito ausentes.", 400);
   }
-
   if (respostas.length !== session.lastAnswerKeys.length) {
     throw new AppError("Número de respostas não corresponde ao número de perguntas.", 400);
   }
 
-  let acertos = 0;
-  let erros = 0;
-  const feedbackDetalhado: string[] = [];
-  const detalhes: any[] = [];
+  // 2) Chama action_check_answers, preenchendo o slot respostas_usuario
+  let rasaResp;
+  try {
+    rasaResp = await axios.post(RASA_ACTION_URL, {
+      next_action: "action_check_answers_with_gpt",
+      tracker: {
+        sender_id: userId,
+        slots: {
+          respostas_usuario: respostas,
+        },
+      },
+    });
+  } catch (err: any) {
+    if (err.response) {
+      throw new AppError(`Erro no servidor de correção: ${err.response.statusText}`, 502);
+    }
+    throw new AppError("Não foi possível conectar ao servidor de correção.", 503);
+  }
 
-  const isStudent = Array.isArray(role) ? role.includes("student") : role === "student";
+  // 3) Verifica a estrutura da resposta e extraí o conteúdo correto
+  const responses = rasaResp.data.responses;
+  if (
+    !Array.isArray(responses) ||
+    responses.length < 2 ||
+    !responses[1].custom ||
+    !responses[1].custom.data
+  ) {
+    console.error("Resposta inesperada do Rasa:", JSON.stringify(rasaResp.data, null, 2));
+    throw new AppError("Resposta do servidor de correção mal formatada.", 502);
+  }
 
-  if (!isStudent) {
-    for (let i = 0; i < respostas.length; i++) {
-      const pergunta = session.lastQuestions[i];
-      const gabarito = session.lastAnswerKeys[i];
-      const certo = normalizeOption(respostas[i]) === normalizeOption(gabarito);
+  // Verificando se a estrutura dentro de custom.data é válida
+  const result: QuizResultData = responses[1].custom.data;
 
-      if (certo) {
-        acertos++;
-      } else {
-        erros++;
-        feedbackDetalhado.push(gerarExplicacaoErro(pergunta, respostas[i], gabarito));
-      }
+  // Transformando as explicações do campo text
+  const feedback = responses[0].text.split("\n\n").map((entry) => {
+    const parts = entry.split("\n");
+    if (parts.length >= 3) {
+      const question = parts[0];
+      const selected = parts[1].split(" | ")[0].split(": ")[1]; // A resposta do usuário
+      const correct = parts[1].split(" | ")[1].split(": ")[1]; // A resposta correta
+      const explanation = parts.slice(2).join(" "); // A explicação
 
-      detalhes.push({
-        question: pergunta,
-        selected: respostas[i].toUpperCase(),
-        correct: normalizeOption(gabarito).toUpperCase(),
-        isCorrect: certo
+      return {
+        question,
+        selected,
+        correct,
+        explanation
+      };
+    }
+    return null;
+  }).filter(Boolean);
+
+  // 4) Se for estudante, persiste no UserAnalysis
+  const isStudent = Array.isArray(role)
+    ? role.includes("student")
+    : role === "student";
+
+  if (isStudent) {
+    const ua = await UserAnalysis.findOne({ userId, email }).exec();
+    if (!ua) throw new AppError("Usuário não encontrado.", 404);
+
+    if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
+      ua.sessions.push({
+        sessionStart: new Date(),
+        totalCorrectAnswers: 0,
+        totalWrongAnswers: 0,
+        answerHistory: [],
       });
     }
+    const si = ua.sessions.length - 1;
 
-    return {
-      message: gerarFeedback(acertos, respostas.length, session.lastSubject || "assunto"),
-      totalCorrectAnswers: acertos,
-      totalWrongAnswers: erros,
-      feedback: feedbackDetalhado,
-      detalhes,
-      subject: session.lastSubject || "assunto",
-      nivel: session.nivelAtual || "Nível"
-    };
-  }
-
-  // Se for estudante, salva no banco
-  const ua = await UserAnalysis.findOne({ userId, email }).populate("schoolId").populate("courseId").populate("classId").exec();
-  if (!ua) throw new AppError("Usuário não encontrado.", 404);
-
-  if (ua.sessions.length === 0 || ua.sessions[ua.sessions.length - 1].sessionEnd) {
-    ua.sessions.push({
-      sessionStart: new Date(),
-      totalCorrectAnswers: 0,
-      totalWrongAnswers: 0,
-      answerHistory: []
-    });
-  }
-
-  const lastSessionIndex = ua.sessions.length - 1;
-
-  const newAttempt = {
-    questions: [],
-    totalCorrectWrongAnswersSession: { totalCorrectAnswers: 0, totalWrongAnswers: 0 }
-  };
-
-  if (!ua.sessions[lastSessionIndex].answerHistory) {
-    ua.sessions[lastSessionIndex].answerHistory = [];
-  }
-
-  ua.sessions[lastSessionIndex].answerHistory.push(newAttempt);
-  const newAttemptIndex = ua.sessions[lastSessionIndex].answerHistory.length - 1;
-
-  if (session.lastSubject) ua.updateSubjectCountsQuiz(session.lastSubject);
-
-  for (let i = 0; i < respostas.length; i++) {
-    const pergunta = session.lastQuestions[i];
-    const gabarito = session.lastAnswerKeys[i];
-    const certo = normalizeOption(respostas[i]) === normalizeOption(gabarito);
-
-    if (certo) acertos++;
-    else {
-      erros++;
-      feedbackDetalhado.push(gerarExplicacaoErro(pergunta, respostas[i], gabarito));
-    }
-
-    const question = {
-      level: session.nivelAtual || "Nível",
-      subject: session.lastSubject || "Assunto",
-      selectedOption: {
-        question: pergunta,
-        isCorrect: certo,
-        isSelected: respostas[i]
+    ua.sessions[si].answerHistory.push({
+      questions: result.detalhes.map((d) => ({
+        level: session.nivelAtual || "Nível",
+        subject: session.lastSubject || "assunto",
+        selectedOption: {
+          question: d.question,
+          isCorrect: d.isCorrect,
+          isSelected: d.selected,
+        },
+        totalCorrectAnswers: d.isCorrect ? 1 : 0,
+        totalWrongAnswers: d.isCorrect ? 0 : 1,
+        timestamp: new Date(),
+      })),
+      totalCorrectWrongAnswersSession: {
+        totalCorrectAnswers: result.totalCorrectAnswers,
+        totalWrongAnswers: result.totalWrongAnswers,
       },
-      correctAnswer: normalizeOption(gabarito).toUpperCase(),
-      totalCorrectAnswers: certo ? 1 : 0,
-      totalWrongAnswers: certo ? 0 : 1,
-      timestamp: new Date()
-    };
+    });
 
-    detalhes.push(question);
-    ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].questions.push(question);
+    ua.sessions[si].totalCorrectAnswers += result.totalCorrectAnswers;
+    ua.sessions[si].totalWrongAnswers += result.totalWrongAnswers;
+    ua.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
+    ua.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
 
-    if (certo) ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].totalCorrectWrongAnswersSession.totalCorrectAnswers++;
-    else ua.sessions[lastSessionIndex].answerHistory[newAttemptIndex].totalCorrectWrongAnswersSession.totalWrongAnswers++;
+    ua.markModified(`sessions.${si}`);
+    await ua.save();
   }
 
-  ua.totalCorrectWrongAnswers.totalCorrectAnswers += acertos;
-  ua.totalCorrectWrongAnswers.totalWrongAnswers += erros;
-  ua.sessions[lastSessionIndex].totalCorrectAnswers += acertos;
-  ua.sessions[lastSessionIndex].totalWrongAnswers += erros;
-
-  ua.markModified(`sessions.${lastSessionIndex}.answerHistory`);
-  ua.markModified(`subjectCountsQuiz`);
-  await ua.save();
-
+  // 5) Retorna o resultado
   return {
-    message: gerarFeedback(acertos, respostas.length, session.lastSubject || "assunto"),
-    totalCorrectAnswers: acertos,
-    totalWrongAnswers: erros,
-    feedback: feedbackDetalhado,
-    detalhes,
-    subject: session.lastSubject || "assunto",
-    nivel: session.nivelAtual || "Nível"
+    ...result,
+    feedback,  // Inclui o feedback com a explicação
+    source: "rasa",
   };
 }

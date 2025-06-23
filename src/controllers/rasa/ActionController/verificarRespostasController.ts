@@ -17,8 +17,8 @@ export async function verificarRespostasController(req: Request, res: Response) 
     const userId = req.user.id;
     const email = req.user.email;
     const role = req.user.role;
-
     const session = getSession(userId);
+
     if (!session?.lastAnswerKeys?.length || !session?.lastQuestions?.length) {
       return res.status(400).json({ message: "Sessão inválida: perguntas ou gabarito ausentes." });
     }
@@ -30,8 +30,8 @@ export async function verificarRespostasController(req: Request, res: Response) 
 
         if (rasaDisponivel) {
           const resultadoRasa = await rasaService.verificarRespostasComRasa(userId, respostas);
-          const isStudent = Array.isArray(role) ? role.includes("student") : role === "student";
 
+          const isStudent = Array.isArray(role) ? role.includes("student") : role === "student";
           if (isStudent) {
             await ensureUserAnalysisSession(userId, email);
             await salvarResultadoNoBanco(resultadoRasa, respostas, userId, email);
@@ -94,7 +94,7 @@ async function salvarResultadoNoBanco(
       correctAnswer: question.correctAnswer,
       totalCorrectAnswers: question.totalCorrectAnswers,
       totalWrongAnswers: question.totalWrongAnswers,
-      timestamp: new Date(question.timestamp), // ✅ Conversão crítica aplicada aqui
+      timestamp: new Date(question.timestamp),
     })),
     totalCorrectWrongAnswersSession: {
       totalCorrectAnswers: resultadoRasa.totalCorrectAnswers,

@@ -4,6 +4,7 @@ export interface QuizResultData {
   totalWrongAnswers: number;
   detalhes: {
     questions: Array<{
+      explanation: any;
       level: string;
       subject: string;
       selectedOption: {

@@ -30,7 +30,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const allowedOrigins = [
     process.env.FRONT_URL,
     process.env.FRONT_URL_TESTE
-].filter(Boolean); // remove undefined ou vazio
+].filter(Boolean);
 
 app.use(cors({
     origin: (origin, callback) => {

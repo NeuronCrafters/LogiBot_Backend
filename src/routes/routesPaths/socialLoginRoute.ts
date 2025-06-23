@@ -1,58 +1,59 @@
-import { Router } from 'express';
-import { passport } from '../../config/socialLogin/passport';
+import { Router } from "express";
+import { passport } from "../../config/socialLogin/passport";
 
 const socialLoginRoute = Router();
 
-// Rota para login com Google 
+/* ---------- LOGIN (Google) ---------- */
 socialLoginRoute.get(
-  '/auth/google/login',
-  passport.authenticate('google-login', { scope: ['profile', 'email'] })
+    "/auth/google/login",
+    passport.authenticate("google-login", { scope: ["profile", "email"] })
 );
 
-// Callback do Google para login
+/* ---------- CALLBACK ---------- */
 socialLoginRoute.get(
-  '/auth/google/login-callback',
-  passport.authenticate('google-login', { session: false }),
-  (req, res) => {
-    const { user, token } = req.user as any;
-    return res.json({
-      message: 'Login com Google realizado com sucesso!',
-      user,
-      token,
-    });
-  }
+    "/auth/google/login-callback",
+    (req, res, next) =>
+        passport.authenticate(
+            "google-login",
+            { session: false },
+            (err, data, info) => {
+                if (err) return next(err);
+
+                if (!data) {
+                    return res.status(404).json({
+                        success: false,
+                        message: info?.message || "Usuário não encontrado.",
+                    });
+                }
+
+                const { user, token } = data as any;
+
+                // 🔒 Define cookie seguro com JWT
+                res.cookie("token", token, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: "none",
+                    maxAge: 24 * 60 * 60 * 1000,
+                });
+
+                // 🔁 Redirecionamento pós-login
+                const redirectTo =
+                    (req.query.redirect as string | undefined) ||
+                    process.env.GOOGLE_LOGIN_REDIRECT ||
+                    "https://saellogibot.com/chat";
+
+                return res.redirect(redirectTo);
+            }
+        )(req, res, next)
 );
 
-// Rota para cadastro novos usuários com o Google
-socialLoginRoute.get(
-  '/auth/google/signup',
-  passport.authenticate('google-signup', { scope: ['profile', 'email'] })
-);
+/* ---------- PROFILE (debug) ---------- */
+socialLoginRoute.get("/profile", (req, res) => {
+    if (!req.isAuthenticated?.() || !req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+    }
 
-// Callback do Google para cadastro
-socialLoginRoute.get(
-  '/auth/google/callback',
-  passport.authenticate('google-signup', { session: false }),
-  (req, res) => {
-    const { user, token } = req.user as any;
-    return res.json({
-      message: 'Cadastro com Google realizado com sucesso!',
-      user,
-      token,
-    });
-  }
-);
-
-// Rota para verificar perfil do usuário autenticado
-socialLoginRoute.get('/profile', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: 'Usuário não autenticado.' });
-  }
-
-  res.json({
-    message: 'Perfil do usuário autenticado',
-    user: req.user,
-  });
+    res.json({ message: "Perfil do usuário autenticado", user: req.user });
 });
 
 export { socialLoginRoute };

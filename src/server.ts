@@ -45,6 +45,7 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
 }));
 
+
 // ---- Middlewares gerais ----
 app.use(cookieParser());
 app.use(express.json());

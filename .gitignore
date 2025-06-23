@@ -7,5 +7,7 @@ node_modules
 .env
 backend/express/dotenv
 dotenv
-
+.xml
+.iml
+.idea
 .env.test

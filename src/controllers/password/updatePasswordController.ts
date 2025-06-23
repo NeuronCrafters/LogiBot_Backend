@@ -7,33 +7,36 @@ class UpdatePasswordController {
 
     try {
       if (!currentPassword || !newPassword) {
-        throw new Error("Os campos 'currentPassword' e 'newPassword' são obrigatórios.");
+        return res.status(400).json({
+          error: "Os campos 'currentPassword' e 'newPassword' são obrigatórios.",
+        });
       }
-
 
       const userId = req.user?.id;
       const roles = req.user?.role;
 
-      if (!userId || !roles) {
-        throw new Error("Informações do usuário ausentes no token.");
+      if (!userId || !roles || !Array.isArray(roles)) {
+        return res.status(401).json({
+          error: "Usuário não autenticado corretamente.",
+        });
       }
 
       const allowedRoles = ["professor", "student", "admin"] as const;
-      const role = roles.find((r: string) => allowedRoles.includes(r as any));
+      const role = roles.find((r: string) =>
+          allowedRoles.includes(r as typeof allowedRoles[number])
+      ) as typeof allowedRoles[number] | undefined;
 
       if (!role) {
-        throw new Error("Papel inválido.");
+        return res.status(403).json({ error: "Papel de usuário inválido." });
       }
 
-
       const service = new UpdatePasswordService();
-      await service.updatePassword(userId, currentPassword, newPassword, role as "professor" | "student" | "admin");
 
+      await service.updatePassword(userId, currentPassword, newPassword, role);
 
       return res.status(200).json({ message: "Senha atualizada com sucesso." });
-    } catch (error) {
-
-      return res.status(400).json({ error: error.message });
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || "Erro ao atualizar a senha." });
     }
   }
 }

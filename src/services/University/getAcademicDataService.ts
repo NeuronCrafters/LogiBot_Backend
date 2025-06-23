@@ -10,7 +10,7 @@ interface UserContext {
     role: string[];
     school: string;
     course?: string;
-    class?: string;
+    classes?: string[];
     disciplines?: string[];
 }
 
@@ -340,22 +340,43 @@ function determineUserAccess(user: UserContext) {
     }
 
     // PROFESSOR - pode ver dados das disciplinas que leciona
+    // if (isProfessor) {
+    //     return {
+    //         universityFilter: { _id: user.school },
+    //         courseFilter: user.course ? { _id: user.course } : {},
+    //         classFilter: {},
+    //         disciplineFilter: user.disciplines && user.disciplines.length > 0
+    //             ? { _id: { $in: user.disciplines } }
+    //             : { _id: 'nonexistent' }, // Se não tem disciplinas, não vê nada
+    //         studentFilter: user.disciplines && user.disciplines.length > 0
+    //             ? { disciplines: { $in: user.disciplines } }
+    //             : { _id: 'nonexistent' },
+    //         professorFilter: { _id: user._id }, // só ele mesmo nos professores das disciplinas
+    //         canViewClasses: false, // professor não vê turmas completas
+    //         canViewDisciplines: true,
+    //         canViewStudents: true,
+    //         canViewProfessors: false, // não pode ver outros professores do curso
+    //     };
+    // }
+
     if (isProfessor) {
         return {
             universityFilter: { _id: user.school },
             courseFilter: user.course ? { _id: user.course } : {},
-            classFilter: {},
-            disciplineFilter: user.disciplines && user.disciplines.length > 0
+            classFilter: user.classes && user.classes.length
+                ? { _id: { $in: user.classes } }
+                : { _id: 'nonexistent' },
+            disciplineFilter: user.disciplines?.length
                 ? { _id: { $in: user.disciplines } }
-                : { _id: 'nonexistent' }, // Se não tem disciplinas, não vê nada
-            studentFilter: user.disciplines && user.disciplines.length > 0
+                : { _id: 'nonexistent' },
+            studentFilter: user.disciplines?.length
                 ? { disciplines: { $in: user.disciplines } }
                 : { _id: 'nonexistent' },
-            professorFilter: { _id: user._id }, // só ele mesmo nos professores das disciplinas
-            canViewClasses: false, // professor não vê turmas completas
+            professorFilter: { _id: user._id },
+            canViewClasses: true,                // ← libera turmas
             canViewDisciplines: true,
             canViewStudents: true,
-            canViewProfessors: false, // não pode ver outros professores do curso
+            canViewProfessors: false,
         };
     }
 

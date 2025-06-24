@@ -1,5 +1,3 @@
-// src/services/rasa/ActionService/rasaVerificationService.ts
-
 import axios from 'axios';
 import { AppError } from "../../../exceptions/AppError";
 import { QuizResultData } from "../types/QuizResultData";
@@ -17,7 +15,7 @@ class RasaVerificationService {
     private readonly rasaUrl: string;
 
     constructor() {
-        this.rasaUrl = process.env.RASA_URL;
+        this.rasaUrl = process.env.RASA_URL!;
     }
 
     async verificarRespostasComRasa(userId: string, respostas: string[]): Promise<QuizResultData> {
@@ -44,13 +42,16 @@ class RasaVerificationService {
             const resultMessage = rasaMessages.find(msg => msg.custom?.type === 'quiz_result');
 
             if (!resultMessage || !resultMessage.custom?.data) {
+                console.error('Resposta Rasa (debug):', JSON.stringify(rasaMessages, null, 2));
                 throw new AppError("Formato de resposta inválido do Rasa", 500);
             }
 
-            return resultMessage.custom.data;
+            const data = resultMessage.custom.data;
+
+            return data;
 
         } catch (error: any) {
-            throw new AppError("Erro ao comunicar com o Rasa: " + error.message, 500);
+            throw new AppError("Erro ao comunicar com o Rasa: " + (error.message || error), 500);
         }
     }
 

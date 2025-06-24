@@ -1,9 +1,11 @@
 export interface QuizResultData {
+  feedback: any;
   message: string;
   totalCorrectAnswers: number;
   totalWrongAnswers: number;
   detalhes: {
     questions: Array<{
+      question: any;
       explanation: any;
       level: string;
       subject: string;

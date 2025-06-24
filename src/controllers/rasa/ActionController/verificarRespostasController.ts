@@ -1,3 +1,5 @@
+// src/controllers/rasa/ActionController/verificarRespostasController.ts
+
 import { Request, Response } from "express";
 import { RasaVerificationService } from "../../../services/rasa/ActionService/RasaVerificationService";
 import { verificarRespostasService } from "../../../services/rasa/ActionService/verificarRespostasService";
@@ -6,10 +8,20 @@ import { UserAnalysis } from "../../../models/UserAnalysis";
 import { AppError } from "../../../exceptions/AppError";
 import { QuizResultData } from "../../../services/rasa/types/QuizResultData";
 
+interface AnswerDetail {
+  question: string;
+  selectedOption: {
+    question: string;
+    isCorrect: string;
+    isSelected: string;
+  };
+  correctOption: string;
+  explanation: string;
+}
+
 export async function verificarRespostasController(req: Request, res: Response) {
   try {
     const { respostas, useRasaVerification = true } = req.body;
-
     if (!Array.isArray(respostas)) {
       return res.status(400).json({ message: "As respostas devem ser um array." });
     }
@@ -18,36 +30,33 @@ export async function verificarRespostasController(req: Request, res: Response) 
     const email = req.user.email;
     const role = req.user.role;
     const session = getSession(userId);
-
     if (!session?.lastAnswerKeys?.length || !session?.lastQuestions?.length) {
       return res.status(400).json({ message: "Sessão inválida: perguntas ou gabarito ausentes." });
     }
 
-    let resultadoRasa;
+    let rawResult: QuizResultData & { source?: string };
+
+    // 1) Tenta Rasa humanized
     if (useRasaVerification) {
       try {
         const rasaService = new RasaVerificationService();
-        const rasaDisponivel = await rasaService.testarConexaoRasa();
-
-        if (rasaDisponivel) {
-          resultadoRasa = await rasaService.verificarRespostasComRasa(userId, respostas);
-
+        if (await rasaService.testarConexaoRasa()) {
+          rawResult = await rasaService.verificarRespostasComRasa(userId, respostas);
           const isStudent = Array.isArray(role) ? role.includes("student") : role === "student";
           if (isStudent) {
             await ensureUserAnalysisSession(userId, email);
-            await salvarResultadoNoBanco(resultadoRasa, respostas, userId, email);
+            await salvarResultadoNoBanco(rawResult, respostas, userId, email);
           }
-
-          return res.status(200).json({ ...resultadoRasa, source: "rasa_humanized" });
+          return res.status(200).json(transformResult(rawResult));
         }
       } catch (rasaError: any) {
         console.error("Erro no Rasa, fallback:", rasaError.message);
       }
     }
 
-    // Caso o Rasa falhe ou useRasaVerification seja false, utilizamos o método tradicional
-    const result = await verificarRespostasService(respostas, userId, email, session, role);
-    return res.status(200).json({ ...result, source: "traditional" });
+    // 2) Fallback tradicional
+    rawResult = await verificarRespostasService(respostas, userId, email, session, role) as any;
+    return res.status(200).json(transformResult(rawResult));
 
   } catch (error: any) {
     console.error("Erro:", error);
@@ -55,12 +64,62 @@ export async function verificarRespostasController(req: Request, res: Response) 
   }
 }
 
+
+/**
+ * Constrói o JSON que o front-end espera:
+ * {
+ *   totalCorrectAnswers,
+ *   totalWrongAnswers,
+ *   detalhes: { questions: AnswerDetail[] }
+ * }
+ */
+function transformResult(raw: QuizResultData) {
+  // 1) extrai o array de detalhes (pode vir em raw.detalhes.questions ou raw.detalhes diretamente)
+  let list: any[] = [];
+  if (Array.isArray((raw as any).detalhes?.questions)) {
+    list = (raw as any).detalhes.questions;
+  } else if (Array.isArray((raw as any).detalhes)) {
+    list = raw.detalhes as unknown as any[];
+  }
+
+  // 2) extrai feedback separado, se houver
+  const fb1 = Array.isArray((raw as any).detailedFeedback)
+    ? (raw as any).detailedFeedback
+    : [];
+  const fb2 = Array.isArray((raw as any).feedback)
+    ? (raw as any).feedback
+    : [];
+  const feedbacks = fb1.length ? fb1 : fb2;
+
+  // 3) mapeia para AnswerDetail
+  const questions: AnswerDetail[] = list.map((d, i) => ({
+    question: d.question,
+    selectedOption: {
+      question: d.question,
+      // pode vir em d.selectedOption.isCorrect ou em d.isCorrect
+      isCorrect: String(d.selectedOption?.isCorrect ?? d.isCorrect ?? false),
+      // pode vir em d.selectedOption.isSelected ou em d.selected
+      isSelected: d.selectedOption?.isSelected ?? d.selected ?? "",
+    },
+    // pode vir em d.correctAnswer ou em d.correct
+    correctOption: d.correctAnswer ?? d.correct ?? "",
+    // usa d.explanation, se existir, senão feedbacks[i]
+    explanation: typeof d.explanation === "string"
+      ? d.explanation
+      : feedbacks[i] ?? "",
+  }));
+
+  return {
+    totalCorrectAnswers: raw.totalCorrectAnswers,
+    totalWrongAnswers: raw.totalWrongAnswers,
+    detalhes: { questions },
+  };
+}
+
 async function ensureUserAnalysisSession(userId: string, email: string): Promise<void> {
-  let ua = await UserAnalysis.findOne({ userId, email }).exec();
-
+  const ua = await UserAnalysis.findOne({ userId, email }).exec();
   if (!ua) throw new AppError("Usuário não encontrado.", 404);
-
-  if (!ua.sessions || ua.sessions.length === 0 || ua.sessions[ua.sessions.length - 1].sessionEnd) {
+  if (!ua.sessions?.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
     ua.sessions = ua.sessions || [];
     ua.sessions.push({
       sessionStart: new Date(),
@@ -74,43 +133,42 @@ async function ensureUserAnalysisSession(userId: string, email: string): Promise
 }
 
 async function salvarResultadoNoBanco(
-  resultadoRasa: QuizResultData,
+  raw: any,
   respostas: string[],
   userId: string,
   email: string
 ): Promise<void> {
   const ua = await UserAnalysis.findOne({ userId, email }).exec();
   if (!ua) throw new AppError("Usuário não encontrado.", 404);
-  const lastSessionIndex = ua.sessions.length - 1;
+  const idx = ua.sessions.length - 1;
 
-  const newAttempt = {
-    questions: resultadoRasa.detalhes.questions.map(question => ({
-      level: question.level,
-      subject: question.subject,
-      selectedOption: {
-        question: question.selectedOption.question,
-        isCorrect: question.selectedOption.isCorrect,
-        isSelected: question.selectedOption.isSelected,
-      },
-      correctAnswer: question.correctAnswer,
-      explanation: question.explanation,
-      totalCorrectAnswers: question.totalCorrectAnswers,
-      totalWrongAnswers: question.totalWrongAnswers,
-      timestamp: new Date(question.timestamp),
-    })),
+  const attempt = {
+    questions: Array.isArray(raw.detalhes.questions)
+      ? raw.detalhes.questions.map((d: any) => ({
+        level: d.level,
+        subject: d.subject,
+        selectedOption: {
+          question: d.question,
+          isCorrect: d.selectedOption?.isCorrect ?? d.isCorrect,
+          isSelected: d.selectedOption?.isSelected ?? d.selected,
+        },
+        totalCorrectAnswers: d.selectedOption?.isCorrect ?? d.isCorrect ? 1 : 0,
+        totalWrongAnswers: d.selectedOption?.isCorrect ?? d.isCorrect ? 0 : 1,
+        timestamp: new Date(d.timestamp),
+      }))
+      : [],
     totalCorrectWrongAnswersSession: {
-      totalCorrectAnswers: resultadoRasa.totalCorrectAnswers,
-      totalWrongAnswers: resultadoRasa.totalWrongAnswers
-    }
+      totalCorrectAnswers: raw.totalCorrectAnswers,
+      totalWrongAnswers: raw.totalWrongAnswers,
+    },
   };
 
-  ua.sessions[lastSessionIndex].answerHistory = ua.sessions[lastSessionIndex].answerHistory || [];
-  ua.sessions[lastSessionIndex].answerHistory.push(newAttempt);
-  ua.sessions[lastSessionIndex].totalCorrectAnswers += resultadoRasa.totalCorrectAnswers;
-  ua.sessions[lastSessionIndex].totalWrongAnswers += resultadoRasa.totalWrongAnswers;
-  ua.totalCorrectWrongAnswers.totalCorrectAnswers += resultadoRasa.totalCorrectAnswers;
-  ua.totalCorrectWrongAnswers.totalWrongAnswers += resultadoRasa.totalWrongAnswers;
-
-  ua.markModified(`sessions.${lastSessionIndex}.answerHistory`);
+  ua.sessions[idx].answerHistory = ua.sessions[idx].answerHistory || [];
+  ua.sessions[idx].answerHistory.push(attempt);
+  ua.sessions[idx].totalCorrectAnswers += raw.totalCorrectAnswers;
+  ua.sessions[idx].totalWrongAnswers += raw.totalWrongAnswers;
+  ua.totalCorrectWrongAnswers.totalCorrectAnswers += raw.totalCorrectAnswers;
+  ua.totalCorrectWrongAnswers.totalWrongAnswers += raw.totalWrongAnswers;
+  ua.markModified(`sessions.${idx}.answerHistory`);
   await ua.save();
 }

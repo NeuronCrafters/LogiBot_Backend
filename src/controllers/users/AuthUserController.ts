@@ -17,7 +17,7 @@ class AuthUserController {
 
       // Valida reCAPTCHA apenas para login tradicional (não social)
       if (!googleId) {
-        //await verifyRecaptcha(recaptchaToken);
+        await verifyRecaptcha(recaptchaToken);
       }
 
       // Executa o login

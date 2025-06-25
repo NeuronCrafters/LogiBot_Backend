@@ -4,30 +4,39 @@ import { gerarPerguntasService } from "../../../services/rasa/ActionService/gera
 
 export async function gerarPerguntasController(req: Request, res: Response) {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
     const { pergunta } = req.body;
 
-    if (!pergunta) {
-      return res.status(400).json({ message: "A pergunta é obrigatória." });
+    if (!userId) {
+      return res.status(401).json({ message: "Usuário não autenticado." });
+    }
+
+    if (!pergunta || typeof pergunta !== "string" || !pergunta.trim()) {
+      return res.status(400).json({ message: "A pergunta (subtópico) é obrigatória." });
     }
 
     const session = getSession(userId);
 
-    // Chamada ao service
-    const { perguntas, gabarito, nivel, assunto } = await gerarPerguntasService(pergunta, session);
+    const resultado = await gerarPerguntasService(pergunta.trim(), session);
 
-    // Atualiza a sessão
-    session.lastQuestions = perguntas.map((p) => p.question);
-    session.lastAnswerKeys = gabarito;
-    session.lastSubject = assunto;
-    session.nivelAtual = nivel;
+    session.lastQuestions = resultado.perguntas.map(p => p.question);
+    session.lastAnswerKeys = resultado.gabarito;
+    session.lastSubject = resultado.assunto;
+    session.nivelAtual = resultado.nivel;
 
-    return res.status(200).json({ questions: perguntas });
+    return res.status(200).json({
+      success: true,
+      assunto: resultado.assunto,
+      nivel: resultado.nivel,
+      questions: resultado.perguntas,
+      metadata: resultado.metadata || null,
+    });
   } catch (error: any) {
-    console.error("❌ Erro ao gerar perguntas:", error);
-    return res.status(500).json({
-      message: "Erro ao gerar perguntas",
-      error: error.message || "Erro interno",
+    console.error("❌ Erro ao gerar perguntas no controller:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Erro interno ao gerar perguntas.",
     });
   }
 }

@@ -1,9 +1,8 @@
 import "express-async-errors";
 import 'dotenv/config';
 import cors from "cors";
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cookieParser from "cookie-parser";
-import session from 'express-session';
 import passport from 'passport';
 import { connectDB } from './config/database';
 import { setupSwagger } from "./config/swagger/swaggerConfig";
@@ -14,7 +13,7 @@ import { errorHandler } from './middlewares/errorHandler';
 const app = express();
 connectDB();
 
-// ---- Verificação obrigatória de variáveis de ambiente ----
+// ---- Verificação de variáveis obrigatórias ----
 const requiredEnvVars = ['FRONT_URL', 'MONGO_URI', 'JWT_SECRET'];
 for (const varName of requiredEnvVars) {
     if (!process.env[varName]) {
@@ -26,7 +25,7 @@ for (const varName of requiredEnvVars) {
 const FRONT_URL = process.env.FRONT_URL!;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// ---- CORS com origem fixa ----
+// ---- CORS configurado com origem específica ----
 const allowedOrigins = [
     process.env.FRONT_URL,
     process.env.FRONT_URL_TESTE
@@ -45,25 +44,13 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
 }));
 
-
 // ---- Middlewares gerais ----
 app.use(cookieParser());
 app.use(express.json());
 
-// Sessão e autenticação
-app.use(session({
-    secret: process.env.JWT_SECRET!,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-        sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
-        secure: NODE_ENV === 'production'
-    }
-}));
 app.use(passport.initialize());
-app.use(passport.session());
 
-// ---- Rotas e documentação ----
+// ---- Rotas e docs ----
 app.use(routes);
 setupSwagger(app);
 app.use(errorHandler);

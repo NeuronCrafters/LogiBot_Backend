@@ -1,4 +1,3 @@
-// src/services/rasa/ActionService/gerarPerguntasService.ts
 import axios from "axios";
 import { AppError } from "../../../exceptions/AppError";
 import { RasaSessionData } from "../types/RasaSessionData";
@@ -25,10 +24,7 @@ export async function gerarPerguntasService(
   session: RasaSessionData
 ) {
   if (!session.nivelAtual) {
-    throw new AppError(
-      "O nível do usuário precisa ser definido antes de gerar perguntas.",
-      400
-    );
+    throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
   }
 
   session.lastSubject = pergunta;
@@ -44,71 +40,64 @@ export async function gerarPerguntasService(
           nivel: session.nivelAtual,
         },
       },
-    });
-
-    console.log(
-      "📦 Resposta recebida do Rasa:",
-      JSON.stringify(response.data, null, 2)
-    );
+    }, { timeout: 15000 }); // ← aguenta até 15s de resposta do Rasa
 
     const responses = response.data.responses || [];
+    if (!Array.isArray(responses) || responses.length === 0) {
+      throw new AppError("Resposta do Rasa vazia ou malformada.", 502);
+    }
 
-    // 1) Tenta extrair do custom (já parseado)
     let payload: RasaResponse | null = null;
-    const matchedCustom = responses.find((r: any) =>
-      r.custom && Array.isArray(r.custom.questions)
-    );
-    if (matchedCustom) {
-      payload = matchedCustom.custom as RasaResponse;
-    } else {
-      // 2) Fallback: parse do text bruto
-      const rawText = responses[0]?.text;
-      if (typeof rawText !== "string") {
-        console.error("❌ Nenhum texto bruto para parsear JSON");
-        throw new AppError("Resposta do servidor de perguntas mal formatada", 500);
+
+    // 1. Tenta extrair de 'custom'
+    for (const r of responses) {
+      if (r.custom && Array.isArray(r.custom.questions) && Array.isArray(r.custom.answer_keys)) {
+        payload = r.custom;
+        break;
       }
-      const cleaned = extractJson(rawText);
-      payload = JSON.parse(cleaned) as RasaResponse;
+    }
+
+    // 2. Fallback: tenta parsear o texto bruto como JSON
+    if (!payload) {
+      const rawText = responses.find((r: any) => typeof r.text === "string")?.text;
+      if (rawText) {
+        try {
+          const cleaned = extractJson(rawText);
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed.questions) && Array.isArray(parsed.answer_keys)) {
+            payload = parsed;
+          }
+        } catch (e) {
+          console.warn("⚠️ Não foi possível extrair JSON da resposta textual.");
+        }
+      }
     }
 
     if (!payload) {
-      console.error("❌ Payload vazio ou mal formatado da resposta do Rasa");
-      throw new AppError("Resposta do servidor de perguntas mal formatada", 500);
+      throw new AppError("Não foi possível extrair perguntas da resposta do Rasa.", 502);
     }
 
-    console.log("🔍 Validando estrutura das perguntas...");
-
-    if (!Array.isArray(payload.questions) || payload.questions.length === 0) {
-      console.error("❌ Lista de perguntas inválida ou vazia");
-      throw new AppError("Nenhuma pergunta foi gerada", 500);
+    // Validação das perguntas
+    if (!Array.isArray(payload.questions) || payload.questions.length < 5) {
+      throw new AppError("Número insuficiente de perguntas geradas.", 502);
     }
 
-    for (const [index, question] of payload.questions.entries()) {
-      if (!question.question || typeof question.question !== "string") {
-        console.error(`❌ Pergunta ${index + 1} sem texto válido`);
-        throw new AppError(`Pergunta ${index + 1} sem texto válido`, 500);
+    for (const [index, q] of payload.questions.entries()) {
+      if (!q.question || typeof q.question !== "string") {
+        throw new AppError(`Pergunta ${index + 1} está inválida.`, 502);
       }
-      if (!Array.isArray(question.options)) {
-        console.error(`❌ Opções da pergunta ${index + 1} não são uma lista`);
-        throw new AppError(
-          `Opções da pergunta ${index + 1} inválidas`,
-          500
-        );
+      if (!Array.isArray(q.options) || q.options.length !== 5) {
+        throw new AppError(`A pergunta ${index + 1} deve ter exatamente 5 alternativas.`, 502);
       }
     }
 
-    if (!Array.isArray(payload.answer_keys)) {
-      console.warn(
-        "⚠️ Campo 'answer_keys' não é uma array, usando array vazia"
-      );
+    if (!Array.isArray(payload.answer_keys) || payload.answer_keys.length < 5) {
+      console.warn("⚠️ Gabarito incompleto — usando array vazio como fallback.");
       payload.answer_keys = [];
     }
 
-    // Atualiza a sessão
     session.lastQuestions = payload.questions.map((q) => q.question);
     session.lastAnswerKeys = payload.answer_keys;
-
-    console.log("✅ Perguntas validadas com sucesso");
 
     return {
       perguntas: payload.questions,
@@ -123,33 +112,32 @@ export async function gerarPerguntasService(
       response: error.response?.data,
     });
 
-    if (error instanceof AppError) {
-      throw error;
-    }
+    if (error instanceof AppError) throw error;
+
     if (error.response) {
       throw new AppError(
         `Erro no servidor de perguntas: ${error.response.statusText}`,
         502
       );
     }
+
     if (error.request) {
       throw new AppError(
-        "Não foi possível conectar ao servidor de perguntas",
+        "Falha na conexão com o servidor de perguntas",
         503
       );
     }
-    throw new AppError(error.message || "Erro desconhecido ao gerar perguntas", 500);
+
+    throw new AppError("Erro inesperado ao gerar perguntas", 500);
   }
 }
 
-/** 
- * Remove tudo antes do primeiro '{' e depois do último '}' para obter JSON bruto 
- */
+// 🔎 Extrai JSON mesmo que esteja sujo ou rodeado de texto
 function extractJson(text: string): string {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
-  if (start < 0 || end < 0) {
-    throw new Error("Não foi possível encontrar JSON no texto");
+  if (start < 0 || end < 0 || start >= end) {
+    throw new Error("Texto não contém JSON reconhecível");
   }
   return text.slice(start, end + 1);
 }

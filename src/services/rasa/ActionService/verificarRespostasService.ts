@@ -43,7 +43,7 @@ export async function verificarRespostasService(
   let rasaResp;
   try {
     rasaResp = await axios.post(RASA_ACTION_URL, {
-      next_action: "action_check_answers_with_gpt",
+      next_action: "action_check_answers_with_AI",
       tracker: {
         sender_id: userId,
         slots: {

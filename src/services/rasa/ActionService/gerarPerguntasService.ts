@@ -40,7 +40,7 @@ export async function gerarPerguntasService(
           nivel: session.nivelAtual,
         },
       },
-    }, { timeout: 15000 }); // ← aguenta até 15s de resposta do Rasa
+    }, { timeout: 180000 });
 
     const responses = response.data.responses || [];
     if (!Array.isArray(responses) || responses.length === 0) {

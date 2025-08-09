@@ -28,7 +28,6 @@ export async function verificarRespostasService(
   session: RasaSessionData,
   role: string | string[]
 ): Promise<QuizResultData & { source: "rasa" }> {
-  // 1) Validações básicas
   if (
     !session.lastAnswerKeys?.length ||
     !session.lastQuestions?.length
@@ -39,7 +38,6 @@ export async function verificarRespostasService(
     throw new AppError("Número de respostas não corresponde ao número de perguntas.", 400);
   }
 
-  // 2) Chama action_check_answers, preenchendo o slot respostas_usuario
   let rasaResp;
   try {
     rasaResp = await axios.post(RASA_ACTION_URL, {
@@ -48,9 +46,14 @@ export async function verificarRespostasService(
         sender_id: userId,
         slots: {
           respostas_usuario: respostas,
+          nivel: session.nivelAtual,
+          subtopico: session.lastSubject,
         },
       },
-    });
+    },
+      {
+        timeout: 180000
+      });
   } catch (err: any) {
     if (err.response) {
       throw new AppError(`Erro no servidor de correção: ${err.response.statusText}`, 502);
@@ -58,10 +61,7 @@ export async function verificarRespostasService(
     throw new AppError("Não foi possível conectar ao servidor de correção.", 503);
   }
 
-  // 3) Verifica a estrutura da resposta e extrai o conteúdo correto
   const responses = rasaResp.data.responses;
-
-  // Procura a resposta com o payload estruturado
   let structuredResponse = null;
   for (const response of responses) {
     if (response.custom?.type === "quiz_result") {
@@ -77,7 +77,6 @@ export async function verificarRespostasService(
 
   const result: QuizResultData = structuredResponse;
 
-  // 4) Se for estudante, persiste no UserAnalysis
   const isStudent = Array.isArray(role)
     ? role.includes("student")
     : role === "student";
@@ -92,7 +91,7 @@ export async function verificarRespostasService(
         totalCorrectAnswers: 0,
         totalWrongAnswers: 0,
         answerHistory: [],
-      });
+      } as any);
     }
     const si = ua.sessions.length - 1;
 
@@ -125,7 +124,6 @@ export async function verificarRespostasService(
     await ua.save();
   }
 
-  // 5) Retorna o resultado
   return {
     ...result,
     source: "rasa",

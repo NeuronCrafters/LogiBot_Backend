@@ -1,5 +1,3 @@
-// src/controllers/rasa/ActionController/verificarRespostasController.ts
-
 import { Request, Response } from "express";
 import { RasaVerificationService } from "../../../services/rasa/ActionService/RasaVerificationService";
 import { verificarRespostasService } from "../../../services/rasa/ActionService/verificarRespostasService";

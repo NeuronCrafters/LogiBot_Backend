@@ -15,6 +15,7 @@ export async function gerarPerguntasController(req: Request, res: Response) {
       return res.status(400).json({ message: "A pergunta (subtópico) é obrigatória." });
     }
 
+
     const session = getSession(userId);
 
     const resultado = await gerarPerguntasService(pergunta.trim(), session);

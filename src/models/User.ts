@@ -26,7 +26,7 @@ export interface IUser extends Document {
     class: Types.ObjectId;
     disciplines: Types.ObjectId[];
     level?: string;
-    status: "active" | "graduated" | "dropped";
+    status: "active" | "inactive";
     googleId?: string;
     photo?: string;
     resetPasswordToken?: string;

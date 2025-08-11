@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { User } from '../models/User'
 import { Professor } from '../models/Professor';
 
 dotenv.config();
@@ -24,7 +23,7 @@ async function runMigration() {
 
     const update = { $set: { status: 'active' } };
 
-    const result = await User.updateMany(filter, update);
+    const result = await Professor.updateMany(filter, update);
 
     console.log('✨ Migração concluída!');
     console.log(`🔍 Documentos encontrados pelo filtro: ${result.matchedCount}`);

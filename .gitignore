@@ -11,3 +11,4 @@ dotenv
 .iml
 .idea
 .env.test
+dist

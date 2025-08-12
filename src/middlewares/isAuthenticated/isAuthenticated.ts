@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { User } from "../../models/User";
 import { Professor } from "../../models/Professor";
+import { AppError } from "../../exceptions/AppError";
 
 /* ---------- tipagem mínima do token ---------- */
 interface DecodedToken extends JwtPayload {
@@ -45,8 +46,12 @@ export async function isAuthenticated(
     if (normalizeRoles(decoded.role).includes("admin")) {
       const user = await User.findById(decoded.id);
       if (!user) {
-        console.log("[isAuthenticated] Admin não encontrado no modelo User");
-        return res.status(401).json({ error: "Usuário admin não encontrado." });
+        throw new AppError("Usuário admin não encontrado.", 401);
+      }
+
+      // verificação de status para Admin
+      if (user.status !== "active") {
+        throw new AppError("Acesso negado. Sua conta está inativa.", 403);
       }
 
       req.user = {
@@ -67,11 +72,16 @@ export async function isAuthenticated(
     if (normalizeRoles(decoded.role).some(r => ["professor", "course-coordinator"].includes(r))) {
       const professor = await Professor
         .findById(decoded.id)
-        .select("name email role school courses classes");
+        // adicionar 'status' ao select
+        .select("name email role school courses classes status");
 
       if (!professor) {
-        console.log("[isAuthenticated] Professor não encontrado no modelo Professor");
-        return res.status(401).json({ error: "Professor não encontrado." });
+        throw new AppError("Professor não encontrado.", 401);
+      }
+
+      // verificação de status para Professor
+      if (professor.status !== "active") {
+        throw new AppError("Acesso negado. Sua conta está inativa.", 403);
       }
 
       req.user = {
@@ -80,8 +90,8 @@ export async function isAuthenticated(
         email: professor.email,
         role: normalizeRoles(decoded.role),
         school: professor.school?.toString() || null,
-        courses: professor.courses?.map(c => c.toString()) || [],   // ← agora array
-        classes: professor.classes?.map(c => c.toString()) || []    // ← agora array
+        courses: professor.courses?.map(c => c.toString()) || [],
+        classes: professor.classes?.map(c => c.toString()) || []
       };
 
       console.log("[isAuthenticated] Professor autenticado:", req.user);
@@ -91,8 +101,12 @@ export async function isAuthenticated(
     /* ---------- ESTUDANTE ---------- */
     const user = await User.findById(decoded.id);
     if (!user) {
-      console.log("[isAuthenticated] Usuário não encontrado em nenhum modelo");
-      return res.status(401).json({ error: "Usuário não encontrado." });
+      throw new AppError("Usuário não encontrado.", 401);
+    }
+
+    // verificação de status para Estudante
+    if (user.status !== "active") {
+      throw new AppError("Acesso negado. Sua conta está inativa.", 403);
     }
 
     req.user = {
@@ -107,8 +121,11 @@ export async function isAuthenticated(
 
     console.log("[isAuthenticated] Usuário autenticado:", req.user);
     return next();
+
   } catch (error) {
-    console.error("[isAuthenticated] Erro:", error);
-    return res.status(401).json({ error: "Token inválido." });
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(new AppError("Token inválido.", 401));
+    }
+    return next(error);
   }
 }

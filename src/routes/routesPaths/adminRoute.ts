@@ -385,6 +385,8 @@ adminRouter.get(
   ListDisciplinesForCoordinatorController
 );
 
+adminRouter.patch("/users/:userId/status", ...isPermissions.isAdmin(), new UpdateUserStatusController().handle);
+
 /**
  * @swagger
  * /admin/coordinator/classes:
@@ -414,51 +416,6 @@ adminRouter.get(
   ListStudentsByClassForCoordinatorController
 );
 
-/**
- * @swagger
- * /admin/users/{userId}/status:
- * patch:
- * tags: [Admin]
- * summary: Atualizar status de um usuário
- * description: Altera o status de qualquer usuário (aluno, professor ou admin) para 'active', 'inactive', etc.
- * security:
- * - bearerAuth: []
- * parameters:
- * - name: userId
- * in: path
- * required: true
- * schema:
- * type: string
- * description: ID do usuário a ser modificado
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required:
- * - status
- * properties:
- * status:
- * type: string
- * enum: [active, inactive, graduated, dropped]
- * description: O novo status para o usuário.
- * responses:
- * 200:
- * description: Status do usuário atualizado com sucesso
- * 400:
- * description: Status inválido ou não fornecido
- * 403:
- * description: Acesso negado, requer privilégios de administrador
- * 404:
- * description: Usuário não encontrado
- */
-// ✅ Atualizar o status de qualquer usuário (apenas admin)
-adminRouter.patch(
-  "/users/:userId/status",
-  ...isPermissions.isAdmin(),
-  new UpdateUserStatusController().handle
-);
 
 adminRouter.delete("/coordinator/student", ...isPermissions.isAdmin(), deleteStudentController)
 

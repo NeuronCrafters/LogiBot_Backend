@@ -52,7 +52,7 @@ const UserSchema: Schema = new Schema<IUser>(
         level: { type: String, default: "desconhecido" },
         status: {
             type: String,
-            enum: ["active", "inactive"],
+            enum: ["active", "inactive", "graduated", "dropped"],
             default: "active",
         },
         googleId: { type: String },

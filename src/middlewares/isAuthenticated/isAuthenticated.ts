@@ -5,25 +5,25 @@ import { Professor } from "../../models/Professor";
 
 /* ---------- tipagem mínima do token ---------- */
 interface DecodedToken extends JwtPayload {
-  id:    string;
-  name:  string;
+  id: string;
+  name: string;
   email: string;
-  role:  string | string[];
+  role: string | string[];
   school?: string;
 }
 
 /* ---------- utilitário ---------- */
 function normalizeRoles(roleField: string | string[] | null | undefined): string[] {
-  if (!roleField)               return [];
+  if (!roleField) return [];
   if (Array.isArray(roleField)) return roleField.filter(Boolean);
   return [roleField];
 }
 
 /* ---------- middleware ---------- */
 export async function isAuthenticated(
-    req: Request,
-    res: Response,
-    next: NextFunction
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) {
   const token = req.cookies.token;
   if (!token) {
@@ -31,7 +31,7 @@ export async function isAuthenticated(
   }
 
   try {
-    const secret  = process.env.JWT_SECRET || "default_secret";
+    const secret = process.env.JWT_SECRET || "default_secret";
     const decoded = jwt.verify(token, secret) as DecodedToken;
 
     console.log("[isAuthenticated] Token decodificado:", {
@@ -50,10 +50,10 @@ export async function isAuthenticated(
       }
 
       req.user = {
-        id:     user._id.toString(),
-        name:   user.name,
-        email:  user.email,
-        role:   normalizeRoles(decoded.role),
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: normalizeRoles(decoded.role),
         school: user.school?.toString() || null,
         courses: null,
         classes: null
@@ -66,8 +66,8 @@ export async function isAuthenticated(
     /* ---------- PROFESSOR / COORDENADOR ---------- */
     if (normalizeRoles(decoded.role).some(r => ["professor", "course-coordinator"].includes(r))) {
       const professor = await Professor
-          .findById(decoded.id)
-          .select("name email role school courses classes");
+        .findById(decoded.id)
+        .select("name email role school courses classes");
 
       if (!professor) {
         console.log("[isAuthenticated] Professor não encontrado no modelo Professor");
@@ -75,11 +75,11 @@ export async function isAuthenticated(
       }
 
       req.user = {
-        id:      professor._id.toString(),
-        name:    professor.name,
-        email:   professor.email,
-        role:    normalizeRoles(decoded.role),
-        school:  professor.school?.toString() || null,
+        id: professor._id.toString(),
+        name: professor.name,
+        email: professor.email,
+        role: normalizeRoles(decoded.role),
+        school: professor.school?.toString() || null,
         courses: professor.courses?.map(c => c.toString()) || [],   // ← agora array
         classes: professor.classes?.map(c => c.toString()) || []    // ← agora array
       };
@@ -96,13 +96,13 @@ export async function isAuthenticated(
     }
 
     req.user = {
-      id:     user._id.toString(),
-      name:   user.name,
-      email:  user.email,
-      role:   normalizeRoles(decoded.role),
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: normalizeRoles(decoded.role),
       school: user.school?.toString() || null,
       courses: user.course?.toString() || null,
-      classes: user.class?.toString()  || null
+      classes: user.class?.toString() || null
     };
 
     console.log("[isAuthenticated] Usuário autenticado:", req.user);

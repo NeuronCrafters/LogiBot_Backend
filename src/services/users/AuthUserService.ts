@@ -45,20 +45,27 @@ class AuthUserService {
       }
     } else {
       user = await Professor
-          .findOne({ email })
-          .select("name email role school courses classes password previousPasswords");
+        .findOne({ email })
+        // adicionar 'status' ao select de Professor
+        .select("name email role school courses classes password previousPasswords status");
       isProfessor = !!user;
       console.log(`[DEBUG] Login tradicional - Professor encontrado: ${!!user}`);
 
       if (!user) {
         user = await User
-            .findOne({ email })
-            .select("name email role school course class password");
+          .findOne({ email })
+          // adicionar 'status' ao select de User
+          .select("name email role school course class password status");
         console.log(`[DEBUG] Login tradicional - User encontrado: ${!!user}`);
       }
     }
 
     if (!user) throw new AppError("Credenciais inválidas.", 401);
+
+    // Verifica o status do usuário antes de qualquer outra coisa.
+    if (user.status !== 'active') {
+      throw new AppError("Sua conta está inativa. Entre em contato com o administrador.", 403);
+    }
 
     // Verificação de senha (apenas se não for login social)
     if (!isSocial) {
@@ -127,18 +134,18 @@ class AuthUserService {
 
     const roles = prioritizeRole(normalizeRoles(user.role));
     const token = sign(
-        {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          role: roles,
-          school: user.school,
-        },
-        process.env.JWT_SECRET!,
-        {
-          subject: user._id.toString(),
-          expiresIn: "1d",
-        }
+      {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: roles,
+        school: user.school,
+      },
+      process.env.JWT_SECRET!,
+      {
+        subject: user._id.toString(),
+        expiresIn: "1d",
+      }
     );
 
     return {
@@ -164,7 +171,7 @@ class AuthUserService {
         if (lastSession && !lastSession.sessionEnd) {
           lastSession.sessionEnd = new Date();
           lastSession.sessionDuration =
-              (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+            (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
 
           await userAnalysis.save();
           console.log(`[UserAnalysis] Sessão encerrada para usuário: ${userId}`);

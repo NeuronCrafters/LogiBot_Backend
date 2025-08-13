@@ -10,7 +10,7 @@ class SendResetPasswordEmailService {
     const generateResetTokenService = new GenerateResetToken();
     const { token } = await generateResetTokenService.execute(cleanEmail);
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const frontendUrl = process.env.FRONTEND_URL;
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     // 2) Configurações do e-mail

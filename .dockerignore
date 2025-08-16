@@ -1,13 +1,13 @@
-# Ignora node_modules (vamos instalar dentro do container)
+# Ignora node_modules 
 node_modules
 
-# Ignora dist (vai ser gerado no build do container)
+# Ignora dist 
 dist
 
 # Ignora arquivos de log
 *.log
 
-# Ignora arquivos de configuração do editor
+# Ignora arquivos de configuração do editor vscode
 .vscode
 .idea
 .dockerignore
@@ -16,16 +16,19 @@ dist
 Dockerfile.dev
 docker-compose.dev.yml
 
+# Ignora arquivos de IDEs da Jetbrains
+.idea
+
 # Ignora sistema operacional
 .DS_Store
 
-# Ignora testes (não precisa pro build de produção)
+# Ignora testes 
 test
 tests
 coverage
 __tests__
 
-# Ignora arquivos de ambiente locais (opcional)
+# Ignora arquivos de ambiente locais
 .env.local
 .env.*.local
 

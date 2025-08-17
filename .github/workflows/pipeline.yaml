@@ -42,21 +42,15 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Navega até o diretório do projeto
             cd ../logibot/LogiBot_Backend
 
-            # Converte o nome do repositório para minúsculas
             REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
 
-            # Login no GitHub Container Registry
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Puxa a imagem mais recente
             docker pull ghcr.io/$REPO_LOWERCASE:latest
 
-            # Atualiza o repositório local
             git pull origin main
 
-            # Reinicia os contêineres
             docker-compose down
             docker-compose up -d --build

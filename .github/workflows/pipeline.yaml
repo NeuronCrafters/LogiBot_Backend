@@ -22,7 +22,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Build and push Docker image
         run: |
           REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
@@ -33,15 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push
     environment: production
-    
+
     steps:
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Deploy to Hetzner VPS
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -52,15 +45,18 @@ jobs:
             # Navega até o diretório do projeto
             cd ../logibot/LogiBot_Backend
 
-            # Converte o nome do repositório para minúsculas para o pull
+            # Converte o nome do repositório para minúsculas
             REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
 
-            # Baixa a última imagem do GitHub Container Registry
+            # Login no GitHub Container Registry
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Puxa a imagem mais recente
             docker pull ghcr.io/$REPO_LOWERCASE:latest
 
-            # Puxa o docker-compose.yml mais recente do Git
+            # Atualiza o repositório local
             git pull origin main
 
-            # Para os contêineres antigos e sobe o novo
+            # Reinicia os contêineres
             docker-compose down
             docker-compose up -d --build

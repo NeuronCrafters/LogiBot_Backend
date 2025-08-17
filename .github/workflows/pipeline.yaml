@@ -79,5 +79,7 @@ jobs:
             export SSH_KEY="${{ secrets.SSH_KEY }}"
             export SSH_USERNAME="${{ secrets.SSH_USERNAME }}"
 
+            
+            docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
             docker-compose down
             docker-compose up -d --build

@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-/* ---------- Subdocumento ---------- */
 export interface PasswordHistoryEntry {
     hash: string;
     changedAt: Date;
@@ -14,7 +13,6 @@ const historySubSchema = new Schema<PasswordHistoryEntry>(
     { _id: false }
 );
 
-/* ---------- Interface principal ---------- */
 export interface IUser extends Document {
     name: string;
     email: string;
@@ -33,7 +31,6 @@ export interface IUser extends Document {
     resetPasswordExpires?: Date;
 }
 
-/* ---------- Schema principal ---------- */
 const UserSchema: Schema = new Schema<IUser>(
     {
         name: { type: String, required: true },

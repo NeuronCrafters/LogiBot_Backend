@@ -12,17 +12,12 @@ import { useAnalysis } from "./routesPaths/userAnalysisRoutes";
 
 const routes = Router();
 
-// Rotas públicas (sem autenticação)
 routes.use("/", authRoute);
 routes.use("/", socialLoginRoute);
 
-// Rota parcialmente protegida
 routes.use("/password", passwordRouter);
 
-// A partir daqui exige autenticação para as rotas
 routes.use(isAuthenticated);
-
-// Rotas protegidas
 routes.use("/admin", adminRouter);
 routes.use("/sael", rasaRouter);
 routes.use("/logs", logRoutes);

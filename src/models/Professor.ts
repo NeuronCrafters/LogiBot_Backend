@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-/* ---------- Subdocumento para histórico de senhas ---------- */
 export interface PasswordHistoryEntry {
     hash: string;
     changedAt: Date;
@@ -14,7 +13,6 @@ const passwordHistorySchema = new Schema<PasswordHistoryEntry>(
     { _id: false }
 );
 
-/* ---------- Interface principal ---------- */
 export interface IProfessor extends Document {
     name: string;
     email: string;
@@ -33,7 +31,6 @@ export interface IProfessor extends Document {
     resetPasswordExpires?: Date;
 }
 
-/* ---------- Schema principal ---------- */
 const ProfessorSchema: Schema = new Schema<IProfessor>(
     {
         name: { type: String, required: true },
@@ -69,7 +66,6 @@ const ProfessorSchema: Schema = new Schema<IProfessor>(
     }
 );
 
-/* ---------- Hook de limpeza ao deletar professor ---------- */
 ProfessorSchema.pre("findOneAndDelete", async function (next) {
     const professor = await this.model.findOne(this.getFilter());
     if (professor) {

@@ -8,12 +8,11 @@ import { connectDB } from './config/database';
 import { setupSwagger } from "./config/swagger/swaggerConfig";
 import './config/socialLogin/passport';
 import { routes } from './routes/routes';
-import { errorHandler } from './middlewares/errorHandler';
+import { errorHandler } from './middlewares/errorHandler/errorHandler';
 
 const app = express();
 connectDB();
 
-// ---- Verificação de variáveis obrigatórias ----
 const requiredEnvVars = ['FRONT_URL', 'MONGO_URI', 'JWT_SECRET'];
 for (const varName of requiredEnvVars) {
     if (!process.env[varName]) {
@@ -22,10 +21,9 @@ for (const varName of requiredEnvVars) {
     }
 }
 
-const FRONT_URL = process.env.FRONT_URL!;
+// const FRONT_URL = process.env.FRONT_URL!;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// ---- CORS configurado com origem específica ----
 const allowedOrigins = [
     process.env.FRONT_URL,
     process.env.FRONT_URL_TESTE
@@ -44,18 +42,15 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
 }));
 
-// ---- Middlewares gerais ----
 app.use(cookieParser());
 app.use(express.json());
 
 app.use(passport.initialize());
 
-// ---- Rotas e docs ----
 app.use(routes);
 setupSwagger(app);
 app.use(errorHandler);
 
-// ---- Tratamento de erros globais ----
 process.on("unhandledRejection", (reason, promise) => {
     console.error("Unhandled Rejection at:", promise, "\nReason:", reason);
 });
@@ -63,7 +58,6 @@ process.on("uncaughtException", (err) => {
     console.error("Uncaught Exception thrown:", err);
 });
 
-// ---- Inicialização do servidor ----
 const port = parseInt(process.env.PORT || '3000', 10);
 app.listen(port, () => {
     console.log(`🚀 Servidor rodando na porta ${port} - Ambiente: ${NODE_ENV}`);

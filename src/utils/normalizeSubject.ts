@@ -56,10 +56,6 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "condicional": "verificacoes"
 };
 
-/**
- * Retorna a chave da categoria (uma das SubjectCounts)
- * ou null se não encontrar.
- */
 export function normalizeSubjectFromMessage(text: string): keyof SubjectCounts | null {
     const norm = normalizeText(text);
     for (const termo in keywordsMap) {

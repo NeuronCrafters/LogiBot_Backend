@@ -5,13 +5,13 @@ export type SubjectCounts = {
     loops: number;
     verificacoes: number;
     operacoes: number;
-    greeting: number;  // saudações (handled elsewhere)
-    farewell: number;  // despedidas (handled elsewhere)
-    usage: number;  // quando/onde usar
-    example: number;  // exemplos de uso
-    code: number;  // solicitações de código
-    quiz: number;  // convite para quiz
-    general: number;  // tudo o mais
+    greeting: number;
+    farewell: number;
+    usage: number;
+    example: number;
+    code: number;
+    quiz: number;
+    general: number;
 };
 
 function normalizeText(text: string): string {
@@ -89,10 +89,6 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "\\bpergunta\\b": "general",
 };
 
-/**
- * Retorna a categoria detectada (uma das SubjectCounts).
- * Se não encontrar nada, sempre devolve "general".
- */
 export function normalizeSubjectFromMessage(text: string): keyof SubjectCounts {
     const norm = normalizeText(text);
 
@@ -103,6 +99,5 @@ export function normalizeSubjectFromMessage(text: string): keyof SubjectCounts {
         }
     }
 
-    // Fallback: tratamento “genérico” para qualquer coisa não reconhecida
     return "general";
 }

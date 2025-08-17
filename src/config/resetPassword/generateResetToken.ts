@@ -14,7 +14,7 @@ class GenerateResetToken {
     const token = jwt.sign({ email: user.email }, secret, { expiresIn: "1h" });
 
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
+    user.resetPasswordExpires = new Date(Date.now() + 3600000);
     await user.save();
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;

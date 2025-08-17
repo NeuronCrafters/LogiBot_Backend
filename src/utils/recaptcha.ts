@@ -20,7 +20,7 @@ export async function verifyRecaptcha(token?: string): Promise<void> {
                     secret,
                     response: token,
                 },
-                timeout: 5000, // 5 segundos de timeout
+                timeout: 5000,
             }
         );
 

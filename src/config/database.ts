@@ -12,10 +12,6 @@ export async function connectDB(): Promise<void> {
     }
 
     await mongoose.connect(uri, {
-      // Essas opções já não são mais necessárias nas versões mais recentes do Mongoose,
-      // Mas fica aí de dica para projetos "legados"
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true,
     });
 
     console.log("Conexão com o MongoDB estabelecida com sucesso!");

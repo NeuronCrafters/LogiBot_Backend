@@ -16,11 +16,6 @@ export function formatSecondsToHHMMSS(seconds: number): string {
   return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
 }
 
-/**
- * Calcula tempo total de uso formatado para relatórios
- * @param seconds Tempo em segundos
- * @returns Objeto com tempo formatado e valores individuais
- */
 export function calculateUsageTime(seconds: number) {
   if (isNaN(seconds) || seconds < 0) {
     seconds = 0;

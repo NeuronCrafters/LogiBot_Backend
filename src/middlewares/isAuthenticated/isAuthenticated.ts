@@ -4,7 +4,6 @@ import { User } from "../../models/User";
 import { Professor } from "../../models/Professor";
 import { AppError } from "../../exceptions/AppError";
 
-/* ---------- tipagem mínima do token ---------- */
 interface DecodedToken extends JwtPayload {
   id: string;
   name: string;
@@ -13,14 +12,12 @@ interface DecodedToken extends JwtPayload {
   school?: string;
 }
 
-/* ---------- utilitário ---------- */
 function normalizeRoles(roleField: string | string[] | null | undefined): string[] {
   if (!roleField) return [];
   if (Array.isArray(roleField)) return roleField.filter(Boolean);
   return [roleField];
 }
 
-/* ---------- middleware ---------- */
 export async function isAuthenticated(
   req: Request,
   res: Response,
@@ -42,14 +39,12 @@ export async function isAuthenticated(
       role: decoded.role
     });
 
-    /* ---------- ADMIN ---------- */
     if (normalizeRoles(decoded.role).includes("admin")) {
       const user = await User.findById(decoded.id);
       if (!user) {
         throw new AppError("Usuário admin não encontrado.", 401);
       }
 
-      // verificação de status para Admin
       if (user.status !== "active") {
         throw new AppError("Acesso negado. Sua conta está inativa.", 403);
       }
@@ -68,18 +63,15 @@ export async function isAuthenticated(
       return next();
     }
 
-    /* ---------- PROFESSOR / COORDENADOR ---------- */
     if (normalizeRoles(decoded.role).some(r => ["professor", "course-coordinator"].includes(r))) {
       const professor = await Professor
         .findById(decoded.id)
-        // adicionar 'status' ao select
         .select("name email role school courses classes status");
 
       if (!professor) {
         throw new AppError("Professor não encontrado.", 401);
       }
 
-      // verificação de status para Professor
       if (professor.status !== "active") {
         throw new AppError("Acesso negado. Sua conta está inativa.", 403);
       }
@@ -98,13 +90,11 @@ export async function isAuthenticated(
       return next();
     }
 
-    /* ---------- ESTUDANTE ---------- */
     const user = await User.findById(decoded.id);
     if (!user) {
       throw new AppError("Usuário não encontrado.", 401);
     }
 
-    // verificação de status para Estudante
     if (user.status !== "active") {
       throw new AppError("Acesso negado. Sua conta está inativa.", 403);
     }

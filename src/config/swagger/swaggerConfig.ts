@@ -6,9 +6,9 @@ const options: swaggerJSDoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Chat SAEL API",
+      title: "LogiBots.AI API",
       version: "1.0.0",
-      description: "Documentação da API do Chat SAEL",
+      description: "Documentação da API do LogiBots.AI",
     },
     servers: [
       {

@@ -9,38 +9,54 @@ on:
       - main
 
 jobs:
-  build:
+  build_and_push:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
         with:
-          node-version: '22.16.0' 
-        
-      - name: Install dependencies
-        run: npm install
-        working-directory: .
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push Docker image
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}:latest .
+          docker push ghcr.io/${{ github.repository }}:latest
 
-      - name: Build project
-        run: npm run build
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-folder
-          path: src/dist/
-        
   deploy:
     runs-on: ubuntu-latest
-    needs: build 
+    needs: build_and_push
+    environment: production
     
     steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
         with:
-          name: build-folder
-          path: .
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Deploy to Hetzner VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # Navega até o diretório do projeto
+            cd ../logibot/LogiBot_Backend
+
+            # Baixa a última imagem do GitHub Container Registry
+            docker pull ghcr.io/${{ github.repository }}:latest
+
+            # Puxa o docker-compose.yml mais recente do Git
+            git pull origin main
+
+            # Para os contêineres antigos e sobe o novo
+            docker-compose down
+            docker-compose up -d --build

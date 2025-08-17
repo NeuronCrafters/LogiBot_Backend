@@ -30,3 +30,9 @@ services:
       - SSH_KEY
       - SSH_USERNAME
     restart: unless-stopped
+    networks:
+      - logibot-network
+
+networks:
+  logibot-network:
+    external: true

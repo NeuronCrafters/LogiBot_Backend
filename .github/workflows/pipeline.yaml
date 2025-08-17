@@ -52,8 +52,11 @@ jobs:
             # Navega até o diretório do projeto
             cd ../logibot/LogiBot_Backend
 
+            # Converte o nome do repositório para minúsculas para o pull
+            REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+
             # Baixa a última imagem do GitHub Container Registry
-            docker pull ghcr.io/${{ github.repository }}:latest
+            docker pull ghcr.io/$REPO_LOWERCASE:latest
 
             # Puxa o docker-compose.yml mais recente do Git
             git pull origin main

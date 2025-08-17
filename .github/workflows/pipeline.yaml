@@ -50,6 +50,8 @@ jobs:
 
             docker pull ghcr.io/$REPO_LOWERCASE:latest
 
+            docker tag ghcr.io/$REPO_LOWERCASE:latest logibot_backend:latest
+
             git pull origin main
 
             export API_KEY="${{ secrets.API_KEY }}"

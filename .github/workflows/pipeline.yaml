@@ -52,5 +52,30 @@ jobs:
 
             git pull origin main
 
+            export API_KEY="${{ secrets.API_KEY }}"
+            export DB_NAME="${{ secrets.DB_NAME }}"
+            export FRONT_URL="${{ secrets.FRONT_URL }}"
+            export GHCR_PAT="${{ secrets.GHCR_PAT }}"
+            export GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
+            export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
+            export GOOGLE_LOGIN_CALLBACK_URL="${{ secrets.GOOGLE_LOGIN_CALLBACK_URL }}"
+            export GOOGLE_LOGIN_REDIRECT="${{ secrets.GOOGLE_LOGIN_REDIRECT }}"
+            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            export MONGO_URI="${{ secrets.MONGO_URI }}"
+            export OLLAMA_API_KEY="${{ secrets.OLLAMA_API_KEY }}"
+            export OLLAMA_API_URL="${{ secrets.OLLAMA_API_URL }}"
+            export OLLAMA_COOKIE="${{ secrets.OLLAMA_COOKIE }}"
+            export RASA="${{ secrets.RASA }}"
+            export RASA_ACTION="${{ secrets.RASA_ACTION }}"
+            export RASA_API="${{ secrets.RASA_API }}"
+            export RECAPTCHA_SECRET_KEY="${{ secrets.RECAPTCHA_SECRET_KEY }}"
+            export SMTP_DOMAIN="${{ secrets.SMTP_DOMAIN }}"
+            export SMTP_EMAIL="${{ secrets.SMTP_EMAIL }}"
+            export SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
+            export SMTP_PORT="${{ secrets.SMTP_PORT }}"
+            export SSH_HOST="${{ secrets.SSH_HOST }}"
+            export SSH_KEY="${{ secrets.SSH_KEY }}"
+            export SSH_USERNAME="${{ secrets.SSH_USERNAME }}"
+
             docker-compose down
             docker-compose up -d --build

@@ -1,9 +1,32 @@
 services:
   backend:
     container_name: logibot_backend
-    image: ghcr.io/ramoncbarbosa/logibot_backend:latest
+    image: logibot_backend
     ports:
       - "3000:3000"
     environment:
-      RASA_ACTION_URL: "http://rasa-action:5055/webhook"
+      - API_KEY
+      - DB_NAME
+      - FRONT_URL
+      - GHCR_PAT
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - GOOGLE_LOGIN_CALLBACK_URL
+      - GOOGLE_LOGIN_REDIRECT
+      - JWT_SECRET
+      - MONGO_URI
+      - OLLAMA_API_KEY
+      - OLLAMA_API_URL
+      - OLLAMA_COOKIE
+      - RASA
+      - RASA_ACTION
+      - RASA_API
+      - RECAPTCHA_SECRET_KEY
+      - SMTP_DOMAIN
+      - SMTP_EMAIL
+      - SMTP_PASSWORD
+      - SMTP_PORT
+      - SSH_HOST
+      - SSH_KEY
+      - SSH_USERNAME
     restart: unless-stopped

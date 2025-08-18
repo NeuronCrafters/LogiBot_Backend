@@ -19,7 +19,7 @@ class CreateUserController {
       }
 
       // Validação de tamanho mínimo da senha
-      if (password.length < 12) {
+      if (password.length < 13) {
         throw new AppError("A senha deve ter pelo menos 12 caracteres!", 400);
       }
 

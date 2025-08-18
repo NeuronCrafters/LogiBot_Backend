@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { CreateUserService } from "../../services/users/CreateUserService";
-import {AppError} from "../../exceptions/AppError";
+import { AppError } from "../../exceptions/AppError";
 
 class CreateUserController {
   async handle(req: Request, res: Response): Promise<Response> {
@@ -20,7 +20,7 @@ class CreateUserController {
 
       // Validação de tamanho mínimo da senha
       if (password.length < 12) {
-        throw new AppError("A senha deve ter pelo menos 6 caracteres!", 400);
+        throw new AppError("A senha deve ter pelo menos 12 caracteres!", 400);
       }
 
       // Validação de nome (mínimo 3 caracteres e apenas letras/acentos/espaços)

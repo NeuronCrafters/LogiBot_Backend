@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline Backend
 
 on: 
   push:
@@ -25,8 +25,13 @@ jobs:
 
       - name: Build and push Docker image
         run: |
+          # Converte o nome do repositório para minúsculas
           REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          
+          # Constroi a imagem
           docker build -t ghcr.io/$REPO_LOWERCASE:latest .
+          
+          # Envia a imagem para o GitHub Container Registry
           docker push ghcr.io/$REPO_LOWERCASE:latest
 
   deploy:
@@ -42,18 +47,13 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd ../logibot/LogiBot_Backend
+            # Navega até o diretório do seu projeto
+             cd ../logibot/LogiBot_Backend
 
-            REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+            # Cria a rede Docker (se não existir) para que os contêineres possam se comunicar
+            docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
 
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            docker pull ghcr.io/$REPO_LOWERCASE:latest
-
-            docker tag ghcr.io/$REPO_LOWERCASE:latest logibot_backend:latest
-
-            git pull origin main
-
+            # Injeta as variáveis de ambiente diretamente no shell
             export API_KEY="${{ secrets.API_KEY }}"
             export DB_NAME="${{ secrets.DB_NAME }}"
             export FRONT_URL="${{ secrets.FRONT_URL }}"
@@ -78,8 +78,18 @@ jobs:
             export SSH_HOST="${{ secrets.SSH_HOST }}"
             export SSH_KEY="${{ secrets.SSH_KEY }}"
             export SSH_USERNAME="${{ secrets.SSH_USERNAME }}"
-
             
-            docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
+            # Puxa o docker-compose.yml mais recente do Git
+            git pull origin main
+
+            # Autenticação e pull da imagem
+            REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker pull ghcr.io/$REPO_LOWERCASE:latest
+            
+            #ve se a rede já existe, se não existir, ele cria
+             docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
+
+            # Sobe o serviço, que lerá as variáveis que acabamos de exportar
             docker-compose down
-            docker-compose up -d --build
+            docker-compose up -d

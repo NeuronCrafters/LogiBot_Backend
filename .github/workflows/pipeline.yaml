@@ -47,7 +47,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Navega até o diretório do seu projeto
+            # Navega até o diretório do projeto
              cd ../logibot/LogiBot_Backend
 
             # Cria a rede Docker (se não existir) para que os contêineres possam se comunicar
@@ -86,10 +86,7 @@ jobs:
             REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ghcr.io/$REPO_LOWERCASE:latest
-            
-            #ve se a rede já existe, se não existir, ele cria
-             docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
 
-            # Sobe o serviço, que lerá as variáveis que acabamos de exportar
+            # Sobe o serviço
             docker-compose down
             docker-compose up -d

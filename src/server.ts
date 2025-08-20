@@ -32,14 +32,16 @@ const allowedOrigins = [
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
+            console.log('Requisição com origin permitido:', origin);
             callback(null, true);
         } else {
+            console.warn('Origin não permitido pelo CORS:', origin);
             callback(new Error("Not allowed by CORS"));
         }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-api-key", "X-Requested-With"],
 }));
 
 app.use(cookieParser());

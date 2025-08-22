@@ -9,8 +9,12 @@ import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRout
 import { academicRoutes } from "./routesPaths/academicRoutes";
 import { logRoutes } from "./routesPaths/logsRoutes";
 import { useAnalysis } from "./routesPaths/userAnalysisRoutes";
+import { healthRoutes } from "./routesPaths/healthRoutes";
 
 const routes = Router();
+
+// Rotas de saúde do sistema (health checks)
+routes.use(healthRoutes);
 
 routes.use("/", authRoute);
 routes.use("/", socialLoginRoute);

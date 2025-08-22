@@ -9,10 +9,14 @@ import { setupSwagger } from "./config/swagger/swaggerConfig";
 import './config/socialLogin/passport';
 import { routes } from './routes/routes';
 import { errorHandler } from './middlewares/errorHandler/errorHandler';
+import { corsConfig, getCorsInfo, logCorsConfig } from './config/cors/ccorsConfig';
+import { corsErrorHandler } from './middlewares/corsErrorHandler/corsErrorHandler';
+import { corsAccessLogger } from "./middlewares/corsErrorHandler/corsAccessLogger";
 
 const app = express();
 connectDB();
 
+// Validação de variáveis de ambiente obrigatórias
 const requiredEnvVars = ['FRONT_URL', 'MONGO_URI', 'JWT_SECRET'];
 for (const varName of requiredEnvVars) {
     if (!process.env[varName]) {
@@ -23,65 +27,13 @@ for (const varName of requiredEnvVars) {
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Configuração dos origins permitidos
-const allowedOrigins = [
-    process.env.FRONT_URL,
-    process.env.FRONT_URL_TESTE,
-    'https://www.saellogibot.com',
-    'https://saellogibot.com',
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:5174'
-].filter(Boolean);
+// Configuração CORS (agora modularizada)
+logCorsConfig();
+app.use(cors(corsConfig));
+// Log de tentativas de acesso não autorizadas
+app.use(corsAccessLogger);
 
-console.log('🌐 CORS configurado');
-console.log('📍 Origins permitidas:', allowedOrigins);
-
-// CONFIGURAÇÃO CORS ÚNICA E COMPLETA
-app.use(cors({
-    origin: (origin, callback) => {
-        // Log de debug
-        console.log(`📨 Origin da requisição: ${origin || 'sem origin'}`);
-
-        // Permite requisições sem origin (Postman, apps mobile, etc.)
-        if (!origin) {
-            console.log('✅ Requisição sem origin permitida');
-            return callback(null, true);
-        }
-
-        // Verifica se o origin está na lista permitida
-        if (allowedOrigins.includes(origin)) {
-            console.log('✅ Origin permitido:', origin);
-            return callback(null, true);
-        }
-
-        console.warn('❌ Origin NÃO permitido:', origin);
-        console.warn('📋 Origins válidos:', allowedOrigins);
-        return callback(new Error(`Origin '${origin}' não permitido pelo CORS`));
-    },
-    credentials: true, // Permite cookies e headers de autenticação
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-        "Origin",
-        "X-Requested-With",
-        "Content-Type",
-        "Accept",
-        "Authorization",
-        "x-api-key",
-        "Cache-Control",
-        "Pragma"
-    ],
-    exposedHeaders: [
-        "Set-Cookie",
-        "Content-Length",
-        "Content-Range"
-    ],
-    preflightContinue: false,
-    optionsSuccessStatus: 200,
-    maxAge: 86400 // Cache preflight por 24 horas
-}));
-
-// Middleware de logging (opcional - apenas para debug)
+// Middleware de logging para requisições
 app.use((req, res, next) => {
     console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'sem origin'}`);
     next();
@@ -94,34 +46,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(passport.initialize());
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: NODE_ENV,
-        cors: 'Configured',
-        allowedOrigins: allowedOrigins.length
-    });
-});
-
-// Rotas principais
+// Rotas principais da aplicação
 app.use(routes);
 setupSwagger(app);
 
-// Middleware de tratamento de erros CORS
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (err.message && err.message.includes('não permitido pelo CORS')) {
-        console.error('🚫 CORS Error:', err.message);
-        return res.status(403).json({
-            error: 'Acesso negado pelo CORS',
-            origin: req.headers.origin,
-            allowedOrigins
-        });
-    }
-    next(err);
-});
+// Middleware de tratamento de erros CORS 
+app.use(corsErrorHandler);
 
 app.use(errorHandler);
 
@@ -134,8 +64,11 @@ process.on("uncaughtException", (err) => {
     console.error("💥 Uncaught Exception thrown:", err);
 });
 
+// Inicialização do servidor
 const port = parseInt(process.env.PORT || '3000', 10);
 app.listen(port, '0.0.0.0', () => {
+    const corsInfo = getCorsInfo();
+
     console.log(`🚀 Servidor rodando na porta ${port} - Ambiente: ${NODE_ENV}`);
-    console.log(`🔒 CORS ativo para ${allowedOrigins.length} origins`);
+    console.log(`🔒 CORS ativo para ${corsInfo.totalOrigins} origins`);
 });

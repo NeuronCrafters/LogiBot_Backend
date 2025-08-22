@@ -21,33 +21,87 @@ for (const varName of requiredEnvVars) {
     }
 }
 
-// const FRONT_URL = process.env.FRONT_URL!;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 const allowedOrigins = [
     process.env.FRONT_URL,
-    process.env.FRONT_URL_TESTE
+    process.env.FRONT_URL_TESTE,
+    'https://www.saellogibot.com',
+    'https://saellogibot.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
 ].filter(Boolean);
+
+console.log('Origins permitidas:', allowedOrigins);
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            console.log('Requisição com origin permitido:', origin);
+        if (!origin) {
+            console.log('Requisição sem origin permitida');
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            console.log('Origin permitido:', origin);
             callback(null, true);
         } else {
-            console.warn('Origin não permitido pelo CORS:', origin);
-            callback(new Error("Not allowed by CORS"));
+            console.warn('Origin NÃO permitido:', origin);
+            console.warn('Origins permitidas:', allowedOrigins);
+            callback(new Error(`Origin ${origin} não permitido pelo CORS`));
         }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-api-key", "X-Requested-With"],
+    allowedHeaders: [
+        "Origin",
+        "X-Requested-With",
+        "Content-Type",
+        "Accept",
+        "Authorization",
+        "x-api-key",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Headers",
+        "Access-Control-Allow-Methods"
+    ],
+    exposedHeaders: ["Set-Cookie"],
+    preflightContinue: false,
+    optionsSuccessStatus: 200
 }));
 
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    if (!origin || allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+    }
+
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+    res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,x-api-key');
+    res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+
+    if (req.method === 'OPTIONS') {
+        console.log(`Preflight request para: ${req.path}`);
+        return res.status(200).end();
+    }
+
+    next();
+});
+
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(passport.initialize());
+
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
 
 app.use(routes);
 setupSwagger(app);
@@ -56,11 +110,13 @@ app.use(errorHandler);
 process.on("unhandledRejection", (reason, promise) => {
     console.error("Unhandled Rejection at:", promise, "\nReason:", reason);
 });
+
 process.on("uncaughtException", (err) => {
     console.error("Uncaught Exception thrown:", err);
 });
 
 const port = parseInt(process.env.PORT || '3000', 10);
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${port} - Ambiente: ${NODE_ENV}`);
+    console.log(`📍 Origins permitidas: ${allowedOrigins.join(', ')}`);
 });

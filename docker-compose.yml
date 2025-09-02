@@ -15,8 +15,30 @@ services:
       - GOOGLE_LOGIN_REDIRECT
       - JWT_SECRET
       - MONGO_URI
-      - OLLAMA_API_KEY
-      - OLLAMA_API_URL
+      - OLLAMA_API_URL_1
+      - Key_A1
+      - OLLAMA_API_URL_2
+      - Key_A2
+      - OLLAMA_API_URL_3
+      - Key_A3
+      - OLLAMA_API_URL_4
+      - Key_A4
+      - OLLAMA_API_URL_5
+      - Key_A5
+      - OLLAMA_API_URL_6
+      - Key_A6
+      - OLLAMA_API_URL_7
+      - Key_A7
+      - OLLAMA_API_URL_8
+      - Key_A8
+      - OLLAMA_API_URL_9
+      - Key_A9
+      - OLLAMA_API_URL_10
+      - Key_A10
+      - OLLAMA_API_URL_11
+      - Key_A11
+      - OLLAMA_API_URL_12
+      - Key_A12
       - OLLAMA_COOKIE
       - RASA
       - RASA_ACTION

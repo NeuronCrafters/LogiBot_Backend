@@ -112,3 +112,4 @@ jobs:
             # Sobe o serviço
             docker-compose down
             docker-compose up -d
+            

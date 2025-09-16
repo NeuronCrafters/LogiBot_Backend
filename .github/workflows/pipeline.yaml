@@ -27,21 +27,16 @@ jobs:
 
       - name: Construir e publicar a imagem Docker
         run: |
-          # 1. Converte o nome do repositório para minúsculo
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           
-          # 2. Define as tags da imagem (uma com a hash e a 'latest')
           IMAGE_TAG_SHA="ghcr.io/$REPO_LOWERCASE:${{ github.sha }}"
           IMAGE_TAG_LATEST="ghcr.io/$REPO_LOWERCASE:latest"
 
-          # 3. Constroi a imagem com as duas tags
           docker build -t "$IMAGE_TAG_SHA" -t "$IMAGE_TAG_LATEST" .
           
-          # 4. Envia as duas tags para o GitHub Container Registry
           docker push "$IMAGE_TAG_SHA"
           docker push "$IMAGE_TAG_LATEST"
 
-  # --- JOB 2: FAZER O DEPLOY NO CLUSTER KUBERNETES ---
   deploy:
     runs-on: ubuntu-latest
     needs: build_and_push
@@ -52,18 +47,14 @@ jobs:
 
       - name: Substituir a tag da imagem no arquivo de deploy
         run: |
-          # Usamos a mesma lógica para garantir que o nome da imagem está correto
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_NAME="ghcr.io/$REPO_LOWERCASE:${{ github.sha }}"
           
-          # Substituímos a imagem placeholder pela imagem exata que acabamos de construir
           sed -i "s|ghcr.io/ramoncbarbosa/logibot_backend:latest|$IMAGE_NAME|g" k8s/deployment.yaml
           
-          # Debug: mostra o conteúdo do arquivo após a substituição
           echo "=== Conteúdo do deployment.yaml após substituição ==="
           cat k8s/deployment.yaml
-
-      # OPÇÃO 1: Usando kubectl action (método atual - mais simples)
+          
       - name: Deploy no Cluster Kubernetes
         uses: actions-hub/kubectl@master
         env:

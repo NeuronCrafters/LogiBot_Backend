@@ -1,0 +1,115 @@
+name: CI/CD Pipeline Backend
+
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          # Converte o nome do repositório para minúsculas
+          REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          
+          # Constroi a imagem
+          docker build -t ghcr.io/$REPO_LOWERCASE:latest .
+          
+          # Envia a imagem para o GitHub Container Registry
+          docker push ghcr.io/$REPO_LOWERCASE:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    environment: production
+
+    steps:
+      - name: Deploy to Hetzner VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # Navega até o diretório do projeto
+             cd ../logibot/LogiBot_Backend
+
+            # Cria a rede Docker (se não existir) para que os contêineres possam se comunicar
+            docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
+
+            # Injeta as variáveis de ambiente diretamente no shell
+            export API_KEY="${{ secrets.API_KEY }}"
+            export DB_NAME="${{ secrets.DB_NAME }}"
+            export FRONT_URL="${{ secrets.FRONT_URL }}"
+            export GHCR_PAT="${{ secrets.GHCR_PAT }}"
+            export GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
+            export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
+            export GOOGLE_LOGIN_CALLBACK_URL="${{ secrets.GOOGLE_LOGIN_CALLBACK_URL }}"
+            export GOOGLE_LOGIN_REDIRECT="${{ secrets.GOOGLE_LOGIN_REDIRECT }}"
+            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            export MONGO_URI="${{ secrets.MONGO_URI }}"
+            export OLLAMA_API_URL_1="${{ secrets.OLLAMA_API_URL_1 }}"
+            export Key_A1="${{ secrets.KEY_A1 }}"
+            export OLLAMA_API_URL_2="${{ secrets.OLLAMA_API_URL_2 }}"
+            export Key_A2="${{ secrets.KEY_A2 }}"
+            export OLLAMA_API_URL_3="${{ secrets.OLLAMA_API_URL_3 }}"
+            export Key_A3="${{ secrets.KEY_A3 }}"
+            export OLLAMA_API_URL_4="${{ secrets.OLLAMA_API_URL_4 }}"
+            export Key_A4="${{ secrets.KEY_A4 }}"
+            export OLLAMA_API_URL_5="${{ secrets.OLLAMA_API_URL_5 }}"
+            export Key_A5="${{ secrets.KEY_A5 }}"
+            export OLLAMA_API_URL_6="${{ secrets.OLLAMA_API_URL_6 }}"
+            export Key_A6="${{ secrets.KEY_A6 }}"
+            export OLLAMA_API_URL_7="${{ secrets.OLLAMA_API_URL_7 }}"
+            export Key_A7="${{ secrets.KEY_A7 }}"
+            export OLLAMA_API_URL_8="${{ secrets.OLLAMA_API_URL_8 }}"
+            export Key_A8="${{ secrets.KEY_A8 }}"
+            export OLLAMA_API_URL_9="${{ secrets.OLLAMA_API_URL_9 }}"
+            export Key_A9="${{ secrets.KEY_A9 }}"
+            export OLLAMA_API_URL_10="${{ secrets.OLLAMA_API_URL_10 }}"
+            export Key_A10="${{ secrets.KEY_A10 }}"
+            export OLLAMA_API_URL_11="${{ secrets.OLLAMA_API_URL_11 }}"
+            export Key_A11="${{ secrets.KEY_A11 }}"
+            export OLLAMA_API_URL_12="${{ secrets.OLLAMA_API_URL_12 }}"
+            export Key_A12="${{ secrets.KEY_A12 }}"
+            export OLLAMA_COOKIE="${{ secrets.OLLAMA_COOKIE }}"
+            export RASA="${{ secrets.RASA }}"
+            export RASA_ACTION="${{ secrets.RASA_ACTION }}"
+            export RASA_API="${{ secrets.RASA_API }}"
+            export RECAPTCHA_SECRET_KEY="${{ secrets.RECAPTCHA_SECRET_KEY }}"
+            export SMTP_DOMAIN="${{ secrets.SMTP_DOMAIN }}"
+            export SMTP_EMAIL="${{ secrets.SMTP_EMAIL }}"
+            export SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
+            export SMTP_PORT="${{ secrets.SMTP_PORT }}"
+            export SSH_HOST="${{ secrets.SSH_HOST }}"
+            export SSH_KEY="${{ secrets.SSH_KEY }}"
+            export SSH_USERNAME="${{ secrets.SSH_USERNAME }}"
+            
+            # Puxa o docker-compose.yml mais recente do Git
+            git pull origin main
+
+            # Autenticação e pull da imagem
+            REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker pull ghcr.io/$REPO_LOWERCASE:latest
+
+            # Sobe o serviço
+            docker-compose down
+            docker-compose up -d
+            

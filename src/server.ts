@@ -35,7 +35,7 @@ app.use(corsAccessLogger);
 
 // Middleware de logging para requisições
 app.use((req, res, next) => {
-    console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'sem origin'}`);
+    console.log(` ${req.method} ${req.path} - Origin: ${req.headers.origin || 'sem origin'}`);
     next();
 });
 

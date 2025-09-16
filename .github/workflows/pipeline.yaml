@@ -27,8 +27,7 @@ jobs:
 
       - name: Construir e publicar a imagem Docker
         run: |
-          # AQUI ESTÁ A SUA LÓGICA ANTIGA E CORRETA:
-          # 1. Converte o nome do repositório para minúsculas
+      
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           
           # 2. Define as tags da imagem (uma com a hash e a 'latest')

@@ -12,6 +12,8 @@ spec:
       labels:
         app: backend
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: backend-container
           image: ghcr.io/ramoncbarbosa/logibot_backend:latest

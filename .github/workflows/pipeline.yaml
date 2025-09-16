@@ -70,30 +70,3 @@ jobs:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         with:
           args: apply -f k8s/
-
-      # OPÇÃO 2: Setup manual do kubectl (descomente se a OPÇÃO 1 não funcionar)
-      # - name: Setup kubectl
-      #   run: |
-      #     mkdir -p $HOME/.kube
-      #     echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-      #     chmod 600 $HOME/.kube/config
-      #     
-      #     # Verifica se a configuração está correta
-      #     kubectl cluster-info
-      
-      # - name: Deploy to K3s
-      #   run: |
-      #     kubectl apply -f k8s/
-      #     kubectl get pods -n default
-
-      # OPÇÃO 3: Usando Azure k8s-set-context (mais robusto - descomente se precisar)
-      # - name: Set up kubectl
-      #   uses: azure/k8s-set-context@v3
-      #   with:
-      #     method: kubeconfig
-      #     kubeconfig: ${{ secrets.KUBE_CONFIG }}
-      
-      # - name: Deploy to cluster
-      #   run: |
-      #     kubectl apply -f k8s/
-      #     kubectl rollout status deployment/$(grep -o 'name: [^[:space:]]*' k8s/deployment.yaml | head -1 | cut -d' ' -f2)

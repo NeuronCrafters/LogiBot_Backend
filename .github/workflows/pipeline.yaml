@@ -7,7 +7,6 @@ on:
       - main
 
 jobs:
-  # --- JOB 1: CONSTRUIR E PUBLICAR A IMAGEM DOCKER ---
   build_and_push:
     runs-on: ubuntu-latest
     permissions:
@@ -54,7 +53,7 @@ jobs:
           
           echo "=== Conteúdo do deployment.yaml após substituição ==="
           cat k8s/deployment.yaml
-          
+
       - name: Deploy no Cluster Kubernetes
         uses: actions-hub/kubectl@master
         env:

@@ -16,7 +16,7 @@ import { corsAccessLogger } from "./middlewares/corsErrorHandler/corsAccessLogge
 const app = express();
 connectDB();
 
-// Validação de variáveis de ambiente obrigatórias
+// validação de variáveis de ambiente obrigatórias
 const requiredEnvVars = ['FRONT_URL', 'MONGO_URI', 'JWT_SECRET'];
 for (const varName of requiredEnvVars) {
     if (!process.env[varName]) {
@@ -27,7 +27,7 @@ for (const varName of requiredEnvVars) {
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Configuração CORS (agora modularizada)
+// configuração CORS (agora modularizada)
 logCorsConfig();
 app.use(cors(corsConfig));
 // Log de tentativas de acesso não autorizadas

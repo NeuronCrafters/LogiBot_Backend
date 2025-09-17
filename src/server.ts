@@ -30,10 +30,10 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // configuração CORS (agora modularizada)
 logCorsConfig();
 app.use(cors(corsConfig));
-// Log de tentativas de acesso não autorizadas
+// log de tentativas de acesso não autorizadas
 app.use(corsAccessLogger);
 
-// Middleware de logging para requisições
+// middleware de logging para requisições
 app.use((req, res, next) => {
     console.log(` ${req.method} ${req.path} - Origin: ${req.headers.origin || 'sem origin'}`);
     next();
@@ -46,16 +46,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(passport.initialize());
 
-// Rotas principais da aplicação
+// rotas principais da aplicação
 app.use(routes);
 setupSwagger(app);
 
-// Middleware de tratamento de erros CORS 
+// middleware de tratamento de erros CORS 
 app.use(corsErrorHandler);
 
 app.use(errorHandler);
 
-// Error handlers para processos
+// error handlers para processos
 process.on("unhandledRejection", (reason, promise) => {
     console.error("🔥 Unhandled Rejection at:", promise, "\nReason:", reason);
 });
@@ -64,7 +64,7 @@ process.on("uncaughtException", (err) => {
     console.error("💥 Uncaught Exception thrown:", err);
 });
 
-// Inicialização do servidor
+// inicialização do servidor
 const port = parseInt(process.env.PORT || '3000', 10);
 app.listen(port, '0.0.0.0', () => {
     const corsInfo = getCorsInfo();

@@ -37,10 +37,7 @@ socialLoginRoute.get(
                 });
 
                 // 🔁 Redirecionamento pós-login
-                const redirectTo =
-                    (req.query.redirect as string | undefined) ||
-                    process.env.GOOGLE_LOGIN_REDIRECT ||
-                    "https://saellogibot.com/chat";
+                const redirectTo = process.env.GOOGLE_LOGIN_REDIRECT || "https://saellogibot.com";
 
                 return res.redirect(redirectTo);
             }

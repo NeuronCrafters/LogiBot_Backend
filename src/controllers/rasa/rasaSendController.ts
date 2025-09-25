@@ -1,18 +1,19 @@
 import { Request, Response } from "express";
 import { rasaSendService } from "../../services/rasa/rasaSendService";
-import { IUserAnalysis, UserAnalysis } from "../../models/UserAnalysis";
+import { UserAnalysis } from "../../models/UserAnalysis";
 import jwt from "jsonwebtoken";
 import { AppError } from "../../exceptions/AppError";
+import { normalizeText } from "../../utils/normalizeText";
 
 class RasaSendController {
   async handle(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {
     try {
-      const authHeader: string = req.headers.authorization;
+      const authHeader = req.headers.authorization;
       if (!authHeader) {
         throw new AppError("Token não fornecido.", 401);
       }
 
-      const token: any = authHeader.split(" ")[1];
+      const token = authHeader.split(" ")[1];
       if (!token) {
         throw new AppError("Token inválido.", 401);
       }
@@ -30,17 +31,20 @@ class RasaSendController {
 
       console.log(`[DEBUG] Usuário autenticado: ${userId}`);
 
+      // recebe a mensagem original
       const { message } = req.body;
       if (!message) {
         throw new AppError("O campo 'message' é obrigatório.", 400);
       }
 
-      console.log(`[DEBUG] Enviando mensagem para Rasa: ${message}`);
+      // normaliza a mensagem
+      const normalizedMessage = normalizeText(message);
 
-      const response: any = await rasaSendService(message, userId);
+      console.log(`[DEBUG] Enviando mensagem normalizada para Rasa: ${normalizedMessage}`);
+
+      // Usa a mensagem normalize na chamada do serviço
+      const response: any = await rasaSendService(normalizedMessage, userId);
       console.log(`[DEBUG] Resposta do Rasa recebida: ${JSON.stringify(response)}`);
-
-      const botResponse: any = response.length ? response[0].text : "Não foi possível processar sua mensagem.";
 
       const userAnalysis = await UserAnalysis.findOne({ userId });
 
@@ -58,8 +62,8 @@ class RasaSendController {
         questions: [],
         totalCorrectWrongAnswersSession: {
           totalCorrectAnswers: 0,
-          totalWrongAnswers: 0
-        }
+          totalWrongAnswers: 0,
+        },
       });
 
       await userAnalysis.save();
@@ -67,7 +71,7 @@ class RasaSendController {
       console.log(`[UserAnalysis] Interação registrada para usuário: ${userId}`);
 
       return res.json(response);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[RasaControllerSend] Erro ao processar interação:", error);
       return res.status(error.statusCode || 500).json({ error: error.message || "Erro interno no servidor." });
     }

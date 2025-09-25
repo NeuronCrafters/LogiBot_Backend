@@ -44,7 +44,7 @@ socialLoginRoute.get(
         )(req, res, next)
 );
 
-/* ---------- PROFILE (debug) ---------- */
+/* ---------- PROFILE (debug)  ---------- */
 socialLoginRoute.get("/profile", (req, res) => {
     if (!req.isAuthenticated?.() || !req.user) {
         return res.status(401).json({ message: "Usuário não autenticado." });

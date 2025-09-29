@@ -30,6 +30,14 @@ class CreateUserController {
       }
 
 
+      // agora é permitido nomes com números
+      // const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\d]{3,}$/;
+
+      // if (!nameRegex.test(name.trim())) {
+      //   // A mensagem de erro foi atualizada para refletir a nova regra
+      //   throw new AppError("Nome inválido! Deve conter ao menos 3 caracteres e não pode conter símbolos especiais.", 400);
+      // }
+
       const createUserService = new CreateUserService();
 
       const user = await createUserService.createUser({

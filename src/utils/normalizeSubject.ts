@@ -1,4 +1,4 @@
-function normalizeText(text: string): string {
+export function normalizeText(text: string): string {
     return text
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -46,6 +46,7 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "for": "loops",
     "dowhile": "loops",
     "repeat": "loops",
+    "repetição": "loops",
 
     // VERIFICAÇÕES / CONDICIONAIS
     "if": "verificacoes",
@@ -53,7 +54,10 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "elif": "verificacoes",
     "switch": "verificacoes",
     "case": "verificacoes",
-    "condicional": "verificacoes"
+    "condicional": "verificacoes",
+    "condiciones": "verificacoes",
+    "condição": "verificacoes",
+    "condicao": "verificacoes",
 };
 
 export function normalizeSubjectFromMessage(text: string): keyof SubjectCounts | null {

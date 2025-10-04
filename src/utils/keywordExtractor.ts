@@ -57,7 +57,7 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "[+\\-*/]": "operacoes",
     "&&|\\|\\||!": "operacoes",
 
-    // SAUDAÇÕES (se quiser filtrar também aqui)
+    // SAUDAÇÕES
     "\\bola\\b": "greeting",
     "\\boi\\b": "greeting",
 

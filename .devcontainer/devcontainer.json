@@ -1,5 +1,5 @@
 {
-  "name": "Backend (LogiBot)",
+  "name": "Backend (LogiBots.AI)",
 
   "dockerComposeFile": [
     "../docker-compose.dev.yml"

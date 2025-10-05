@@ -1,0 +1,19 @@
+{
+  "name": "Backend (LogiBot)",
+
+  "dockerComposeFile": [
+    "../docker-compose.dev.yml"
+  ],
+
+  "service": "app",
+
+  "workspaceFolder": "/app",
+
+  "customizations": {
+    "jetbrains": {
+      "plugins": [
+        "org.sonarlint.idea"
+      ]
+    }
+  }
+}

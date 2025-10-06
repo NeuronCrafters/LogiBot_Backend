@@ -1,11 +1,9 @@
 import { Request, Response } from "express";
 import { actionPerguntarService } from "../../../services/rasa/ActionChat/perguntarService";
 import { UserAnalysis } from "@/models/UserAnalysis";
-import { normalizeSubjectFromMessage } from "../../../utils/normalizeSubject";
-import { normalizeText } from "../../../utils/normalizeText";
+import { extractAllowedSubject } from "../../../utils/subjectExtractor";
 
 export async function actionPerguntarController(req: Request, res: Response) {
-  // recebe a mensagem original do usuário
   const { message } = req.body;
   const senderId = req.user?.id || "user";
 
@@ -13,12 +11,21 @@ export async function actionPerguntarController(req: Request, res: Response) {
     return res.status(400).json({ error: "Texto da mensagem é obrigatório." });
   }
 
-  // normaliza a mensagem para remover acentos e converter para minúsculas
-  const normalizedMessage = normalizeText(message);
+  const subject = extractAllowedSubject(message);
+
+  if (subject === null) {
+    console.log(`[Gate] Mensagem bloqueada por não ser sobre lógica: "${message}"`);
+    return res.status(200).json({
+      responses: [{
+        text: "Desculpe, só posso conversar sobre lógica de programação."
+      }]
+    });
+  }
+
+  console.log(`[Gate] Mensagem permitida. Assunto: '${subject}'.`);
 
   try {
-    // usa a mensagem normalizada para se comunicar com o serviço da IA
-    const response = await actionPerguntarService(normalizedMessage, senderId);
+    const response = await actionPerguntarService(message, senderId);
 
     const userAnalysis = await UserAnalysis.findOne({ userId: senderId });
 
@@ -26,17 +33,9 @@ export async function actionPerguntarController(req: Request, res: Response) {
       const lastSession = userAnalysis.sessions.at(-1);
 
       if (lastSession && !lastSession.sessionEnd) {
-        // usa a mensagem normalizada para extrair o assunto
-        const subject = normalizeSubjectFromMessage(normalizedMessage);
-
-        if (subject) {
-          userAnalysis.updateSubjectCountsChat(subject);
-          await userAnalysis.save();
-          console.log(`[UserAnalysis] Contagem de assunto '${subject}' atualizada para o chat.`);
-        } else {
-          // loga a mensagem normalizada para consistência
-          console.log(`[UserAnalysis] Nenhum assunto específico identificado na mensagem: "${normalizedMessage}"`);
-        }
+        userAnalysis.updateSubjectCountsChat(subject as any);
+        await userAnalysis.save();
+        console.log(`[UserAnalysis] Contagem de assunto '${subject}' atualizada para o chat.`);
       }
     }
 

@@ -1,15 +1,10 @@
 import { Request, Response } from "express";
+import { RasaVerificationService } from "../../../services/rasa/ActionService/RasaVerificationService";
+import { verificarRespostasService } from "../../../services/rasa/ActionService/verificarRespostasService";
 import { getSession } from "../../../services/rasa/types/sessionMemory";
 import { UserAnalysis } from "../../../models/UserAnalysis";
 import { AppError } from "../../../exceptions/AppError";
 import { QuizResultData } from "../../../services/rasa/types/QuizResultData";
-
-// ADICIONADO: Import do novo serviço de verificação local
-import { QuizVerificationService } from "../../../services/rasa/ActionService/QuizVerificationService";
-
-// REMOVIDO: Imports dos serviços Rasa antigos, não são mais necessários
-// import { RasaVerificationService } from "../../../services/rasa/ActionService/RasaVerificationService";
-// import { verificarRespostasService } from "../../../services/rasa/ActionService/verificarRespostasService";
 
 interface AnswerDetail {
   question: string;
@@ -24,7 +19,7 @@ interface AnswerDetail {
 
 export async function verificarRespostasController(req: Request, res: Response) {
   try {
-    const { respostas } = req.body;
+    const { respostas, useRasaVerification = true } = req.body;
     if (!Array.isArray(respostas)) {
       return res.status(400).json({ message: "As respostas devem ser um array." });
     }
@@ -33,30 +28,37 @@ export async function verificarRespostasController(req: Request, res: Response) 
     const email = req.user.email;
     const role = req.user.role;
     const session = getSession(userId);
-
     if (!session?.lastAnswerKeys?.length || !session?.lastQuestions?.length) {
       return res.status(400).json({ message: "Sessão inválida: perguntas ou gabarito ausentes." });
     }
 
-    // --- LÓGICA SIMPLIFICADA: Chamada única para o serviço local ---
-    // Instancia e usa o novo serviço que contém toda a lógica de verificação e chamada da IA.
-    const quizService = new QuizVerificationService();
-    const rawResult = await quizService.verifyAnswers(respostas, session);
-    // -----------------------------------------------------------------
+    let rawResult: QuizResultData & { source?: string };
 
-    // A lógica para salvar no banco e formatar a resposta para o front-end continua a mesma
-    const isStudent = Array.isArray(role) ? role.includes("student") : role === "student";
-    if (isStudent) {
-      await ensureUserAnalysisSession(userId, email);
-      await salvarResultadoNoBanco(rawResult, respostas, userId, email);
+    // 1) Tenta Rasa humanized
+    if (useRasaVerification) {
+      try {
+        const rasaService = new RasaVerificationService();
+        if (await rasaService.testarConexaoRasa()) {
+          rawResult = await rasaService.verificarRespostasComRasa(userId, respostas);
+          const isStudent = Array.isArray(role) ? role.includes("student") : role === "student";
+          if (isStudent) {
+            await ensureUserAnalysisSession(userId, email);
+            await salvarResultadoNoBanco(rawResult, respostas, userId, email);
+          }
+          return res.status(200).json(transformResult(rawResult));
+        }
+      } catch (rasaError: any) {
+        console.error("Erro no Rasa, fallback:", rasaError.message);
+      }
     }
 
+    // 2) Fallback tradicional
+    rawResult = await verificarRespostasService(respostas, userId, email, session, role) as any;
     return res.status(200).json(transformResult(rawResult));
 
   } catch (error: any) {
-    console.error("Erro ao verificar respostas:", error);
-    const statusCode = error instanceof AppError ? error.statusCode : 500;
-    return res.status(statusCode).json({ message: error.message });
+    console.error("Erro:", error);
+    return res.status(500).json({ message: error.message });
   }
 }
 

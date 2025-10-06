@@ -141,7 +141,11 @@ export class QuizVerificationService {
       message: `Você acertou ${correctCount} de ${lastAnswerKeys.length}.`,
       totalCorrectAnswers: correctCount,
       totalWrongAnswers: lastAnswerKeys.length - correctCount,
-      detalhes: resultDetails,
+      // A correção está aqui: envolvemos o array 'resultDetails' em um objeto
+      // para bater com a estrutura esperada pelo tipo QuizResultData.
+      detalhes: {
+        questions: resultDetails
+      },
       subject: lastSubject || "Desconhecido",
       nivel: nivelAtual || "Desconhecido",
     };

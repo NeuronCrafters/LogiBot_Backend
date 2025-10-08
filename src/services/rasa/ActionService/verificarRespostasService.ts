@@ -52,7 +52,7 @@ export async function verificarRespostasService(
       },
     },
       {
-        timeout: 180000
+        timeout: 310000
       });
   } catch (err: any) {
     if (err.response) {

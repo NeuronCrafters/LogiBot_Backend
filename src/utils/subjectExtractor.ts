@@ -10,6 +10,9 @@ const ALLOWED_SUBJECTS = new Set([
   "estruturas_dados",
   "analise_algoritmos",
   "arquivos_io",
+  "seguranca_cripto",
+  "sistemas_operacionais",
+  "redes_protocolos",
 ]);
 
 const keywordsMap: Record<string, string> = {
@@ -24,7 +27,7 @@ const keywordsMap: Record<string, string> = {
 
   // estruturas de dados
   "\\b(estrutura de dados|estruturas)\\b": "estruturas_dados",
-  "\\b(lista|listas|array|vetor|vetores)\\b": "estruturas_dados",
+  "\\b(lista|listas|array|vetor|vetores | matriz | matrizes)\\b": "estruturas_dados",
   "\\b(pilha|pilhas|stack)\\b": "estruturas_dados",
   "\\b(fila|filas|queue)\\b": "estruturas_dados",
   "\\b(arvore|arvores|tree|binary tree)\\b": "estruturas_dados",
@@ -35,8 +38,19 @@ const keywordsMap: Record<string, string> = {
   // análise de algoritmos
   "\\b(big o|big-o|bignotation|complexidade|performance|desempenho)\\b": "analise_algoritmos",
 
+  "\\b(big o|bigo|big-o| bigo |bignotation|complexidade|performance|desempenho)\\b": "analise_algoritmos",
+
   // arquivos e I/O
   "\\b(arquivo|arquivos|zip|compactado|json|csv|leitura|escrita|i/o)\\b": "arquivos_io",
+
+  // segurança e criptografia
+  "\\b(hash|sha256|sha512|criptografia|criptografico|seguranca|security|cifracao)\\b": "seguranca_cripto",
+
+  // sistemas operacionais
+  "\\b(linux|kernel|sistema operacional|so|os|windows)\\b": "sistemas_operacionais",
+
+  // redes e protocolos
+  "\\b(redes|rede|protocolo|protocolos|http|https|tcp|ip|dns|api|rest)\\b": "redes_protocolos",
 
   // --- geral ---
   "\\b(codigo|code|exemplo|snippet)\\b": "code",

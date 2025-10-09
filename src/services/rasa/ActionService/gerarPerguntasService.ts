@@ -150,7 +150,8 @@ function extractJson(text: string): string {
  * Remove prefixos como "A) ", "B. ", "(C) ", etc., das opções de um quiz.
  */
 function cleanQuestionOptions(questions: RasaQuestion[]): RasaQuestion[] {
-  const prefixRegex = /^\s*\(*[a-zA-Z]\)[\s.-]*/;
+  //const prefixRegex = /^\s*\(*[a-zA-Z]\)[\s.-]*/;
+  const prefixRegex = /^\s*\(?[a-zA-Z]\)?[\.\)]\s*/
   return questions.map(q => ({
     ...q,
     options: q.options.map(option =>

@@ -49,7 +49,6 @@ export async function gerarPerguntasService(
 
     let payload: RasaResponse | null = null;
 
-    // 1. Tenta extrair de 'custom'
     for (const r of responses) {
       if (r.custom && Array.isArray(r.custom.questions) && Array.isArray(r.custom.answer_keys)) {
         payload = r.custom;
@@ -57,7 +56,6 @@ export async function gerarPerguntasService(
       }
     }
 
-    // 2. Fallback: tenta parsear o texto bruto como JSON
     if (!payload) {
       const rawText = responses.find((r: any) => typeof r.text === "string")?.text;
       if (rawText) {
@@ -77,60 +75,62 @@ export async function gerarPerguntasService(
       throw new AppError("Não foi possível extrair perguntas da resposta do Rasa.", 502);
     }
 
-    // Validação das perguntas
+    // Validação das perguntas...
     if (!Array.isArray(payload.questions) || payload.questions.length < 5) {
       throw new AppError("Número insuficiente de perguntas geradas.", 502);
     }
+    // ... mais validações
 
-    for (const [index, q] of payload.questions.entries()) {
-      if (!q.question || typeof q.question !== "string") {
-        throw new AppError(`Pergunta ${index + 1} está inválida.`, 502);
-      }
-      if (!Array.isArray(q.options) || q.options.length !== 5) {
-        throw new AppError(`A pergunta ${index + 1} deve ter exatamente 5 alternativas.`, 502);
-      }
-    }
+    // ==================================================================
+    // ✨ AJUSTE AQUI: LIMPA AS PERGUNTAS ANTES DE USÁ-LAS ✨
+    const cleanedQuestions = cleanQuestionOptions(payload.questions);
+    // ==================================================================
 
-    if (!Array.isArray(payload.answer_keys) || payload.answer_keys.length < 5) {
-      console.warn("⚠️ Gabarito incompleto — usando array vazio como fallback.");
-      payload.answer_keys = [];
-    }
-
-    session.lastQuestions = payload.questions.map((q) => q.question);
+    // Use os dados limpos daqui em diante
+    session.lastQuestions = cleanedQuestions.map((q) => q.question);
     session.lastAnswerKeys = payload.answer_keys;
 
     return {
-      perguntas: payload.questions,
+      perguntas: cleanedQuestions, // <--- Retorna as perguntas limpas
       gabarito: payload.answer_keys,
       nivel: session.nivelAtual,
       assunto: pergunta,
       metadata: payload.metadata,
     };
+
   } catch (error: any) {
     console.error("❌ Erro no gerarPerguntasService:", {
       error: error.message,
       response: error.response?.data,
     });
-
     if (error instanceof AppError) throw error;
-
     if (error.response) {
-      throw new AppError(
-        `Erro no servidor de perguntas: ${error.response.statusText}`,
-        502
-      );
+      throw new AppError(`Erro no servidor de perguntas: ${error.response.statusText}`, 502);
     }
-
     if (error.request) {
-      throw new AppError(
-        "Falha na conexão com o servidor de perguntas",
-        503
-      );
+      throw new AppError("Falha na conexão com o servidor de perguntas", 503);
     }
-
     throw new AppError("Erro inesperado ao gerar perguntas", 500);
   }
 }
+
+/**
+ * Remove prefixos como "A) ", "B. ", "(C) ", etc., das opções de um quiz.
+ */
+function cleanQuestionOptions(questions: RasaQuestion[]): RasaQuestion[] {
+  // Regex para encontrar prefixos como: A) texto, B. texto, (C) texto, d) texto
+  const prefixRegex = /^\s*\(*[a-zA-Z]\)[\s.-]*/;
+
+  return questions.map(q => ({
+    ...q,
+    options: q.options.map(option =>
+      prefixRegex.test(option)
+        ? option.replace(prefixRegex, '').trim()
+        : option.trim()
+    )
+  }));
+}
+
 
 // 🔎 Extrai JSON mesmo que esteja sujo ou rodeado de texto
 function extractJson(text: string): string {

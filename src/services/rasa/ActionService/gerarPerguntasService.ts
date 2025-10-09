@@ -136,7 +136,6 @@ export async function gerarPerguntasService(
   }
 }
 
-// 🔎 Extrai JSON mesmo que esteja sujo ou rodeado de texto
 function extractJson(text: string): string {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -147,7 +146,7 @@ function extractJson(text: string): string {
 }
 
 /**
- * Remove prefixos como "A) ", "B. ", "(C) ", etc., das opções de um quiz.
+ * remove prefixos como "A) ", "B. ", "(C) ", etc., das opções de um quiz
  */
 function cleanQuestionOptions(questions: RasaQuestion[]): RasaQuestion[] {
   //const prefixRegex = /^\s*\(*[a-zA-Z]\)[\s.-]*/;

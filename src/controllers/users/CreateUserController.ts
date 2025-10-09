@@ -24,19 +24,19 @@ class CreateUserController {
       }
 
       // Validação de nome (mínimo 3 caracteres e apenas letras/acentos/espaços)
-      const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]{3,}$/;
-      if (!nameRegex.test(name.trim())) {
-        throw new AppError("Nome inválido! Deve conter ao menos 3 letras e não conter números ou símbolos.", 400);
-      }
+      // const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]{3,}$/;
+      // if (!nameRegex.test(name.trim())) {
+      //   throw new AppError("Nome inválido! Deve conter ao menos 3 letras e não conter números ou símbolos.", 400);
+      // }
 
 
       // agora é permitido nomes com números
-      // const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\d]{3,}$/;
+      const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\d]{3,}$/;
 
-      // if (!nameRegex.test(name.trim())) {
-      //   // A mensagem de erro foi atualizada para refletir a nova regra
-      //   throw new AppError("Nome inválido! Deve conter ao menos 3 caracteres e não pode conter símbolos especiais.", 400);
-      // }
+      if (!nameRegex.test(name.trim())) {
+        // A mensagem de erro foi atualizada para refletir a nova regra
+        throw new AppError("Nome inválido! Deve conter ao menos 3 caracteres e não pode conter símbolos especiais.", 400);
+      }
 
       const createUserService = new CreateUserService();
 

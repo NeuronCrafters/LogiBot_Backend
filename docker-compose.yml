@@ -39,6 +39,22 @@ services:
       - Key_A11
       - OLLAMA_API_URL_12
       - Key_A12
+      - OLLAMA_API_URL_13
+      - Key_A13
+      - OLLAMA_API_URL_14
+      - Key_A14
+      - OLLAMA_API_URL_15
+      - Key_A15
+      - OLLAMA_API_URL_16
+      - Key_A16
+      - OLLAMA_API_URL_17
+      - Key_A17
+      - OLLAMA_API_URL_18
+      - Key_A18
+      - OLLAMA_API_URL_19
+      - Key_A19
+      - OLLAMA_API_URL_20
+      - Key_A20
       - OLLAMA_COOKIE
       - RASA
       - RASA_ACTION

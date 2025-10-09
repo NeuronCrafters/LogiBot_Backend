@@ -1,6 +1,6 @@
 name: CI/CD Pipeline Backend
 
-on: 
+on:
   push:
     branches:
       - main
@@ -27,10 +27,10 @@ jobs:
         run: |
           # Converte o nome do repositório para minúsculas
           REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
-          
+
           # Constroi a imagem
           docker build -t ghcr.io/$REPO_LOWERCASE:latest .
-          
+
           # Envia a imagem para o GitHub Container Registry
           docker push ghcr.io/$REPO_LOWERCASE:latest
 
@@ -89,6 +89,22 @@ jobs:
             export OLLAMA_API_URL_12="${{ secrets.OLLAMA_API_URL_12 }}"
             export Key_A12="${{ secrets.KEY_A12 }}"
             export OLLAMA_COOKIE="${{ secrets.OLLAMA_COOKIE }}"
+            export Key_A13="${{ secrets.KEY_A13 }}"
+            export OLLAMA_API_URL_13="${{ secrets.OLLAMA_API_URL_13 }}"
+            export Key_A14="${{ secrets.KEY_A14 }}"
+            export OLLAMA_API_URL_14="${{ secrets.OLLAMA_API_URL_14 }}"
+            export Key_A15="${{ secrets.KEY_A15 }}"
+            export OLLAMA_API_URL_15="${{ secrets.OLLAMA_API_URL_15 }}"
+            export Key_A16="${{ secrets.KEY_A16 }}"
+            export OLLAMA_API_URL_16="${{ secrets.OLLAMA_API_URL_16 }}"
+            export Key_A17="${{ secrets.KEY_A17 }}"
+            export OLLAMA_API_URL_17="${{ secrets.OLLAMA_API_URL_17 }}"
+            export Key_A18="${{ secrets.KEY_A18 }}"
+            export OLLAMA_API_URL_18="${{ secrets.OLLAMA_API_URL_18 }}"
+            export Key_A19="${{ secrets.KEY_A19 }}"
+            export OLLAMA_API_URL_19="${{ secrets.OLLAMA_API_URL_19 }}"
+            export Key_A20="${{ secrets.KEY_A20 }}"
+            export OLLAMA_API_URL_20="${{ secrets.OLLAMA_API_URL_20 }}"
             export RASA="${{ secrets.RASA }}"
             export RASA_ACTION="${{ secrets.RASA_ACTION }}"
             export RASA_API="${{ secrets.RASA_API }}"
@@ -100,7 +116,7 @@ jobs:
             export SSH_HOST="${{ secrets.SSH_HOST }}"
             export SSH_KEY="${{ secrets.SSH_KEY }}"
             export SSH_USERNAME="${{ secrets.SSH_USERNAME }}"
-            
+
             # Puxa o docker-compose.yml mais recente do Git
             git pull origin main
 
@@ -112,4 +128,3 @@ jobs:
             # Sobe o serviço
             docker-compose down
             docker-compose up -d
-            

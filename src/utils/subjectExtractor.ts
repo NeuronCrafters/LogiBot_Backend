@@ -7,20 +7,42 @@ const ALLOWED_SUBJECTS = new Set([
   "operacoes",
   "code",
   "quiz",
+  "estruturas_dados",
+  "analise_algoritmos",
+  "arquivos_io",
 ]);
 
 const keywordsMap: Record<string, string> = {
-  // Tópicos principais de lógica
   "\\b(variavel|variaveis|variable|var|let|const)\\b": "variaveis",
-  "\\b(tipo|tipos|numero|string|texto|char|boolean|booleano)\\b": "tipos",
-  "\\b(funcao|funcoes|function|metodo|procedure)\\b": "funcoes",
-  "\\b(loop|laco|for|while|repeat|repeticao)\\b": "loops",
-  "\\b(if|else|switch|case|condicional|condicao|verificacao)\\b": "verificacoes",
-  "\\b(operador|operadores|soma|menos|mais|[+\\-*/]|&&|\\|\\||!)\\b": "operacoes",
+  "\\b(tipo|tipos|numero|numeros|inteiro|int|long|string|texto|char|chart|boolean|booleano|bit|byte|base decimal)\\b": "tipos",
+
+  "\\b(funcao|funcoes|function|metodo|procedure|recursao|recursividade)\\b": "funcoes",
+
+  "\\b(loop|laco|for|while|repeat|repeticao|repeticoes)\\b": "loops",
+  "\\b(if|else|switch|case|condicional|condicionais|condicao|condicoes|verificacao|verificacoes|algoritmo|algoritmos)\\b": "verificacoes",
+  "\\b(operador|operadores|soma|menos|mais|[+\\-*/]|&&|\\|\\||!|tabela\\s+verdade|logica booleana|and|not|ou|xor|negacao|negação)\\b": "operacoes",
+
+  // estruturas de dados
+  "\\b(estrutura de dados|estruturas)\\b": "estruturas_dados",
+  "\\b(lista|listas|array|vetor|vetores)\\b": "estruturas_dados",
+  "\\b(pilha|pilhas|stack)\\b": "estruturas_dados",
+  "\\b(fila|filas|queue)\\b": "estruturas_dados",
+  "\\b(arvore|arvores|tree|binary tree)\\b": "estruturas_dados",
+  "\\b(dicionario|dicionarios|map|mapa|hashmap)\\b": "estruturas_dados",
+  "\\b(hash|hashtable|hashlist)\\b": "estruturas_dados",
+  "\\b(linkedlist|lista ligada|listas ligadas)\\b": "estruturas_dados",
+
+  // análise de algoritmos
+  "\\b(big o|big-o|bignotation|complexidade|performance|desempenho)\\b": "analise_algoritmos",
+
+  // arquivos e I/O
+  "\\b(arquivo|arquivos|zip|compactado|json|csv|leitura|escrita|i/o)\\b": "arquivos_io",
+
+  // --- geral ---
   "\\b(codigo|code|exemplo|snippet)\\b": "code",
   "\\b(quiz|praticar|exercicio|desafio)\\b": "quiz",
 
-  // Tópicos a serem barrados (não estão em ALLOWED_SUBJECTS)
+  // --- TÓPICOS A SEREM BARRADOS ---
   "\\b(ola|oi|ei|tudo bem)\\b": "greeting",
   "\\b(tchau|adeus|ate mais)\\b": "farewell",
   "\\b(quem e voce|o que voce faz)\\b": "about_bot",

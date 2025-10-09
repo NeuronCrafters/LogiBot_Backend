@@ -4,7 +4,7 @@ import { conversarService } from "../../../services/rasa/ActionChat/conversarSer
 export async function conversarController(req: Request, res: Response) {
   try {
     const data = await conversarService();
-    // extrai a resposta de texto (ajuste conforme o shape real do Rasa)
+    // extrai a resposta de texto 
     const text =
       Array.isArray(data.messages) && data.messages[0]?.text
         ? data.messages[0].text

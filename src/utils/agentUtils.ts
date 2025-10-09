@@ -12,7 +12,7 @@ interface AgentConfig {
 // Exportada para ser usada no Health Check
 export function getApiConfigs(): AgentConfig[] {
   const configs: AgentConfig[] = [];
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 20; i++) {
     const url = process.env[`OLLAMA_API_URL_${i}`];
     const key = process.env[`Key_A${i}`];
     if (url && key) {

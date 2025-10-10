@@ -1,6 +1,7 @@
 import { AppError } from "../../exceptions/AppError";
 import { makeRequestWithFallback } from "../../utils/agentUtils"
 
+
 /**
  * Service para enviar mensagens do Rasa para o assistente de IA.
  */

@@ -17,7 +17,7 @@ const ALLOWED_SUBJECTS = new Set([
 
 const keywordsMap: Record<string, string> = {
   "\\b(variavel|variaveis|variable|var|let|const)\\b": "variaveis",
-  "\\b(tipo|tipos|numero|numeros|inteiro|int|long|string|texto|char|chart|boolean|booleano|bit|byte|base decimal)\\b": "tipos",
+  "\\b(tipo|tipos|numero|numeros|inteiro|int|long|string|texto|char|chart|boolean|booleano|bit|byte|base decimal | caractere | caracter | caracteres)\\b": "tipos",
 
   "\\b(funcao|funcoes|function|metodo|procedure|recursao|recursividade)\\b": "funcoes",
 

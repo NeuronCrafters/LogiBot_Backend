@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { healthCheck, simpleHealthCheck, readinessCheck } from '../../controllers/health/helth';
+import { HealthCheckController } from '../../controllers/health/healthCheckController';
 
 /**
  * Rotas para monitoramento da saúde da aplicação
@@ -10,6 +11,14 @@ import { healthCheck, simpleHealthCheck, readinessCheck } from '../../controller
  */
 
 const router = Router();
+const agentsHealthController = new HealthCheckController();
+
+/**
+ * GET /health/agents
+ * Verifica a conectividade e o status de todos os 20 agentes de IA externos
+ * Retorna um relatório detalhado para cada agente.
+ */
+router.get('/health/agents', agentsHealthController.handle);
 
 /**
  * GET /health

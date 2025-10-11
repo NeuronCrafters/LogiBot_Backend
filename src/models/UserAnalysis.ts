@@ -116,6 +116,7 @@ export interface IUserAnalysis extends Document {
     verificacoes: number;
   };
   sessions: Array<{
+    lastActivityAt: Date;
     sessionStart: Date;
     sessionEnd?: Date;
     sessionDuration?: number;

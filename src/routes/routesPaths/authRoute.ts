@@ -11,7 +11,7 @@ const authRoute = Router();
 const createUserController = new CreateUserController();
 const updateProfileController = new UpdateProfileController();
 const authUserController = new AuthUserController();
-const logoutController = new LogoutUserController();
+// const logoutController = new LogoutUserController();
 const detailsUserController = new DetailsUserController();
 
 /**
@@ -174,22 +174,22 @@ authRoute.post("/session", authUserController.handle.bind(authUserController));
  */
 authRoute.put("/profile/:userId", ...isPermissions.isAuthenticated(), updateProfileController.handle.bind(updateProfileController));
 
-/**
- * @swagger
- * /logout:
- *   post:
- *     tags: [Auth]
- *     summary: Logout do usuário
- *     description: Invalida o token de sessão do usuário autenticado.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Sessão encerrada com sucesso.
- *       '401':
- *         description: Não autorizado (token inválido ou ausente).
- */
-authRoute.post("/logout", ...isPermissions.isAuthenticated(), logoutController.handle.bind(logoutController));
+// /**
+//  * @swagger
+//  * /logout:
+//  *   post:
+//  *     tags: [Auth]
+//  *     summary: Logout do usuário
+//  *     description: Invalida o token de sessão do usuário autenticado.
+//  *     security:
+//  *       - bearerAuth: []
+//  *     responses:
+//  *       '200':
+//  *         description: Sessão encerrada com sucesso.
+//  *       '401':
+//  *         description: Não autorizado (token inválido ou ausente).
+//  */
+// authRoute.post("/logout", ...isPermissions.isAuthenticated(), logoutController.handle.bind(logoutController));
 
 /**
  * @swagger

@@ -10,6 +10,7 @@ import { academicRoutes } from "./routesPaths/academicRoutes";
 import { logRoutes } from "./routesPaths/logsRoutes";
 import { useAnalysis } from "./routesPaths/userAnalysisRoutes";
 import { healthRoutes } from "./routesPaths/healthRoutes";
+import { logoutRoute } from "./routesPaths/logoutRoute";
 import {updateUserActivity} from "../middlewares/updateUserActivity/updateUserActivity";
 
 const routes = Router();
@@ -21,6 +22,7 @@ routes.use("/", authRoute);
 routes.use("/", socialLoginRoute);
 
 routes.use("/password", passwordRouter);
+routes.use("/", logoutRoute);
 
 routes.use(isAuthenticated);
 routes.use(updateUserActivity);

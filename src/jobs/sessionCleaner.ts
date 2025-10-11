@@ -3,7 +3,7 @@ import { UserAnalysis } from "../models/UserAnalysis";
 import { LogoutUserService } from "../services/users/LogoutUserService";
 
 // 1. AJUSTE O TEMPO DE INATIVIDADE PARA 0.5 MINUTOS (30 SEGUNDOS)
-const INACTIVITY_TIMEOUT_MINUTES = 0.5;
+const INACTIVITY_TIMEOUT_MINUTES = 10;
 
 async function findAndLogoutInactiveUsers() {
     console.log(`[CRON JOB - TESTE] Executando verificação de sessões inativas...`);

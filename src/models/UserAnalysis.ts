@@ -82,6 +82,7 @@ const SessionSchema = new Schema({
   sessionStart: { type: Date, default: Date.now },
   sessionEnd: { type: Date },
   sessionDuration: { type: Number, default: 0 },
+  lastActivityAt: { type: Date, default: Date.now },
   totalCorrectAnswers: { type: Number, default: 0 },
   totalWrongAnswers: { type: Number, default: 0 },
   subjectCountsChat: {

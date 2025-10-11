@@ -10,6 +10,7 @@ import { academicRoutes } from "./routesPaths/academicRoutes";
 import { logRoutes } from "./routesPaths/logsRoutes";
 import { useAnalysis } from "./routesPaths/userAnalysisRoutes";
 import { healthRoutes } from "./routesPaths/healthRoutes";
+import {updateUserActivity} from "../middlewares/updateUserActivity/updateUserActivity";
 
 const routes = Router();
 
@@ -22,6 +23,8 @@ routes.use("/", socialLoginRoute);
 routes.use("/password", passwordRouter);
 
 routes.use(isAuthenticated);
+routes.use(updateUserActivity);
+
 routes.use("/admin", adminRouter);
 routes.use("/sael", rasaRouter);
 routes.use("/logs", logRoutes);

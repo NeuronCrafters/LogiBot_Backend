@@ -146,7 +146,7 @@ function extractJson(text: string): string {
 }
 
 /**
- * remove prefixos como "A) ", "B. ", "(C) ", etc., das opções de um quiz
+ * remove prefixos como "A) ", "B. ", "(C) ", etc., das opções de um bot
  */
 function cleanQuestionOptions(questions: RasaQuestion[]): RasaQuestion[] {
   //const prefixRegex = /^\s*\(*[a-zA-Z]\)[\s.-]*/;

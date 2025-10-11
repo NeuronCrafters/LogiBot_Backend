@@ -27,7 +27,7 @@ const sendController = new RasaSendController();
  * @swagger
  * /sael/action/inicio:
  *   get:
- *     summary: Inicia o bot com os botões de caminho (quiz ou conversa)
+ *     summary: Inicia o bot com os botões de caminho (bot ou conversa)
  *     tags: [Caminho]
  *     security:
  *       - bearerAuth: []
@@ -87,7 +87,7 @@ rasaRouter.post("/action/perguntar", ...isPermissions.isAuthenticated(), actionP
  * @swagger
  * /sael/action/listar_niveis:
  *   get:
- *     summary: Lista os níveis disponíveis para o quiz
+ *     summary: Lista os níveis disponíveis para o bot
  *     tags: [Quiz]
  *     security:
  *       - bearerAuth: []

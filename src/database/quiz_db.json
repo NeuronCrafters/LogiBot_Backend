@@ -1,0 +1,108 @@
+[
+  {
+    "group_id": "ab730842-c47e-46a9-bb0e-2ff043577487",
+    "subject": "o_que_são_variáveis",
+    "level": "Basico",
+    "response": {
+      "questions": [
+        {
+          "question": "O que é uma variável em programação?",
+          "options": [
+            "Um tipo de dado fixo",
+            "Um espaço de armazenamento para dados",
+            "Um comando de execução",
+            "Uma função matemática",
+            "Um erro de sintaxe"
+          ],
+          "explanation": {
+            "A": "Resposta incorreta. A definição correta é 'Um espaço de armazenamento para dados', pois uma variável serve para guardar informações que o programa irá utilizar.",
+            "B": "Parabéns, você acertou! Uma variável funciona como uma 'caixa' na memória do computador onde guardamos valores que podem ser usados e modificados durante a execução do programa.",
+            "C": "Resposta incorreta. A definição correta é 'Um espaço de armazenamento para dados', pois uma variável serve para guardar informações que o programa irá utilizar.",
+            "D": "Resposta incorreta. A definição correta é 'Um espaço de armazenamento para dados', pois uma variável serve para guardar informações que o programa irá utilizar.",
+            "E": "Resposta incorreta. A definição correta é 'Um espaço de armazenamento para dados', pois uma variável serve para guardar informações que o programa irá utilizar."
+          }
+        },
+        {
+          "question": "Qual é a principal função de uma variável?",
+          "options": [
+            "Armazenar informações temporariamente",
+            "Executar funções",
+            "Criar interfaces",
+            "Modificar o código fonte",
+            "Gerar erros"
+          ],
+          "explanation": {
+            "A": "Parabéns, você acertou! A principal função de uma variável é reter dados na memória pelo tempo que forem necessários para as operações de um programa.",
+            "B": "Resposta incorreta. A função principal é 'Armazenar informações temporariamente'. As outras opções descrevem outras partes de um programa, como funções ou a interface.",
+            "C": "Resposta incorreta. A função principal é 'Armazenar informações temporariamente'. As outras opções descrevem outras partes de um programa, como funções ou a interface.",
+            "D": "Resposta incorreta. A função principal é 'Armazenar informações temporariamente'. As outras opções descrevem outras partes de um programa, como funções ou a interface.",
+            "E": "Resposta incorreta. A função principal é 'Armazenar informações temporariamente'. As outras opções descrevem outras partes de um programa, como funções ou a interface."
+          }
+        },
+        {
+          "question": "Qual dos seguintes é um exemplo de uma variável?",
+          "options": [
+            "10",
+            "'Texto'",
+            "nome",
+            "True",
+            "Todos os acima"
+          ],
+          "explanation": {
+            "A": "Resposta incorreta. A opção mais completa é 'Todos os acima', pois todos os itens se relacionam com o conceito de variáveis, seja como um nome ('nome') ou como os dados que elas podem armazenar ('10', 'Texto', 'True').",
+            "B": "Resposta incorreta. A opção mais completa é 'Todos os acima', pois todos os itens se relacionam com o conceito de variáveis, seja como um nome ('nome') ou como os dados que elas podem armazenar ('10', 'Texto', 'True').",
+            "C": "Resposta incorreta. A opção mais completa é 'Todos os acima', pois todos os itens se relacionam com o conceito de variáveis, seja como um nome ('nome') ou como os dados que elas podem armazenar ('10', 'Texto', 'True').",
+            "D": "Resposta incorreta. A opção mais completa é 'Todos os acima', pois todos os itens se relacionam com o conceito de variáveis, seja como um nome ('nome') ou como os dados que elas podem armazenar ('10', 'Texto', 'True').",
+            "E": "Parabéns, você acertou! Todos os itens estão relacionados ao conceito de variáveis: 'nome' é um exemplo de nome de variável, enquanto '10', 'Texto' e 'True' são exemplos de valores que podem ser armazenados em uma."
+          }
+        },
+        {
+          "question": "Como se declara uma variável em Python?",
+          "options": [
+            "var nome",
+            "nome = valor",
+            "declare nome",
+            "nome : valor",
+            "set nome = valor"
+          ],
+          "explanation": {
+            "A": "Resposta incorreta. A sintaxe correta em Python para declarar e atribuir um valor a uma variável é 'nome = valor'.",
+            "B": "Parabéns, você acertou! Em Python, a criação de uma variável é feita através de uma atribuição, usando o sinal de igual (=) para associar um nome a um valor.",
+            "C": "Resposta incorreta. A sintaxe correta em Python para declarar e atribuir um valor a uma variável é 'nome = valor'.",
+            "D": "Resposta incorreta. A sintaxe correta em Python para declarar e atribuir um valor a uma variável é 'nome = valor'.",
+            "E": "Resposta incorreta. A sintaxe correta em Python para declarar e atribuir um valor a uma variável é 'nome = valor'."
+          }
+        },
+        {
+          "question": "Qual é o escopo de uma variável?",
+          "options": [
+            "A duração do programa",
+            "A parte do código onde a variável pode ser acessada",
+            "O tipo de dado que ela armazena",
+            "O valor que ela possui",
+            "O nome da variável"
+          ],
+          "explanation": {
+            "A": "Resposta incorreta. A definição correta é 'A parte do código onde a variável pode ser acessada'. O escopo não se refere ao tipo, valor ou duração da variável, mas sim à sua acessibilidade no código.",
+            "B": "Parabéns, você acertou! O escopo define a 'visibilidade' de uma variável, determinando em quais partes do programa ela existe e pode ser utilizada.",
+            "C": "Resposta incorreta. A definição correta é 'A parte do código onde a variável pode ser acessada'. O escopo não se refere ao tipo, valor ou duração da variável, mas sim à sua acessibilidade no código.",
+            "D": "Resposta incorreta. A definição correta é 'A parte do código onde a variável pode ser acessada'. O escopo não se refere ao tipo, valor ou duração da variável, mas sim à sua acessibilidade no código.",
+            "E": "Resposta incorreta. A definição correta é 'A parte do code onde a variável pode ser acessada'. O escopo não se refere ao tipo, valor ou duração da variável, mas sim à sua acessibilidade no código."
+          }
+        }
+      ],
+      "answer_keys": [
+        "B",
+        "A",
+        "E",
+        "B",
+        "B"
+      ],
+      "metadata": {
+        "subject": "o_que_são_variáveis",
+        "level": "Basico",
+        "generated_at": "2025-07-09T21:37:43.262526"
+      }
+    }
+  }
+]

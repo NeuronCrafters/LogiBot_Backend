@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { actionPerguntarService } from "../../../services/rasa/ActionChat/perguntarService";
 import { UserAnalysis } from "@/models/UserAnalysis";
-import { extractAllowedSubject } from "../../../utils/subjectExtractor";
+import { validateAndEnrichPrompt } from "../../../utils/subjectExtractor";
 
 export async function actionPerguntarController(req: Request, res: Response) {
   const { message } = req.body;
@@ -11,21 +11,20 @@ export async function actionPerguntarController(req: Request, res: Response) {
     return res.status(400).json({ error: "Texto da mensagem é obrigatório." });
   }
 
-  const subject = extractAllowedSubject(message);
+  const validationResult = validateAndEnrichPrompt(message);
 
-  if (subject === null) {
-    console.log(`[Gate] Mensagem bloqueada por não ser sobre lógica: "${message}"`);
+  if (!validationResult) {
     return res.status(200).json({
       responses: [{
-        text: "Desculpe, só posso conversar sobre lógica de programação."
+        text: "Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!"
       }]
     });
   }
 
-  console.log(`[Gate] Mensagem permitida. Assunto: '${subject}'.`);
+  const { subject, prompt } = validationResult;
 
   try {
-    const response = await actionPerguntarService(message, senderId);
+    const response = await actionPerguntarService(prompt, senderId);
 
     const userAnalysis = await UserAnalysis.findOne({ userId: senderId });
 
@@ -34,15 +33,20 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
       if (lastSession && !lastSession.sessionEnd) {
         userAnalysis.updateSubjectCountsChat(subject as any);
+
+        const newCount = lastSession.subjectCountsChat[subject as any] || 1;
+
         await userAnalysis.save();
-        console.log(`[UserAnalysis] Contagem de assunto '${subject}' atualizada para o chat.`);
+
+        console.log(`[UserAnalysis] ✅ Contagem salva com sucesso para o usuário: ${senderId}`);
+        console.log(`[UserAnalysis] ➡️ Tópico: '${subject}' | Novo total: ${newCount}`);
       }
     }
 
     res.status(200).json(response);
 
   } catch (error: any) {
-    console.error("Erro ao conversar com o assistente:", error);
+    console.error("Erro no actionPerguntarController:", error);
     res.status(500).json({ message: "Erro ao conversar com o assistente", error: error.message });
   }
 }

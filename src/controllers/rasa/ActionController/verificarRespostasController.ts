@@ -124,7 +124,8 @@ async function ensureUserAnalysisSession(userId: string, email: string): Promise
       totalCorrectAnswers: 0,
       totalWrongAnswers: 0,
       subjectCountsChat: { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 },
-      answerHistory: []
+      answerHistory: [],
+      lastActivityAt: undefined
     });
     await ua.save();
   }

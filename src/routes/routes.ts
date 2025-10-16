@@ -11,7 +11,8 @@ import { logRoutes } from "./routesPaths/logsRoutes";
 import { useAnalysis } from "./routesPaths/userAnalysisRoutes";
 import { healthRoutes } from "./routesPaths/healthRoutes";
 import { logoutRoute } from "./routesPaths/logoutRoute";
-import {updateUserActivity} from "../middlewares/updateUserActivity/updateUserActivity";
+import { updateUserActivity } from "../middlewares/updateUserActivity/updateUserActivity";
+import { quizRouter } from "./routesPaths/quizRoute";
 
 const routes = Router();
 
@@ -28,6 +29,7 @@ routes.use(isAuthenticated);
 routes.use(updateUserActivity);
 
 routes.use("/admin", adminRouter);
+routes.use("/quiz", quizRouter);
 routes.use("/sael", rasaRouter);
 routes.use("/logs", logRoutes);
 routes.use("/academic-institution", academicInstitutionRouter);

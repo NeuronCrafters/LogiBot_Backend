@@ -3,4 +3,5 @@ export interface RasaSessionData {
   lastAnswerKeys: string[];
   lastSubject: string | null;
   lastQuestions: string[];
+  lastFullQuestions?: any[];
 }

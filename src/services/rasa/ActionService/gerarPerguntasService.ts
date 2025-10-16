@@ -104,7 +104,7 @@ export async function gerarPerguntasService(
     session.lastAnswerKeys = payload.answer_keys;
 
     return {
-      perguntas: cleanedQuestions, // <--- Retorna as perguntas já limpas
+      perguntas: cleanedQuestions,
       gabarito: payload.answer_keys,
       nivel: session.nivelAtual,
       assunto: pergunta,

@@ -255,7 +255,6 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
     });
 
   } else if (subject in session.subjectCountsChat) {
-    // Fallback para caso o assunto seja um dos 5 principais diretamente
     console.log(`[UserAnalysis Model] Assunto '${subject}' é uma categoria principal. Incrementando diretamente.`);
     session.subjectCountsChat[subject as keyof typeof session.subjectCountsChat] += 1;
   } else {

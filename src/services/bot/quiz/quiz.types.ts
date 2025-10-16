@@ -19,6 +19,8 @@ export interface ResultDetail {
   correct: string;
   isCorrect: boolean;
   explanation: string;
+  selectedText: string;
+  correctText: string;
 }
 
 export interface QuizSessionData {

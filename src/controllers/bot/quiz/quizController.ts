@@ -127,23 +127,72 @@ export async function verifyQuizController(req: Request, res: Response) {
 
 // --- Função Auxiliar ---
 
+// async function saveResultToDB(userId: string, email: string, result: any, subject: string | null, level: string | null) {
+//   const ua = await UserAnalysis.findOne({ userId, email }).exec() as IUserAnalysis | null;
+//   if (!ua) throw new AppError("Análise de usuário não encontrada.", 404);
+
+//   if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
+//     ua.sessions.push({ sessionStart: new Date(), answerHistory: [] } as any);
+//   }
+//   const si = ua.sessions.length - 1;
+
+//   ua.sessions[si].answerHistory.push({
+//     questions: result.detalhes.map((d: any) => ({
+//       level: level || "Nível não definido",
+//       subject: subject || "Assunto não definido",
+//       timestamp: new Date(),
+//       totalCorrectAnswers: d.isCorrect ? 1 : 0,
+//       totalWrongAnswers: d.isCorrect ? 0 : 1,
+//       // Objeto aninhado 'selectedOption' conforme o schema
+//       selectedOption: {
+//         question: d.question,
+//         isCorrect: d.isCorrect,
+//         isSelected: d.selected,
+//       },
+//     })),
+//     totalCorrectWrongAnswersSession: {
+//       totalCorrectAnswers: result.totalCorrectAnswers,
+//       totalWrongAnswers: result.totalWrongAnswers,
+//     },
+//   });
+
+//   // MUDANÇA 1: Atualiza as estatísticas globais e da sessão
+//   ua.sessions[si].totalCorrectAnswers = (ua.sessions[si].totalCorrectAnswers || 0) + result.totalCorrectAnswers;
+//   ua.sessions[si].totalWrongAnswers = (ua.sessions[si].totalWrongAnswers || 0) + result.totalWrongAnswers;
+//   ua.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
+//   ua.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
+
+//   // MUDANÇA 2: Utiliza o método do schema para atualizar os contadores de assunto
+//   if (subject) {
+//     ua.updateSubjectCountsQuiz(subject);
+//   }
+
+//   ua.markModified(`sessions`);
+//   await ua.save();
+// }
+
 async function saveResultToDB(userId: string, email: string, result: any, subject: string | null, level: string | null) {
+  console.log(`[saveResultToDB] 💾 Iniciando salvamento do resultado do quiz para o usuário: ${email}`);
+
   const ua = await UserAnalysis.findOne({ userId, email }).exec() as IUserAnalysis | null;
-  if (!ua) throw new AppError("Análise de usuário não encontrada.", 404);
+  if (!ua) {
+    console.error(`[saveResultToDB] ❌ ERRO: Análise de usuário não encontrada para ${email}`);
+    throw new AppError("Análise de usuário não encontrada.", 404);
+  }
 
   if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
+    console.log(`[saveResultToDB] 🔵 Criando nova sessão de análise para o usuário.`);
     ua.sessions.push({ sessionStart: new Date(), answerHistory: [] } as any);
   }
   const si = ua.sessions.length - 1;
 
-  ua.sessions[si].answerHistory.push({
+  const newQuizAttempt = {
     questions: result.detalhes.map((d: any) => ({
       level: level || "Nível não definido",
       subject: subject || "Assunto não definido",
       timestamp: new Date(),
       totalCorrectAnswers: d.isCorrect ? 1 : 0,
       totalWrongAnswers: d.isCorrect ? 0 : 1,
-      // Objeto aninhado 'selectedOption' conforme o schema
       selectedOption: {
         question: d.question,
         isCorrect: d.isCorrect,
@@ -154,19 +203,29 @@ async function saveResultToDB(userId: string, email: string, result: any, subjec
       totalCorrectAnswers: result.totalCorrectAnswers,
       totalWrongAnswers: result.totalWrongAnswers,
     },
-  });
+  };
 
-  // MUDANÇA 1: Atualiza as estatísticas globais e da sessão
+  ua.sessions[si].answerHistory.push(newQuizAttempt);
+
+  // Atualiza os contadores
   ua.sessions[si].totalCorrectAnswers = (ua.sessions[si].totalCorrectAnswers || 0) + result.totalCorrectAnswers;
   ua.sessions[si].totalWrongAnswers = (ua.sessions[si].totalWrongAnswers || 0) + result.totalWrongAnswers;
   ua.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
   ua.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
 
-  // MUDANÇA 2: Utiliza o método do schema para atualizar os contadores de assunto
   if (subject) {
     ua.updateSubjectCountsQuiz(subject);
   }
 
   ua.markModified(`sessions`);
-  await ua.save();
+
+  console.log(`[saveResultToDB] 📦 Dados que serão salvos no 'answerHistory':`, JSON.stringify(newQuizAttempt, null, 2));
+
+  try {
+    await ua.save();
+    console.log(`[saveResultToDB] ✅ Resultado do quiz salvo com sucesso no banco de dados para ${email}!`);
+  } catch (error) {
+    console.error(`[saveResultToDB] ❌ ERRO CRÍTICO ao salvar no banco de dados:`, error);
+    throw new AppError("Falha ao salvar o resultado do quiz.", 500);
+  }
 }

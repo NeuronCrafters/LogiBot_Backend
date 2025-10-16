@@ -12,7 +12,7 @@ import { errorHandler } from './middlewares/errorHandler/errorHandler';
 import { corsConfig, getCorsInfo, logCorsConfig } from './config/cors/ccorsConfig';
 import { corsErrorHandler } from './middlewares/corsErrorHandler/corsErrorHandler';
 import { corsAccessLogger } from "./middlewares/corsErrorHandler/corsAccessLogger";
-import {startSessionCleaner} from "./jobs/sessionCleaner";
+// import {startSessionCleaner} from "./jobs/sessionCleaner";
 
 const app = express();
 connectDB();
@@ -69,7 +69,7 @@ process.on("uncaughtException", (err) => {
 const port = parseInt(process.env.PORT || '3000', 10);
 app.listen(port, '0.0.0.0', () => {
     const corsInfo = getCorsInfo();
-    startSessionCleaner();
+    // startSessionCleaner();
 
     console.log(`🚀 Servidor rodando na porta ${port} - Ambiente: ${NODE_ENV}`);
     console.log(`🔒 CORS ativo para ${corsInfo.totalOrigins} origins`);

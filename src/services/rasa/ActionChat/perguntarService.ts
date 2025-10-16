@@ -1,5 +1,3 @@
-// ARQUIVO ATUALIZADO PARA DIAGNÓSTICO: /src/services/rasa/ActionChat/perguntarService.ts
-
 import { AppError } from '../../../exceptions/AppError';
 import 'dotenv/config';
 import { makeRequestWithFallback } from '../../../utils/agentUtils';

@@ -48,7 +48,7 @@ export const getEmptySubjectCounts = () => ({
   code: 0, quiz: 0
 });
 
-// --- Mapeamento para o Sumário Virtual ---
+// --- mapeamento para o Sumário Virtual ---
 const summaryMapping = {
   variaveis: ['variaveis_tipos'],
   tipos: ['variaveis_tipos', 'operadores', 'estruturas_dados_conceitos', 'estruturas_dados_lineares', 'estruturas_dados_nao_lineares'],

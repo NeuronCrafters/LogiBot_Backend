@@ -114,6 +114,6 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "include": ["src/**/*.ts", "src/**/*.json", "src/jest.config.ts"],           /* Include all TypeScript and JSON files in the `src` directory. */
+  "include": ["src/**/*.ts", "src/**/*.json", "src/jest.config.ts", "src/models/UserAnalysis"],           /* Include all TypeScript and JSON files in the `src` directory. */
   "exclude": ["node_modules"]                            /* Exclude the `node_modules` directory. */
 }

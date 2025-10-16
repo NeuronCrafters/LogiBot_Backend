@@ -12,11 +12,11 @@ interface ProfessorStudentDataParams {
 
 export class ProfessorStudentsService {
   static async getStudentData({
-                                professor,
-                                studentId,
-                                disciplineId,
-                                classId
-                              }: ProfessorStudentDataParams) {
+    professor,
+    studentId,
+    disciplineId,
+    classId
+  }: ProfessorStudentDataParams) {
     try {
       // 1. Primeiro, vamos buscar as disciplinas do professor com base nos filtros
       let disciplineQuery: any = {
@@ -35,8 +35,8 @@ export class ProfessorStudentsService {
       }
 
       const professorDisciplines = await Discipline.find(disciplineQuery)
-          .populate('students')
-          .populate('classes');
+        .populate('students')
+        .populate('classes');
 
       if (professorDisciplines.length === 0) {
         return this.getEmptyResponse("Nenhuma disciplina encontrada para os filtros especificados");
@@ -87,8 +87,8 @@ export class ProfessorStudentsService {
 
       // 6. Busca os dados de análise dos usuários
       const users = studentId
-          ? [await UserAnalysis.findOne(query)].filter(Boolean)
-          : await UserAnalysis.find(query);
+        ? [await UserAnalysis.findOne(query)].filter(Boolean)
+        : await UserAnalysis.find(query);
 
       if (users.length === 0) {
         return this.getEmptyResponse();
@@ -144,13 +144,13 @@ export class ProfessorStudentsService {
 
   private static getDetailedStudentData(user: any) {
     const processedSessions = (user.sessions || [])
-        .filter(
-            (session) =>
-                session.sessionStart && session.sessionEnd && session.sessionDuration
-        )
-        .sort(
-            (a, b) => b.sessionStart.getTime() - a.sessionStart.getTime()
-        );
+      .filter(
+        (session) =>
+          session.sessionStart && session.sessionEnd && session.sessionDuration
+      )
+      .sort(
+        (a, b) => b.sessionStart.getTime() - a.sessionStart.getTime()
+      );
 
     const usageTimeObj = calculateUsageTime(user.totalUsageTime || 0);
 
@@ -158,7 +158,7 @@ export class ProfessorStudentsService {
     processedSessions.forEach((session) => {
       const durationInMinutes = session.sessionDuration! / 60;
       const formattedDuration = calculateUsageTime(
-          session.sessionDuration!
+        session.sessionDuration!
       ).formatted;
       const date = session.sessionStart.toISOString().split("T")[0];
 
@@ -188,19 +188,19 @@ export class ProfessorStudentsService {
 
       const totalSecondsForDay = sessionsByDay[date].usage * 60;
       sessionsByDay[date].formatted = calculateUsageTime(
-          totalSecondsForDay
+        totalSecondsForDay
       ).formatted;
     });
 
     const dailyUsage = Object.values(sessionsByDay)
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 30);
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 30);
 
     return {
       totalCorrectAnswers:
-          user.totalCorrectWrongAnswers?.totalCorrectAnswers || 0,
+        user.totalCorrectWrongAnswers?.totalCorrectAnswers || 0,
       totalWrongAnswers:
-          user.totalCorrectWrongAnswers?.totalWrongAnswers || 0,
+        user.totalCorrectWrongAnswers?.totalWrongAnswers || 0,
       usageTimeInSeconds: user.totalUsageTime || 0,
       usageTime: usageTimeObj,
       subjectCounts: user.subjectCountsQuiz || {
@@ -238,10 +238,10 @@ export class ProfessorStudentsService {
         totalUsageTime: user.totalUsageTime || 0,
         usageTime: usageTimeObj,
         totalCorrectWrongAnswers:
-            user.totalCorrectWrongAnswers || {
-              totalCorrectAnswers: 0,
-              totalWrongAnswers: 0,
-            },
+          user.totalCorrectWrongAnswers || {
+            totalCorrectAnswers: 0,
+            totalWrongAnswers: 0,
+          },
         subjectCounts: user.subjectCountsQuiz || {
           variaveis: 0,
           tipos: 0,
@@ -328,26 +328,26 @@ export class ProfessorStudentsService {
     const usageTimeObj = calculateUsageTime(totalUsageTime);
 
     const processedSessions = allSessions
-        .sort((a, b) => b.sessionStart.getTime() - a.sessionStart.getTime())
-        .map(session => {
-          const durationInMinutes = session.sessionDuration / 60;
-          const formattedDuration = calculateUsageTime(session.sessionDuration).formatted;
-          const date = session.sessionStart.toISOString().split('T')[0];
+      .sort((a, b) => b.sessionStart.getTime() - a.sessionStart.getTime())
+      .map(session => {
+        const durationInMinutes = session.sessionDuration / 60;
+        const formattedDuration = calculateUsageTime(session.sessionDuration).formatted;
+        const date = session.sessionStart.toISOString().split('T')[0];
 
-          return {
-            date,
-            sessionStart: session.sessionStart,
-            sessionEnd: session.sessionEnd,
-            sessionDuration: session.sessionDuration,
-            durationInMinutes,
-            usage: durationInMinutes,
-            formatted: formattedDuration,
-            userId: session.userId,
-            userName: session.userName,
-            courseName: session.courseName,
-            className: session.className
-          };
-        });
+        return {
+          date,
+          sessionStart: session.sessionStart,
+          sessionEnd: session.sessionEnd,
+          sessionDuration: session.sessionDuration,
+          durationInMinutes,
+          usage: durationInMinutes,
+          formatted: formattedDuration,
+          userId: session.userId,
+          userName: session.userName,
+          courseName: session.courseName,
+          className: session.className
+        };
+      });
 
     const sessionsByDay: Record<string, any> = {};
 
@@ -369,8 +369,8 @@ export class ProfessorStudentsService {
     });
 
     const dailyUsage = Object.values(sessionsByDay)
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 30);
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 30);
 
     return {
       totalCorrectAnswers,
@@ -393,10 +393,10 @@ export class ProfessorStudentsService {
    * Método auxiliar para listar apenas os estudantes básicos sem dados de análise
    */
   static async getStudentsList({
-                                 professor,
-                                 disciplineId,
-                                 classId
-                               }: Omit<ProfessorStudentDataParams, 'studentId'>) {
+    professor,
+    disciplineId,
+    classId
+  }: Omit<ProfessorStudentDataParams, 'studentId'>) {
     try {
       let disciplineQuery: any = {
         _id: { $in: professor.disciplines },
@@ -412,14 +412,14 @@ export class ProfessorStudentsService {
       }
 
       const professorDisciplines = await Discipline.find(disciplineQuery)
-          .populate({
-            path: 'students',
-            select: 'name email course class status',
-            populate: [
-              { path: 'course', select: 'name' },
-              { path: 'class', select: 'name' }
-            ]
-          });
+        .populate({
+          path: 'students',
+          select: 'name email course class status',
+          populate: [
+            { path: 'course', select: 'name' },
+            { path: 'class', select: 'name' }
+          ]
+        });
 
       if (professorDisciplines.length === 0) {
         return { students: [], totalStudents: 0 };

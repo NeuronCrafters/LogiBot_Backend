@@ -86,31 +86,31 @@ export async function LogsClassSummaryService(classId: string) {
 
   // Processa as sessões para o formato esperado pelo front-end
   const processedSessions = allSessions
-      // Ordena as sessões por data (mais recentes primeiro)
-      .sort((a, b) => b.sessionStart.getTime() - a.sessionStart.getTime())
-      // Formata os dados para o front-end
-      .map(session => {
-        // Converte a duração em segundos para minutos para o gráfico
-        const durationInMinutes = session.sessionDuration / 60;
+    // Ordena as sessões por data (mais recentes primeiro)
+    .sort((a, b) => b.sessionStart.getTime() - a.sessionStart.getTime())
+    // Formata os dados para o front-end
+    .map(session => {
+      // Converte a duração em segundos para minutos para o gráfico
+      const durationInMinutes = session.sessionDuration / 60;
 
-        // Formata a duração para exibição (HH:MM:SS)
-        const formattedDuration = calculateUsageTime(session.sessionDuration).formatted;
+      // Formata a duração para exibição (HH:MM:SS)
+      const formattedDuration = calculateUsageTime(session.sessionDuration).formatted;
 
-        // Extrai a data sem o horário para agrupar por dia
-        const date = session.sessionStart.toISOString().split('T')[0];
+      // Extrai a data sem o horário para agrupar por dia
+      const date = session.sessionStart.toISOString().split('T')[0];
 
-        return {
-          date,
-          sessionStart: session.sessionStart,
-          sessionEnd: session.sessionEnd,
-          sessionDuration: session.sessionDuration,
-          durationInMinutes,
-          usage: durationInMinutes, // Para compatibilidade com o componente de gráfico existente
-          formatted: formattedDuration,
-          userId: session.userId,
-          userName: session.userName
-        };
-      });
+      return {
+        date,
+        sessionStart: session.sessionStart,
+        sessionEnd: session.sessionEnd,
+        sessionDuration: session.sessionDuration,
+        durationInMinutes,
+        usage: durationInMinutes, // Para compatibilidade com o componente de gráfico existente
+        formatted: formattedDuration,
+        userId: session.userId,
+        userName: session.userName
+      };
+    });
 
   // Agrupa as sessões por dia para o gráfico de uso diário
   const sessionsByDay: Record<string, {
@@ -143,10 +143,10 @@ export async function LogsClassSummaryService(classId: string) {
 
   // Converte o objeto agrupado em um array para o gráfico
   const dailyUsage = Object.values(sessionsByDay)
-      // Ordena por data (mais recentes primeiro)
-      .sort((a, b) => b.date.localeCompare(a.date))
-      // Limita aos últimos 30 dias
-      .slice(0, 30);
+    // Ordena por data (mais recentes primeiro)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    // Limita aos últimos 30 dias
+    .slice(0, 30);
 
   return {
     totalCorrectAnswers,

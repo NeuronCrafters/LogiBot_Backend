@@ -210,62 +210,27 @@ UserAnalysisSchema.methods.updateSubjectCountsQuiz = function (subject: string) 
   this.markModified('subjectCountsQuiz');
 };
 
-
-// --- INÍCIO DA MUDANÇA ---
-// O método abaixo foi o único alterado.
 UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, sessionIndex?: number) {
-
-  // Este "mapa de tradução" ensina a função a agrupar os novos assuntos nas 5 categorias antigas.
-  const chatSubjectMapping: Record<string, string[]> = {
-    variaveis_tipos: ['variaveis', 'tipos'],
-    operadores: ['tipos'],
-    estruturas_controle: ['loops', 'verificacoes'],
-    funcoes: ['funcoes'],
-    escopo: ['funcoes'],
-    tratamento_erros: ['verificacoes'],
-    estruturas_dados_lineares: ['tipos'],
-    estruturas_dados_nao_lineares: ['tipos'],
-    algoritmos_conceitos: ['verificacoes'],
-    algoritmos_busca: ['verificacoes'],
-    oop_conceitos: ['funcoes'],
-    // Adicione outros mapeamentos aqui se necessário.
-  };
-
   const idx = sessionIndex !== undefined ? sessionIndex : this.sessions.length - 1;
-  const session = this.sessions[idx];
 
-  if (!session) return;
+  if (!this.sessions[idx]) return;
 
-  if (!session.subjectCountsChat) {
-    session.subjectCountsChat = getEmptySubjectCounts();
+  const mainSubject = extractMainSubject(subject);
+
+  if (!this.sessions[idx].subjectCountsChat) {
+    this.sessions[idx].subjectCountsChat = getEmptySubjectCounts();
   }
 
-  // Pega a lista de categorias a serem incrementadas (ex: ['variaveis', 'tipos'])
-  const categoriesToIncrement = chatSubjectMapping[subject];
+  if (mainSubject in this.sessions[idx].subjectCountsChat) {
+    this.sessions[idx].subjectCountsChat[mainSubject] += 1;
+  }
 
-  // Se o assunto recebido tiver um mapeamento...
-  if (categoriesToIncrement) {
-    console.log(`[UserAnalysis Model] Mapeando '${subject}' para as categorias: [${categoriesToIncrement.join(', ')}]`);
-
-    // Itera por cada categoria e a incrementa
-    categoriesToIncrement.forEach(category => {
-      if (category in session.subjectCountsChat) {
-        session.subjectCountsChat[category as keyof typeof session.subjectCountsChat] += 1;
-      }
-    });
-
-  } else if (subject in session.subjectCountsChat) {
-    // Fallback para caso o assunto seja um dos 5 principais diretamente
-    console.log(`[UserAnalysis Model] Assunto '${subject}' é uma categoria principal. Incrementando diretamente.`);
-    session.subjectCountsChat[subject as keyof typeof session.subjectCountsChat] += 1;
-  } else {
-    console.warn(`[UserAnalysis Model] ⚠️ Assunto '${subject}' não tem um mapeamento definido e não é uma categoria principal. Nada foi salvo.`);
+  if (isTypeSubject(mainSubject) && "tipos" in this.sessions[idx].subjectCountsChat) {
+    this.sessions[idx].subjectCountsChat["tipos"] += 1;
   }
 
   this.markModified(`sessions.${idx}.subjectCountsChat`);
 };
-// --- FIM DA MUDANÇA ---
-
 
 UserAnalysisSchema.methods.addAnswerHistory = function (
   level: string,

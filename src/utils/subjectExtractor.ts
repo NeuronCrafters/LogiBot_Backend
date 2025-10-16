@@ -41,13 +41,8 @@ const ALLOWED_SUBJECTS = new Set([
 
 const keywordsMap: Record<string, string> = {
   // --- Fundamentos & Lógica ---
-  "\\b(variable|variables|variavel|variaveis|var|let|const|type|types|tipo|tipos|int|integer|string|char|boolean|float|double)\\b": "variaveis_tipos",
-  "\\b(operator|operators|operador|operadores|[+\\-%]|soma|subtracao|multiplicacao|divisao|&&|\\|\\||!|and|or|not|xor|bitwise|tabela verdade|truth table)\\b": "operadores",
-  "\\b(if|else|switch|case|conditional|condicional|loop|for|while|do-while|repeat|laco|repeticao|controle de fluxo|control flow)\\b": "estruturas_controle",
-  "\\b(function|functions|funcao|funcoes|method|metodo|procedure|lambda|arrow function|recursao|recursion|recursive)\\b": "funcoes",
-  "\\b(scope|escopo|global|local|closure)\\b": "escopo",
-  "\\b(input|output|entrada|saida|print|console.log|scanf|cin|cout|stdin|stdout)\\b": "entrada_saida",
-  "\\b(try|catch|finally|throw|error|exception|erro|excecao|tratamento de erro|error handling)\\b": "tratamento_erros",
+  "\\b(variable|variables|variavel|variaveis|var|let|const|type|types|tipo|tipos|int|integer|string|char|boolean|booleano|float|double)\\b": "variaveis_tipos",
+  "\\b(operator|operators|operador|operadores|==|===|>=|<=|>|<|[+\\-%]|soma|subtracao|multiplicacao|divisao|&&|\\|\\||!|and|or|not|xor|bitwise|tabela verdade|truth table)\\b": "operadores",
 
   // --- Estruturas de Dados ---
   "\\b(data structure|estrutura de dados)\\b": "estruturas_dados_conceitos",

@@ -1,8 +1,6 @@
-// src/controllers/bot/quiz/quizController.ts
-
 import { Request, Response } from 'express';
 import { getSession } from '../../../services/rasa/types/sessionMemory';
-import { UserAnalysis } from '../../../models/UserAnalysis';
+import { UserAnalysis, IUserAnalysis } from '../../../models/UserAnalysis';
 import { AppError } from '../../../exceptions/AppError';
 import {
   getLevelsService,
@@ -17,7 +15,6 @@ import {
 export async function listLevelsController(req: Request, res: Response) {
   try {
     const levels = getLevelsService();
-    // Endpoint para a tela inicial de escolha de nível.
     res.status(200).json({ buttons: levels });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -34,12 +31,11 @@ export async function setLevelController(req: Request, res: Response) {
     const session = getSession(userId);
     session.nivelAtual = nivel;
 
-    // Conforme solicitado, já retorna o próximo passo (lista de categorias).
     const categories = getCategoriesService();
 
     res.status(200).json({
       message: `Nível definido como ${nivel}.`,
-      categories: categories // Retorna a lista de categorias para o frontend.
+      categories: categories
     });
 
   } catch (error: any) {
@@ -53,7 +49,6 @@ export async function listSubcategoriesController(req: Request, res: Response) {
     if (!category) {
       return res.status(400).json({ message: "O campo 'category' é obrigatório." });
     }
-    // Conforme solicitado, retorna as subcategorias para a escolha final.
     const subcategories = getSubcategoriesService(category);
     res.status(200).json({ buttons: subcategories });
   } catch (error: any) {
@@ -75,17 +70,15 @@ export async function generateQuizController(req: Request, res: Response) {
     const session = getSession(userId);
     const level = session.nivelAtual;
     if (!level) {
-      return res.status(400).json({ message: "O nível do usuário precisa ser definido antes de gerar um quiz." });
+      return res.status(400).json({ message: "O nível do usuário precisa ser definido." });
     }
 
     const quiz = generateQuizService(subtopic, level);
 
-    // Armazena informações na sessão para a verificação
     session.lastSubject = subtopic;
     session.lastFullQuestions = quiz.questions;
     session.lastAnswerKeys = quiz.answer_keys;
 
-    // Remove informações sensíveis (gabarito, explicações) antes de enviar ao frontend
     const questionsForStudent = quiz.questions.map(({ question, options }) => ({ question, options }));
 
     return res.status(200).json({
@@ -116,13 +109,11 @@ export async function verifyQuizController(req: Request, res: Response) {
 
     const result = verifyQuizAnswersService(answers, session.lastAnswerKeys, session.lastFullQuestions);
 
-    // Salva o resultado no banco de dados para o histórico do aluno
     const isStudent = Array.isArray(req.user.role) ? req.user.role.includes("student") : req.user.role === "student";
     if (isStudent) {
       await saveResultToDB(userId, req.user.email, result, session.lastSubject, session.nivelAtual);
     }
 
-    // Limpa a sessão para evitar reenvio do mesmo quiz
     session.lastSubject = null;
     session.lastFullQuestions = [];
     session.lastAnswerKeys = [];
@@ -137,7 +128,7 @@ export async function verifyQuizController(req: Request, res: Response) {
 // --- Função Auxiliar ---
 
 async function saveResultToDB(userId: string, email: string, result: any, subject: string | null, level: string | null) {
-  const ua = await UserAnalysis.findOne({ userId, email }).exec();
+  const ua = await UserAnalysis.findOne({ userId, email }).exec() as IUserAnalysis | null;
   if (!ua) throw new AppError("Análise de usuário não encontrada.", 404);
 
   if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
@@ -147,10 +138,17 @@ async function saveResultToDB(userId: string, email: string, result: any, subjec
 
   ua.sessions[si].answerHistory.push({
     questions: result.detalhes.map((d: any) => ({
-      ...d,
-      subject: subject || 'desconhecido',
-      level: level || 'desconhecido',
+      level: level || "Nível não definido",
+      subject: subject || "Assunto não definido",
       timestamp: new Date(),
+      totalCorrectAnswers: d.isCorrect ? 1 : 0,
+      totalWrongAnswers: d.isCorrect ? 0 : 1,
+      // Objeto aninhado 'selectedOption' conforme o schema
+      selectedOption: {
+        question: d.question,
+        isCorrect: d.isCorrect,
+        isSelected: d.selected,
+      },
     })),
     totalCorrectWrongAnswersSession: {
       totalCorrectAnswers: result.totalCorrectAnswers,
@@ -158,10 +156,16 @@ async function saveResultToDB(userId: string, email: string, result: any, subjec
     },
   });
 
+  // MUDANÇA 1: Atualiza as estatísticas globais e da sessão
   ua.sessions[si].totalCorrectAnswers = (ua.sessions[si].totalCorrectAnswers || 0) + result.totalCorrectAnswers;
   ua.sessions[si].totalWrongAnswers = (ua.sessions[si].totalWrongAnswers || 0) + result.totalWrongAnswers;
   ua.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
   ua.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
+
+  // MUDANÇA 2: Utiliza o método do schema para atualizar os contadores de assunto
+  if (subject) {
+    ua.updateSubjectCountsQuiz(subject);
+  }
 
   ua.markModified(`sessions`);
   await ua.save();

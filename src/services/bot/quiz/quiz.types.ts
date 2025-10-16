@@ -20,3 +20,11 @@ export interface ResultDetail {
   isCorrect: boolean;
   explanation: string;
 }
+
+export interface QuizSessionData {
+  nivelAtual: string | null;
+  lastAnswerKeys: string[];
+  lastSubject: string | null;
+  lastQuestions: string[];
+  lastFullQuestions?: any[];
+}

@@ -7,7 +7,8 @@ import { Quiz, QuizQuestion, ResultDetail } from './quiz.types';
 import { levels, categories, subcategories } from './quizData';
 
 // Caminho para o banco de dados de quizzes.
-const DB_PATH = path.join(process.cwd(), 'src', 'database', 'quiz_database.json');
+// const DB_PATH = path.join(process.cwd(), 'src', 'database', 'quiz_database.json');
+const DB_PATH = path.join(__dirname, '../../../database/quiz_database.json');
 
 // --- Serviços de Menu (sem alterações) ---
 

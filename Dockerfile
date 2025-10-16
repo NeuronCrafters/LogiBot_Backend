@@ -7,11 +7,6 @@ RUN npm install
 
 COPY . .
 
-COPY --from=builder /app/dist ./dist
-
-COPY --from=builder /app/src/database/quiz_database.json ./dist/database/quiz_database.json
-
-
 RUN npm run build
 
 

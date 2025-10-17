@@ -8,7 +8,7 @@ const ADMIN_USER_DATA = {
   email: 'ch47b07sa3l@gmail.com',
   password: '$2a$10$Fn3Y7Pxd7Yb3TMTsS2QYjOx9sOwUWIQfrMsVMr5xALfQ1K9fNnAXy',
   role: ['admin'],
-  status: 'active',
+  status: 'active'
 };
 
 export async function initAdminUser(): Promise<void> {

@@ -1,12 +1,37 @@
 services:
+  mongodb:
+    image: mongo:latest
+    container_name: logibot_mongodb
+
+    restart: always
+
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER_ADMIN}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD_ROOT}
+
+    volumes:
+      - mongo-data:/data/db
+      - /home/usuario/mongodb_backups:/backup
+
+    networks:
+      - logibot-network
+
   backend:
     container_name: logibot_backend
     image: ghcr.io/ramoncbarbosa/logibot_backend:latest
     ports:
       - "3000:3000"
+
+    depends_on:
+      - mongodb
+
     environment:
-      - API_KEY
+      - MONGO_URI
+      - MONGO_USER_ADMIN
+      - MONGO_PASSWORD_ROOT
       - DB_NAME
+
+      - API_KEY
       - FRONT_URL
       - GHCR_PAT
       - GOOGLE_CLIENT_ID
@@ -14,7 +39,14 @@ services:
       - GOOGLE_LOGIN_CALLBACK_URL
       - GOOGLE_LOGIN_REDIRECT
       - JWT_SECRET
-      - MONGO_URI
+      - SSH_HOST
+      - SSH_KEY
+      - SSH_USERNAME
+      - RECAPTCHA_SECRET_KEY
+      - SMTP_DOMAIN
+      - SMTP_EMAIL
+      - SMTP_PASSWORD
+      - SMTP_PORT
       - OLLAMA_API_URL_1
       - Key_A1
       - OLLAMA_API_URL_2
@@ -79,17 +111,13 @@ services:
       - RASA
       - RASA_ACTION
       - RASA_API
-      - RECAPTCHA_SECRET_KEY
-      - SMTP_DOMAIN
-      - SMTP_EMAIL
-      - SMTP_PASSWORD
-      - SMTP_PORT
-      - SSH_HOST
-      - SSH_KEY
-      - SSH_USERNAME
+
     restart: unless-stopped
     networks:
       - logibot-network
+
+volumes:
+  mongo-data:
 
 networks:
   logibot-network:

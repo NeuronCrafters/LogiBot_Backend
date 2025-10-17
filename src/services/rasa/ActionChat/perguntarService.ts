@@ -2,10 +2,19 @@ import { AppError } from '../../../exceptions/AppError';
 import 'dotenv/config';
 import { makeRequestWithFallback } from '../../../utils/agentUtils';
 
-export async function actionPerguntarService(prompt: string, senderId: string) {
+export async function actionPerguntarService(prompt: string, senderId: string, systemPrompt: string) {
+
+  // O 'prompt' que chega aqui é na verdade o PROMPT ENRIQUECIDO, mas o 'systemPrompt'
+  // que será usado no corpo da requisição é a instrução de comportamento.
+
   const body = {
     model: 'llama3',
-    messages: [{ role: 'user', content: prompt }],
+    messages: [
+      // Adicionamos o System Prompt para instruir o comportamento do modelo
+      { role: 'system', content: systemPrompt },
+      // O prompt enriquecido, que contém a pergunta original, vai como a mensagem do usuário
+      { role: 'user', content: prompt }
+    ],
     stream: false,
     max_tokens: 4096,
     //num_predict: 4096
@@ -29,11 +38,14 @@ export async function actionPerguntarService(prompt: string, senderId: string) {
 
     const cleanedOllamaReply = ollamaReply.trim();
 
+    // Reforçamos o filtro para capturar tanto a mensagem em inglês quanto a mensagem exata em português (caso o Llama a gere devido ao System Prompt)
     if (cleanedOllamaReply.includes(MSG_FORA_ESCOPO_EN_PADRAO) ||
-      cleanedOllamaReply.toLowerCase().includes("i'm not able to respond to that request")) {
+      cleanedOllamaReply.toLowerCase().includes("i'm not able to respond to that request") ||
+      cleanedOllamaReply.includes(MSG_FORA_ESCOPO_PT) // Captura a mensagem que o Llama pode gerar por causa da instrução
+    ) {
 
-      console.log("[actionPerguntarService] ⚠️ Resposta fora de escopo em EN detectada. Padronizando para PT.");
-      ollamaReply = MSG_FORA_ESCOPO_PT;
+      console.log("[actionPerguntarService] ⚠️ Resposta fora de escopo detectada. Padronizando para PT.");
+      ollamaReply = MSG_FORA_ESCOPO_PT; // Garante que a mensagem seja EXATAMENTE a padronizada
     }
 
     console.log("[actionPerguntarService] Resposta recebida com sucesso.");

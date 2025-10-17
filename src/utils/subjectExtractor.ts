@@ -1,3 +1,4 @@
+// Lista de todos os assuntos permitidos pelo assistente.
 const ALLOWED_SUBJECTS = new Set([
   // Fundamentos & Lógica
   "variaveis_tipos",
@@ -39,10 +40,16 @@ const ALLOWED_SUBJECTS = new Set([
   "quiz",
 ]);
 
+// Mapeamento de padrões (regex) para os assuntos permitidos.
 const keywordsMap: Record<string, string> = {
   // --- Fundamentos & Lógica ---
   "\\b(variable|variables|variavel|variaveis|var|let|const|type|types|tipo|tipos|int|integer|string|char|boolean|booleano|float|double)\\b": "variaveis_tipos",
   "\\b(operator|operators|operador|operadores|==|===|>=|<=|>|<|[+\\-%]|soma|subtracao|multiplicacao|divisao|&&|\\|\\||!|and|or|not|xor|bitwise|tabela verdade|truth table)\\b": "operadores",
+  "\\b(if|else|switch|case|for|while|do while|loop|laco|condicao|controle de fluxo|flow control)\\b": "estruturas_controle",
+  "\\b(function|funcao|method|metodo|procedure|procedimento|arguments|argumentos|parameters|parametros|return|retorno)\\b": "funcoes",
+  "\\b(scope|escopo|global|local|closure|clausura)\\b": "escopo",
+  "\\b(input|output|entrada|saida|ler|escrever|print|console|terminal)\\b": "entrada_saida",
+  "\\b(error|erro|exception|excecao|try|catch|finally|throw|lancamento|debugging|debug)\\b": "tratamento_erros",
 
   // --- Estruturas de Dados ---
   "\\b(data structure|estrutura de dados)\\b": "estruturas_dados_conceitos",
@@ -75,6 +82,7 @@ const keywordsMap: Record<string, string> = {
   "\\b(quiz|exercise|exercicio|challenge|desafio|practice|praticar)\\b": "quiz",
 };
 
+// Função auxiliar para calcular a distância de Levenshtein (fuzzy matching)
 function levenshteinDistance(a: string, b: string): number {
   const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
   for (let i = 0; i <= a.length; i++) { matrix[0][i] = i; }
@@ -84,23 +92,23 @@ function levenshteinDistance(a: string, b: string): number {
     for (let i = 1; i <= a.length; i++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
       matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,
-        matrix[j - 1][i] + 1,
-        matrix[j - 1][i - 1] + cost,
+        matrix[j][i - 1] + 1,      // Deletion
+        matrix[j - 1][i] + 1,      // Insertion
+        matrix[j - 1][i - 1] + cost, // Substitution
       );
     }
   }
   return matrix[b.length][a.length];
 }
 
-// mapa reverso para encontrar o assunto a partir de uma palavra-chave individual.
+// Mapas de suporte para o fuzzy matching
 const keywordToSubjectMap = new Map<string, string>();
 const allKeywords = new Set<string>();
 
-// preenche as estruturas de dados de suporte para o fuzzy matching.
+// Preenche as estruturas de dados de suporte
 for (const pattern in keywordsMap) {
   const subject = keywordsMap[pattern];
-  // extrai palavras individuais da regex
+  // Extrai palavras individuais da regex, ignorando operadores e palavras curtas.
   const words = pattern.replace(/\\b|\(|\)|\|/g, ' ').split(' ').filter(w => w.length > 2 && !w.includes('*') && !w.includes('+') && !w.includes('\\'));
   words.forEach(word => {
     if (!keywordToSubjectMap.has(word)) {
@@ -110,6 +118,7 @@ for (const pattern in keywordsMap) {
   });
 }
 
+// Normaliza o texto (remove acentos, caixa baixa)
 export function normalizeText(text: string): string {
   if (!text) return '';
   return text
@@ -118,10 +127,11 @@ export function normalizeText(text: string): string {
     .toLowerCase();
 }
 
+// Tenta extrair um assunto permitido da mensagem
 export function extractAllowedSubject(message: string): string | null {
   const normalizedMessage = normalizeText(message);
 
-  // tentativa de correspondência exata com regex ---
+  // 1. Correspondência exata com regex
   for (const pattern in keywordsMap) {
     const regex = new RegExp(pattern, "i");
     if (regex.test(normalizedMessage)) {
@@ -133,14 +143,14 @@ export function extractAllowedSubject(message: string): string | null {
     }
   }
 
-  // fallback para fuzzy matching se a regex falhar ---
+  // 2. Fallback para fuzzy matching
   const messageWords = normalizedMessage.split(/\s+/);
 
   for (const word of messageWords) {
-    if (word.length < 4) continue;
+    if (word.length < 4) continue; // Ignora palavras muito curtas no fuzzy matching
 
     for (const keyword of allKeywords) {
-      // limiar de tolerância dinâmico: mais tolerante com palavras maiores
+      // Limiar de tolerância dinâmico
       let tolerance = 0;
       if (keyword.length >= 5) tolerance = 1;
       if (keyword.length >= 9) tolerance = 2;
@@ -161,9 +171,14 @@ export function extractAllowedSubject(message: string): string | null {
   return null;
 }
 
-export function validateAndEnrichPrompt(userText: string): { subject: string; prompt: string } | null {
+// A função principal que valida e enriquece o prompt
+export function validateAndEnrichPrompt(userText: string): { subject: string; prompt: string; systemPrompt: string } | null {
   const subject = extractAllowedSubject(userText);
 
+  // Instrução rígida para o modelo Llama 3 para evitar respostas criativas e garantir a padronização.
+  const SYSTEM_PROMPT_RIGIDO = "Você é um assistente de programação. Seu foco estrito é em programação, algoritmos, lógica, linguagens de código e ferramentas de desenvolvimento (como Docker). SE a pergunta do usuário não for sobre este escopo, você DEVE responder EXCLUSIVAMENTE com a frase: 'Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!' NUNCA tente ser criativo ou relacionar tópicos não-técnicos ao seu escopo. Respeite sempre esta regra.";
+
+  // Se não encontrou assunto, retorna null para ser barrado no Controller.
   if (subject === null) {
     console.log(`[Gatekeeper] Mensagem bloqueada por não ser sobre um tópico permitido: "${userText}"`);
     return null;
@@ -171,27 +186,13 @@ export function validateAndEnrichPrompt(userText: string): { subject: string; pr
 
   console.log(`[Gatekeeper] Mensagem permitida. Assunto detectado: '${subject}'.`);
 
-  const prompt = `Você é um tutor de programação especialista e didático. O usuário está perguntando sobre o tópico específico de **${subject}**. Responda a pergunta dele de forma clara, concisa e focada neste tópico, sempre usando exemplos de código quando apropriado. A pergunta do usuário é: '${userText}'`;
+  // Prompt de execução para o tópico permitido
+  const executionPrompt = `Você é um tutor de programação especialista e didático. O usuário está perguntando sobre o tópico específico de **${subject}**. Responda a pergunta dele de forma clara, concisa e focada neste tópico, sempre usando exemplos de código quando apropriado. A pergunta do usuário é: '${userText}'`;
 
-  return { subject, prompt };
+  return {
+    subject,
+    prompt: executionPrompt,
+    systemPrompt: SYSTEM_PROMPT_RIGIDO // Retorna a instrução rígida
+  };
 }
-
-console.log("--- Testes ---");
-
-// teste de regex exato (PT)
-console.log(`Resultado: ${extractAllowedSubject("o que é encapsulamento em POO?")}`);
-
-// teste de regex exato (EN)
-console.log(`Resultado: ${extractAllowedSubject("tell me about binary search algorithms")}`);
-
-// teste de fuzzy matching (erro de digitação)
-console.log(`Resultado: ${extractAllowedSubject("como funciona o quicksorte?")}`);
-
-// teste de fuzzy matching (letra faltando)
-console.log(`Resultado: ${extractAllowedSubject("o que é uma variave?")}`);
-
-// teste de termo avançado
-console.log(`Resultado: ${extractAllowedSubject("como configurar CI/CD com jenkins?")}`);
-
-// teste sem correspondência
-console.log(`Resultado: ${extractAllowedSubject("qual a previsão do tempo?")}`);
+// Os testes foram omitidos por não fazerem parte da exportação principal, mas estão presentes no código original.

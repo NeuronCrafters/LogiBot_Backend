@@ -1,24 +1,6 @@
 import { UserAnalysis } from '../../models/UserAnalysis';
 import { Types } from 'mongoose';
-
-// 🔧 Adicione esta função AQUI, antes da classe
-function extractMainSubject(subject: string): string {
-  const mainSubjects = ['variaveis', 'tipos', 'funcoes', 'loops', 'verificacoes', 'listas'];
-  const mainPart = subject.split('_')[0];
-
-  if (mainSubjects.includes(mainPart)) {
-    return capitalize(mainPart); // Ex: "variaveis" => "Variaveis"
-  }
-
-  return 'Outros'; // Caso não pertença às categorias conhecidas
-}
-
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// 🚨 Se estiver usando esse import, pode REMOVER isso
-// import { subcategoryToCategoryMap } from '../../utils/quizUtils';
+import { subcategoryToCategoryMap } from '../../utils/quizUtils'; // Importe o mapa utilitário
 
 interface ProficiencyRadarDTO {
   labels: string[];
@@ -40,8 +22,10 @@ export class GetProficiencyRadarService {
     if (filters.classId) query.classId = new Types.ObjectId(filters.classId);
     if (filters.studentId) query.userId = filters.studentId;
 
+    // 1. Busca os dados brutos de forma otimizada.
     const usersAnalysis = await UserAnalysis.find(query).select('performanceBySubject').lean();
 
+    // 2. Agrega os resultados na aplicação (lógica idêntica ao service anterior).
     const performanceByCategory: Record<string, { correct: number; wrong: number }> = {};
 
     for (const user of usersAnalysis) {
@@ -49,19 +33,20 @@ export class GetProficiencyRadarService {
 
       for (const subtopic in user.performanceBySubject) {
         if (Object.prototype.hasOwnProperty.call(user.performanceBySubject, subtopic)) {
-          const mainCategory = extractMainSubject(subtopic); // <-- ALTERADO AQUI
-
-          if (!performanceByCategory[mainCategory]) {
-            performanceByCategory[mainCategory] = { correct: 0, wrong: 0 };
+          const mainCategory = subcategoryToCategoryMap[subtopic];
+          if (mainCategory) {
+            if (!performanceByCategory[mainCategory]) {
+              performanceByCategory[mainCategory] = { correct: 0, wrong: 0 };
+            }
+            const performance = user.performanceBySubject[subtopic];
+            performanceByCategory[mainCategory].correct += performance.correct || 0;
+            performanceByCategory[mainCategory].wrong += performance.wrong || 0;
           }
-
-          const performance = user.performanceBySubject[subtopic];
-          performanceByCategory[mainCategory].correct += performance.correct || 0;
-          performanceByCategory[mainCategory].wrong += performance.wrong || 0;
         }
       }
     }
 
+    // 3. Formata para o DTO do Radar, ordenando as categorias para consistência.
     const sortedCategories = Object.keys(performanceByCategory).sort();
 
     const labels: string[] = [];

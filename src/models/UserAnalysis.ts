@@ -52,46 +52,14 @@ const allSubjects = [...mainSubjects, ...typeSubjects];
 
 const isTypeSubject = (subject: string) => typeSubjects.includes(subject);
 
-// FUNÇÃO CORRIGIDA - Remove acentos e normaliza subjects
 const extractMainSubject = (subject: string): string => {
-  // Remover prefixos comuns do quiz
-  let normalized = subject
-    .replace(/^o_que_(são|sao|é|e)_/i, '')
-    .replace(/^o_que_(são|sao|é|e)$/i, '')
-    .replace(/^como_(usar|funciona|funcionam)_/i, '');
-
-  // Remover acentos (á, é, í, ó, ú, ã, õ, ç, etc)
-  normalized = normalized
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-  // Converter caracteres especiais
-  normalized = normalized
-    .replace(/ç/g, 'c')
-    .replace(/ñ/g, 'n');
-
-  console.log(`[extractMainSubject] Original: "${subject}" -> Normalizado: "${normalized}"`);
-
-  // Extrair primeira parte antes do underscore
-  if (normalized.includes('_')) {
-    const mainPart = normalized.split('_')[0];
-
-    // Verificar se é um subject principal ou tipo
+  if (subject.includes('_')) {
+    const mainPart = subject.split('_')[0];
     if (mainSubjects.includes(mainPart) || typeSubjects.includes(mainPart)) {
-      console.log(`[extractMainSubject] Retornando mainPart: "${mainPart}"`);
       return mainPart;
     }
   }
-
-  // Verificar se o subject normalizado completo está na lista
-  if (mainSubjects.includes(normalized)) {
-    console.log(`[extractMainSubject] Subject encontrado na lista principal: "${normalized}"`);
-    return normalized;
-  }
-
-  console.log(`[extractMainSubject] Retornando normalizado: "${normalized}"`);
-  return normalized;
+  return subject;
 };
 
 const SubjectCountsSchema = new Schema({
@@ -147,6 +115,7 @@ export interface IUserAnalysis extends Document {
     loops: number;
     verificacoes: number;
   };
+  // INCLUSÃO DO NOVO CAMPO AQUI
   performanceBySubject: Map<string, { correct: number; wrong: number }>;
   sessions: Array<{
     lastActivityAt: Date;
@@ -210,6 +179,7 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
     loops: { type: Number, default: 0 },
     verificacoes: { type: Number, default: 0 },
   },
+  // INCLUSÃO DO NOVO CAMPO NO SCHEMA
   performanceBySubject: {
     type: Map,
     of: new Schema({
@@ -295,7 +265,9 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
   this.markModified(`sessions.${idx}.subjectCountsChat`);
 };
 
-// MÉTODO CORRIGIDO - Com logs detalhados
+// --- CORREÇÃO APLICADA AQUI ---
+// A lógica foi ajustada para usar a variável 'subject' original e detalhada (ex: "o_que_são_variáveis"),
+// sem normalizá-la. Isso preserva a granularidade dos dados para os dashboards.
 UserAnalysisSchema.methods.addAnswerHistory = function (
   level: string,
   question: string,
@@ -303,13 +275,8 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   selectedOption: string,
   isCorrect: boolean
 ) {
-  console.log(`[addAnswerHistory] Recebido - Subject original: "${subject}", isCorrect: ${isCorrect}`);
-
   const last = this.sessions.at(-1);
-  if (!last || last.sessionEnd) {
-    console.log('[addAnswerHistory] Nenhuma sessão ativa encontrada');
-    return;
-  }
+  if (!last || last.sessionEnd) return;
 
   let attempt = last.answerHistory.at(-1);
   if (!attempt) {
@@ -338,27 +305,24 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   attempt.totalCorrectWrongAnswersSession.totalCorrectAnswers += correctCount;
   attempt.totalCorrectWrongAnswersSession.totalWrongAnswers += wrongCount;
 
-  // AQUI ESTÁ A CORREÇÃO - Normalizar o subject
-  const mainSubject = extractMainSubject(subject);
-  console.log(`[addAnswerHistory] Subject normalizado: "${mainSubject}"`);
+  // Usa a variável 'subject' diretamente, sem chamar extractMainSubject.
+  const detailedSubjectKey = subject;
 
-  if (!this.performanceBySubject.get(mainSubject)) {
-    this.performanceBySubject.set(mainSubject, { correct: 0, wrong: 0 });
-    console.log(`[addAnswerHistory] Criado novo entry para "${mainSubject}"`);
+  if (!this.performanceBySubject.get(detailedSubjectKey)) {
+    this.performanceBySubject.set(detailedSubjectKey, { correct: 0, wrong: 0 });
   }
 
-  const subjectStats = this.performanceBySubject.get(mainSubject);
+  const subjectStats = this.performanceBySubject.get(detailedSubjectKey);
 
-  if (isCorrect) {
-    subjectStats.correct += 1;
-    console.log(`[addAnswerHistory] "${mainSubject}" - Correct: ${subjectStats.correct}`);
-  } else {
-    subjectStats.wrong += 1;
-    console.log(`[addAnswerHistory] "${mainSubject}" - Wrong: ${subjectStats.wrong}`);
+  if (subjectStats) {
+    if (isCorrect) {
+      subjectStats.correct += 1;
+    } else {
+      subjectStats.wrong += 1;
+    }
   }
 
   this.markModified('performanceBySubject');
-  console.log(`[addAnswerHistory] performanceBySubject atualizado:`, Object.fromEntries(this.performanceBySubject));
 };
 
 export const UserAnalysis = mongoose.model<IUserAnalysis>(

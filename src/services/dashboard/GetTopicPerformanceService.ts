@@ -1,5 +1,6 @@
 import { UserAnalysis } from '../../models/UserAnalysis';
 import { Types } from 'mongoose';
+import { subcategoryToCategoryMap } from '../../utils/quizUtils';
 
 interface TopicPerformanceDTO {
   topic: string;
@@ -22,36 +23,43 @@ export class GetTopicPerformanceService {
     if (filters.classId) query.classId = new Types.ObjectId(filters.classId);
     if (filters.studentId) query.userId = filters.studentId;
 
-    const aggregationResult = await UserAnalysis.aggregate([
-      { $match: query },
-      { $project: { subjects: { $objectToArray: "$performanceBySubject" } } },
-      { $unwind: "$subjects" },
-      {
-        $group: {
-          _id: "$subjects.k",
-          totalCorrect: { $sum: "$subjects.v.correct" },
-          totalWrong: { $sum: "$subjects.v.wrong" },
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          topic: "$_id",
-          totalCorrect: "$totalCorrect",
-          totalWrong: "$totalWrong"
+    // 1. Busca os documentos, selecionando apenas o campo necessário para otimizar.
+    // O método .lean() retorna objetos JavaScript puros, o que é mais rápido.
+    const usersAnalysis = await UserAnalysis.find(query).select('performanceBySubject').lean();
+
+    // 2. Agrega os resultados na aplicação.
+    const performanceByCategory: Record<string, { correct: number; wrong: number }> = {};
+
+    for (const user of usersAnalysis) {
+      if (!user.performanceBySubject) continue;
+
+      // Itera sobre os subtópicos salvos no banco (ex: "o_que_são_variáveis")
+      for (const subtopic in user.performanceBySubject) {
+        if (Object.prototype.hasOwnProperty.call(user.performanceBySubject, subtopic)) {
+          const mainCategory = subcategoryToCategoryMap[subtopic];
+
+          if (mainCategory) {
+            if (!performanceByCategory[mainCategory]) {
+              performanceByCategory[mainCategory] = { correct: 0, wrong: 0 };
+            }
+            const performance = user.performanceBySubject[subtopic];
+            performanceByCategory[mainCategory].correct += performance.correct || 0;
+            performanceByCategory[mainCategory].wrong += performance.wrong || 0;
+          }
         }
       }
-    ]);
+    }
 
-    const formattedData = aggregationResult.map(item => {
-      const total = item.totalCorrect + item.totalWrong;
-      if (total === 0) {
-        return { topic: item.topic, successPercentage: 0, errorPercentage: 0 };
+    // 3. Formata os dados para o DTO de resposta.
+    const formattedData: TopicPerformanceDTO[] = Object.entries(performanceByCategory).map(([topic, totals]) => {
+      const totalAnswers = totals.correct + totals.wrong;
+      if (totalAnswers === 0) {
+        return { topic, successPercentage: 0, errorPercentage: 0 };
       }
       return {
-        topic: item.topic,
-        successPercentage: parseFloat(((item.totalCorrect / total) * 100).toFixed(1)),
-        errorPercentage: parseFloat(((item.totalWrong / total) * 100).toFixed(1)),
+        topic,
+        successPercentage: parseFloat(((totals.correct / totalAnswers) * 100).toFixed(1)),
+        errorPercentage: parseFloat(((totals.wrong / totalAnswers) * 100).toFixed(1)),
       };
     });
 

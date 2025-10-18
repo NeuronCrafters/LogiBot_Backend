@@ -13,6 +13,7 @@ import { healthRoutes } from "./routesPaths/healthRoutes";
 import { logoutRoute } from "./routesPaths/logoutRoute";
 import { updateUserActivity } from "../middlewares/updateUserActivity/updateUserActivity";
 import { quizRouter } from "./routesPaths/quizRoute";
+import { dashboardRoutes } from "./routesPaths/dashboardRoutes";
 
 const routes = Router();
 
@@ -35,5 +36,6 @@ routes.use("/logs", logRoutes);
 routes.use("/academic-institution", academicInstitutionRouter);
 routes.use("/academicFilters", academicRoutes);
 routes.use("/useranalysis", useAnalysis);
+routes.use("/dashboard", dashboardRoutes);
 
 export { routes };

@@ -3,6 +3,20 @@
 import { UserAnalysis } from "../../../models/UserAnalysis";
 import { calculateUsageTime } from "../../../utils/TimeFormatter";
 
+// Função de retorno padrão para evitar repetição e garantir consistência
+function getEmptySummary() {
+  return {
+    totalCorrectAnswers: 0,
+    totalWrongAnswers: 0,
+    usageTimeInSeconds: 0,
+    usageTime: { totalSeconds: 0, formatted: "00:00:00", humanized: "0s", hours: 0, minutes: 0, seconds: 0 },
+    subjectCounts: { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 },
+    sessions: [],
+    dailyUsage: [],
+    users: null
+  };
+}
+
 export async function LogsFilteredStudentSummaryService(
   universityId: string,
   courseId?: string,
@@ -18,42 +32,61 @@ export async function LogsFilteredStudentSummaryService(
 
   // Se especificou um studentId, busca e processa apenas aquele aluno
   if (studentId) {
-    const user = await UserAnalysis.findOne(query).lean(); // .lean() para performance
+    const user = await UserAnalysis.findOne(query).lean();
 
     if (!user) {
       console.log("Nenhum usuário encontrado com os critérios:", query);
-      return {
-        totalCorrectAnswers: 0, totalWrongAnswers: 0, usageTimeInSeconds: 0,
-        usageTime: { totalSeconds: 0, formatted: "00:00:00", humanized: "0s", hours: 0, minutes: 0, seconds: 0 },
-        subjectCounts: { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 },
-        sessions: [], dailyUsage: [], users: null
-      };
+      return getEmptySummary();
     }
 
-    // --- INÍCIO DA CORREÇÃO PARA ALUNO ÚNICO ---
     const totalSubjectCounts = { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 };
-    if (user.sessions && user.sessions.length > 0) {
-      for (const session of user.sessions) {
-        if (session.subjectCountsChat) {
-          totalSubjectCounts.variaveis += session.subjectCountsChat.variaveis || 0;
-          totalSubjectCounts.tipos += session.subjectCountsChat.tipos || 0;
-          totalSubjectCounts.funcoes += session.subjectCountsChat.funcoes || 0;
-          totalSubjectCounts.loops += session.subjectCountsChat.loops || 0;
-          totalSubjectCounts.verificacoes += session.subjectCountsChat.verificacoes || 0;
-        }
+    (user.sessions || []).forEach(session => {
+      if (session.subjectCountsChat) {
+        totalSubjectCounts.variaveis += session.subjectCountsChat.variaveis || 0;
+        totalSubjectCounts.tipos += session.subjectCountsChat.tipos || 0;
+        totalSubjectCounts.funcoes += session.subjectCountsChat.funcoes || 0;
+        totalSubjectCounts.loops += session.subjectCountsChat.loops || 0;
+        totalSubjectCounts.verificacoes += session.subjectCountsChat.verificacoes || 0;
       }
-    }
-    console.log("✅ [Service] Soma final para aluno único:", totalSubjectCounts);
-    // --- FIM DA CORREÇÃO PARA ALUNO ÚNICO ---
+    });
 
-    // (O resto do seu código de formatação de sessões e uso diário permanece o mesmo)
+    // Processa as sessões do aluno para calcular o uso diário para o gráfico
     const processedSessions = (user.sessions || [])
       .filter(session => session.sessionStart && session.sessionEnd && session.sessionDuration)
       .sort((a, b) => new Date(b.sessionStart).getTime() - new Date(a.sessionStart).getTime())
-      .map(session => ({ /* ... seu código de mapeamento ... */ }));
+      .map(session => ({
+        date: new Date(session.sessionStart).toISOString().split("T")[0],
+        sessionStart: session.sessionStart,
+        sessionEnd: session.sessionEnd,
+        sessionDuration: session.sessionDuration,
+        usage: (session.sessionDuration || 0) / 60, // 'usage' em minutos, que o gráfico usa
+        formatted: calculateUsageTime(session.sessionDuration || 0).formatted,
+        userId: user.userId,
+        userName: user.name,
+      }));
 
+    // Agrupa as sessões processadas por dia
     const sessionsByDay: Record<string, any> = {};
-    processedSessions.forEach(session => { /* ... sua lógica de agrupar por dia ... */ });
+    processedSessions.forEach(session => {
+      if (!sessionsByDay[session.date]) {
+        sessionsByDay[session.date] = {
+          date: session.date,
+          usage: 0,
+          formatted: "00:00:00",
+          sessions: [],
+        };
+      }
+      sessionsByDay[session.date].usage += session.usage; // Soma os minutos de uso no dia
+      sessionsByDay[session.date].sessions.push(session);
+    });
+
+    // Formata o tempo total de cada dia
+    Object.values(sessionsByDay).forEach(day => {
+      const totalSecondsForDay = Math.round(day.usage * 60);
+      day.formatted = calculateUsageTime(totalSecondsForDay).formatted;
+    });
+
+    // Cria o array `dailyUsage` que o gráfico precisa para funcionar
     const dailyUsage = Object.values(sessionsByDay).sort((a, b) => b.date.localeCompare(a.date));
 
     const usageTimeObj = calculateUsageTime(user.totalUsageTime || 0);
@@ -63,8 +96,8 @@ export async function LogsFilteredStudentSummaryService(
       totalWrongAnswers: user.totalCorrectWrongAnswers?.totalWrongAnswers || 0,
       usageTimeInSeconds: user.totalUsageTime || 0,
       usageTime: usageTimeObj,
-      subjectCounts: totalSubjectCounts, // <-- USA O OBJETO CORRIGIDO E SOMADO
-      dailyUsage,
+      subjectCounts: totalSubjectCounts,
+      dailyUsage, // Agora esta variável contém os dados corretos
       sessions: processedSessions,
       users: user
     };
@@ -75,7 +108,7 @@ export async function LogsFilteredStudentSummaryService(
   console.log(`Encontrados ${users.length} usuários com os critérios`);
 
   if (users.length === 0) {
-    return { /* ... seu objeto de retorno vazio ... */ };
+    return getEmptySummary();
   }
 
   let totalCorrectAnswers = 0;
@@ -89,7 +122,6 @@ export async function LogsFilteredStudentSummaryService(
     totalWrongAnswers += ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
     totalUsageTime += ua.totalUsageTime || 0;
 
-    // --- INÍCIO DA CORREÇÃO PARA MÚLTIPLOS ALUNOS ---
     if (ua.sessions && Array.isArray(ua.sessions)) {
       ua.sessions.forEach(session => {
         if (session.subjectCountsChat) {
@@ -100,27 +132,62 @@ export async function LogsFilteredStudentSummaryService(
           subjectCounts.verificacoes += session.subjectCountsChat.verificacoes || 0;
         }
         if (session.sessionStart && session.sessionEnd && session.sessionDuration) {
-          allSessions.push({ /* ... seu objeto de sessão ... */ });
+          allSessions.push({
+            sessionStart: session.sessionStart,
+            sessionEnd: session.sessionEnd,
+            sessionDuration: session.sessionDuration,
+            userId: ua.userId,
+            userName: ua.name,
+          });
         }
       });
     }
-    // --- FIM DA CORREÇÃO PARA MÚLTIPLOS ALUNOS ---
   });
 
-  // (O resto do seu código de processamento de sessões e uso diário permanece o mesmo)
   const usageTimeObj = calculateUsageTime(totalUsageTime);
-  const processedSessions = allSessions.sort(/* ... */).map(session => ({ /* ... */ }));
+
+  const processedSessions = allSessions
+    .sort((a, b) => new Date(b.sessionStart).getTime() - new Date(a.sessionStart).getTime())
+    .map(session => ({
+      date: new Date(session.sessionStart).toISOString().split("T")[0],
+      sessionStart: session.sessionStart,
+      sessionEnd: session.sessionEnd,
+      sessionDuration: session.sessionDuration,
+      usage: (session.sessionDuration || 0) / 60,
+      formatted: calculateUsageTime(session.sessionDuration || 0).formatted,
+      userId: session.userId,
+      userName: session.userName,
+    }));
+
   const sessionsByDay: Record<string, any> = {};
-  processedSessions.forEach(session => { /* ... */ });
-  const dailyUsage = Object.values(sessionsByDay).sort(/* ... */);
+  processedSessions.forEach(session => {
+    if (!sessionsByDay[session.date]) {
+      sessionsByDay[session.date] = {
+        date: session.date,
+        usage: 0,
+        formatted: "00:00:00",
+        sessions: []
+      };
+    }
+    sessionsByDay[session.date].usage += session.usage;
+    sessionsByDay[session.date].sessions.push(session);
+  });
+
+  Object.values(sessionsByDay).forEach(day => {
+    const totalSecondsForDay = Math.round(day.usage * 60);
+    day.formatted = calculateUsageTime(totalSecondsForDay).formatted;
+  });
+
+  const dailyUsage = Object.values(sessionsByDay).sort((a, b) => b.date.localeCompare(a.date));
 
   return {
     totalCorrectAnswers,
     totalWrongAnswers,
     usageTimeInSeconds: totalUsageTime,
     usageTime: usageTimeObj,
-    subjectCounts, // <-- USA O OBJETO CORRIGIDO E SOMADO
+    subjectCounts,
     dailyUsage,
-    sessions: processedSessions
+    sessions: processedSessions,
+    users: null
   };
 }

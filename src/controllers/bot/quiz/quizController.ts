@@ -9,8 +9,9 @@ import {
   generateQuizService,
   verifyQuizAnswersService
 } from '../../../services/bot/quiz/quizService';
+import { ResultDetail } from '../../../services/bot/quiz/quiz.types';
 
-// --- Controllers de Menu (Fluxo Otimizado) ---
+// --- Controllers de Menu (sem alterações) ---
 
 export async function listLevelsController(req: Request, res: Response) {
   try {
@@ -30,14 +31,11 @@ export async function setLevelController(req: Request, res: Response) {
     }
     const session = getSession(userId);
     session.nivelAtual = nivel;
-
     const categories = getCategoriesService();
-
     res.status(200).json({
       message: `Nível definido como ${nivel}.`,
       categories: categories
     });
-
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -56,38 +54,31 @@ export async function listSubcategoriesController(req: Request, res: Response) {
   }
 }
 
-// --- Controllers de Lógica do Quiz ---
+// --- Controllers de Lógica do Quiz (sem alterações) ---
 
 export async function generateQuizController(req: Request, res: Response) {
   try {
     const userId = req.user?.id;
     const { subtopic } = req.body;
-
     if (!userId || !subtopic) {
       return res.status(400).json({ message: "UserId e subtopic são obrigatórios." });
     }
-
     const session = getSession(userId);
     const level = session.nivelAtual;
     if (!level) {
       return res.status(400).json({ message: "O nível do usuário precisa ser definido." });
     }
-
     const quiz = generateQuizService(subtopic, level);
-
     session.lastSubject = subtopic;
     session.lastFullQuestions = quiz.questions;
     session.lastAnswerKeys = quiz.answer_keys;
-
     const questionsForStudent = quiz.questions.map(({ question, options }) => ({ question, options }));
-
     return res.status(200).json({
       success: true,
       assunto: quiz.subject,
       nivel: quiz.level,
       questions: questionsForStudent,
     });
-
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
@@ -97,133 +88,79 @@ export async function verifyQuizController(req: Request, res: Response) {
   try {
     const userId = req.user?.id;
     const { answers } = req.body;
-
     if (!userId || !Array.isArray(answers)) {
       return res.status(400).json({ message: "UserId e um array de 'answers' são obrigatórios." });
     }
-
     const session = getSession(userId);
     if (!session.lastAnswerKeys || !session.lastFullQuestions) {
       return res.status(400).json({ message: "Nenhum quiz ativo para verificar. Por favor, inicie um novo." });
     }
-
     const result = verifyQuizAnswersService(answers, session.lastAnswerKeys, session.lastFullQuestions);
-
     const isStudent = Array.isArray(req.user.role) ? req.user.role.includes("student") : req.user.role === "student";
     if (isStudent) {
+      // Passando o subject e level corretamente para a função de salvar
       await saveResultToDB(userId, req.user.email, result, session.lastSubject, session.nivelAtual);
     }
-
     session.lastSubject = null;
     session.lastFullQuestions = [];
     session.lastAnswerKeys = [];
-
     return res.status(200).json({ success: true, ...result });
-
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 }
 
-// --- Função Auxiliar ---
+// --- Função Auxiliar (CORRIGIDA) ---
 
-// async function saveResultToDB(userId: string, email: string, result: any, subject: string | null, level: string | null) {
-//   const ua = await UserAnalysis.findOne({ userId, email }).exec() as IUserAnalysis | null;
-//   if (!ua) throw new AppError("Análise de usuário não encontrada.", 404);
+async function saveResultToDB(
+  userId: string,
+  email: string,
+  result: { detalhes: ResultDetail[], totalCorrectAnswers: number, totalWrongAnswers: number },
+  subject: string | null,
+  level: string | null
+) {
+  console.log(`[saveResultToDB] 💾 Iniciando salvamento do quiz para: ${email}`);
+  const userAnalysis = await UserAnalysis.findOne({ userId, email }).exec();
 
-//   if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
-//     ua.sessions.push({ sessionStart: new Date(), answerHistory: [] } as any);
-//   }
-//   const si = ua.sessions.length - 1;
-
-//   ua.sessions[si].answerHistory.push({
-//     questions: result.detalhes.map((d: any) => ({
-//       level: level || "Nível não definido",
-//       subject: subject || "Assunto não definido",
-//       timestamp: new Date(),
-//       totalCorrectAnswers: d.isCorrect ? 1 : 0,
-//       totalWrongAnswers: d.isCorrect ? 0 : 1,
-//       // Objeto aninhado 'selectedOption' conforme o schema
-//       selectedOption: {
-//         question: d.question,
-//         isCorrect: d.isCorrect,
-//         isSelected: d.selected,
-//       },
-//     })),
-//     totalCorrectWrongAnswersSession: {
-//       totalCorrectAnswers: result.totalCorrectAnswers,
-//       totalWrongAnswers: result.totalWrongAnswers,
-//     },
-//   });
-
-//   // MUDANÇA 1: Atualiza as estatísticas globais e da sessão
-//   ua.sessions[si].totalCorrectAnswers = (ua.sessions[si].totalCorrectAnswers || 0) + result.totalCorrectAnswers;
-//   ua.sessions[si].totalWrongAnswers = (ua.sessions[si].totalWrongAnswers || 0) + result.totalWrongAnswers;
-//   ua.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
-//   ua.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
-
-//   // MUDANÇA 2: Utiliza o método do schema para atualizar os contadores de assunto
-//   if (subject) {
-//     ua.updateSubjectCountsQuiz(subject);
-//   }
-
-//   ua.markModified(`sessions`);
-//   await ua.save();
-// }
-
-async function saveResultToDB(userId: string, email: string, result: any, subject: string | null, level: string | null) {
-  console.log(`[saveResultToDB] 💾 Iniciando salvamento do resultado do quiz para o usuário: ${email}`);
-
-  const ua = await UserAnalysis.findOne({ userId, email }).exec() as IUserAnalysis | null;
-  if (!ua) {
+  if (!userAnalysis) {
     console.error(`[saveResultToDB] ❌ ERRO: Análise de usuário não encontrada para ${email}`);
     throw new AppError("Análise de usuário não encontrada.", 404);
   }
 
-  if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
-    console.log(`[saveResultToDB] 🔵 Criando nova sessão de análise para o usuário.`);
-    ua.sessions.push({ sessionStart: new Date(), answerHistory: [] } as any);
+  // --- LÓGICA CORRIGIDA A PARTIR DAQUI ---
+
+  // Itera sobre cada pergunta respondida no quiz
+  for (const detail of result.detalhes) {
+    // Para cada pergunta, chama o método do model.
+    // Isso garante que tanto o 'answerHistory' quanto o 'performanceBySubject' sejam atualizados.
+    userAnalysis.addAnswerHistory(
+      level || "Nível não definido",
+      detail.question,
+      subject || "Assunto não definido",
+      detail.selected,
+      detail.isCorrect
+    );
   }
-  const si = ua.sessions.length - 1;
 
-  const newQuizAttempt = {
-    questions: result.detalhes.map((d: any) => ({
-      level: level || "Nível não definido",
-      subject: subject || "Assunto não definido",
-      timestamp: new Date(),
-      totalCorrectAnswers: d.isCorrect ? 1 : 0,
-      totalWrongAnswers: d.isCorrect ? 0 : 1,
-      selectedOption: {
-        question: d.question,
-        isCorrect: d.isCorrect,
-        isSelected: d.selected,
-      },
-    })),
-    totalCorrectWrongAnswersSession: {
-      totalCorrectAnswers: result.totalCorrectAnswers,
-      totalWrongAnswers: result.totalWrongAnswers,
-    },
-  };
+  // Atualiza os contadores globais e de sessão
+  const currentSession = userAnalysis.sessions.at(-1);
+  if (currentSession) {
+    currentSession.totalCorrectAnswers = (currentSession.totalCorrectAnswers || 0) + result.totalCorrectAnswers;
+    currentSession.totalWrongAnswers = (currentSession.totalWrongAnswers || 0) + result.totalWrongAnswers;
+  }
 
-  ua.sessions[si].answerHistory.push(newQuizAttempt);
+  userAnalysis.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
+  userAnalysis.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
 
-  // Atualiza os contadores
-  ua.sessions[si].totalCorrectAnswers = (ua.sessions[si].totalCorrectAnswers || 0) + result.totalCorrectAnswers;
-  ua.sessions[si].totalWrongAnswers = (ua.sessions[si].totalWrongAnswers || 0) + result.totalWrongAnswers;
-  ua.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
-  ua.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
-
+  // Chama o método para contar o tópico do quiz (opcional, mas boa prática manter)
   if (subject) {
-    ua.updateSubjectCountsQuiz(subject);
+    userAnalysis.updateSubjectCountsQuiz(subject);
   }
-
-  ua.markModified(`sessions`);
-
-  console.log(`[saveResultToDB] 📦 Dados que serão salvos no 'answerHistory':`, JSON.stringify(newQuizAttempt, null, 2));
 
   try {
-    await ua.save();
-    console.log(`[saveResultToDB] ✅ Resultado do quiz salvo com sucesso no banco de dados para ${email}!`);
+    // Salva TODAS as alterações feitas no banco de dados
+    await userAnalysis.save();
+    console.log(`[saveResultToDB] ✅ Resultado do quiz salvo com sucesso no DB para ${email}!`);
   } catch (error) {
     console.error(`[saveResultToDB] ❌ ERRO CRÍTICO ao salvar no banco de dados:`, error);
     throw new AppError("Falha ao salvar o resultado do quiz.", 500);

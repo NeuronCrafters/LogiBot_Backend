@@ -33,16 +33,22 @@ prod-restart:
 # ======================
 
 logs:
-	docker compose logs -f
+	docker compose -f $(DEV_COMPOSE) logs -f
 
 ps:
-	docker compose ps
+	docker compose -f $(DEV_COMPOSE) ps
 
 clean:
 	docker system prune -f --volumes
 
 prune-images:
 	docker image prune -a -f
+
+# popula o banco de dados de DESENVOLVIMENTO com dados de teste.
+# pré-requisito: o ambiente de dev deve estar rodando (execute 'make dev' primeiro).
+seed:
+	@echo "🌱 Populando o banco de dados de desenvolvimento com dados de teste..."
+	npx ts-node src/mock/mock.ts
 
 # ======================
 # 🧪 Testes futuros

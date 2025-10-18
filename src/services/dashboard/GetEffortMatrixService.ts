@@ -73,17 +73,26 @@ export class GetEffortMatrixService {
       return point;
     });
 
+    // Refinamento: Cálculo das médias com proteção explícita contra divisão por zero.
+    const avgPerformance = users.length > 0 ? totalPerformanceSum / users.length : 0;
+    const avgEffort = users.length > 0 ? totalEffortSum / users.length : 0;
+
     const averages = {
-      avgPerformance: parseFloat((totalPerformanceSum / users.length).toFixed(1)),
-      avgEffort: parseFloat((totalEffortSum / users.length).toFixed(1)),
+      avgPerformance: parseFloat(avgPerformance.toFixed(1)),
+      avgEffort: parseFloat(avgEffort.toFixed(1)),
     };
 
     return { points, averages };
   }
 
   private formatUserToPoint(user: any, name?: string) {
-    const { totalCorrectAnswers = 0, totalWrongAnswers = 0 } = user.totalCorrectWrongAnswers || {};
+    // Garante que os valores sejam numéricos, usando `|| 0` como fallback.
+    const totalCorrectAnswers = user.totalCorrectWrongAnswers?.totalCorrectAnswers || 0;
+    const totalWrongAnswers = user.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
+
     const totalAnswers = totalCorrectAnswers + totalWrongAnswers;
+
+    // Ponto crucial da correção: evita a divisão 0/0 que resulta em NaN.
     const performance = totalAnswers > 0 ? (totalCorrectAnswers / totalAnswers) * 100 : 0;
     const effortInMinutes = (user.totalUsageTime || 0) / 60;
 

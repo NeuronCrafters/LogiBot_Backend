@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entendendo a Jornada de Aprendizagem</title>
+    
+    <style>
+        body {
+            background-color: #141414;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 1400px;
+        }
+        .card {
+            background-color: #1f1f1f;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            color: white;
+            flex: 1;
+            min-width: 350px;
+            max-width: 450px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .card-header { padding: 1.5rem; }
+        .card-title { font-size: 1.25rem; font-weight: 600; }
+        .card-content { padding: 1.5rem; }
+        .chart-container { width: 100%; height: 250px; }
+        .scenario-explanation {
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Cenário 1: Aprendizado Ideal ↗️</h3>
+            </div>
+            <div class="card-content">
+                <div id="chart-root-1" class="chart-container"></div>
+                <p class="scenario-explanation" style="color: #a7f3d0; background-color: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.2);">
+                    A curva sobe. O aluno começa com dificuldade, mas **aprende** e melhora o desempenho ao longo da atividade.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Cenário 2: Fadiga/Dificuldade ↘️</h3>
+            </div>
+            <div class="card-content">
+                <div id="chart-root-2" class="chart-container"></div>
+                <p class="scenario-explanation" style="color: #fde047; background-color: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.2);">
+                    A curva desce. O aluno começa bem, mas seu desempenho piora. Isso pode indicar **cansaço** ou que as **perguntas finais são muito difíceis**.
+                </p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Cenário 3: Dificuldade Constante ➡️</h3>
+            </div>
+            <div class="card-content">
+                <div id="chart-root-3" class="chart-container"></div>
+                <p class="scenario-explanation" style="color: #fca5a5; background-color: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2);">
+                    A curva fica baixa e não melhora. O aluno **não entendeu o conceito principal** e não conseguiu progredir.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/recharts@2/umd/Recharts.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = window.Recharts;
+            
+            // --- DADOS MOCKADOS PARA OS 3 CENÁRIOS ---
+            const dadosCenarioIdeal = {
+                color: "#82ca9d", // Verde
+                data: [
+                    { name: 'Início', performance: 35 }, { name: 'Bloco 2', performance: 52 },
+                    { name: 'Bloco 3', performance: 65 }, { name: 'Bloco 4', performance: 80 },
+                    { name: 'Final', performance: 91 },
+                ]
+            };
+            const dadosCenarioFadiga = {
+                color: "#ffc658", // Amarelo
+                data: [
+                    { name: 'Início', performance: 88 }, { name: 'Bloco 2', performance: 82 },
+                    { name: 'Bloco 3', performance: 65 }, { name: 'Bloco 4', performance: 51 },
+                    { name: 'Final', performance: 40 },
+                ]
+            };
+            const dadosCenarioDificuldade = {
+                color: "#ff8042", // Vermelho/Coral
+                data: [
+                    { name: 'Início', performance: 25 }, { name: 'Bloco 2', performance: 30 },
+                    { name: 'Bloco 3', performance: 28 }, { name: 'Bloco 4', performance: 32 },
+                    { name: 'Final', performance: 29 },
+                ]
+            };
+
+            function createChart(targetId, chartData, color) {
+                const ChartComponent = React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
+                    React.createElement(AreaChart, { data: chartData, margin: { top: 10, right: 30, left: 0, bottom: 0 } },
+                        React.createElement(CartesianGrid, { strokeDasharray: "3 3", stroke: "#ffffff20" }),
+                        React.createElement(XAxis, { dataKey: "name", stroke: "#ffffff80", tick: { fill: '#ffffff80', fontSize: 12 } }),
+                        React.createElement(YAxis, { stroke: "#ffffff80", unit: "%", domain: [0, 100], tick: { fill: '#ffffff80' } }),
+                        React.createElement(Tooltip, {
+                            contentStyle: { backgroundColor: "#1f1f1f", borderColor: "#333", borderRadius: '0.5rem' },
+                            labelStyle: { color: "#fff" },
+                            formatter: (value) => [`${value}%`, "Desempenho"]
+                        }),
+                        React.createElement(Area, {
+                            type: "monotone", dataKey: "performance", name: "Desempenho",
+                            stroke: color, fill: color, fillOpacity: 0.3
+                        })
+                    )
+                );
+                ReactDOM.render(ChartComponent, document.getElementById(targetId));
+            }
+            
+            // Renderiza cada um dos 3 gráficos
+            createChart('chart-root-1', dadosCenarioIdeal.data, dadosCenarioIdeal.color);
+            createChart('chart-root-2', dadosCenarioFadiga.data, dadosCenarioFadiga.color);
+            createChart('chart-root-3', dadosCenarioDificuldade.data, dadosCenarioDificuldade.color);
+        });
+    </script>
+
+</body>
+</html>

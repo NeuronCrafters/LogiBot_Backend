@@ -115,6 +115,8 @@ export interface IUserAnalysis extends Document {
     loops: number;
     verificacoes: number;
   };
+  // INCLUSÃO DO NOVO CAMPO AQUI
+  performanceBySubject: Map<string, { correct: number; wrong: number }>;
   sessions: Array<{
     lastActivityAt: Date;
     sessionStart: Date;
@@ -177,6 +179,15 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
     loops: { type: Number, default: 0 },
     verificacoes: { type: Number, default: 0 },
   },
+  // INCLUSÃO DO NOVO CAMPO NO SCHEMA
+  performanceBySubject: {
+    type: Map,
+    of: new Schema({
+      correct: { type: Number, default: 0 },
+      wrong: { type: Number, default: 0 },
+    }, { _id: false }),
+    default: {}
+  },
   sessions: { type: [SessionSchema], default: [] },
 });
 
@@ -210,12 +221,7 @@ UserAnalysisSchema.methods.updateSubjectCountsQuiz = function (subject: string) 
   this.markModified('subjectCountsQuiz');
 };
 
-
-// --- INÍCIO DA MUDANÇA ---
-// O método abaixo foi o único alterado.
 UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, sessionIndex?: number) {
-
-  // Este "mapa de tradução" ensina a função a agrupar os novos assuntos nas 5 categorias antigas.
   const chatSubjectMapping: Record<string, string[]> = {
     variaveis_tipos: ['variaveis', 'tipos'],
     operadores: ['tipos'],
@@ -228,7 +234,6 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
     algoritmos_conceitos: ['verificacoes'],
     algoritmos_busca: ['verificacoes'],
     oop_conceitos: ['funcoes'],
-    // Adicione outros mapeamentos aqui se necessário.
   };
 
   const idx = sessionIndex !== undefined ? sessionIndex : this.sessions.length - 1;
@@ -240,14 +245,10 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
     session.subjectCountsChat = getEmptySubjectCounts();
   }
 
-  // Pega a lista de categorias a serem incrementadas (ex: ['variaveis', 'tipos'])
   const categoriesToIncrement = chatSubjectMapping[subject];
 
-  // Se o assunto recebido tiver um mapeamento...
   if (categoriesToIncrement) {
     console.log(`[UserAnalysis Model] Mapeando '${subject}' para as categorias: [${categoriesToIncrement.join(', ')}]`);
-
-    // Itera por cada categoria e a incrementa
     categoriesToIncrement.forEach(category => {
       if (category in session.subjectCountsChat) {
         session.subjectCountsChat[category as keyof typeof session.subjectCountsChat] += 1;
@@ -263,9 +264,8 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
 
   this.markModified(`sessions.${idx}.subjectCountsChat`);
 };
-// --- FIM DA MUDANÇA ---
 
-
+// --- ALTERAÇÃO NO MÉTODO ABAIXO ---
 UserAnalysisSchema.methods.addAnswerHistory = function (
   level: string,
   question: string,
@@ -302,6 +302,22 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
 
   attempt.totalCorrectWrongAnswersSession.totalCorrectAnswers += correctCount;
   attempt.totalCorrectWrongAnswersSession.totalWrongAnswers += wrongCount;
+
+  const mainSubject = extractMainSubject(subject);
+
+  if (!this.performanceBySubject.get(mainSubject)) {
+    this.performanceBySubject.set(mainSubject, { correct: 0, wrong: 0 });
+  }
+
+  const subjectStats = this.performanceBySubject.get(mainSubject);
+
+  if (isCorrect) {
+    subjectStats.correct += 1;
+  } else {
+    subjectStats.wrong += 1;
+  }
+
+  this.markModified('performanceBySubject');
 };
 
 export const UserAnalysis = mongoose.model<IUserAnalysis>(

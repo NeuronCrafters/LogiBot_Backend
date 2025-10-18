@@ -1,6 +1,12 @@
 import { MongoClient, ObjectId } from 'mongodb';
+// --- MUDANÇA AQUI ---
+// A forma correta de importar e usar uma localidade específica
 import { Faker, pt_BR } from '@faker-js/faker';
 import 'dotenv/config';
+
+// --- E AQUI ---
+// Criamos uma instância do Faker configurada para Português do Brasil
+const faker = new Faker({ locale: [pt_BR] });
 
 // --- CONFIGURAÇÃO DA GERAÇÃO ---
 const NUM_UNIVERSITIES = 4;

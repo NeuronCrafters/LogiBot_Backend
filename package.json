@@ -11,7 +11,12 @@
     "docker:dev": "docker compose -f docker-compose.dev.yml up -d --build",
     "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
     "db:seed": "npx ts-node src/mock/mock.ts",
-    "wait": "node -e \"console.log('⏳ Aguardando 10 segundos para o banco de dados inicializar...'); setTimeout(() => process.exit(0), 10000)\"",
+    "docker:down:clean": "docker compose -f docker-compose.dev.yml down -v",
+    "docker:up": "docker compose -f docker-compose.dev.yml up -d --build",
+    "wait": "node -e \"console.log('⏳ Aguardando 10s para o Mongo subir...'); setTimeout(() => process.exit(0), 10000)\"",
+    "db:restore:internal": "docker exec logibot_mongodb_dev mongorestore --username chatsael --password chatsael_password --authenticationDatabase admin --db logibot_db --drop /data/backup_files",
+
+    "fresh-start": "npm run docker:down:clean && npm run docker:up && npm run wait && npm run db:restore:internal",
     "dev:setup": "npm-run-all -s docker:dev wait db:seed dev"
   },
   "keywords": [],

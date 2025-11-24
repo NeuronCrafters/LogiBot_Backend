@@ -5,7 +5,7 @@ import { Class } from "@/models/Class";
 import { University } from "@/models/University";
 import { AppError } from "@/exceptions/AppError";
 import { hash } from "bcryptjs";
-import { findEntitiesByCode } from "@/config/generateCode";
+import { findEntitiesByCode, generateDisciplineCode } from "@/config/generateCode";
 
 interface CreateUserRequest {
   name: string;
@@ -22,7 +22,7 @@ class CreateUserService {
       throw new AppError("Usuário já existe com este email!", 409);
     }
 
-    // Buscar entidades pelo código da disciplina
+    // Buscar entidades pelo código
     const entities = await findEntitiesByCode(code);
     if (!entities) {
       throw new AppError("Código de disciplina inválido!", 404);
@@ -30,24 +30,19 @@ class CreateUserService {
 
     const { university, course, discipline, classes } = entities;
 
-    // Verificar se a disciplina tem turmas
     if (!classes || classes.length === 0) {
       throw new AppError("A disciplina não possui turmas cadastradas!", 400);
     }
 
-    // Para códigos específicos de turma, precisamos identificar qual turma
-    // Vamos buscar qual das turmas da disciplina corresponde ao código
     let selectedClass = null;
 
-    // Se há múltiplas turmas, vamos procurar qual turma específica o código representa
+    // Identificar turma correta pelo código
     for (const classItem of classes) {
-      // Tentar gerar o mesmo código para verificar se corresponde
-      const { generateDisciplineCode } = await import("@/config/generateCode");
       const testCode = generateDisciplineCode(
-          university._id.toString(),
-          course._id.toString(),
-          (classItem as any)._id.toString(),
-          discipline._id.toString()
+        university._id.toString(),
+        course._id.toString(),
+        (classItem as any)._id.toString(),
+        discipline._id.toString()
       );
 
       if (testCode === code) {
@@ -56,15 +51,13 @@ class CreateUserService {
       }
     }
 
-    // Se não encontrou turma específica, usar a primeira
     if (!selectedClass) {
       selectedClass = classes[0];
     }
 
-    // Criptografar a senha
     const hashedPassword = await hash(password, 10);
 
-    // Criar o usuário
+    // Criar usuário
     const user = await User.create({
       name,
       email,
@@ -77,23 +70,21 @@ class CreateUserService {
       status: "active"
     });
 
-    // Adicionar o usuário à disciplina
+    // Associar disciplina e turma
     await Discipline.findByIdAndUpdate(discipline._id, {
       $addToSet: { students: user._id }
     });
 
-    // Adicionar o usuário à turma específica
     await Class.findByIdAndUpdate((selectedClass as any)._id, {
       $addToSet: { students: user._id }
     });
 
-    // Retornar dados do usuário (sem a senha) com informações completas
     const userResponse = await User.findById(user._id)
-        .populate('school', 'name')
-        .populate('course', 'name')
-        .populate('class', 'name')
-        .populate('disciplines', 'name code')
-        .select('-password');
+      .populate('school', 'name')
+      .populate('course', 'name')
+      .populate('class', 'name')
+      .populate('disciplines', 'name code')
+      .select('-password');
 
     return {
       user: userResponse,

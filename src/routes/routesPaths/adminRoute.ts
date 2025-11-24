@@ -406,13 +406,13 @@ adminRouter.patch("/users/:userId/status", ...isPermissions.isAdmin(), new Updat
  */
 adminRouter.get(
   "/coordinator/classes",
-  ...isPermissions.isAdminOrCoordinator(),
+  ...isPermissions.isAdminProfessorOrCoordinator(),
   ListClassesForCoordinatorController
 );
 
 adminRouter.get(
   "/classes/:classId/students",
-  ...isPermissions.isAdminOrCoordinator(),
+  ...isPermissions.isAdminProfessorOrCoordinator(),
   ListStudentsByClassForCoordinatorController
 );
 

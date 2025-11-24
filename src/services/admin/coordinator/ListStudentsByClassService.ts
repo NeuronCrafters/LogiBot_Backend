@@ -1,67 +1,67 @@
 import { User } from "../../../models/User";
 import { Professor } from "../../../models/Professor";
-import { AppError } from "../../../exceptions/AppError"; // Supondo que você tenha essa classe
+import { AppError } from "../../../exceptions/AppError";
 
 interface IRequest {
   classId: string;
   requesterId: string;
   requesterRole: string[];
-  disciplineId?: string; // Filtro opcional de disciplina específica
+  disciplineId?: string;
 }
 
 class ListStudentsByClassService {
   async execute({ classId, requesterId, requesterRole, disciplineId }: IRequest) {
 
-    // 1. Definição básica da query: Buscar alunos daquela turma
-    // "class" no model User é um ObjectId único, então a busca é direta
-    let query: any = {
+    // Query inicial: Alunos da turma selecionada
+    const query: any = {
       role: "student",
       class: classId
     };
 
-    // 2. Lógica para PROFESSOR
-    if (requesterRole.includes("professor") && !requesterRole.includes("admin")) {
+    const isProfessor = requesterRole.includes("professor") && !requesterRole.includes("admin");
 
-      // Buscar o professor para saber quais disciplinas ele dá
+    if (isProfessor) {
+      // 1. Busca os dados do professor (suas disciplinas)
       const professor = await Professor.findById(requesterId).select("disciplines");
 
       if (!professor) {
         throw new AppError("Professor não encontrado", 404);
       }
 
-      // Se o filtro veio com uma disciplina específica (para não misturar)
+      // 2. Define quais disciplinas usar no filtro
+      let targetDisciplines: string[] = [];
+
       if (disciplineId) {
-        // Validação de Segurança: O professor realmente dá essa disciplina?
-        const teachesDiscipline = professor.disciplines.some(
-          (d) => d.toString() === disciplineId
-        );
-
-        if (!teachesDiscipline) {
-          throw new AppError("Você não tem permissão para visualizar alunos desta disciplina.", 403);
+        // Se o professor selecionou uma disciplina específica no filtro
+        const ownsDiscipline = professor.disciplines.some(d => d.toString() === disciplineId);
+        if (!ownsDiscipline) {
+          throw new AppError("Você não tem permissão nesta disciplina.", 403);
         }
-
-        // Filtra alunos que estão na turma E especificamente nessa disciplina
-        query.disciplines = disciplineId;
-
+        targetDisciplines = [disciplineId];
       } else {
-        // Se não selecionou disciplina, mostra alunos da turma que fazem QUALQUER disciplina do professor
-        // Isso evita que o professor veja alunos da turma que só fazem matéria com OUTROS professores
-        query.disciplines = { $in: professor.disciplines };
+        // AUTOMÁTICO: Se não selecionou disciplina, pega TODAS as disciplinas do professor.
+        // Convertendo ObjectIds para string para garantir compatibilidade
+        targetDisciplines = professor.disciplines.map(d => d.toString());
+      }
+
+      // 3. A Mágica: Filtra alunos dessa turma que cursam as matérias do professor
+      // O aluno precisa ter a disciplina X OU Y OU Z (do professor) na grade dele
+      if (targetDisciplines.length > 0) {
+        query.disciplines = { $in: targetDisciplines };
+      } else {
+        // Se o professor não tem disciplinas cadastradas, não deve ver alunos
+        return [];
       }
     }
-
-    // 3. Lógica para ADMIN ou COORDENADOR (se quiser filtrar por disciplina também)
+    // Lógica Admin/Coordenador
     else if (disciplineId) {
       query.disciplines = disciplineId;
     }
 
-    // 4. Executa a busca no Banco
+    // 4. Executa a busca
     const students = await User.find(query)
-      .select("name email disciplines class photo") // Selecione os campos necessários
-      .populate({
-        path: "disciplines",
-        select: "name code", // Popula para mostrar quais disciplinas o aluno faz
-      })
+      .select("name email disciplines class photo")
+      .populate("disciplines", "name code") // Popula para exibir os nomes
       .lean();
 
     return students;

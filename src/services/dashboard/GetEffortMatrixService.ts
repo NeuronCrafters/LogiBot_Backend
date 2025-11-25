@@ -23,11 +23,6 @@ interface EffortMatrixDTO {
   };
 }
 
-// ======================================================================
-// ## LÓGICA DE JITTERING ##
-// Define o máximo de 'ruído' que você quer aplicar.
-// Exemplo: 0.05 min para esforço e 0.5% para desempenho.
-// ======================================================================
 const MAX_JITTER_EFFORT = 0.05; // 3 segundos de ruído (0.05 min)
 const MAX_JITTER_PERFORMANCE = 0.5; // 0.5% de ruído
 

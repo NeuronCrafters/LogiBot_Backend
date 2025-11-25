@@ -58,7 +58,9 @@ export class GetProficiencyRadarService {
       const successRate = totalAnswers > 0 ? (totals.correct / totalAnswers) * 100 : 0;
 
       labels.push(category);
-      data.push(parseFloat(successRate.toFixed(1)));
+      //data.push(parseFloat(successRate.toFixed(1)));
+      data.push(successRate);
+
     });
 
     return { labels, data };

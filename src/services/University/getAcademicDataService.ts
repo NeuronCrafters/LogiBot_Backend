@@ -307,7 +307,6 @@ function determineUserAccess(user: UserContext) {
     const isCourseCoordinator = user.role.includes('course-coordinator');
     const isProfessor = user.role.includes('professor');
 
-    // ADMIN - pode ver tudo, sem filtros
     if (isAdmin) {
         return {
             universityFilter: {},
@@ -315,7 +314,7 @@ function determineUserAccess(user: UserContext) {
             classFilter: {},
             disciplineFilter: {},
             studentFilter: {},
-            professorFilter: {}, // Remove filtro por school para admin
+            professorFilter: {},
             canViewClasses: true,
             canViewDisciplines: true,
             canViewStudents: true,
@@ -323,14 +322,13 @@ function determineUserAccess(user: UserContext) {
         };
     }
 
-    // COORDENADOR DE CURSO - pode ver dados do seu curso
     if (isCourseCoordinator) {
         return {
             universityFilter: { _id: user.school },
-            courseFilter: user.course ? { _id: user.course } : {},
+            courseFilter: user.course ? { _id: user.course } : { _id: { $in: [] } },
             classFilter: {},
             disciplineFilter: {},
-            studentFilter: user.course ? { course: user.course } : {},
+            studentFilter: user.course ? { course: user.course } : { _id: { $in: [] } },
             professorFilter: { school: user.school },
             canViewClasses: true,
             canViewDisciplines: true,
@@ -339,56 +337,38 @@ function determineUserAccess(user: UserContext) {
         };
     }
 
-    // PROFESSOR - pode ver dados das disciplinas que leciona
-    // if (isProfessor) {
-    //     return {
-    //         universityFilter: { _id: user.school },
-    //         courseFilter: user.course ? { _id: user.course } : {},
-    //         classFilter: {},
-    //         disciplineFilter: user.disciplines && user.disciplines.length > 0
-    //             ? { _id: { $in: user.disciplines } }
-    //             : { _id: 'nonexistent' }, // Se não tem disciplinas, não vê nada
-    //         studentFilter: user.disciplines && user.disciplines.length > 0
-    //             ? { disciplines: { $in: user.disciplines } }
-    //             : { _id: 'nonexistent' },
-    //         professorFilter: { _id: user._id }, // só ele mesmo nos professores das disciplinas
-    //         canViewClasses: false, // professor não vê turmas completas
-    //         canViewDisciplines: true,
-    //         canViewStudents: true,
-    //         canViewProfessors: false, // não pode ver outros professores do curso
-    //     };
-    // }
-
     if (isProfessor) {
         return {
             universityFilter: { _id: user.school },
-            courseFilter: user.course ? { _id: user.course } : {},
+            courseFilter: user.course ? { _id: user.course } : { _id: { $in: [] } },
+
             classFilter: user.classes && user.classes.length
                 ? { _id: { $in: user.classes } }
-                : { _id: 'nonexistent' },
+                : { _id: { $in: [] } },
+
             disciplineFilter: user.disciplines?.length
                 ? { _id: { $in: user.disciplines } }
-                : { _id: 'nonexistent' },
+                : { _id: { $in: [] } },
+
             studentFilter: user.disciplines?.length
                 ? { disciplines: { $in: user.disciplines } }
-                : { _id: 'nonexistent' },
+                : { _id: { $in: [] } },
+
             professorFilter: { _id: user._id },
-            canViewClasses: true,                // ← libera turmas
+            canViewClasses: true,
             canViewDisciplines: true,
             canViewStudents: true,
             canViewProfessors: false,
         };
     }
 
-    // ESTUDANTE - SEM ACESSO a dados acadêmicos
-    // Fallback - sem acesso (inclui estudantes e qualquer role não autorizado)
     return {
-        universityFilter: { _id: 'nonexistent' },
-        courseFilter: { _id: 'nonexistent' },
-        classFilter: { _id: 'nonexistent' },
-        disciplineFilter: { _id: 'nonexistent' },
-        studentFilter: { _id: 'nonexistent' },
-        professorFilter: { _id: 'nonexistent' },
+        universityFilter: { _id: { $in: [] } },
+        courseFilter: { _id: { $in: [] } },
+        classFilter: { _id: { $in: [] } },
+        disciplineFilter: { _id: { $in: [] } },
+        studentFilter: { _id: { $in: [] } },
+        professorFilter: { _id: { $in: [] } },
         canViewClasses: false,
         canViewDisciplines: false,
         canViewStudents: false,

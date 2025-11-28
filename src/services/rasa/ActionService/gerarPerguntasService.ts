@@ -30,7 +30,7 @@ export async function gerarPerguntasService(
   session.lastSubject = pergunta;
 
   try {
-    console.log("📡 Enviando requisição para o Rasa...");
+    console.log("📡 enviando requisição para o rasa...");
     const response = await axios.post(RASA_ACTION_URL, {
       next_action: "action_gerar_perguntas_chatgpt",
       tracker: {
@@ -40,7 +40,7 @@ export async function gerarPerguntasService(
           nivel: session.nivelAtual,
         },
       },
-    }, { timeout: 180000 });
+    }, { timeout: 10000 });
 
     const responses = response.data.responses || [];
     if (!Array.isArray(responses) || responses.length === 0) {
@@ -49,7 +49,6 @@ export async function gerarPerguntasService(
 
     let payload: RasaResponse | null = null;
 
-    // 1. Tenta extrair de 'custom'
     for (const r of responses) {
       if (r.custom && Array.isArray(r.custom.questions) && Array.isArray(r.custom.answer_keys)) {
         payload = r.custom;
@@ -57,7 +56,6 @@ export async function gerarPerguntasService(
       }
     }
 
-    // 2. Fallback: tenta parsear o texto bruto como JSON
     if (!payload) {
       const rawText = responses.find((r: any) => typeof r.text === "string")?.text;
       if (rawText) {
@@ -68,7 +66,7 @@ export async function gerarPerguntasService(
             payload = parsed;
           }
         } catch (e) {
-          console.warn("⚠️ Não foi possível extrair JSON da resposta textual.");
+          console.warn("⚠️ não foi possível extrair json da resposta textual.");
         }
       }
     }
@@ -77,7 +75,6 @@ export async function gerarPerguntasService(
       throw new AppError("Não foi possível extrair perguntas da resposta do Rasa.", 502);
     }
 
-    // Validação das perguntas
     if (!Array.isArray(payload.questions) || payload.questions.length < 5) {
       throw new AppError("Número insuficiente de perguntas geradas.", 502);
     }
@@ -92,14 +89,12 @@ export async function gerarPerguntasService(
     }
 
     if (!Array.isArray(payload.answer_keys) || payload.answer_keys.length < 5) {
-      console.warn("⚠️ Gabarito incompleto — usando array vazio como fallback.");
+      console.warn("⚠️ gabarito incompleto — usando array vazio como fallback.");
       payload.answer_keys = [];
     }
 
-    // limpa os prefixos (A), B), etc.) das opções antes de usar os dados
     const cleanedQuestions = cleanQuestionOptions(payload.questions);
 
-    // Usa os dados limpos daqui para frente
     session.lastQuestions = cleanedQuestions.map((q) => q.question);
     session.lastAnswerKeys = payload.answer_keys;
 
@@ -111,7 +106,7 @@ export async function gerarPerguntasService(
       metadata: payload.metadata,
     };
   } catch (error: any) {
-    console.error("❌ Erro no gerarPerguntasService:", {
+    console.error(" Erro no gerarPerguntasService:", {
       error: error.message,
       response: error.response?.data,
     });
@@ -145,11 +140,7 @@ function extractJson(text: string): string {
   return text.slice(start, end + 1);
 }
 
-/**
- * remove prefixos como "A) ", "B. ", "(C) ", etc., das opções de um bot
- */
 function cleanQuestionOptions(questions: RasaQuestion[]): RasaQuestion[] {
-  //const prefixRegex = /^\s*\(*[a-zA-Z]\)[\s.-]*/;
   const prefixRegex = /^\s*\(?[a-zA-Z]\)?[\.\)]\s*/
   return questions.map(q => ({
     ...q,

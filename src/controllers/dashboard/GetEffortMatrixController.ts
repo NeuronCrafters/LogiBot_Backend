@@ -9,7 +9,7 @@ export class GetEffortMatrixController {
       const data = await getEffortMatrixService.execute({ universityId, courseId, classId, studentId });
       return res.status(200).json(data);
     } catch (error: any) {
-      console.error(`[geteffortmatrixcontroller] error: ${error.message}`);
+
       return res.status(500).json({ message: "Erro ao buscar dados da matriz de esforço." });
     }
   }

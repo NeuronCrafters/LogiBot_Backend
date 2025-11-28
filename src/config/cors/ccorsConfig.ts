@@ -16,17 +16,17 @@ const getAllowedOrigins = (): string[] => {
 
 const isOriginAllowed = (origin: string | undefined, allowedOrigins: string[]): boolean => {
   if (!origin) {
-    console.log(' requisição sem origin permitida');
+
     return true;
   }
 
   if (allowedOrigins.includes(origin)) {
-    console.log(' origin permitido:', origin);
+
     return true;
   }
 
-  console.warn(' origin não permitido:', origin);
-  console.warn(' origins válidos:', allowedOrigins);
+
+
   return false;
 };
 
@@ -34,7 +34,7 @@ export const corsConfig: CorsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = getAllowedOrigins();
 
-    console.log(` origin da requisição: ${origin || 'sem origin'}`);
+
 
     if (isOriginAllowed(origin, allowedOrigins)) {
       return callback(null, true);

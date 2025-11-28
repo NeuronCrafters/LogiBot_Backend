@@ -10,7 +10,7 @@ class ListClassesByCourseController {
       const classes = await listClassesByCourseService.listClassByCouse(courseId);
       return res.status(200).json(classes);
     } catch (error: any) {
-      console.error("erro ao listar turmas:", error.message);
+
       return res.status(error.statusCode || 500).json({
         message: error.message || "Erro interno no servidor.",
       });

@@ -65,7 +65,7 @@ class ListStudentsService {
 
       throw new AppError("Acesso negado. Permissão insuficiente.", 403);
     } catch (error) {
-      console.error("erro ao listar alunos:", error);
+
       if (error instanceof AppError) throw error;
       throw new AppError("Erro interno ao processar a listagem de alunos.", 500);
     }

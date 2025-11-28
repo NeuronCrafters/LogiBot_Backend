@@ -30,7 +30,7 @@ export async function gerarPerguntasService(
   session.lastSubject = pergunta;
 
   try {
-    console.log(" enviando requisição para o rasa...");
+
     const response = await axios.post(RASA_ACTION_URL, {
       next_action: "action_gerar_perguntas_chatgpt",
       tracker: {
@@ -66,7 +66,7 @@ export async function gerarPerguntasService(
             payload = parsed;
           }
         } catch (e) {
-          console.warn("️ não foi possível extrair json da resposta textual.");
+
         }
       }
     }
@@ -89,7 +89,7 @@ export async function gerarPerguntasService(
     }
 
     if (!Array.isArray(payload.answer_keys) || payload.answer_keys.length < 5) {
-      console.warn("️ gabarito incompleto — usando array vazio como fallback.");
+
       payload.answer_keys = [];
     }
 

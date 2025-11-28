@@ -16,7 +16,7 @@ export async function updateUserActivity(req: Request, res: Response, next: Next
                 }
             );
         } catch (error) {
-            console.error("falha ao atualizar a atividade do usuário:", error);
+
         }
     }
 

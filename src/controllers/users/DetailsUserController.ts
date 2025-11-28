@@ -20,7 +20,7 @@ class DetailsUserController {
       const userDetails = await svc.detailsUser(id, primaryRole);
       return res.json(userDetails);
     } catch (err: any) {
-      console.error(err);
+
       const status = err instanceof AppError ? err.statusCode : 500;
       return res.status(status).json({ error: err.message });
     }

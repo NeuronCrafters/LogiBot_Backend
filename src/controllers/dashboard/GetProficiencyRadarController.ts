@@ -9,7 +9,7 @@ export class GetProficiencyRadarController {
       const data = await service.execute({ universityId, courseId, classId, studentId });
       return res.status(200).json(data);
     } catch (error: any) {
-      console.error(`[getproficiencyradarcontroller] error: ${error.message}`);
+
       return res.status(500).json({ message: "Erro ao buscar dados do radar de proficiência." });
     }
   }

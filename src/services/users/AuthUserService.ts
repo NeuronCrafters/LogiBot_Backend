@@ -78,7 +78,7 @@ class AuthUserService {
 
         const lastSession = userAnalysis.sessions.at(-1);
         if (lastSession && !lastSession.sessionEnd) {
-          console.log(`[login] fechando sessão zumbi anterior para ${user.email}`);
+
           lastSession.sessionEnd = new Date(lastSession.lastActivityAt || lastSession.sessionStart);
           lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
         }
@@ -94,10 +94,10 @@ class AuthUserService {
 
         userAnalysis.sessions.push(newSession);
         await userAnalysis.save();
-        console.log(`[login] nova sessão de análise iniciada para ${user.email}`);
+
 
       } catch (error) {
-        console.error(`[login] falha ao processar sessão de análise para ${user.email}:`, error);
+
       }
     }
 

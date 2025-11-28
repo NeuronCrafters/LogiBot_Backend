@@ -18,7 +18,7 @@ class CreateProfessorController {
 
       return res.status(201).json(professor);
     } catch (error) {
-      console.error("erro ao criar professor:", error);
+
       return res.status(error.statusCode || 500).json({
         error: error.message || "Erro interno ao criar professor",
       });

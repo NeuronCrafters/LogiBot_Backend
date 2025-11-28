@@ -112,11 +112,11 @@ async function saveResultToDB(
   subject: string | null,
   level: string | null
 ) {
-  console.log(`[saveresulttodb]  iniciando salvamento do quiz para: ${email}`);
+
   const userAnalysis = await UserAnalysis.findOne({ userId, email }).exec();
 
   if (!userAnalysis) {
-    console.error(`[saveresulttodb]  erro: análise de usuário não encontrada para ${email}`);
+
     throw new AppError("Análise de usuário não encontrada.", 404);
   }
 
@@ -145,9 +145,9 @@ async function saveResultToDB(
 
   try {
     await userAnalysis.save();
-    console.log(`[saveresulttodb] resultado do quiz salvo com sucesso no db para ${email}!`);
+
   } catch (error) {
-    console.error(`[saveresulttodb] erro crítico ao salvar no banco de dados:`, error);
+
     throw new AppError("Falha ao salvar o resultado do quiz.", 500);
   }
 }

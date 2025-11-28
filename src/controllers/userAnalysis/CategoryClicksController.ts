@@ -36,7 +36,7 @@ export async function categoryClicksController(req: Request, res: Response) {
             .status(200)
             .json({ message: "Cliques de categoria contabilizados com sucesso." });
     } catch (err: any) {
-        console.error("[categoryclickscontroller] erro:", err);
+
         return res
             .status(500)
             .json({

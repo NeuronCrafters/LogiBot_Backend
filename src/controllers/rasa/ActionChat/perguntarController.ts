@@ -38,15 +38,15 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
         await userAnalysis.save();
 
-        console.log(`[useranalysis]  contagem salva com sucesso para o usuário: ${senderId}`);
-        console.log(`[useranalysis] ️ tópico: '${subject}' | novo total: ${newCount}`);
+
+
       }
     }
 
     res.status(200).json(response);
 
   } catch (error: any) {
-    console.error("erro no actionperguntarcontroller:", error);
+
     res.status(500).json({ message: "Erro ao conversar com o assistente", error: error.message });
   }
 }

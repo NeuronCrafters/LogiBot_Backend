@@ -39,14 +39,14 @@ class AuthUserController {
 
         } catch (error: any) {
             if (error instanceof AppError) {
-                console.error("apperror no authusercontroller:", error.message, error.statusCode);
+
                 return res.status(error.statusCode).json({
                     success: false,
                     message: error.message
                 });
             }
 
-            console.error("erro inesperado no authusercontroller:", error);
+
             return res.status(500).json({
                 success: false,
                 message: "Erro interno no servidor.",

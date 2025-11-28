@@ -25,7 +25,7 @@ class SigninGoogleController {
         authMethod: "google",
       });
     } catch (error) {
-      console.error("erro no controlador de login com google:", error);
+
       return done(error);
     }
   }

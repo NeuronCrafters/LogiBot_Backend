@@ -29,13 +29,13 @@ export async function initAdminUser(): Promise<void> {
           status: ADMIN_USER_DATA.status,
         }
       });
-      console.log(' usuário admin existente atualizado com sucesso.');
+
     } else {
       await User.create(ADMIN_USER_DATA);
-      console.log(' usuário admin criado com sucesso.');
+
     }
 
   } catch (error) {
-    console.error(' erro ao inicializar o usuário admin:', error);
+
   }
 }

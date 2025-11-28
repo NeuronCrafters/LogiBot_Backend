@@ -31,9 +31,9 @@ function getValidConfigs(): AgentConfig[] {
     cachedConfigs = getApiConfigs();
     configsLastUpdated = now;
     if (cachedConfigs.length === 0) {
-      console.error("erro crítico: nenhuma configuração de agente encontrada.");
+
     } else {
-      console.log(`[api config] ${cachedConfigs.length} configurações válidas carregadas.`);
+
     }
   }
   return cachedConfigs;
@@ -59,7 +59,7 @@ export async function makeRequestWithFallback(body: any, maxRetries: number = 3)
 
   const triedConfigs: string[] = [];
   const originalMessage = body.messages[0]?.content || 'Mensagem não encontrada';
-  console.log(`[debug-cycle] iniciando ciclo de agentes para a mensagem: "${originalMessage.substring(0, 100)}..."`);
+
 
   for (let attempt = 0; attempt < Math.min(maxRetries, configs.length); attempt++) {
     const config = getNextApiConfig();
@@ -69,21 +69,21 @@ export async function makeRequestWithFallback(body: any, maxRetries: number = 3)
     triedConfigs.push(configId);
 
     try {
-      console.log(`[debug-cycle] tentativa ${attempt + 1}/${Math.min(maxRetries, configs.length)} com o agente: ${configId}`);
+
       const response = await axios.post(config.url, body, {
         headers: { 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
         timeout: 30000
       });
       const responseText = response.data?.choices?.[0]?.message?.content || JSON.stringify(response.data);
-      console.log(`[debug-cycle]  sucesso com ${configId}. resposta: "${responseText.substring(0, 80)}..."`);
+
       return response;
     } catch (error: any) {
       const status = error.response?.status;
       const errorMsg = error.response?.data?.error || error.message;
-      console.warn(`[debug-cycle]  falha com ${configId}: status ${status} - ${errorMsg}`);
+
     }
   }
 
-  console.error(`[debug-cycle]  todas as ${triedConfigs.length} tentativas com agentes falharam.`);
+
   throw new AppError(`Falha ao se comunicar com o IA após ${triedConfigs.length} tentativas`, 500);
 }

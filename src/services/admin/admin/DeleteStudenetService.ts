@@ -56,7 +56,7 @@ export async function adminDeleteStudentService(studentId: string): Promise<Dele
         };
 
     } catch (error) {
-        console.error("erro no service de deletar estudante:", error);
+
         return {
             success: false,
             message: "Erro interno ao deletar estudante"

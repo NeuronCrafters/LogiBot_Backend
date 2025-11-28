@@ -32,7 +32,7 @@ export async function verifyRecaptcha(token?: string): Promise<void> {
         } = response.data;
 
         if (!data.success) {
-            console.error("recaptcha falhou:", data['error-codes']);
+
             throw new AppError("Falha na verificação do reCAPTCHA. Tente novamente.", 403);
         }
 
@@ -45,7 +45,7 @@ export async function verifyRecaptcha(token?: string): Promise<void> {
             throw error;
         }
 
-        console.error("erro na verificação do recaptcha:", error);
+
         throw new AppError("Erro na verificação do reCAPTCHA. Tente novamente.", 500);
     }
 }

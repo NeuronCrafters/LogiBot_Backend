@@ -26,7 +26,7 @@ class UpdateProfileController {
         user: updatedUser,
       });
     } catch (error: any) {
-      console.error("erro ao atualizar perfil:", error.message);
+
       return res.status(error.statusCode || 500).json({
         message: error.message || "Erro inesperado!",
       });

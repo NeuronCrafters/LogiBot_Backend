@@ -111,7 +111,7 @@ export function extractAllowedSubject(message: string): string | null {
     if (regex.test(normalizedMessage)) {
       const subject = keywordsMap[pattern];
       if (ALLOWED_SUBJECTS.has(subject)) {
-        console.log(`[log] match por regex: '${normalizedMessage}' -> ${subject}`);
+
         return subject;
       }
     }
@@ -132,14 +132,14 @@ export function extractAllowedSubject(message: string): string | null {
       if (distance <= tolerance) {
         const subject = keywordToSubjectMap.get(keyword);
         if (subject && ALLOWED_SUBJECTS.has(subject)) {
-          console.log(`[log] match por fuzzy: '${word}' ~ '${keyword}' -> ${subject} (distância: ${distance})`);
+
           return subject;
         }
       }
     }
   }
 
-  console.log(`[log] nenhum assunto encontrado para: '${normalizedMessage}'`);
+
   return null;
 }
 
@@ -149,11 +149,11 @@ export function validateAndEnrichPrompt(userText: string): { subject: string; pr
   const SYSTEM_PROMPT_RIGIDO = "Você é um assistente de programação. Seu foco estrito é em programação, algoritmos, lógica, linguagens de código e ferramentas de desenvolvimento (como Docker). SE a pergunta do usuário não for sobre este escopo, você DEVE responder EXCLUSIVAMENTE com a frase: 'Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!' NUNCA tente ser criativo ou relacionar tópicos não-técnicos ao seu escopo. Respeite sempre esta regra.";
 
   if (subject === null) {
-    console.log(`[gatekeeper] mensagem bloqueada por não ser sobre um tópico permitido: "${userText}"`);
+
     return null;
   }
 
-  console.log(`[gatekeeper] mensagem permitida. assunto detectado: '${subject}'.`);
+
 
   const executionPrompt = `Você é um tutor de programação especialista e didático. O usuário está perguntando sobre o tópico específico de **${subject}**. Responda a pergunta dele de forma clara, concisa e focada neste tópico, sempre usando exemplos de código quando apropriado. A pergunta do usuário é: '${userText}'`;
 

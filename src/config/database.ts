@@ -14,9 +14,9 @@ export async function connectDB(): Promise<void> {
     await mongoose.connect(uri, {
     });
 
-    console.log("conexão com o mongodb estabelecida com sucesso!");
+
   } catch (error) {
-    console.error("erro ao conectar no mongodb:", error);
+
     process.exit(1);
   }
 }

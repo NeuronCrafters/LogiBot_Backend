@@ -92,7 +92,7 @@ export const healthCheck = async (req: Request, res: Response): Promise<void> =>
     res.status(200).json(healthData);
 
   } catch (error) {
-    console.error(' erro no health check:', error);
+
 
     res.status(500).json({
       status: 'ERROR',

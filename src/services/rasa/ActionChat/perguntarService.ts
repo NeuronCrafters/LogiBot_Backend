@@ -24,15 +24,15 @@ export async function actionPerguntarService(prompt: string, senderId: string, s
   const MSG_FORA_ESCOPO_EN_PADRAO = "I'm not able to respond to that request, but I can answer other questions. How can I help you with something else?";
 
   try {
-    console.log(`[actionperguntarservice] enviando prompt enriquecido para o ciclo de agentes.`);
+
     const ollamaApiResponse = await makeRequestWithFallback(body);
 
-    console.log("[ollama raw response]", JSON.stringify(ollamaApiResponse.data, null, 2));
+
 
     let ollamaReply = ollamaApiResponse.data?.choices?.[0]?.message?.content;
 
     if (!ollamaReply) {
-      console.error("[actionperguntarservice] resposta do ollama em formato inesperado:", ollamaApiResponse.data);
+
       throw new AppError('Resposta inválida do assistente de IA.', 500);
     }
 
@@ -44,11 +44,11 @@ export async function actionPerguntarService(prompt: string, senderId: string, s
       cleanedOllamaReply.includes(MSG_FORA_ESCOPO_PT) // Captura a mensagem que o Llama pode gerar por causa da instrução
     ) {
 
-      console.log("[actionperguntarservice] ️ resposta fora de escopo detectada. padronizando para pt.");
+
       ollamaReply = MSG_FORA_ESCOPO_PT; // Garante que a mensagem seja EXATAMENTE a padronizada
     }
 
-    console.log("[actionperguntarservice] resposta recebida com sucesso.");
+
 
     return {
       responses: [{
@@ -57,7 +57,7 @@ export async function actionPerguntarService(prompt: string, senderId: string, s
       }],
     };
   } catch (error: any) {
-    console.error('[actionperguntarservice] erro final no ciclo de agentes:', error.message);
+
     throw new AppError('Falha ao se comunicar com o assistente de IA.', 500);
   }
 }

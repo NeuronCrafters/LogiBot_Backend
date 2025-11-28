@@ -49,7 +49,7 @@ export function generateQuizService(subtopic: string, level: string): Quiz {
     return randomQuiz;
 
   } catch (error: any) {
-    console.error(" erro em generatequizservice:", error);
+
     if (error instanceof AppError) throw error;
     throw new AppError("Erro interno ao ler o banco de dados de quizzes.", 500);
   }

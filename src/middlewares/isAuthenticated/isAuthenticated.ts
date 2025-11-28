@@ -65,7 +65,7 @@ export async function isAuthenticated(
             req.user = {
                 id: professor._id.toString(), name: professor.name, email: professor.email, role: normalizeRoles(decoded.role), school: professor.school?.toString() || null, courses: professor.courses?.map(c => c.toString()) || [], classes: professor.classes?.map(c => c.toString()) || []
             };
-            console.log("[isauthenticated] professor autenticado:", req.user);
+
             return next();
         }
 
@@ -75,7 +75,7 @@ export async function isAuthenticated(
         req.user = {
             id: user._id.toString(), name: user.name, email: user.email, role: normalizeRoles(decoded.role), school: user.school?.toString() || null, courses: user.course?.toString() || null, classes: user.class?.toString() || null
         };
-        console.log("[isauthenticated] usuário autenticado:", req.user);
+
         return next();
 
     } catch (error) {

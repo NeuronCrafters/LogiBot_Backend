@@ -44,7 +44,7 @@ class CreateUserController {
         user,
       });
     } catch (error: any) {
-      console.error("erro ao criar usuário:", error.message);
+
       return res.status(error.statusCode || 500).json({
         message: error.message || "Erro inesperado!",
       });

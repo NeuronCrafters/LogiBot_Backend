@@ -9,7 +9,7 @@ export async function LogsCourseSummaryController(req: Request, res: Response) {
     const userRole: string[] = req.user.role;
     const userId = req.user.id;
 
-    console.log("requisição para resumo de curso:", courseId);
+
 
     if (!courseId) {
       return res.status(400).json({ message: "O ID do curso é obrigatório." });
@@ -39,7 +39,7 @@ export async function LogsCourseSummaryController(req: Request, res: Response) {
 
     return res.status(403).json({ message: "Acesso negado." });
   } catch (error) {
-    console.error("[logscoursesummarycontroller] erro:", error);
+
     return res.status(500).json({ message: "Erro ao obter dados do curso." });
   }
 }

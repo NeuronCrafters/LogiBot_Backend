@@ -26,13 +26,13 @@ class LogoutUserService {
         const roles = normalizeRoles(user.role);
 
         if (!roles.includes("student")) {
-            console.log(`[logout] usuário ${user.email} não é estudante. logout simples efetuado.`);
+
             return {
                 message: "Logout efetuado (sem análise de sessão)."
             };
         }
 
-        console.log(`[logout] buscando useranalysis para userid: ${userId}`);
+
         const userAnalysis = await UserAnalysis.findOne({ userId });
 
         if (!userAnalysis || userAnalysis.sessions.length === 0) {
@@ -57,9 +57,9 @@ class LogoutUserService {
 
         try {
             await userAnalysis.save();
-            console.log(`[logout] sessão encerrada com sucesso para estudante: ${user.email}`);
+
         } catch (error: any) {
-            console.error(`[logout] erro ao salvar useranalysis:`, error);
+
             throw new AppError("Erro ao salvar a sessão: " + error.message, 500);
         }
 

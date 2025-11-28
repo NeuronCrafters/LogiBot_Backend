@@ -9,7 +9,7 @@ export class GetTopicPerformanceController {
       const data = await getTopicPerformanceService.execute({ universityId, courseId, classId, studentId });
       return res.status(200).json(data);
     } catch (error: any) {
-      console.error(`[gettopicperformancecontroller] error: ${error.message}`);
+
       return res.status(500).json({ message: "Erro ao buscar dados de desempenho por tópico." });
     }
   }

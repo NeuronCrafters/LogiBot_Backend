@@ -10,7 +10,7 @@ class CreateClassController {
       const classData = await createClassService.execute(name, courseId);
       return res.status(201).json(classData);
     } catch (error: any) {
-      console.error("erro ao criar turma:", error.message);
+
       return res.status(error.statusCode || 500).json({
         message: error.message || "Erro interno no servidor.",
       });

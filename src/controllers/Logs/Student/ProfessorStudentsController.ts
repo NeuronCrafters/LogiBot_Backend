@@ -15,15 +15,15 @@ export async function ProfessorListStudentsController(req: Request, res: Respons
     }
 
     let professor = await Professor.findById(professorId)
-        .populate("school")
-        .populate("courses")
-        .populate("disciplines");
+      .populate("school")
+      .populate("courses")
+      .populate("disciplines");
 
     if (!professor) {
       professor = await Professor.findOne({ email: userEmail })
-          .populate("school")
-          .populate("courses")
-          .populate("disciplines");
+        .populate("school")
+        .populate("courses")
+        .populate("disciplines");
     }
 
     if (!professor) {
@@ -47,7 +47,7 @@ export async function ProfessorListStudentsController(req: Request, res: Respons
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("erro em professorliststudentscontroller:", error);
+
     return res.status(500).json({ message: "Erro ao listar alunos." });
   }
 }
@@ -69,15 +69,15 @@ export async function ProfessorGetStudentDetailsController(req: Request, res: Re
     }
 
     let professor = await Professor.findById(professorId)
-        .populate("school")
-        .populate("courses")
-        .populate("disciplines");
+      .populate("school")
+      .populate("courses")
+      .populate("disciplines");
 
     if (!professor) {
       professor = await Professor.findOne({ email: userEmail })
-          .populate("school")
-          .populate("courses")
-          .populate("disciplines");
+        .populate("school")
+        .populate("courses")
+        .populate("disciplines");
     }
 
     if (!professor) {
@@ -97,7 +97,7 @@ export async function ProfessorGetStudentDetailsController(req: Request, res: Re
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("erro em professorgetstudentdetailscontroller:", error);
+
     return res.status(500).json({ message: "Erro ao obter detalhes do aluno." });
   }
 }
@@ -114,15 +114,15 @@ export async function ProfessorStudentsStatsController(req: Request, res: Respon
     }
 
     let professor = await Professor.findById(professorId)
-        .populate("school")
-        .populate("courses")
-        .populate("disciplines");
+      .populate("school")
+      .populate("courses")
+      .populate("disciplines");
 
     if (!professor) {
       professor = await Professor.findOne({ email: userEmail })
-          .populate("school")
-          .populate("courses")
-          .populate("disciplines");
+        .populate("school")
+        .populate("courses")
+        .populate("disciplines");
     }
 
     if (!professor) {
@@ -154,7 +154,7 @@ export async function ProfessorStudentsStatsController(req: Request, res: Respon
       totalStudents: result.totalStudents
     });
   } catch (error) {
-    console.error("erro em professorstudentsstatscontroller:", error);
+
     return res.status(500).json({ message: "Erro ao obter estatísticas dos alunos." });
   }
 }

@@ -18430,7 +18430,7 @@
         }
       },
       {
-        "question": "Qual é a saída do código JavaScript `console.log('7' + 2 + 1);`?",
+        "question": "Qual é a saída do código JavaScript ``?",
         "generated_at": "2025-07-22T21:40:13.444555",
         "options": [
           "10",
@@ -18448,7 +18448,7 @@
         }
       },
       {
-        "question": "Qual é a saída do código JavaScript `console.log(2 + 1 + '7');`?",
+        "question": "Qual é a saída do código JavaScript ``?",
         "generated_at": "2025-07-22T21:40:13.444555",
         "options": [
           "10",

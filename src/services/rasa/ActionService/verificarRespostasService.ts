@@ -71,7 +71,7 @@ export async function verificarRespostasService(
   }
 
   if (!structuredResponse) {
-    console.error("resposta inesperada do rasa:", JSON.stringify(rasaResp.data, null, 2));
+
     throw new AppError("Resposta do servidor de correção mal formatada.", 502);
   }
 

@@ -47,6 +47,6 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
   } catch (error: any) {
 
-    res.status(500).json({ message: "Erro ao conversar com o assistente", error: error.message });
+    res.status(500).json({ message: "erro ao conversar com o assistente", error: error.message });
   }
 }

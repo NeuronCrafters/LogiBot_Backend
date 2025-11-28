@@ -32,10 +32,10 @@ export async function verificarRespostasService(
     !session.lastAnswerKeys?.length ||
     !session.lastQuestions?.length
   ) {
-    throw new AppError("Sessão inválida: perguntas ou gabarito ausentes.", 400);
+    throw new AppError("sessão inválida: perguntas ou gabarito ausentes.", 400);
   }
   if (respostas.length !== session.lastAnswerKeys.length) {
-    throw new AppError("Número de respostas não corresponde ao número de perguntas.", 400);
+    throw new AppError("número de respostas não corresponde ao número de perguntas.", 400);
   }
 
   let rasaResp;
@@ -58,7 +58,7 @@ export async function verificarRespostasService(
     if (err.response) {
       throw new AppError(`Erro no servidor de correção: ${err.response.statusText}`, 502);
     }
-    throw new AppError("Não foi possível conectar ao servidor de correção.", 503);
+    throw new AppError("não foi possível conectar ao servidor de correção.", 503);
   }
 
   const responses = rasaResp.data.responses;
@@ -72,7 +72,7 @@ export async function verificarRespostasService(
 
   if (!structuredResponse) {
 
-    throw new AppError("Resposta do servidor de correção mal formatada.", 502);
+    throw new AppError("resposta do servidor de correção mal formatada.", 502);
   }
 
   const result: QuizResultData = structuredResponse;
@@ -83,7 +83,7 @@ export async function verificarRespostasService(
 
   if (isStudent) {
     const ua = await UserAnalysis.findOne({ userId, email }).exec();
-    if (!ua) throw new AppError("Usuário não encontrado.", 404);
+    if (!ua) throw new AppError("usuário não encontrado.", 404);
 
     if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
       ua.sessions.push({

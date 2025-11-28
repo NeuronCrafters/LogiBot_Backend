@@ -117,7 +117,7 @@ async function saveResultToDB(
 
   if (!userAnalysis) {
 
-    throw new AppError("Análise de usuário não encontrada.", 404);
+    throw new AppError("análise de usuário não encontrada.", 404);
   }
 
   for (const detail of result.detalhes) {
@@ -148,6 +148,6 @@ async function saveResultToDB(
 
   } catch (error) {
 
-    throw new AppError("Falha ao salvar o resultado do quiz.", 500);
+    throw new AppError("falha ao salvar o resultado do quiz.", 500);
   }
 }

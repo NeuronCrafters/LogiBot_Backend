@@ -10,30 +10,30 @@ class RasaSendController {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader) {
-        throw new AppError("Token não fornecido.", 401);
+        throw new AppError("token não fornecido.", 401);
       }
 
       const token = authHeader.split(" ")[1];
       if (!token) {
-        throw new AppError("Token inválido.", 401);
+        throw new AppError("token inválido.", 401);
       }
 
       let userId: string;
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id?: string };
         if (!decoded.id) {
-          throw new AppError("Token inválido ou expirado.", 401);
+          throw new AppError("token inválido ou expirado.", 401);
         }
         userId = decoded.id;
       } catch (error) {
-        throw new AppError("Token inválido ou expirado.", 401);
+        throw new AppError("token inválido ou expirado.", 401);
       }
 
 
 
       const { message } = req.body;
       if (!message) {
-        throw new AppError("O campo 'message' é obrigatório.", 400);
+        throw new AppError("o campo 'message' é obrigatório.", 400);
       }
 
       const normalizedMessage = normalizeText(message);
@@ -46,13 +46,13 @@ class RasaSendController {
       const userAnalysis = await UserAnalysis.findOne({ userId });
 
       if (!userAnalysis || userAnalysis.sessions.length === 0) {
-        throw new AppError("Nenhuma sessão ativa encontrada para este usuário.", 404);
+        throw new AppError("nenhuma sessão ativa encontrada para este usuário.", 404);
       }
 
       const lastSession = userAnalysis.sessions[userAnalysis.sessions.length - 1];
 
       if (lastSession.sessionEnd) {
-        throw new AppError("A sessão do usuário já foi encerrada.", 400);
+        throw new AppError("a sessão do usuário já foi encerrada.", 400);
       }
 
       lastSession.answerHistory.push({

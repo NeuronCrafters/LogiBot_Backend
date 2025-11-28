@@ -82,7 +82,7 @@ export const healthCheck = async (req: Request, res: Response): Promise<void> =>
     };
 
     if (req.query.verbose === 'true') {
-      console.log(' health check solicitado:', {
+      console.log('health check solicitado:', {
         ip: req.ip || req.connection.remoteAddress,
         userAgent: req.headers['user-agent'],
         timestamp: healthData.timestamp

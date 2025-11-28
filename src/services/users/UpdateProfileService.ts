@@ -14,14 +14,14 @@ class UpdateProfileService {
 
     const user = await User.findById(userId);
     if (!user) {
-      throw new AppError("Usuário não encontrado!", 404);
+      throw new AppError("usuário não encontrado!", 404);
     }
 
 
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
-        throw new AppError("Email já está em uso por outro usuário!", 409);
+        throw new AppError("email já está em uso por outro usuário!", 409);
       }
     }
 

@@ -9,33 +9,33 @@ import { generateDisciplineCode } from "../../../config/generateCode";
 class CreateDisciplineService {
   async execute(name: string, courseId: string, classIds: string[], professorIds: string[]) {
     if (!Types.ObjectId.isValid(courseId)) {
-      throw new AppError("ID do curso inválido!", 400);
+      throw new AppError("id do curso inválido!", 400);
     }
     const courseObjectId = new Types.ObjectId(courseId);
 
     const course = await Course.findById(courseObjectId).populate("university");
     if (!course) {
-      throw new AppError("Curso não encontrado!", 404);
+      throw new AppError("curso não encontrado!", 404);
     }
 
     if (!Array.isArray(classIds) || classIds.some(id => !Types.ObjectId.isValid(id))) {
-      throw new AppError("IDs de turma inválidos!", 400);
+      throw new AppError("ids de turma inválidos!", 400);
     }
     const classObjectIds = classIds.map(id => new Types.ObjectId(id));
 
     const classes = await Class.find({ _id: { $in: classObjectIds } });
     if (classes.length !== classIds.length) {
-      throw new AppError("Uma ou mais turmas não foram encontradas!", 404);
+      throw new AppError("uma ou mais turmas não foram encontradas!", 404);
     }
 
     if (!Array.isArray(professorIds) || professorIds.some(id => !Types.ObjectId.isValid(id))) {
-      throw new AppError("IDs de professor inválidos!", 400);
+      throw new AppError("ids de professor inválidos!", 400);
     }
     const professorObjectIds = professorIds.map(id => new Types.ObjectId(id));
 
     const existingDiscipline = await Discipline.findOne({ name, course: courseObjectId });
     if (existingDiscipline) {
-      throw new AppError("Disciplina já existe para este curso!", 409);
+      throw new AppError("disciplina já existe para este curso!", 409);
     }
 
     const discipline = await Discipline.create({
@@ -67,7 +67,7 @@ class CreateDisciplineService {
 
         attempts++;
         if (attempts > 10) {
-          throw new AppError("Erro ao gerar código único!", 500);
+          throw new AppError("erro ao gerar código único!", 500);
         }
       } while (attempts <= 10);
 

@@ -6,7 +6,7 @@ export const corsAccessLogger = (req: Request, res: Response, next: NextFunction
   const corsInfo = getCorsInfo();
 
   if (origin && !corsInfo.allowedOrigins.includes(origin)) {
-    console.warn(' tentativa de acesso de origin não autorizado:', {
+    console.warn('tentativa de acesso de origin não autorizado:', {
       origin,
       method: req.method,
       path: req.path,

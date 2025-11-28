@@ -44,7 +44,7 @@ let agentRotationIndex = 0;
 function getNextApiConfig(): AgentConfig {
   const configs = getValidConfigs();
   if (configs.length === 0) {
-    throw new AppError("Nenhuma configuração de API válida disponível", 500);
+    throw new AppError("nenhuma configuração de api válida disponível", 500);
   }
   const config = configs[agentRotationIndex % configs.length];
   agentRotationIndex = (agentRotationIndex + 1) % configs.length;
@@ -54,7 +54,7 @@ function getNextApiConfig(): AgentConfig {
 export async function makeRequestWithFallback(body: any, maxRetries: number = 3): Promise<any> {
   const configs = getValidConfigs();
   if (configs.length === 0) {
-    throw new AppError("Nenhuma configuração de API disponível", 500);
+    throw new AppError("nenhuma configuração de api disponível", 500);
   }
 
   const triedConfigs: string[] = [];

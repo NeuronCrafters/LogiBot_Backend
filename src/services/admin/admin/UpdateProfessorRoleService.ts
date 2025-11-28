@@ -6,14 +6,14 @@ class UpdateProfessorRoleService {
     const professor = await Professor.findById(professorId);
 
     if (!professor) {
-      throw new AppError("Professor não encontrado", 404);
+      throw new AppError("professor não encontrado", 404);
     }
 
     const currentRoles = professor.role;
 
     if (action === "add") {
       if (currentRoles.includes("course-coordinator")) {
-        throw new AppError("Este professor já é coordenador de curso.", 400);
+        throw new AppError("este professor já é coordenador de curso.", 400);
       }
 
       const existingCoordinator = await Professor.findOne({
@@ -24,7 +24,7 @@ class UpdateProfessorRoleService {
       });
 
       if (existingCoordinator) {
-        throw new AppError("Já existe um coordenador para este curso nesta universidade.", 409);
+        throw new AppError("já existe um coordenador para este curso nesta universidade.", 409);
       }
 
       professor.role.push("course-coordinator");

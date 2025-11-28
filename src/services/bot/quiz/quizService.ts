@@ -51,7 +51,7 @@ export function generateQuizService(subtopic: string, level: string): Quiz {
   } catch (error: any) {
 
     if (error instanceof AppError) throw error;
-    throw new AppError("Erro interno ao ler o banco de dados de quizzes.", 500);
+    throw new AppError("erro interno ao ler o banco de dados de quizzes.", 500);
   }
 }
 

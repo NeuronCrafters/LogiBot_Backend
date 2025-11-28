@@ -19,19 +19,19 @@ class CreateUserService {
     // Verificar se já existe usuário com este email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      throw new AppError("Usuário já existe com este email!", 409);
+      throw new AppError("usuário já existe com este email!", 409);
     }
 
     // Buscar entidades pelo código
     const entities = await findEntitiesByCode(code);
     if (!entities) {
-      throw new AppError("Código de disciplina inválido!", 404);
+      throw new AppError("código de disciplina inválido!", 404);
     }
 
     const { university, course, discipline, classes } = entities;
 
     if (!classes || classes.length === 0) {
-      throw new AppError("A disciplina não possui turmas cadastradas!", 400);
+      throw new AppError("a disciplina não possui turmas cadastradas!", 400);
     }
 
     let selectedClass = null;

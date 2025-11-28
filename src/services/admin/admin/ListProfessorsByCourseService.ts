@@ -5,7 +5,7 @@ class ListProfessorsByCourseService {
   async execute(courseId: string) {
     const course = await Course.findById(courseId).populate("professors", "name email");
     if (!course) {
-      throw new AppError("Curso não encontrado.", 404);
+      throw new AppError("curso não encontrado.", 404);
     }
 
     return course.professors;

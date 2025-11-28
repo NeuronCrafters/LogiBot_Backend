@@ -15,6 +15,6 @@ export async function sendOpcaoEListarSubopcoesService(categoria: string) {
 
     return response.data;
   } catch (error) {
-    throw new AppError("Erro ao obter as subopções", 500);
+    throw new AppError("erro ao obter as subopções", 500);
   }
 }

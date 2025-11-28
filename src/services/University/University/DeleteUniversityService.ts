@@ -9,12 +9,12 @@ import { Types } from "mongoose";
 class DeleteUniversityService {
   async execute(universityId: string) {
     if (!Types.ObjectId.isValid(universityId)) {
-      throw new AppError("ID da universidade inválido!", 400);
+      throw new AppError("id da universidade inválido!", 400);
     }
 
     const university = await University.findById(universityId);
     if (!university) {
-      throw new AppError("Universidade não encontrada!", 404);
+      throw new AppError("universidade não encontrada!", 404);
     }
 
     const courses = await Course.find({ university: universityId }).select('_id');

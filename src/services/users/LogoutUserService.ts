@@ -12,7 +12,7 @@ function normalizeRoles(roleField: string | string[] | null | undefined): string
 class LogoutUserService {
     async logout(userId: string) {
         if (!userId) {
-            throw new AppError("O 'userId' é obrigatório para realizar o logout.", 400);
+            throw new AppError("o 'userid' é obrigatório para realizar o logout.", 400);
         }
 
         const user =
@@ -20,7 +20,7 @@ class LogoutUserService {
             (await Professor.findById(userId));
 
         if (!user) {
-            throw new AppError("Usuário não encontrado.", 404);
+            throw new AppError("usuário não encontrado.", 404);
         }
 
         const roles = normalizeRoles(user.role);
@@ -36,17 +36,17 @@ class LogoutUserService {
         const userAnalysis = await UserAnalysis.findOne({ userId });
 
         if (!userAnalysis || userAnalysis.sessions.length === 0) {
-            throw new AppError("Nenhuma sessão ativa encontrada para este estudante.", 404);
+            throw new AppError("nenhuma sessão ativa encontrada para este estudante.", 404);
         }
 
         const lastSession = userAnalysis.sessions.at(-1);
 
         if (!lastSession || lastSession.sessionEnd) {
-            throw new AppError("Este estudante já está deslogado.", 400);
+            throw new AppError("este estudante já está deslogado.", 400);
         }
 
         if (!lastSession.sessionStart) {
-            throw new AppError("A sessão não possui uma data de início válida.", 400);
+            throw new AppError("a sessão não possui uma data de início válida.", 400);
         }
 
         lastSession.sessionEnd = new Date();
@@ -60,7 +60,7 @@ class LogoutUserService {
 
         } catch (error: any) {
 
-            throw new AppError("Erro ao salvar a sessão: " + error.message, 500);
+            throw new AppError("erro ao salvar a sessão:" + error.message, 500);
         }
 
         return {

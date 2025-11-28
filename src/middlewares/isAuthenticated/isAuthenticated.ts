@@ -50,8 +50,8 @@ export async function isAuthenticated(
 
         if (normalizeRoles(decoded.role).includes("admin")) {
             const user = await User.findById(decoded.id);
-            if (!user) throw new AppError("Usuário admin não encontrado.", 401);
-            if (user.status !== "active") throw new AppError("Acesso negado. Sua conta está inativa.", 403);
+            if (!user) throw new AppError("usuário admin não encontrado.", 401);
+            if (user.status !== "active") throw new AppError("acesso negado. sua conta está inativa.", 403);
             req.user = {
                 id: user._id.toString(), name: user.name, email: user.email, role: normalizeRoles(decoded.role), school: user.school?.toString() || null, courses: null, classes: null
             };
@@ -60,8 +60,8 @@ export async function isAuthenticated(
 
         if (normalizeRoles(decoded.role).some(r => ["professor", "course-coordinator"].includes(r))) {
             const professor = await Professor.findById(decoded.id).select("name email role school courses classes status");
-            if (!professor) throw new AppError("Professor não encontrado.", 401);
-            if (professor.status !== "active") throw new AppError("Acesso negado. Sua conta está inativa.", 403);
+            if (!professor) throw new AppError("professor não encontrado.", 401);
+            if (professor.status !== "active") throw new AppError("acesso negado. sua conta está inativa.", 403);
             req.user = {
                 id: professor._id.toString(), name: professor.name, email: professor.email, role: normalizeRoles(decoded.role), school: professor.school?.toString() || null, courses: professor.courses?.map(c => c.toString()) || [], classes: professor.classes?.map(c => c.toString()) || []
             };
@@ -70,8 +70,8 @@ export async function isAuthenticated(
         }
 
         const user = await User.findById(decoded.id);
-        if (!user) throw new AppError("Usuário não encontrado.", 401);
-        if (user.status !== "active") throw new AppError("Acesso negado. Sua conta está inativa.", 403);
+        if (!user) throw new AppError("usuário não encontrado.", 401);
+        if (user.status !== "active") throw new AppError("acesso negado. sua conta está inativa.", 403);
         req.user = {
             id: user._id.toString(), name: user.name, email: user.email, role: normalizeRoles(decoded.role), school: user.school?.toString() || null, courses: user.course?.toString() || null, classes: user.class?.toString() || null
         };
@@ -81,7 +81,7 @@ export async function isAuthenticated(
     } catch (error) {
         res.clearCookie("token");
         if (error instanceof jwt.JsonWebTokenError) {
-            return next(new AppError("Token inválido.", 401));
+            return next(new AppError("token inválido.", 401));
         }
         return next(error);
     }

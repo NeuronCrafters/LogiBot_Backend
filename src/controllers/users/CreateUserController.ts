@@ -15,17 +15,16 @@ class CreateUserController {
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        throw new AppError("Formato de e-mail inválido!", 400);
+        throw new AppError("formato de e-mail inválido!", 400);
       }
 
       if (password.length < 12) {
-        throw new AppError("A senha deve ter pelo menos 12 caracteres!", 400);
+        throw new AppError("a senha deve ter pelo menos 12 caracteres!", 400);
       }
 
       const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s]{3,}$/;
       if (!nameRegex.test(name.trim())) {
-        throw new AppError(
-          "Nome inválido! Deve conter ao menos 3 caracteres e não pode conter símbolos especiais.",
+        throw new AppError("nome inválido! deve conter ao menos 3 caracteres e não pode conter símbolos especiais.",
           400
         );
       }

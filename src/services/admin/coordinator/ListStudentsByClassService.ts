@@ -25,7 +25,7 @@ class ListStudentsByClassService {
       const professor = await Professor.findById(requesterId).select("disciplines");
 
       if (!professor) {
-        throw new AppError("Professor não encontrado", 404);
+        throw new AppError("professor não encontrado", 404);
       }
 
       // 2. Define quais disciplinas usar no filtro
@@ -35,7 +35,7 @@ class ListStudentsByClassService {
         // Se o professor selecionou uma disciplina específica no filtro
         const ownsDiscipline = professor.disciplines.some(d => d.toString() === disciplineId);
         if (!ownsDiscipline) {
-          throw new AppError("Você não tem permissão nesta disciplina.", 403);
+          throw new AppError("você não tem permissão nesta disciplina.", 403);
         }
         targetDisciplines = [disciplineId];
       } else {

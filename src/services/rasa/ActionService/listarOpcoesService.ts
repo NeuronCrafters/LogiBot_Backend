@@ -12,6 +12,6 @@ export async function listarOpcoesService() {
 
     return response.data;
   } catch (error) {
-    throw new AppError("Erro ao obter as opções", 500);
+    throw new AppError("erro ao obter as opções", 500);
   }
 }

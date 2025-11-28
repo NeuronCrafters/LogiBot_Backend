@@ -15,6 +15,6 @@ export async function definirNivelService(nivel: string) {
 
     return response.data;
   } catch (error) {
-    throw new AppError("Erro ao definir o nível", 500);
+    throw new AppError("erro ao definir o nível", 500);
   }
 }

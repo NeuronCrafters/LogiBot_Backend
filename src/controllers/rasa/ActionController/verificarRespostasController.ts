@@ -98,7 +98,7 @@ function transformResult(raw: QuizResultData) {
 
 async function ensureUserAnalysisSession(userId: string, email: string): Promise<void> {
   const ua = await UserAnalysis.findOne({ userId, email }).exec();
-  if (!ua) throw new AppError("Usuário não encontrado.", 404);
+  if (!ua) throw new AppError("usuário não encontrado.", 404);
   if (!ua.sessions?.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
     ua.sessions = ua.sessions || [];
     ua.sessions.push({
@@ -120,7 +120,7 @@ async function salvarResultadoNoBanco(
   email: string
 ): Promise<void> {
   const ua = await UserAnalysis.findOne({ userId, email }).exec();
-  if (!ua) throw new AppError("Usuário não encontrado.", 404);
+  if (!ua) throw new AppError("usuário não encontrado.", 404);
   const idx = ua.sessions.length - 1;
 
   const attempt = {

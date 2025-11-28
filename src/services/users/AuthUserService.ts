@@ -43,15 +43,15 @@ class AuthUserService {
       if (!user) user = await User.findOne({ email }).select("name email role school course class password status");
     }
 
-    if (!user) throw new AppError("Credenciais inválidas.", 401);
+    if (!user) throw new AppError("credenciais inválidas.", 401);
     if (user.status !== 'active') {
-      throw new AppError("Sua conta está inativa. Entre em contato com o administrador.", 403);
+      throw new AppError("sua conta está inativa. entre em contato com o administrador.", 403);
     }
     if (!isSocial) {
-      if (!password) throw new AppError("Senha não fornecida.", 400);
-      if (!user.password) throw new AppError("Este usuário precisa redefinir sua senha. Entre em contato com o administrador.", 401);
+      if (!password) throw new AppError("senha não fornecida.", 400);
+      if (!user.password) throw new AppError("este usuário precisa redefinir sua senha. entre em contato com o administrador.", 401);
       const match = await compare(password, user.password);
-      if (!match) throw new AppError("Credenciais inválidas.", 401);
+      if (!match) throw new AppError("credenciais inválidas.", 401);
     }
 
     if (!isProfessor && normalizeRoles(user.role).includes("student")) {

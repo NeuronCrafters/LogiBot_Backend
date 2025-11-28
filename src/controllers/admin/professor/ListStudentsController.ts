@@ -9,7 +9,7 @@ class ListStudentsController {
       const requesterRole = req.user?.role;
 
       if (!requesterId || !requesterRole) {
-        throw new AppError("Usuário não autenticado ou sem papel definido.", 401);
+        throw new AppError("usuário não autenticado ou sem papel definido.", 401);
       }
 
       const service = new ListStudentsService();

@@ -33,7 +33,7 @@ export async function actionPerguntarService(prompt: string, senderId: string, s
 
     if (!ollamaReply) {
 
-      throw new AppError('Resposta inválida do assistente de IA.', 500);
+      throw new AppError('resposta inválida do assistente de ia.', 500);
     }
 
     const cleanedOllamaReply = ollamaReply.trim();
@@ -58,6 +58,6 @@ export async function actionPerguntarService(prompt: string, senderId: string, s
     };
   } catch (error: any) {
 
-    throw new AppError('Falha ao se comunicar com o assistente de IA.', 500);
+    throw new AppError('falha ao se comunicar com o assistente de ia.', 500);
   }
 }

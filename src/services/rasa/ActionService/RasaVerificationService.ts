@@ -36,14 +36,14 @@ class RasaVerificationService {
             const rasaMessages: RasaResponse[] = response.data;
 
             if (!rasaMessages || rasaMessages.length === 0) {
-                throw new AppError("Nenhuma resposta recebida do Rasa", 500);
+                throw new AppError("nenhuma resposta recebida do rasa", 500);
             }
 
             const resultMessage = rasaMessages.find(msg => msg.custom?.type === 'quiz_result');
 
             if (!resultMessage || !resultMessage.custom?.data) {
 
-                throw new AppError("Formato de resposta inválido do Rasa", 500);
+                throw new AppError("formato de resposta inválido do rasa", 500);
             }
 
             const data = resultMessage.custom.data;
@@ -51,7 +51,7 @@ class RasaVerificationService {
             return data;
 
         } catch (error: any) {
-            throw new AppError("Erro ao comunicar com o Rasa: " + (error.message || error), 500);
+            throw new AppError("erro ao comunicar com o rasa:" + (error.message || error), 500);
         }
     }
 

@@ -10,13 +10,13 @@ class LogoutUserController {
 
             if (!token) {
                 res.clearCookie("token");
-                throw new AppError("Token não fornecido.", 401);
+                throw new AppError("token não fornecido.", 401);
             }
 
             const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
             if (!decoded || !decoded.sub) {
-                throw new AppError("Token inválido.", 401);
+                throw new AppError("token inválido.", 401);
             }
 
             const userId = decoded.sub;

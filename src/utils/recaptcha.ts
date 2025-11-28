@@ -3,12 +3,12 @@ import { AppError } from "../exceptions/AppError";
 
 export async function verifyRecaptcha(token?: string): Promise<void> {
     if (!token) {
-        throw new AppError("Token reCAPTCHA ausente.", 400);
+        throw new AppError("token recaptcha ausente.", 400);
     }
 
     const secret = process.env.RECAPTCHA_SECRET_KEY;
     if (!secret) {
-        throw new AppError("RECAPTCHA_SECRET_KEY não definida no servidor.", 500);
+        throw new AppError("recaptcha_secret_key não definida no servidor.", 500);
     }
 
     try {
@@ -33,7 +33,7 @@ export async function verifyRecaptcha(token?: string): Promise<void> {
 
         if (!data.success) {
 
-            throw new AppError("Falha na verificação do reCAPTCHA. Tente novamente.", 403);
+            throw new AppError("falha na verificação do recaptcha. tente novamente.", 403);
         }
 
         console.log("recaptcha verificado com sucesso:", {
@@ -46,6 +46,6 @@ export async function verifyRecaptcha(token?: string): Promise<void> {
         }
 
 
-        throw new AppError("Erro na verificação do reCAPTCHA. Tente novamente.", 500);
+        throw new AppError("erro na verificação do recaptcha. tente novamente.", 500);
     }
 }

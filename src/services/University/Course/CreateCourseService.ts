@@ -9,12 +9,12 @@ class CreateCourseService {
 
     const university = await University.findById(universityObjectId);
     if (!university) {
-      throw new AppError("Universidade não encontrada!", 404);
+      throw new AppError("universidade não encontrada!", 404);
     }
 
     const existingCourse = await Course.findOne({ name, university: universityObjectId });
     if (existingCourse) {
-      throw new AppError("Curso já existe para esta universidade!", 409);
+      throw new AppError("curso já existe para esta universidade!", 409);
     }
 
     const course = await Course.create({ name, university: universityObjectId });

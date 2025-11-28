@@ -6,7 +6,7 @@ class ListProfessorsByUniversityService {
     const professors = await Professor.find({ school: schoolId }).select("name email role school courses");
 
     if (!professors || professors.length === 0) {
-      throw new AppError("Nenhum professor encontrado para essa universidade.", 404);
+      throw new AppError("nenhum professor encontrado para essa universidade.", 404);
     }
 
     return professors;

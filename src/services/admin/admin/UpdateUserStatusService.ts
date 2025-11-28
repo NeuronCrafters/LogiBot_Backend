@@ -8,10 +8,10 @@ export class UpdateUserStatusService {
   public async execute(userId: string, status: UserStatus): Promise<any> {
     // validação de entrada
     if (!status) {
-      throw new AppError("O novo status é obrigatório.", 400);
+      throw new AppError("o novo status é obrigatório.", 400);
     }
     if (!["active", "inactive", "graduated", "dropped"].includes(status)) {
-      throw new AppError("Status fornecido é inválido.", 400);
+      throw new AppError("status fornecido é inválido.", 400);
     }
 
     // tenta encontrar o usuário primeiro no modelo User (alunos, admins)
@@ -24,7 +24,7 @@ export class UpdateUserStatusService {
 
     // se não encontrou em nenhum dos dois modelos, lança um erro
     if (!user) {
-      throw new AppError("Usuário não encontrado.", 404);
+      throw new AppError("usuário não encontrado.", 404);
     }
 
     // atualiza o status e salva o documento

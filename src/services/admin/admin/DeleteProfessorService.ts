@@ -5,12 +5,12 @@ import { Types } from "mongoose";
 class DeleteProfessorService {
   async execute(professorId: string) {
     if (!Types.ObjectId.isValid(professorId)) {
-      throw new AppError("ID do professor inválido!", 400);
+      throw new AppError("id do professor inválido!", 400);
     }
 
     const professor = await Professor.findById(professorId);
     if (!professor) {
-      throw new AppError("Professor não encontrado!", 404);
+      throw new AppError("professor não encontrado!", 404);
     }
 
     await Professor.findOneAndDelete({ _id: professorId });

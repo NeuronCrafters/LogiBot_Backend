@@ -8,7 +8,7 @@ import { makeRequestWithFallback } from "../../utils/agentUtils"
 export async function rasaSendService(message: string, sender: string): Promise<any> {
   if (!sender) {
     // Usar AppError para consistência de erros
-    throw new AppError("Sender (usuário) não pode ser indefinido.", 400);
+    throw new AppError("sender (usuário) não pode ser indefinido.", 400);
   }
 
   // 1. Monta o prompt
@@ -38,6 +38,6 @@ export async function rasaSendService(message: string, sender: string): Promise<
 
   } catch (error: any) {
 
-    throw new AppError("Falha ao se comunicar com o assistente de IA.", 500);
+    throw new AppError("falha ao se comunicar com o assistente de ia.", 500);
   }
 }

@@ -56,10 +56,10 @@ class DetailsUserService {
           .populate({ path: "class",  select: "name" })
           .lean();
     } else {
-      throw new AppError("Papel inválido!", 400);
+      throw new AppError("papel inválido!", 400);
     }
 
-    if (!raw) throw new AppError("Usuário não encontrado!", 404);
+    if (!raw) throw new AppError("usuário não encontrado!", 404);
 
     /* ------------------------------------------------------------------ */
     /* monta objeto de saída padronizado                                 */

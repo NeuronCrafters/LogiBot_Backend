@@ -28,7 +28,7 @@ class ListStudentsService {
 
       if (roles.includes("course-coordinator")) {
         const coordinator = await Professor.findById(requesterId).lean();
-        if (!coordinator) throw new AppError("Coordenador não encontrado.", 404);
+        if (!coordinator) throw new AppError("coordenador não encontrado.", 404);
 
         return await User.find({
           role: { $in: ["student"] },
@@ -48,7 +48,7 @@ class ListStudentsService {
 
       if (roles.includes("professor")) {
         const professor = await Professor.findById(requesterId).lean();
-        if (!professor) throw new AppError("Professor não encontrado.", 404);
+        if (!professor) throw new AppError("professor não encontrado.", 404);
 
         return await User.find({
           role: { $in: ["student"] },
@@ -63,11 +63,11 @@ class ListStudentsService {
           .lean();
       }
 
-      throw new AppError("Acesso negado. Permissão insuficiente.", 403);
+      throw new AppError("acesso negado. permissão insuficiente.", 403);
     } catch (error) {
 
       if (error instanceof AppError) throw error;
-      throw new AppError("Erro interno ao processar a listagem de alunos.", 500);
+      throw new AppError("erro interno ao processar a listagem de alunos.", 500);
     }
   }
 }

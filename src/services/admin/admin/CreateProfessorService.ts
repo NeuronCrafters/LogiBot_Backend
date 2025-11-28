@@ -15,21 +15,21 @@ interface CreateProfessorDTO {
 class CreateProfessorService {
   async execute({ name, email, password, courses, school }: CreateProfessorDTO) {
     if (!name || !email || !password || !school || !courses || !Array.isArray(courses)) {
-      throw new AppError("Dados obrigatórios ausentes ou inválidos.", 400);
+      throw new AppError("dados obrigatórios ausentes ou inválidos.", 400);
     }
 
     if (courses.length === 0) {
-      throw new AppError("Pelo menos um curso deve ser selecionado.", 400);
+      throw new AppError("pelo menos um curso deve ser selecionado.", 400);
     }
 
     const existingProfessor = await Professor.findOne({ email });
     if (existingProfessor) {
-      throw new AppError("Já existe um professor com este e-mail.", 409);
+      throw new AppError("já existe um professor com este e-mail.", 409);
     }
 
     const courseObjects = await Course.find({ _id: { $in: courses } });
     if (courseObjects.length !== courses.length) {
-      throw new AppError("Um ou mais cursos não foram encontrados.", 404);
+      throw new AppError("um ou mais cursos não foram encontrados.", 404);
     }
 
     const hashedPassword = await hash(password, 10);

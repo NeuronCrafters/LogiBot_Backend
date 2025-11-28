@@ -24,7 +24,7 @@ export async function gerarPerguntasService(
   session: RasaSessionData
 ) {
   if (!session.nivelAtual) {
-    throw new AppError("O nível do usuário precisa ser definido antes de gerar perguntas.", 400);
+    throw new AppError("o nível do usuário precisa ser definido antes de gerar perguntas.", 400);
   }
 
   session.lastSubject = pergunta;
@@ -44,7 +44,7 @@ export async function gerarPerguntasService(
 
     const responses = response.data.responses || [];
     if (!Array.isArray(responses) || responses.length === 0) {
-      throw new AppError("Resposta do Rasa vazia ou malformada.", 502);
+      throw new AppError("resposta do rasa vazia ou malformada.", 502);
     }
 
     let payload: RasaResponse | null = null;
@@ -72,11 +72,11 @@ export async function gerarPerguntasService(
     }
 
     if (!payload) {
-      throw new AppError("Não foi possível extrair perguntas da resposta do Rasa.", 502);
+      throw new AppError("não foi possível extrair perguntas da resposta do rasa.", 502);
     }
 
     if (!Array.isArray(payload.questions) || payload.questions.length < 5) {
-      throw new AppError("Número insuficiente de perguntas geradas.", 502);
+      throw new AppError("número insuficiente de perguntas geradas.", 502);
     }
 
     for (const [index, q] of payload.questions.entries()) {
@@ -106,7 +106,7 @@ export async function gerarPerguntasService(
       metadata: payload.metadata,
     };
   } catch (error: any) {
-    console.error(" erro no gerarperguntasservice:", {
+    console.error("erro no gerarperguntasservice:", {
       error: error.message,
       response: error.response?.data,
     });
@@ -121,13 +121,12 @@ export async function gerarPerguntasService(
     }
 
     if (error.request) {
-      throw new AppError(
-        "Falha na conexão com o servidor de perguntas",
+      throw new AppError("falha na conexão com o servidor de perguntas",
         503
       );
     }
 
-    throw new AppError("Erro inesperado ao gerar perguntas", 500);
+    throw new AppError("erro inesperado ao gerar perguntas", 500);
   }
 }
 

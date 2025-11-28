@@ -13,6 +13,6 @@ export async function listarNiveisService() {
     return response.data;
   } catch (error: any) {
 
-    throw new AppError("Erro ao obter os níveis", 500);
+    throw new AppError("erro ao obter os níveis", 500);
   }
 }

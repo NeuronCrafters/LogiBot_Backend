@@ -10,15 +10,15 @@ class UpdateProfessorRoleController {
     const userRole = req.user?.role;
 
     if (!["add", "remove"].includes(action)) {
-      throw new AppError("Ação inválida. Use 'add' ou 'remove'.", 400);
+      throw new AppError("ação inválida. use 'add' ou 'remove'.", 400);
     }
 
     if (!userId || !userRole.includes("admin")) {
-      throw new AppError("Acesso negado. Apenas administradores podem alterar o cargo.", 403);
+      throw new AppError("acesso negado. apenas administradores podem alterar o cargo.", 403);
     }
 
     if (userId === id) {
-      throw new AppError("Você não pode alterar seu próprio cargo.", 403);
+      throw new AppError("você não pode alterar seu próprio cargo.", 403);
     }
 
     const service = new UpdateProfessorRoleService();

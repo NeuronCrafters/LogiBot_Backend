@@ -28,13 +28,10 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          #! converte o nome do repositório para minúsculas
           REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
 
-          #! constroi a imagem
           docker build -t ghcr.io/$REPO_LOWERCASE:latest .
 
-          #! envia a imagem para o GitHub Container Registry
           docker push ghcr.io/$REPO_LOWERCASE:latest
 
   deploy:
@@ -52,16 +49,12 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            #! navega até o diretório do repo clonado dentro da vps
             cd ../logibot/LogiBot_Backend
 
-            #! cria a rede Docker, se não existir
             docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
 
             docker-compose.yml.
 
-
-            #! envs importantes
             export RASA="${{ secrets.RASA }}"
             export RASA_ACTION="${{ secrets.RASA_ACTION }}"
             export RASA_API="${{ secrets.RASA_API }}"
@@ -82,17 +75,14 @@ jobs:
             export GOOGLE_LOGIN_REDIRECT="${{ secrets.GOOGLE_LOGIN_REDIRECT }}"
             export JWT_SECRET="${{ secrets.JWT_SECRET }}"
 
-            #! envs do banco de dados - login e uri
             export MONGO_USER_ADMIN="${{ secrets.MONGO_USER_ADMIN }}"
             export MONGO_PASSWORD_ROOT="${{ secrets.MONGO_PASSWORD_ROOT }}"
             export DB_NAME="${{ secrets.DB_NAME }}"
             export MONGO_URI="${{ secrets.MONGO_URI }}"
 
-            #! credenciais de inicialização do db
             export MONGO_INITDB_ROOT_USERNAME="${{ secrets.MONGO_USER_ADMIN }}"
             export MONGO_INITDB_ROOT_PASSWORD="${{ secrets.MONGO_PASSWORD_ROOT }}"
 
-            #! envs de LLMs
             export OLLAMA_API_URL_1="${{ secrets.OLLAMA_API_URL_1 }}"
             export Key_A1="${{ secrets.KEY_A1 }}"
             export OLLAMA_API_URL_2="${{ secrets.OLLAMA_API_URL_2 }}"
@@ -155,14 +145,11 @@ jobs:
             export Key_A30="${{ secrets.KEY_A30 }}"
             export OLLAMA_API_URL_30="${{ secrets.OLLAMA_API_URL_30 }}"
 
-            #! puxa o docker-compose.yml mais recente do Git
             git pull origin main
 
-            #! autenticação e pull da imagem
             REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ghcr.io/$REPO_LOWERCASE:latest
 
-            #! sobe o serviço
             docker-compose down
             docker-compose up -d

@@ -38,5 +38,5 @@ async function findAndLogoutInactiveUsers() {
 export function startSessionCleaner() {
     cron.schedule("*/5 * * * *", findAndLogoutInactiveUsers);
 
-    console.log("✅ Agendador de limpeza de sessão iniciado (verificação de inatividade a cada 5 minutos).");
+    console.log(" Agendador de limpeza de sessão iniciado (verificação de inatividade a cada 5 minutos).");
 }

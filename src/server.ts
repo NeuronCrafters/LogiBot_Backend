@@ -22,7 +22,7 @@ async function initializeApp() {
         await initAdminUser();
 
     } catch (error) {
-        console.error('❌ Falha Crítica na Inicialização da Aplicação ou DB:', error);
+        console.error('Falha Crítica na Inicialização da Aplicação ou DB:', error);
         process.exit(1);
     }
 
@@ -59,19 +59,19 @@ async function initializeApp() {
     app.use(errorHandler);
 
     process.on("unhandledRejection", (reason, promise) => {
-        console.error("🔥 Unhandled Rejection at:", promise, "\nReason:", reason);
+        console.error("unhandled Rejection at:", promise, "\nReason:", reason);
     });
 
     process.on("uncaughtException", (err) => {
-        console.error("💥 Uncaught Exception thrown:", err);
+        console.error("Uncaught Exception thrown:", err);
     });
 
     const port = parseInt(process.env.PORT || '3000', 10);
     app.listen(port, '0.0.0.0', () => {
         const corsInfo = getCorsInfo();
 
-        console.log(`🚀 Servidor rodando na porta ${port} - Ambiente: ${NODE_ENV}`);
-        console.log(`🔒 CORS ativo para ${corsInfo.totalOrigins} origins`);
+        console.log(`Servidor rodando na porta ${port} - Ambiente: ${NODE_ENV}`);
+        console.log(`CORS ativo para ${corsInfo.totalOrigins} origins`);
     });
 }
 

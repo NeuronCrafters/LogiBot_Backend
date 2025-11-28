@@ -21,13 +21,13 @@ class HealthCheckController {
 
         const latency = Date.now() - startTime;
         if (response.status === 200) {
-          return { agent: config.url.substring(0, 35) + '...', status: '✅ OK', latency: `${latency}ms`, details: 'Success' };
+          return { agent: config.url.substring(0, 35) + '...', status: ' OK', latency: `${latency}ms`, details: 'Success' };
         } else {
-          return { agent: config.url.substring(0, 35) + '...', status: '❌ FAIL', latency: `${latency}ms`, details: `HTTP ${response.status}` };
+          return { agent: config.url.substring(0, 35) + '...', status: ' FAIL', latency: `${latency}ms`, details: `HTTP ${response.status}` };
         }
       } catch (error: any) {
         const latency = Date.now() - startTime;
-        return { agent: config.url.substring(0, 35) + '...', status: '❌ FAIL', latency: `${latency}ms`, details: error.message };
+        return { agent: config.url.substring(0, 35) + '...', status: ' FAIL', latency: `${latency}ms`, details: error.message };
       }
     });
 

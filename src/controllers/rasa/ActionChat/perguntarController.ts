@@ -38,7 +38,7 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
         await userAnalysis.save();
 
-        console.log(`[UserAnalysis] ✅ Contagem salva com sucesso para o usuário: ${senderId}`);
+        console.log(`[UserAnalysis]  Contagem salva com sucesso para o usuário: ${senderId}`);
         console.log(`[UserAnalysis] ➡️ Tópico: '${subject}' | Novo total: ${newCount}`);
       }
     }

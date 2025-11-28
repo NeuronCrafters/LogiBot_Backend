@@ -16,17 +16,17 @@ const getAllowedOrigins = (): string[] => {
 
 const isOriginAllowed = (origin: string | undefined, allowedOrigins: string[]): boolean => {
   if (!origin) {
-    console.log('✅ Requisição sem origin permitida');
+    console.log(' Requisição sem origin permitida');
     return true;
   }
 
   if (allowedOrigins.includes(origin)) {
-    console.log('✅ Origin permitido:', origin);
+    console.log(' Origin permitido:', origin);
     return true;
   }
 
-  console.warn('❌ Origin NÃO permitido:', origin);
-  console.warn('📋 Origins válidos:', allowedOrigins);
+  console.warn(' Origin NÃO permitido:', origin);
+  console.warn(' Origins válidos:', allowedOrigins);
   return false;
 };
 

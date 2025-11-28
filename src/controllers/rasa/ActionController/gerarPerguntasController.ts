@@ -33,7 +33,7 @@ export async function gerarPerguntasController(req: Request, res: Response) {
       metadata: resultado.metadata || null,
     });
   } catch (error: any) {
-    console.error("❌ Erro ao gerar perguntas no controller:", error);
+    console.error(" Erro ao gerar perguntas no controller:", error);
 
     return res.status(error.statusCode || 500).json({
       success: false,

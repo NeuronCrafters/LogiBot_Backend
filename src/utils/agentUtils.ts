@@ -75,12 +75,12 @@ export async function makeRequestWithFallback(body: any, maxRetries: number = 3)
         timeout: 30000
       });
       const responseText = response.data?.choices?.[0]?.message?.content || JSON.stringify(response.data);
-      console.log(`[DEBUG-CYCLE] ✅ Sucesso com ${configId}. Resposta: "${responseText.substring(0, 80)}..."`);
+      console.log(`[DEBUG-CYCLE]  Sucesso com ${configId}. Resposta: "${responseText.substring(0, 80)}..."`);
       return response;
     } catch (error: any) {
       const status = error.response?.status;
       const errorMsg = error.response?.data?.error || error.message;
-      console.warn(`[DEBUG-CYCLE] ❌ Falha com ${configId}: Status ${status} - ${errorMsg}`);
+      console.warn(`[DEBUG-CYCLE]  Falha com ${configId}: Status ${status} - ${errorMsg}`);
     }
   }
 

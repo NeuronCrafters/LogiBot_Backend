@@ -116,7 +116,7 @@ async function saveResultToDB(
   const userAnalysis = await UserAnalysis.findOne({ userId, email }).exec();
 
   if (!userAnalysis) {
-    console.error(`[saveResultToDB] ❌ ERRO: Análise de usuário não encontrada para ${email}`);
+    console.error(`[saveResultToDB]  ERRO: Análise de usuário não encontrada para ${email}`);
     throw new AppError("Análise de usuário não encontrada.", 404);
   }
 

@@ -28,7 +28,7 @@ socialLoginRoute.get(
 
                 const { user, token } = data as any;
 
-                // 🔒 Define cookie seguro com JWT
+                //  Define cookie seguro com JWT
                 res.cookie("token", token, {
                     httpOnly: true,
                     secure: true,

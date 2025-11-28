@@ -247,7 +247,7 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
   const categoriesToIncrement = chatSubjectMapping[subject];
 
   if (categoriesToIncrement) {
-    console.log(`[UserAnalysis Model] Mapeando '${subject}' para as categorias: [${categoriesToIncrement.join(', ')}]`);
+    console.log(`[useranalysis model] mapeando '${subject}' para as categorias: [${categoriesToIncrement.join(', ')}]`);
     categoriesToIncrement.forEach(category => {
       if (category in session.subjectCountsChat) {
         session.subjectCountsChat[category as keyof typeof session.subjectCountsChat] += 1;
@@ -255,10 +255,10 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
     });
 
   } else if (subject in session.subjectCountsChat) {
-    console.log(`[UserAnalysis Model] Assunto '${subject}' é uma categoria principal. Incrementando diretamente.`);
+    console.log(`[useranalysis model] assunto '${subject}' é uma categoria principal. incrementando diretamente.`);
     session.subjectCountsChat[subject as keyof typeof session.subjectCountsChat] += 1;
   } else {
-    console.warn(`[UserAnalysis Model] ⚠️ Assunto '${subject}' não tem um mapeamento definido e não é uma categoria principal. Nada foi salvo.`);
+    console.warn(`[useranalysis model] ️ assunto '${subject}' não tem um mapeamento definido e não é uma categoria principal. nada foi salvo.`);
   }
 
   this.markModified(`sessions.${idx}.subjectCountsChat`);

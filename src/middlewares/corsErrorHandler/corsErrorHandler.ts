@@ -16,7 +16,7 @@ export const corsErrorHandler = (
   next: NextFunction
 ): void => {
   if (err.message && err.message.includes('não permitido pelo CORS')) {
-    console.error('CORS Error:', {
+    console.error('cors error:', {
       message: err.message,
       origin: req.headers.origin,
       method: req.method,

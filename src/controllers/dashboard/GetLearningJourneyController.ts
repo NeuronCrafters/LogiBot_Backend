@@ -9,7 +9,7 @@ export class GetLearningJourneyController {
       const data = await service.execute({ universityId, courseId, classId, studentId });
       return res.status(200).json(data);
     } catch (error: any) {
-      console.error(`[GetLearningJourneyController] Error: ${error.message}`);
+      console.error(`[getlearningjourneycontroller] error: ${error.message}`);
       return res.status(500).json({ message: "Erro ao buscar dados da jornada de aprendizagem." });
     }
   }

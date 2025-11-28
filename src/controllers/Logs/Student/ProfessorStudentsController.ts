@@ -47,7 +47,7 @@ export async function ProfessorListStudentsController(req: Request, res: Respons
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("Erro em ProfessorListStudentsController:", error);
+    console.error("erro em professorliststudentscontroller:", error);
     return res.status(500).json({ message: "Erro ao listar alunos." });
   }
 }
@@ -97,7 +97,7 @@ export async function ProfessorGetStudentDetailsController(req: Request, res: Re
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("Erro em ProfessorGetStudentDetailsController:", error);
+    console.error("erro em professorgetstudentdetailscontroller:", error);
     return res.status(500).json({ message: "Erro ao obter detalhes do aluno." });
   }
 }
@@ -154,7 +154,7 @@ export async function ProfessorStudentsStatsController(req: Request, res: Respon
       totalStudents: result.totalStudents
     });
   } catch (error) {
-    console.error("Erro em ProfessorStudentsStatsController:", error);
+    console.error("erro em professorstudentsstatscontroller:", error);
     return res.status(500).json({ message: "Erro ao obter estatísticas dos alunos." });
   }
 }

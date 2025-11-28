@@ -47,7 +47,7 @@ export async function verificarRespostasController(req: Request, res: Response) 
           return res.status(200).json(transformResult(rawResult));
         }
       } catch (rasaError: any) {
-        console.error("Erro no Rasa, fallback:", rasaError.message);
+        console.error("erro no rasa, fallback:", rasaError.message);
       }
     }
 
@@ -55,7 +55,7 @@ export async function verificarRespostasController(req: Request, res: Response) 
     return res.status(200).json(transformResult(rawResult));
 
   } catch (error: any) {
-    console.error("Erro:", error);
+    console.error("erro:", error);
     return res.status(500).json({ message: error.message });
   }
 }

@@ -10,7 +10,7 @@ export async function recordInteraction(
 
     const ua = await UserAnalysis.findOne({ userId });
     if (!ua) {
-        throw new Error("UserAnalysis não encontrado para este userId");
+        throw new Error("useranalysis não encontrado para este userid");
     }
 
     const lastSessionIndex = ua.sessions.length - 1;

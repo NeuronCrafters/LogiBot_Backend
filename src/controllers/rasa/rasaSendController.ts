@@ -29,7 +29,7 @@ class RasaSendController {
         throw new AppError("Token inválido ou expirado.", 401);
       }
 
-      console.log(`[DEBUG] Usuário autenticado: ${userId}`);
+      console.log(`[debug] usuário autenticado: ${userId}`);
 
       const { message } = req.body;
       if (!message) {
@@ -38,10 +38,10 @@ class RasaSendController {
 
       const normalizedMessage = normalizeText(message);
 
-      console.log(`[DEBUG] Enviando mensagem normalizada para Rasa: ${normalizedMessage}`);
+      console.log(`[debug] enviando mensagem normalizada para rasa: ${normalizedMessage}`);
 
       const response: any = await rasaSendService(normalizedMessage, userId);
-      console.log(`[DEBUG] Resposta do Rasa recebida: ${JSON.stringify(response)}`);
+      console.log(`[debug] resposta do rasa recebida: ${JSON.stringify(response)}`);
 
       const userAnalysis = await UserAnalysis.findOne({ userId });
 
@@ -65,11 +65,11 @@ class RasaSendController {
 
       await userAnalysis.save();
 
-      console.log(`[UserAnalysis] Interação registrada para usuário: ${userId}`);
+      console.log(`[useranalysis] interação registrada para usuário: ${userId}`);
 
       return res.json(response);
     } catch (error: any) {
-      console.error("[RasaControllerSend] Erro ao processar interação:", error);
+      console.error("[rasacontrollersend] erro ao processar interação:", error);
       return res.status(error.statusCode || 500).json({ error: error.message || "Erro interno no servidor." });
     }
   }

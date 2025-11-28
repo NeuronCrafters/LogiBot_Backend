@@ -22,14 +22,14 @@ async function initializeApp() {
         await initAdminUser();
 
     } catch (error) {
-        console.error('Falha Crítica na Inicialização da Aplicação ou DB:', error);
+        console.error('falha crítica na inicialização da aplicação ou db:', error);
         process.exit(1);
     }
 
     const requiredEnvVars = ['FRONT_URL', 'MONGO_URI', 'JWT_SECRET'];
     for (const varName of requiredEnvVars) {
         if (!process.env[varName]) {
-            console.error(`Variável de ambiente ${varName} não definida.`);
+            console.error(`variável de ambiente ${varName} não definida.`);
             process.exit(1);
         }
     }
@@ -41,7 +41,7 @@ async function initializeApp() {
     app.use(corsAccessLogger);
 
     app.use((req, res, next) => {
-        console.log(` ${req.method} ${req.path} - Origin: ${req.headers.origin || 'sem origin'}`);
+        console.log(` ${req.method} ${req.path} - origin: ${req.headers.origin || 'sem origin'}`);
         next();
     });
 
@@ -59,19 +59,19 @@ async function initializeApp() {
     app.use(errorHandler);
 
     process.on("unhandledRejection", (reason, promise) => {
-        console.error("unhandled Rejection at:", promise, "\nReason:", reason);
+        console.error("unhandled rejection at:", promise, "\nReason:", reason);
     });
 
     process.on("uncaughtException", (err) => {
-        console.error("Uncaught Exception thrown:", err);
+        console.error("uncaught exception thrown:", err);
     });
 
     const port = parseInt(process.env.PORT || '3000', 10);
     app.listen(port, '0.0.0.0', () => {
         const corsInfo = getCorsInfo();
 
-        console.log(`Servidor rodando na porta ${port} - Ambiente: ${NODE_ENV}`);
-        console.log(`CORS ativo para ${corsInfo.totalOrigins} origins`);
+        console.log(`servidor rodando na porta ${port} - ambiente: ${NODE_ENV}`);
+        console.log(`cors ativo para ${corsInfo.totalOrigins} origins`);
     });
 }
 

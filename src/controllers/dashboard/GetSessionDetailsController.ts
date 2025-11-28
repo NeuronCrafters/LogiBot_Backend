@@ -12,7 +12,7 @@ export class GetSessionDetailsController {
 
       return res.status(200).json(data);
     } catch (error: any) {
-      console.error(`[GetSessionDetailsController] Error: ${error.message}`);
+      console.error(`[getsessiondetailscontroller] error: ${error.message}`);
       return res.status(500).json({ message: "Erro ao buscar detalhes das sessões." });
     }
   }

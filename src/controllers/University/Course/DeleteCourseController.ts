@@ -15,7 +15,7 @@ class DeleteCourseController {
 
       return res.status(200).json(result);
     } catch (error: any) {
-      console.error("Erro ao remover curso:", error.message);
+      console.error("erro ao remover curso:", error.message);
       return res.status(error.statusCode || 500).json({
         message: error.message || "Erro interno no servidor.",
       });

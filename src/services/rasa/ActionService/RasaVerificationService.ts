@@ -42,7 +42,7 @@ class RasaVerificationService {
             const resultMessage = rasaMessages.find(msg => msg.custom?.type === 'quiz_result');
 
             if (!resultMessage || !resultMessage.custom?.data) {
-                console.error('Resposta Rasa (debug):', JSON.stringify(rasaMessages, null, 2));
+                console.error('resposta rasa (debug):', JSON.stringify(rasaMessages, null, 2));
                 throw new AppError("Formato de resposta inválido do Rasa", 500);
             }
 

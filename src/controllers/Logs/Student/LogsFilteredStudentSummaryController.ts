@@ -12,7 +12,7 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
     const userId = req.user.id;
     const userRole: string[] = req.user.role;
 
-    console.log("[LogsFilteredStudentSummaryController] Requisição recebida:", {
+    console.log("[logsfilteredstudentsummarycontroller] requisição recebida:", {
       universityId,
       courseId,
       classId,
@@ -34,8 +34,8 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
     const professor = await Professor.findById(userId).populate('courses disciplines');
 
     if (!professor) {
-      console.log("[LogsFilteredStudentSummaryController] Professor não encontrado com ID:", userId);
-      console.log("[LogsFilteredStudentSummaryController] Tentando buscar por email:", req.user.email);
+      console.log("[logsfilteredstudentsummarycontroller] professor não encontrado com id:", userId);
+      console.log("[logsfilteredstudentsummarycontroller] tentando buscar por email:", req.user.email);
 
       const professorByEmail = await Professor.findOne({ email: req.user.email }).populate('courses disciplines');
 
@@ -43,12 +43,12 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         return res.status(403).json({ message: "Professor não encontrado." });
       }
 
-      console.log("[LogsFilteredStudentSummaryController] Professor encontrado por email:", professorByEmail.email);
+      console.log("[logsfilteredstudentsummarycontroller] professor encontrado por email:", professorByEmail.email);
     }
 
     const professorData = professor || (await Professor.findOne({ email: req.user.email }).populate('courses disciplines'));
 
-    console.log("[LogsFilteredStudentSummaryController] Professor encontrado:", {
+    console.log("[logsfilteredstudentsummarycontroller] professor encontrado:", {
       id: professorData._id,
       name: professorData.name,
       email: professorData.email,
@@ -64,7 +64,7 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
         return res.status(200).json(summary);
       }
-      console.log("[LogsFilteredStudentSummaryController] Coordenador não tem acesso a este curso");
+      console.log("[logsfilteredstudentsummarycontroller] coordenador não tem acesso a este curso");
     }
 
     if (isProfessor(userRole) && courseId && classId) {
@@ -73,7 +73,7 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         classes: classId
       });
 
-      console.log("[LogsFilteredStudentSummaryController] Disciplinas encontradas para o professor nesta turma:", disciplinas.length);
+      console.log("[logsfilteredstudentsummarycontroller] disciplinas encontradas para o professor nesta turma:", disciplinas.length);
 
       if (disciplinas.length === 0) {
         return res.status(403).json({ message: "Acesso negado. Professor não leciona nesta turma." });
@@ -88,11 +88,11 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         });
 
         if (!aluno) {
-          console.log("Aluno não encontrado com os critérios especificados");
+          console.log("aluno não encontrado com os critérios especificados");
           return res.status(404).json({ message: "Aluno não encontrado nesta turma." });
         }
 
-        console.log("[LogsFilteredStudentSummaryController] Aluno encontrado:", {
+        console.log("[logsfilteredstudentsummarycontroller] aluno encontrado:", {
           userId: aluno.userId,
           name: aluno.name,
           email: aluno.email
@@ -100,13 +100,13 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
       }
 
       const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
-      console.log("[LogsFilteredStudentSummaryController] Retornando dados do resumo");
+      console.log("[logsfilteredstudentsummarycontroller] retornando dados do resumo");
       return res.status(200).json(summary);
     }
 
     return res.status(403).json({ message: "Acesso negado. Permissões insuficientes." });
   } catch (error) {
-    console.error("[LogsFilteredStudentSummaryController] Erro:", error);
+    console.error("[logsfilteredstudentsummarycontroller] erro:", error);
     return res.status(500).json({ message: "Erro ao obter dados filtrados do aluno." });
   }
 }

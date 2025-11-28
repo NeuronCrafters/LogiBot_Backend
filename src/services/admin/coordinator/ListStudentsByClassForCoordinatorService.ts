@@ -9,7 +9,7 @@ export async function ListStudentsByClassForCoordinatorService(
 ): Promise<Pick<IUser, "_id" | "name" | "email">[]> {
     // 1) valida classId
     if (!Types.ObjectId.isValid(classId)) {
-        throw new Error("classId inválido");
+        throw new Error("classid inválido");
     }
 
     // 2) busca a turma e seus alunos
@@ -18,12 +18,12 @@ export async function ListStudentsByClassForCoordinatorService(
         .lean<{ course: Types.ObjectId; students: Types.ObjectId[] }>();
 
     if (!classDoc) {
-        throw new Error("Turma não encontrada");
+        throw new Error("turma não encontrada");
     }
 
     // 3) garante que a turma é do curso passado
     if (classDoc.course.toString() !== courseId) {
-        throw new Error("Turma não pertence a este curso");
+        throw new Error("turma não pertence a este curso");
     }
 
     // 4) se não tiver alunos, retorna vazio

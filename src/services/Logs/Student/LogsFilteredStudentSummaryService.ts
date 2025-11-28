@@ -23,7 +23,7 @@ export async function LogsFilteredStudentSummaryService(
   classId?: string,
   studentId?: string
 ) {
-  console.log("Buscando dados filtrados:", { universityId, courseId, classId, studentId });
+  console.log("buscando dados filtrados:", { universityId, courseId, classId, studentId });
 
   const query: any = { schoolId: universityId };
   if (courseId) query.courseId = courseId;
@@ -35,7 +35,7 @@ export async function LogsFilteredStudentSummaryService(
     const user = await UserAnalysis.findOne(query).lean();
 
     if (!user) {
-      console.log("Nenhum usuário encontrado com os critérios:", query);
+      console.log("nenhum usuário encontrado com os critérios:", query);
       return getEmptySummary();
     }
 
@@ -105,7 +105,7 @@ export async function LogsFilteredStudentSummaryService(
 
   // Se não especificou studentId, busca e agrega todos os alunos que atendem aos critérios
   const users = await UserAnalysis.find(query).lean();
-  console.log(`Encontrados ${users.length} usuários com os critérios`);
+  console.log(`encontrados ${users.length} usuários com os critérios`);
 
   if (users.length === 0) {
     return getEmptySummary();

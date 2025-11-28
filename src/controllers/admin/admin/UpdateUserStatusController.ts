@@ -16,7 +16,7 @@ export class UpdateUserStatusController {
       if (error instanceof AppError) {
         return res.status(error.statusCode).json({ message: error.message });
       }
-      console.error("Erro inesperado no UpdateUserStatusController:", error);
+      console.error("erro inesperado no updateuserstatuscontroller:", error);
       return res.status(500).json({ message: "Erro interno do servidor." });
     }
   }

@@ -7,7 +7,7 @@ export async function updateCategoryClicksService(
 ): Promise<void> {
     const ua = await UserAnalysis.findOne({ userId });
     if (!ua) {
-        throw new Error(`UserAnalysis não encontrado para userId=${userId}`);
+        throw new Error(`useranalysis não encontrado para userid=${userId}`);
     }
 
     for (const [rawSubject, count] of Object.entries(clicks)) {

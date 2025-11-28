@@ -6,7 +6,7 @@ import { verifyRecaptcha } from "../../utils/recaptcha";
 class AuthUserController {
     async handle(req: Request, res: Response) {
         try {
-            console.log("Requisição recebida no backend - corpo:", {
+            console.log("requisição recebida no backend - corpo:", {
                 email: req.body.email,
                 hasPassword: !!req.body.password,
                 hasGoogleId: !!req.body.googleId,
@@ -39,14 +39,14 @@ class AuthUserController {
 
         } catch (error: any) {
             if (error instanceof AppError) {
-                console.error("AppError no AuthUserController:", error.message, error.statusCode);
+                console.error("apperror no authusercontroller:", error.message, error.statusCode);
                 return res.status(error.statusCode).json({
                     success: false,
                     message: error.message
                 });
             }
 
-            console.error("Erro inesperado no AuthUserController:", error);
+            console.error("erro inesperado no authusercontroller:", error);
             return res.status(500).json({
                 success: false,
                 message: "Erro interno no servidor.",

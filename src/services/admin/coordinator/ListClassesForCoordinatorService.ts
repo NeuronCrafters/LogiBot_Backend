@@ -11,7 +11,7 @@ export async function ListClassesForCoordinatorService(
     university: schoolId,
   }).lean();
   if (!course) {
-    throw new Error("Curso não pertence à sua universidade.");
+    throw new Error("curso não pertence à sua universidade.");
   }
 
   return Class.find({ course: courseId }).lean().exec();

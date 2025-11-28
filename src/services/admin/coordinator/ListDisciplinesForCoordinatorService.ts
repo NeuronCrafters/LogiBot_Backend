@@ -11,7 +11,7 @@ export async function ListDisciplinesForCoordinatorService(
     university: schoolId,
   }).lean();
   if (!course) {
-    throw new Error("Curso não pertence à sua universidade.");
+    throw new Error("curso não pertence à sua universidade.");
   }
 
   return Discipline.find({ course: courseId }).lean().exec();

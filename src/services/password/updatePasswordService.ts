@@ -18,7 +18,7 @@ class UpdatePasswordService {
       role: AllowedRoles
   ): Promise<void> {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      throw new Error("ID inválido.");
+      throw new Error("id inválido.");
     }
 
     let userData: IUserAuth | null = null;
@@ -36,7 +36,7 @@ class UpdatePasswordService {
     }
 
     if (!userData?.password) {
-      throw new Error("Usuário não encontrado.");
+      throw new Error("usuário não encontrado.");
     }
 
     const storedHash = userData.password;
@@ -44,13 +44,13 @@ class UpdatePasswordService {
     // Valida senha atual
     const isCurrentValid = await bcrypt.compare(currentPassword, storedHash);
     if (!isCurrentValid) {
-      throw new Error("Senha atual incorreta.");
+      throw new Error("senha atual incorreta.");
     }
 
     // Impede reutilização da senha atual
     const isSamePassword = await bcrypt.compare(newPassword, storedHash);
     if (isSamePassword) {
-      throw new Error("A nova senha deve ser diferente da senha atual.");
+      throw new Error("a nova senha deve ser diferente da senha atual.");
     }
 
     // Impede senhas já usadas nos últimos 3 meses
@@ -63,7 +63,7 @@ class UpdatePasswordService {
       const recent = entry.changedAt > threeMonthsAgo;
 
       if (reused && recent) {
-        throw new Error("A nova senha não pode ser igual a uma das últimas utilizadas nos últimos 3 meses.");
+        throw new Error("a nova senha não pode ser igual a uma das últimas utilizadas nos últimos 3 meses.");
       }
     }
 

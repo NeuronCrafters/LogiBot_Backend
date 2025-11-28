@@ -10,7 +10,7 @@ class DeleteClassController {
       const result = await deleteClassService.deleteClass(classId);
       return res.status(200).json(result);
     } catch (error: any) {
-      console.error("Erro ao remover turma:", error.message);
+      console.error("erro ao remover turma:", error.message);
       return res.status(error.statusCode || 500).json({
         message: error.message || "Erro interno no servidor.",
       });

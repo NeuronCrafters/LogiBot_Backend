@@ -82,7 +82,7 @@ export const healthCheck = async (req: Request, res: Response): Promise<void> =>
     };
 
     if (req.query.verbose === 'true') {
-      console.log('🏥 Health check solicitado:', {
+      console.log(' health check solicitado:', {
         ip: req.ip || req.connection.remoteAddress,
         userAgent: req.headers['user-agent'],
         timestamp: healthData.timestamp
@@ -92,7 +92,7 @@ export const healthCheck = async (req: Request, res: Response): Promise<void> =>
     res.status(200).json(healthData);
 
   } catch (error) {
-    console.error(' Erro no health check:', error);
+    console.error(' erro no health check:', error);
 
     res.status(500).json({
       status: 'ERROR',

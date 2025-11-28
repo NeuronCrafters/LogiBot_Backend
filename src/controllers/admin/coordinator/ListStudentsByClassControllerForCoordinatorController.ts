@@ -30,7 +30,7 @@ export async function ListStudentsByClassForCoordinatorController(
 
         return res.status(200).json(students);
     } catch (err: any) {
-        console.error("Erro ListStudentsByClass:", err);
+        console.error("erro liststudentsbyclass:", err);
         return res.status(err.statusCode || 500).json({ message: err.message || "Erro interno." });
     }
 }

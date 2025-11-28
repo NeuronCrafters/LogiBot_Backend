@@ -31,7 +31,7 @@ export async function getAcademicDataController(req: AuthenticatedRequest, res: 
             });
         }
 
-        console.log(`[AcademicData] Usuário ${userData._id} (${userData.role.join(', ')}) acessando dados acadêmicos`);
+        console.log(`[academicdata] usuário ${userData._id} (${userData.role.join(', ')}) acessando dados acadêmicos`);
 
         const data = await getAcademicDataService(userData);
 
@@ -61,7 +61,7 @@ export async function getAcademicDataController(req: AuthenticatedRequest, res: 
             }
         });
     } catch (error) {
-        console.error('Erro ao buscar dados acadêmicos:', error);
+        console.error('erro ao buscar dados acadêmicos:', error);
 
         if (error.name === 'ValidationError') {
             return res.status(400).json({
@@ -111,7 +111,7 @@ async function getUserCompleteData(userId: string, roles: string[]) {
                 .lean();
 
             if (!professor) {
-                console.warn(`Professor não encontrado: ${userId}`);
+                console.warn(`professor não encontrado: ${userId}`);
                 return null;
             }
 
@@ -124,11 +124,11 @@ async function getUserCompleteData(userId: string, roles: string[]) {
                 disciplines: professor.disciplines?.map(d => d._id.toString()) || []
             };
         } else {
-            console.warn(`Estudante tentando acessar dados acadêmicos: ${userId}`);
+            console.warn(`estudante tentando acessar dados acadêmicos: ${userId}`);
             return null;
         }
     } catch (error) {
-        console.error('Erro ao buscar dados completos do usuário:', error);
+        console.error('erro ao buscar dados completos do usuário:', error);
         return null;
     }
 }

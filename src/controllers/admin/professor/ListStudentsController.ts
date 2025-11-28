@@ -21,7 +21,7 @@ class ListStudentsController {
 
       return res.status(200).json(students);
     } catch (error) {
-      console.error("Erro no controller de listagem de alunos:", error);
+      console.error("erro no controller de listagem de alunos:", error);
 
       const status = error instanceof AppError ? error.statusCode : 500;
       const message = error instanceof AppError ? error.message : "Erro interno ao listar alunos.";

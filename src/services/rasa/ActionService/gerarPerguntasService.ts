@@ -30,7 +30,7 @@ export async function gerarPerguntasService(
   session.lastSubject = pergunta;
 
   try {
-    console.log("📡 enviando requisição para o rasa...");
+    console.log(" enviando requisição para o rasa...");
     const response = await axios.post(RASA_ACTION_URL, {
       next_action: "action_gerar_perguntas_chatgpt",
       tracker: {
@@ -66,7 +66,7 @@ export async function gerarPerguntasService(
             payload = parsed;
           }
         } catch (e) {
-          console.warn("⚠️ não foi possível extrair json da resposta textual.");
+          console.warn("️ não foi possível extrair json da resposta textual.");
         }
       }
     }
@@ -89,7 +89,7 @@ export async function gerarPerguntasService(
     }
 
     if (!Array.isArray(payload.answer_keys) || payload.answer_keys.length < 5) {
-      console.warn("⚠️ gabarito incompleto — usando array vazio como fallback.");
+      console.warn("️ gabarito incompleto — usando array vazio como fallback.");
       payload.answer_keys = [];
     }
 
@@ -106,7 +106,7 @@ export async function gerarPerguntasService(
       metadata: payload.metadata,
     };
   } catch (error: any) {
-    console.error(" Erro no gerarPerguntasService:", {
+    console.error(" erro no gerarperguntasservice:", {
       error: error.message,
       response: error.response?.data,
     });
@@ -135,7 +135,7 @@ function extractJson(text: string): string {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start < 0 || end < 0 || start >= end) {
-    throw new Error("Texto não contém JSON reconhecível");
+    throw new Error("texto não contém json reconhecível");
   }
   return text.slice(start, end + 1);
 }

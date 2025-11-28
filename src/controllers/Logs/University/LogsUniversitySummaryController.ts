@@ -7,22 +7,22 @@ export async function LogsUniversitySummaryController(req: Request, res: Respons
     const { universityId } = req.params;
     const userRole: string[] = req.user.role;
 
-    console.log("Requisição para resumo de universidade:", universityId);
+    console.log("requisição para resumo de universidade:", universityId);
 
     if (!universityId) {
       return res.status(400).json({ message: "O ID da universidade é obrigatório." });
     }
 
     if (isAdmin(userRole)) {
-      console.log("Usuário admin acessando dados");
+      console.log("usuário admin acessando dados");
       const summary = await LogsUniversitySummaryService(universityId);
       return res.status(200).json(summary);
     }
 
-    console.log("Acesso negado");
+    console.log("acesso negado");
     return res.status(403).json({ message: "Apenas administradores podem acessar os dados da universidade." });
   } catch (error) {
-    console.error("[LogsUniversitySummaryController] Erro:", error);
+    console.error("[logsuniversitysummarycontroller] erro:", error);
     return res.status(500).json({ message: "Erro ao obter dados da universidade." });
   }
 }

@@ -8,7 +8,7 @@ class GenerateResetToken {
     const user = await findUserByEmail(email);
 
     if (!user) {
-      throw new Error("Usuário não encontrado.");
+      throw new Error("usuário não encontrado.");
     }
 
     const token = jwt.sign({ email: user.email }, secret, { expiresIn: "1h" });

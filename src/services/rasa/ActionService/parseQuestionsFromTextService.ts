@@ -42,7 +42,7 @@ export function parseQuestionsFromTextService(text: string) {
   // Validação: cada pergunta deve ter no mínimo 2 alternativas
   for (const q of questions) {
     if (q.options.length < 2) {
-      throw new Error(`Pergunta incompleta: "${q.question}"`);
+      throw new Error(`pergunta incompleta: "${q.question}"`);
     }
   }
 

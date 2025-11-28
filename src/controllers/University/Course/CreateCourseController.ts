@@ -15,7 +15,7 @@ class CreateCourseController {
 
       return res.status(201).json(course);
     } catch (error: any) {
-      console.error("Erro ao criar curso:", error.message);
+      console.error("erro ao criar curso:", error.message);
       return res.status(error.statusCode || 500).json({
         message: error.message || "Erro interno no servidor.",
       });

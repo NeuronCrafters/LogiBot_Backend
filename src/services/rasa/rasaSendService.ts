@@ -21,7 +21,7 @@ export async function rasaSendService(message: string, sender: string): Promise<
   };
 
   try {
-    console.log(`[rasaSendService] Enviando mensagem para o ciclo de agentes: "${message}"`);
+    console.log(`[rasasendservice] enviando mensagem para o ciclo de agentes: "${message}"`);
 
     // 2. Chama a função centralizada
     const response = await makeRequestWithFallback(body);
@@ -29,7 +29,7 @@ export async function rasaSendService(message: string, sender: string): Promise<
 
     // 3. Valida a resposta
     if (!ollamaReply) {
-      console.warn("[rasaSendService] Resposta do Ollama veio vazia ou em formato inesperado.");
+      console.warn("[rasasendservice] resposta do ollama veio vazia ou em formato inesperado.");
       return [{ recipient_id: sender, text: "Desculpe, não consegui obter uma resposta do assistente." }];
     }
 
@@ -37,7 +37,7 @@ export async function rasaSendService(message: string, sender: string): Promise<
     return [{ recipient_id: sender, text: ollamaReply }];
 
   } catch (error: any) {
-    console.error("[rasaSendService] Erro final no ciclo de agentes:", error.message);
+    console.error("[rasasendservice] erro final no ciclo de agentes:", error.message);
     throw new AppError("Falha ao se comunicar com o assistente de IA.", 500);
   }
 }

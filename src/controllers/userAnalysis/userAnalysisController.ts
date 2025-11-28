@@ -16,7 +16,7 @@ export async function addInteraction(req: Request, res: Response) {
         await recordInteraction(userId, message.trim());
         return res.status(200).json({ success: true });
     } catch (err: any) {
-        console.error("Erro em recordInteraction:", err);
+        console.error("erro em recordinteraction:", err);
         return res.status(500).json({ error: err.message || "Erro interno" });
     }
 }

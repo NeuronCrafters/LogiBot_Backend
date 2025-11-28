@@ -9,7 +9,7 @@ export class GetAccessPatternController {
       const data = await service.execute({ universityId, courseId, classId, studentId });
       return res.status(200).json(data);
     } catch (error: any) {
-      console.error(`[GetAccessPatternController] Error: ${error.message}`);
+      console.error(`[getaccesspatterncontroller] error: ${error.message}`);
       return res.status(500).json({ message: "Erro ao buscar padrões de acesso." });
     }
   }

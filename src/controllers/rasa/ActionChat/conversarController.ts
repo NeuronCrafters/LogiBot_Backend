@@ -13,7 +13,7 @@ export async function conversarController(req: Request, res: Response) {
 
     return res.json({ responses: [{ text }] });
   } catch (error) {
-    console.error("Erro no conversarController:", error);
+    console.error("erro no conversarcontroller:", error);
     return res.json({
       responses: [
         {

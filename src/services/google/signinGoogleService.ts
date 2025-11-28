@@ -8,7 +8,7 @@ class SigninGoogleService {
     const photo = profile.photos?.[0]?.value;
     const googleId = profile.id;
 
-    if (!email) throw new Error("Email não encontrado no perfil do Google.");
+    if (!email) throw new Error("email não encontrado no perfil do google.");
 
     let user: any = await Professor
         .findOne({ email })

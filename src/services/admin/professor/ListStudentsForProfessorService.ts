@@ -16,7 +16,7 @@
 //   );
 
 //   if (!prof) {
-//     throw new Error("Professor não encontrado.");
+//     throw new Error("professor não encontrado.");
 //   }
 
 //   return User.find({
@@ -45,7 +45,7 @@ export async function ListStudentsForProfessorService(
   );
 
   if (!prof) {
-    throw new Error("Professor não encontrado.");
+    throw new Error("professor não encontrado.");
   }
 
   return User.find({

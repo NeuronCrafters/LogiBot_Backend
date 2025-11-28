@@ -8,15 +8,15 @@ export async function connectDB(): Promise<void> {
     const uri = process.env.MONGO_URI as string;
 
     if (!uri) {
-      throw new Error("MONGO_URI não está configurada no .env");
+      throw new Error("mongo_uri não está configurada no .env");
     }
 
     await mongoose.connect(uri, {
     });
 
-    console.log("Conexão com o MongoDB estabelecida com sucesso!");
+    console.log("conexão com o mongodb estabelecida com sucesso!");
   } catch (error) {
-    console.error("Erro ao conectar no MongoDB:", error);
+    console.error("erro ao conectar no mongodb:", error);
     process.exit(1);
   }
 }

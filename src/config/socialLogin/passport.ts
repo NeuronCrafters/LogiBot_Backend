@@ -14,7 +14,7 @@ passport.deserializeUser(async (id, done) => {
   try {
     let user = await User.findById(id) || await Professor.findById(id);
     if (!user) {
-      return done(new Error('Usuário não encontrado durante a deserialização.'), null);
+      return done(new Error('usuário não encontrado durante a deserialização.'), null);
     }
     done(null, user);
   } catch (error) {

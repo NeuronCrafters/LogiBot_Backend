@@ -16,12 +16,12 @@ class ResetPasswordService {
           !user.resetPasswordExpires ||
           new Date() > user.resetPasswordExpires
       ) {
-        throw new Error("Token inválido ou expirado.");
+        throw new Error("token inválido ou expirado.");
       }
 
       const isSamePassword = await bcrypt.compare(newPassword, user.password || "");
       if (isSamePassword) {
-        throw new Error("A nova senha não pode ser igual à senha anterior.");
+        throw new Error("a nova senha não pode ser igual à senha anterior.");
       }
 
       user.password = await bcrypt.hash(newPassword, 10);

@@ -49,7 +49,7 @@ export async function LogsClassSummaryController(req: Request, res: Response) {
 
     return res.status(403).json({ message: "Acesso negado." });
   } catch (error) {
-    console.error("[LogsClassSummaryController] Erro:", error);
+    console.error("[logsclasssummarycontroller] erro:", error);
     return res.status(500).json({ message: "Erro ao obter dados da turma." });
   }
 }

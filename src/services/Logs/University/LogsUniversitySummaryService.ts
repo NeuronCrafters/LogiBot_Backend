@@ -2,10 +2,10 @@ import { UserAnalysis } from "../../../models/UserAnalysis";
 import { calculateUsageTime } from "../../../utils/TimeFormatter";
 
 export async function LogsUniversitySummaryService(universityId: string) {
-  console.log("Buscando resumo para universidade:", universityId);
+  console.log("buscando resumo para universidade:", universityId);
 
   const users = await UserAnalysis.find({ schoolId: universityId });
-  console.log(`Encontrados ${users.length} registros de análise de usuários para universidade`);
+  console.log(`encontrados ${users.length} registros de análise de usuários para universidade`);
 
   if (users.length === 0) {
     return {

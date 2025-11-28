@@ -72,8 +72,8 @@ export const corsConfig: CorsOptions = {
   ],
 
   preflightContinue: false,
-  optionsSuccessStatus: 200, // para browsers legados
-  maxAge: 86400 // cache preflight por 24 horas
+  optionsSuccessStatus: 200,
+  maxAge: 86400
 };
 
 export const getCorsInfo = () => {
@@ -89,9 +89,4 @@ export const getCorsInfo = () => {
 
 export const logCorsConfig = () => {
   const corsInfo = getCorsInfo();
-
-  console.log('🌐 CORS configurado');
-  console.log('📍 Origins permitidas:', corsInfo.allowedOrigins);
-  console.log(`🔢 Total de origins: ${corsInfo.totalOrigins}`);
-  console.log(`🏷️ Ambiente: ${corsInfo.environment}`);
 };

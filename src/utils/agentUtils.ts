@@ -9,7 +9,6 @@ interface AgentConfig {
   key: string;
 }
 
-// Exportada para ser usada no Health Check
 export function getApiConfigs(): AgentConfig[] {
   const configs: AgentConfig[] = [];
   for (let i = 1; i <= 20; i++) {
@@ -52,7 +51,6 @@ function getNextApiConfig(): AgentConfig {
   return config;
 }
 
-// A função principal com os logs, agora exportada
 export async function makeRequestWithFallback(body: any, maxRetries: number = 3): Promise<any> {
   const configs = getValidConfigs();
   if (configs.length === 0) {
@@ -83,7 +81,6 @@ export async function makeRequestWithFallback(body: any, maxRetries: number = 3)
       const status = error.response?.status;
       const errorMsg = error.response?.data?.error || error.message;
       console.warn(`[DEBUG-CYCLE] ❌ Falha com ${configId}: Status ${status} - ${errorMsg}`);
-      // ... resto da lógica de retry
     }
   }
 

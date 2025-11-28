@@ -1,13 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { getCorsInfo } from '../../config/cors/ccorsConfig';
 
-/**
- * Middleware especializado para tratamento de erros CORS
- * 
- * Captura erros relacionados a CORS e retorna uma resposta
- * estruturada com informações úteis para debugging.
- */
-
 interface CorsErrorResponse {
   error: string;
   origin: string | undefined;
@@ -22,9 +15,8 @@ export const corsErrorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Verifica se o erro é relacionado ao CORS
   if (err.message && err.message.includes('não permitido pelo CORS')) {
-    console.error('🚫 CORS Error:', {
+    console.error('CORS Error:', {
       message: err.message,
       origin: req.headers.origin,
       method: req.method,
@@ -41,13 +33,12 @@ export const corsErrorHandler = (
       allowedOrigins: corsInfo.allowedOrigins,
       timestamp: new Date().toISOString(),
       help: origin
-        ? `O origin '${origin}' não está na lista de origins permitidos. Verifique a configuração do CORS.`
-        : 'Requisição sem origin. Verifique se está enviando o header Origin corretamente.'
+        ? `o origin '${origin}' não está na lista de origins permitidos, verifique a configuração do CORS.`
+        : 'requisição sem origin, verifique se está enviando o header origin corretamente.'
     };
 
     return;
   }
 
-  // Se não for erro de CORS, passa para o próximo middleware (no caso o corsAcessLogger)
   next(err);
 };

@@ -12,7 +12,7 @@ export function isAuthorized(allowedRoles: string[]) {
     const userRoles = normalizeRoles(req.user?.role);
 
     if (!allowedRoles.some((role) => userRoles.includes(role))) {
-      throw new AppError("Acesso negado. Você não tem permissão.", 403);
+      throw new AppError("acesso negado, você não tem permissão.", 403);
     }
 
     next();

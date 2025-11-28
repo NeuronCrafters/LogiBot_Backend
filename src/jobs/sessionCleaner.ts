@@ -36,7 +36,6 @@ async function findAndLogoutInactiveUsers() {
 }
 
 export function startSessionCleaner() {
-    // a expressão "*/5 * * * *" significa "Execute a cada 5 minutos".
     cron.schedule("*/5 * * * *", findAndLogoutInactiveUsers);
 
     console.log("✅ Agendador de limpeza de sessão iniciado (verificação de inatividade a cada 5 minutos).");

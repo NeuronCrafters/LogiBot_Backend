@@ -1,1 +1,0 @@
-var twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000); var oldObjectId = ObjectId.createFromTime(twentyMinutesAgo.getTime() / 1000); var result = db.users.deleteMany({_id: {$gte: oldObjectId}}); print("✅ LIMPEZA CONCLUÍDA: " + result.deletedCount + " documentos removidos. Contagem atual: " + db.users.countDocuments({}));

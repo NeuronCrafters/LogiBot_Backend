@@ -7,7 +7,6 @@ class HealthCheckController {
     const configs = getApiConfigs();
     const healthStatus: any[] = [];
 
-    // Cria uma promessa de teste para cada configuração
     const checkPromises = configs.map(async (config) => {
       const startTime = Date.now();
       try {
@@ -16,7 +15,7 @@ class HealthCheckController {
           { model: "llama3", messages: [{ role: "user", content: "ping" }], stream: false },
           {
             headers: { 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
-            timeout: 10000 // Timeout de 10s
+            timeout: 10000
           }
         );
 
@@ -32,7 +31,6 @@ class HealthCheckController {
       }
     });
 
-    // Espera todas as verificações terminarem
     const results = await Promise.all(checkPromises);
 
     return res.status(200).json({

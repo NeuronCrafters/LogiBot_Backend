@@ -31,18 +31,15 @@ class RasaSendController {
 
       console.log(`[DEBUG] Usuário autenticado: ${userId}`);
 
-      // recebe a mensagem original
       const { message } = req.body;
       if (!message) {
         throw new AppError("O campo 'message' é obrigatório.", 400);
       }
 
-      // normaliza a mensagem
       const normalizedMessage = normalizeText(message);
 
       console.log(`[DEBUG] Enviando mensagem normalizada para Rasa: ${normalizedMessage}`);
 
-      // Usa a mensagem normalize na chamada do serviço
       const response: any = await rasaSendService(normalizedMessage, userId);
       console.log(`[DEBUG] Resposta do Rasa recebida: ${JSON.stringify(response)}`);
 

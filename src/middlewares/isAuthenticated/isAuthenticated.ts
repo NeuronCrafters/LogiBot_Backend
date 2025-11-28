@@ -26,35 +26,28 @@ export async function isAuthenticated(
 ) {
     const token = req.cookies.token;
     if (!token) {
-        // Usamos next(error) para passar para o errorHandler centralizado
-        return next(new AppError("Não autenticado: token ausente", 401));
+        return next(new AppError("não autenticado: token ausente", 401));
     }
 
     try {
         const secret = process.env.JWT_SECRET!;
         const decoded = jwt.verify(token, secret) as DecodedToken;
 
-        // --- INÍCIO DA VERIFICAÇÃO DE SESSÃO POR INATIVIDADE ---
-        // Adicionamos esta lógica para verificar se a sessão de um estudante foi encerrada
         if (normalizeRoles(decoded.role).includes("student")) {
             const userAnalysis = await UserAnalysis.findOne({ userId: decoded.id });
             if (userAnalysis) {
                 const lastSession = userAnalysis.sessions.at(-1);
-                // Se a última sessão do estudante já foi marcada como encerrada,
-                // significa que ele foi deslogado (manualmente ou por inatividade).
                 if (lastSession && lastSession.sessionEnd) {
                     res.clearCookie("token");
-                    throw new AppError("Sua sessão expirou. Por favor, faça o login novamente.", 401);
+                    throw new AppError("sua sessão expirou. por favor, faça o login novamente.", 401);
                 }
             }
         }
-        // --- FIM DA VERIFICAÇÃO DE SESSÃO ---
 
-        console.log("[isAuthenticated] Token decodificado:", {
+        console.log("[isAuthenticated] token decodificado:", {
             id: decoded.id, name: decoded.name, email: decoded.email, role: decoded.role
         });
 
-        // O resto da sua lógica para popular req.user continua normalmente
         if (normalizeRoles(decoded.role).includes("admin")) {
             const user = await User.findById(decoded.id);
             if (!user) throw new AppError("Usuário admin não encontrado.", 401);
@@ -62,7 +55,6 @@ export async function isAuthenticated(
             req.user = {
                 id: user._id.toString(), name: user.name, email: user.email, role: normalizeRoles(decoded.role), school: user.school?.toString() || null, courses: null, classes: null
             };
-            console.log("[isAuthenticated] Admin autenticado:", req.user);
             return next();
         }
 

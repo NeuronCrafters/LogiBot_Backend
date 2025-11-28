@@ -65,7 +65,7 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "\\btchau\\b": "farewell",
     "\\badeus\\b": "farewell",
 
-    // USO / CONTEXTO
+    // USO OU CONTEXTO
     "\\bquando usar\\b": "usage",
     "\\bonde usar\\b": "usage",
     "\\bpara que serve\\b": "usage",
@@ -78,12 +78,12 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "\\bcod(?:igo|e)\\b": "code",
     "\\bsnippet\\b": "code",
 
-    // QUIZ / PRÁTICA
+    // QUIZ 
     "\\bquiz\\b": "quiz",
     "\\bpraticar\\b": "quiz",
     "\\bexercicio(?:s)?\\b": "quiz",
 
-    // FALLBACK GENÉRICO
+    // FALLBACK
     "\\bduvida\\b": "general",
     "\\bajuda\\b": "general",
     "\\bpergunta\\b": "general",

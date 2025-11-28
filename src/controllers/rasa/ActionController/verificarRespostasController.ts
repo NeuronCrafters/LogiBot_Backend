@@ -34,7 +34,6 @@ export async function verificarRespostasController(req: Request, res: Response) 
 
     let rawResult: QuizResultData & { source?: string };
 
-    // 1) Tenta Rasa humanized
     if (useRasaVerification) {
       try {
         const rasaService = new RasaVerificationService();
@@ -52,7 +51,6 @@ export async function verificarRespostasController(req: Request, res: Response) 
       }
     }
 
-    // 2) Fallback tradicional
     rawResult = await verificarRespostasService(respostas, userId, email, session, role) as any;
     return res.status(200).json(transformResult(rawResult));
 
@@ -62,17 +60,7 @@ export async function verificarRespostasController(req: Request, res: Response) 
   }
 }
 
-
-/**
- * Constrói o JSON que o front-end espera:
- * {
- *   totalCorrectAnswers,
- *   totalWrongAnswers,
- *   detalhes: { questions: AnswerDetail[] }
- * }
- */
 function transformResult(raw: QuizResultData) {
-  // 1) extrai o array de detalhes (pode vir em raw.detalhes.questions ou raw.detalhes diretamente)
   let list: any[] = [];
   if (Array.isArray((raw as any).detalhes?.questions)) {
     list = (raw as any).detalhes.questions;
@@ -80,7 +68,6 @@ function transformResult(raw: QuizResultData) {
     list = raw.detalhes as unknown as any[];
   }
 
-  // 2) extrai feedback separado, se houver
   const fb1 = Array.isArray((raw as any).detailedFeedback)
     ? (raw as any).detailedFeedback
     : [];
@@ -89,19 +76,14 @@ function transformResult(raw: QuizResultData) {
     : [];
   const feedbacks = fb1.length ? fb1 : fb2;
 
-  // 3) mapeia para AnswerDetail
   const questions: AnswerDetail[] = list.map((d, i) => ({
     question: d.question,
     selectedOption: {
       question: d.question,
-      // pode vir em d.selectedOption.isCorrect ou em d.isCorrect
       isCorrect: String(d.selectedOption?.isCorrect ?? d.isCorrect ?? false),
-      // pode vir em d.selectedOption.isSelected ou em d.selected
       isSelected: d.selectedOption?.isSelected ?? d.selected ?? "",
     },
-    // pode vir em d.correctAnswer ou em d.correct
     correctOption: d.correctAnswer ?? d.correct ?? "",
-    // usa d.explanation, se existir, senão feedbacks[i]
     explanation: typeof d.explanation === "string"
       ? d.explanation
       : feedbacks[i] ?? "",

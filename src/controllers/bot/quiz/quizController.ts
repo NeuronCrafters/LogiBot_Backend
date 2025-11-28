@@ -11,8 +11,6 @@ import {
 } from '../../../services/bot/quiz/quizService';
 import { ResultDetail } from '../../../services/bot/quiz/quiz.types';
 
-// --- Controllers de Menu (sem alterações) ---
-
 export async function listLevelsController(req: Request, res: Response) {
   try {
     const levels = getLevelsService();
@@ -53,8 +51,6 @@ export async function listSubcategoriesController(req: Request, res: Response) {
     res.status(error.statusCode || 500).json({ message: error.message });
   }
 }
-
-// --- Controllers de Lógica do Quiz (sem alterações) ---
 
 export async function generateQuizController(req: Request, res: Response) {
   try {
@@ -98,7 +94,6 @@ export async function verifyQuizController(req: Request, res: Response) {
     const result = verifyQuizAnswersService(answers, session.lastAnswerKeys, session.lastFullQuestions);
     const isStudent = Array.isArray(req.user.role) ? req.user.role.includes("student") : req.user.role === "student";
     if (isStudent) {
-      // Passando o subject e level corretamente para a função de salvar
       await saveResultToDB(userId, req.user.email, result, session.lastSubject, session.nivelAtual);
     }
     session.lastSubject = null;
@@ -109,8 +104,6 @@ export async function verifyQuizController(req: Request, res: Response) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 }
-
-// --- Função Auxiliar (CORRIGIDA) ---
 
 async function saveResultToDB(
   userId: string,
@@ -127,12 +120,7 @@ async function saveResultToDB(
     throw new AppError("Análise de usuário não encontrada.", 404);
   }
 
-  // --- LÓGICA CORRIGIDA A PARTIR DAQUI ---
-
-  // Itera sobre cada pergunta respondida no quiz
   for (const detail of result.detalhes) {
-    // Para cada pergunta, chama o método do model.
-    // Isso garante que tanto o 'answerHistory' quanto o 'performanceBySubject' sejam atualizados.
     userAnalysis.addAnswerHistory(
       level || "Nível não definido",
       detail.question,
@@ -142,7 +130,6 @@ async function saveResultToDB(
     );
   }
 
-  // Atualiza os contadores globais e de sessão
   const currentSession = userAnalysis.sessions.at(-1);
   if (currentSession) {
     currentSession.totalCorrectAnswers = (currentSession.totalCorrectAnswers || 0) + result.totalCorrectAnswers;
@@ -152,17 +139,15 @@ async function saveResultToDB(
   userAnalysis.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
   userAnalysis.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
 
-  // Chama o método para contar o tópico do quiz (opcional, mas boa prática manter)
   if (subject) {
     userAnalysis.updateSubjectCountsQuiz(subject);
   }
 
   try {
-    // Salva TODAS as alterações feitas no banco de dados
     await userAnalysis.save();
-    console.log(`[saveResultToDB] ✅ Resultado do quiz salvo com sucesso no DB para ${email}!`);
+    console.log(`[saveResultToDB] Resultado do quiz salvo com sucesso no DB para ${email}!`);
   } catch (error) {
-    console.error(`[saveResultToDB] ❌ ERRO CRÍTICO ao salvar no banco de dados:`, error);
+    console.error(`[saveResultToDB] ERRO CRÍTICO ao salvar no banco de dados:`, error);
     throw new AppError("Falha ao salvar o resultado do quiz.", 500);
   }
 }

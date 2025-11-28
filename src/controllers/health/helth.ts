@@ -2,13 +2,6 @@ import { Request, Response } from 'express';
 import { getCorsInfo } from '../../config/cors/ccorsConfig';
 import os from 'os';
 
-/**
- * Controller para Health Check do sistema
- * 
- * Fornece informações detalhadas sobre o status da aplicação,
- * recursos do sistema e configurações ativas.
- */
-
 interface HealthCheckResponse {
   status: 'OK' | 'WARNING' | 'ERROR';
   timestamp: string;
@@ -37,9 +30,6 @@ interface HealthCheckResponse {
   };
 }
 
-/**
- * Formata bytes em formato legível
- */
 const formatBytes = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   if (bytes === 0) return '0 Bytes';
@@ -47,25 +37,14 @@ const formatBytes = (bytes: number): string => {
   return `${Math.round(bytes / Math.pow(1024, i) * 100) / 100} ${sizes[i]}`;
 };
 
-/**
- * Verifica status da conexão com o banco de dados
- */
 const getDatabaseStatus = (): 'connected' | 'disconnected' | 'unknown' => {
   try {
-    // Aqui você pode verificar a conexão real com o MongoDB
-    // Por exemplo, usando mongoose.connection.readyState
-    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-
-    // Por enquanto, retornamos 'unknown' - você pode implementar a verificação específica
     return 'unknown';
   } catch (error) {
     return 'disconnected';
   }
 };
 
-/**
- * Endpoint principal de health check
- */
 export const healthCheck = async (req: Request, res: Response): Promise<void> => {
   try {
     const corsInfo = getCorsInfo();
@@ -102,7 +81,6 @@ export const healthCheck = async (req: Request, res: Response): Promise<void> =>
       }
     };
 
-    // Log do health check (opcional, para monitoramento)
     if (req.query.verbose === 'true') {
       console.log('🏥 Health check solicitado:', {
         ip: req.ip || req.connection.remoteAddress,
@@ -125,9 +103,6 @@ export const healthCheck = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-/**
- * Endpoint simplificado de health check (apenas status)
- */
 export const simpleHealthCheck = (req: Request, res: Response): void => {
   res.status(200).json({
     status: 'OK',
@@ -135,10 +110,6 @@ export const simpleHealthCheck = (req: Request, res: Response): void => {
   });
 };
 
-/**
- * Endpoint para verificação de prontidão (readiness probe)
- * Usado principalmente em ambientes de containers/Kubernetes
- */
 export const readinessCheck = async (req: Request, res: Response): Promise<void> => {
   try {
     const dbStatus = getDatabaseStatus();

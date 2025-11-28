@@ -15,7 +15,6 @@ export async function LogsCourseSummaryController(req: Request, res: Response) {
       return res.status(400).json({ message: "O ID do curso é obrigatório." });
     }
 
-    // Admin tem acesso total
     if (isAdmin(userRole)) {
       const summary = await LogsCourseSummaryService(courseId);
       return res.status(200).json(summary);
@@ -24,7 +23,6 @@ export async function LogsCourseSummaryController(req: Request, res: Response) {
     const professor = await Professor.findById(userId);
     if (!professor) return res.status(403).json({ message: "Professor não encontrado." });
 
-    // Coordenador: verifica se o curso está nos cursos dele
     if (isCourseCoordinator(userRole)) {
       if (professor.courses.some((c) => c.toString() === courseId)) {
         const summary = await LogsCourseSummaryService(courseId);
@@ -32,7 +30,6 @@ export async function LogsCourseSummaryController(req: Request, res: Response) {
       }
     }
 
-    // Professor: idem
     if (isProfessor(userRole)) {
       if (professor.courses.some((c) => c.toString() === courseId)) {
         const summary = await LogsCourseSummaryService(courseId);

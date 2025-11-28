@@ -14,7 +14,6 @@ const QuestionSchema = new Schema({
   timestamp: { type: Date, default: Date.now },
 }, { _id: false });
 
-// sub-schema para cada tentativa de bot
 const QuizAttemptSchema = new Schema({
   questions: { type: [QuestionSchema], default: [] },
   totalCorrectWrongAnswersSession: {

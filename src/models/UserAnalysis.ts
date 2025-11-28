@@ -115,7 +115,7 @@ export interface IUserAnalysis extends Document {
     loops: number;
     verificacoes: number;
   };
-  // INCLUSÃO DO NOVO CAMPO AQUI
+
   performanceBySubject: Map<string, { correct: number; wrong: number }>;
   sessions: Array<{
     lastActivityAt: Date;
@@ -179,7 +179,6 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
     loops: { type: Number, default: 0 },
     verificacoes: { type: Number, default: 0 },
   },
-  // INCLUSÃO DO NOVO CAMPO NO SCHEMA
   performanceBySubject: {
     type: Map,
     of: new Schema({
@@ -265,9 +264,6 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
   this.markModified(`sessions.${idx}.subjectCountsChat`);
 };
 
-// --- CORREÇÃO APLICADA AQUI ---
-// A lógica foi ajustada para usar a variável 'subject' original e detalhada (ex: "o_que_são_variáveis"),
-// sem normalizá-la. Isso preserva a granularidade dos dados para os dashboards.
 UserAnalysisSchema.methods.addAnswerHistory = function (
   level: string,
   question: string,
@@ -305,7 +301,6 @@ UserAnalysisSchema.methods.addAnswerHistory = function (
   attempt.totalCorrectWrongAnswersSession.totalCorrectAnswers += correctCount;
   attempt.totalCorrectWrongAnswersSession.totalWrongAnswers += wrongCount;
 
-  // Usa a variável 'subject' diretamente, sem chamar extractMainSubject.
   const detailedSubjectKey = subject;
 
   if (!this.performanceBySubject.get(detailedSubjectKey)) {

@@ -18,14 +18,14 @@ export const errorHandler = (
   if (err instanceof mongoose.Error.ValidationError) {
     const details = Object.values(err.errors).map((e: any) => e.message);
     return res.status(422).json({
-      error: 'Validation error',
+      error: 'validation error',
       details,
     });
   }
 
   if (err instanceof mongoose.Error.CastError) {
     return res.status(400).json({
-      error: `Invalid ${err.path}: ${err.value}`,
+      error: `invalid ${err.path}: ${err.value}`,
     });
   }
 
@@ -33,5 +33,5 @@ export const errorHandler = (
     return res.status(400).json({ error: err.message });
   }
 
-  return res.status(500).json({ error: 'Internal server error' });
+  return res.status(500).json({ error: 'internal server error' });
 };

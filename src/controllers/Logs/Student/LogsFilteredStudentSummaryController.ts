@@ -26,27 +26,23 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
       return res.status(400).json({ message: "O ID da universidade é obrigatório." });
     }
 
-    // Se for admin, permite acesso total
     if (isAdmin(userRole)) {
       const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
       return res.status(200).json(summary);
     }
 
-    // Para professores e coordenadores, busca diretamente pelo _id
     const professor = await Professor.findById(userId).populate('courses disciplines');
 
     if (!professor) {
       console.log("[LogsFilteredStudentSummaryController] Professor não encontrado com ID:", userId);
       console.log("[LogsFilteredStudentSummaryController] Tentando buscar por email:", req.user.email);
 
-      // Tenta buscar por email como fallback
       const professorByEmail = await Professor.findOne({ email: req.user.email }).populate('courses disciplines');
 
       if (!professorByEmail) {
         return res.status(403).json({ message: "Professor não encontrado." });
       }
 
-      // Se encontrou por email, usa esse professor
       console.log("[LogsFilteredStudentSummaryController] Professor encontrado por email:", professorByEmail.email);
     }
 
@@ -63,7 +59,6 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
     const courseObjectId = courseId ? new Types.ObjectId(courseId) : null;
     const classObjectId = classId ? new Types.ObjectId(classId) : null;
 
-    // Se for coordenador de curso
     if (isCourseCoordinator(userRole) && courseObjectId) {
       if (professorData.courses.some(c => c.equals(courseObjectId))) {
         const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
@@ -72,9 +67,7 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
       console.log("[LogsFilteredStudentSummaryController] Coordenador não tem acesso a este curso");
     }
 
-    // Se for professor
     if (isProfessor(userRole) && courseId && classId) {
-      // Verifica se o professor leciona alguma disciplina nesta turma
       const disciplinas = await Discipline.find({
         _id: { $in: professorData.disciplines },
         classes: classId
@@ -86,7 +79,6 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         return res.status(403).json({ message: "Acesso negado. Professor não leciona nesta turma." });
       }
 
-      // Se especificou um studentId, verifica se o aluno existe
       if (studentId) {
         const aluno = await UserAnalysis.findOne({
           userId: studentId,
@@ -107,7 +99,6 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
         });
       }
 
-      // Professor tem acesso, retorna os dados
       const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
       console.log("[LogsFilteredStudentSummaryController] Retornando dados do resumo");
       return res.status(200).json(summary);

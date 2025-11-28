@@ -22,7 +22,6 @@ export async function getAcademicDataController(req: AuthenticatedRequest, res: 
             });
         }
 
-        // Busca dados completos do usuário para ter todas as informações necessárias
         const userData = await getUserCompleteData(req.user.id, req.user.role);
 
         if (!userData) {
@@ -32,16 +31,12 @@ export async function getAcademicDataController(req: AuthenticatedRequest, res: 
             });
         }
 
-        // Log para debug (remover em produção)
         console.log(`[AcademicData] Usuário ${userData._id} (${userData.role.join(', ')}) acessando dados acadêmicos`);
 
-        // Chama o service com os dados completos do usuário
         const data = await getAcademicDataService(userData);
 
-        // Conta totais para incluir no retorno
         const summary = calculateDataSummary(data, userData.role);
 
-        // Retorna dados com informações completas para o frontend
         res.status(200).json({
             success: true,
             data,
@@ -68,7 +63,6 @@ export async function getAcademicDataController(req: AuthenticatedRequest, res: 
     } catch (error) {
         console.error('Erro ao buscar dados acadêmicos:', error);
 
-        // Tratamento de erros específicos
         if (error.name === 'ValidationError') {
             return res.status(400).json({
                 message: "Dados de entrada inválidos",
@@ -95,12 +89,10 @@ export async function getAcademicDataController(req: AuthenticatedRequest, res: 
 
 async function getUserCompleteData(userId: string, roles: string[]) {
     try {
-        // Determina se é professor ou coordenador baseado nos roles
         const isProfessor = roles.includes('professor') || roles.includes('course-coordinator');
         const isAdmin = roles.includes('admin');
 
         if (isAdmin) {
-            // Admin pode ter dados básicos - sem restrições específicas
             return {
                 _id: userId,
                 role: roles,
@@ -173,7 +165,6 @@ function getUserPermissions(roles: string[]) {
     const isProfessor = roles.includes('professor');
 
     return {
-        // Permissões de visualização
         canViewAllUniversities: isAdmin,
         canViewAllCourses: isAdmin,
         canViewOwnCourse: isCourseCoordinator || isProfessor,
@@ -183,8 +174,6 @@ function getUserPermissions(roles: string[]) {
         canViewProfessors: isAdmin || isCourseCoordinator,
         canViewAnalytics: isAdmin || isCourseCoordinator,
         canExportData: isAdmin || isCourseCoordinator,
-
-        // Permissões de gestão (para futuras funcionalidades)
         canCreateCourse: isAdmin,
         canEditCourse: isAdmin || isCourseCoordinator,
         canCreateClass: isAdmin || isCourseCoordinator,
@@ -195,13 +184,9 @@ function getUserPermissions(roles: string[]) {
         canManageProfessors: isAdmin || isCourseCoordinator,
         canAssignProfessors: isAdmin || isCourseCoordinator,
         canManageEnrollments: isAdmin || isCourseCoordinator,
-
-        // Permissões de relatórios
         canGenerateReports: isAdmin || isCourseCoordinator,
         canViewDetailedAnalytics: isAdmin || isCourseCoordinator,
         canExportStudentData: isAdmin || isCourseCoordinator,
-
-        // Permissões específicas de professor
         canViewOwnDisciplines: isProfessor,
         canManageOwnDisciplineStudents: isProfessor,
         canViewStudentProgress: isProfessor || isCourseCoordinator || isAdmin

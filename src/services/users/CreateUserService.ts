@@ -16,13 +16,11 @@ interface CreateUserRequest {
 
 class CreateUserService {
   async createUser({ name, email, password, code }: CreateUserRequest) {
-    // Verificar se já existe usuário com este email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new AppError("usuário já existe com este email!", 409);
     }
 
-    // Buscar entidades pelo código
     const entities = await findEntitiesByCode(code);
     if (!entities) {
       throw new AppError("código de disciplina inválido!", 404);
@@ -36,7 +34,6 @@ class CreateUserService {
 
     let selectedClass = null;
 
-    // Identificar turma correta pelo código
     for (const classItem of classes) {
       const testCode = generateDisciplineCode(
         university._id.toString(),
@@ -57,7 +54,6 @@ class CreateUserService {
 
     const hashedPassword = await hash(password, 10);
 
-    // Criar usuário
     const user = await User.create({
       name,
       email,
@@ -70,7 +66,6 @@ class CreateUserService {
       status: "active"
     });
 
-    // Associar disciplina e turma
     await Discipline.findByIdAndUpdate(discipline._id, {
       $addToSet: { students: user._id }
     });

@@ -1,9 +1,6 @@
-// ARQUIVO COMPLETO E CORRIGIDO: /src/services/Logs/Student/LogsFilteredStudentSummaryService.ts
-
 import { UserAnalysis } from "../../../models/UserAnalysis";
 import { calculateUsageTime } from "../../../utils/TimeFormatter";
 
-// Função de retorno padrão para evitar repetição e garantir consistência
 function getEmptySummary() {
   return {
     totalCorrectAnswers: 0,
@@ -30,7 +27,6 @@ export async function LogsFilteredStudentSummaryService(
   if (classId) query.classId = classId;
   if (studentId) query.userId = studentId;
 
-  // Se especificou um studentId, busca e processa apenas aquele aluno
   if (studentId) {
     const user = await UserAnalysis.findOne(query).lean();
 
@@ -50,7 +46,6 @@ export async function LogsFilteredStudentSummaryService(
       }
     });
 
-    // Processa as sessões do aluno para calcular o uso diário para o gráfico
     const processedSessions = (user.sessions || [])
       .filter(session => session.sessionStart && session.sessionEnd && session.sessionDuration)
       .sort((a, b) => new Date(b.sessionStart).getTime() - new Date(a.sessionStart).getTime())
@@ -59,13 +54,12 @@ export async function LogsFilteredStudentSummaryService(
         sessionStart: session.sessionStart,
         sessionEnd: session.sessionEnd,
         sessionDuration: session.sessionDuration,
-        usage: (session.sessionDuration || 0) / 60, // 'usage' em minutos, que o gráfico usa
+        usage: (session.sessionDuration || 0) / 60,
         formatted: calculateUsageTime(session.sessionDuration || 0).formatted,
         userId: user.userId,
         userName: user.name,
       }));
 
-    // Agrupa as sessões processadas por dia
     const sessionsByDay: Record<string, any> = {};
     processedSessions.forEach(session => {
       if (!sessionsByDay[session.date]) {
@@ -76,17 +70,15 @@ export async function LogsFilteredStudentSummaryService(
           sessions: [],
         };
       }
-      sessionsByDay[session.date].usage += session.usage; // Soma os minutos de uso no dia
+      sessionsByDay[session.date].usage += session.usage;
       sessionsByDay[session.date].sessions.push(session);
     });
 
-    // Formata o tempo total de cada dia
     Object.values(sessionsByDay).forEach(day => {
       const totalSecondsForDay = Math.round(day.usage * 60);
       day.formatted = calculateUsageTime(totalSecondsForDay).formatted;
     });
 
-    // Cria o array `dailyUsage` que o gráfico precisa para funcionar
     const dailyUsage = Object.values(sessionsByDay).sort((a, b) => b.date.localeCompare(a.date));
 
     const usageTimeObj = calculateUsageTime(user.totalUsageTime || 0);
@@ -97,13 +89,12 @@ export async function LogsFilteredStudentSummaryService(
       usageTimeInSeconds: user.totalUsageTime || 0,
       usageTime: usageTimeObj,
       subjectCounts: totalSubjectCounts,
-      dailyUsage, // Agora esta variável contém os dados corretos
+      dailyUsage,
       sessions: processedSessions,
       users: user
     };
   }
 
-  // Se não especificou studentId, busca e agrega todos os alunos que atendem aos critérios
   const users = await UserAnalysis.find(query).lean();
 
 

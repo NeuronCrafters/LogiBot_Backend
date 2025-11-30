@@ -11,10 +11,10 @@ interface IFilters {
 interface EffortMatrixDTO {
   points: {
     name: string;
-    performance: number; // Valor jittred (para plotagem)
-    effort: number;       // Valor jittred (para plotagem)
-    originalPerformance?: number; // Valor real (para Tooltip)
-    originalEffort?: number;     // Valor real (para Tooltip)
+    performance: number;
+    effort: number;
+    originalPerformance?: number;
+    originalEffort?: number;
     isAverage?: boolean;
   }[];
   averages: {
@@ -23,12 +23,10 @@ interface EffortMatrixDTO {
   };
 }
 
-const MAX_JITTER_EFFORT = 0.05; // 3 segundos de ruído (0.05 min)
-const MAX_JITTER_PERFORMANCE = 0.5; // 0.5% de ruído
+const MAX_JITTER_EFFORT = 0.05;
+const MAX_JITTER_PERFORMANCE = 0.5;
 
-// Função auxiliar para aplicar o jitter
 function applyJitter(value: number, maxJitter: number): number {
-  // Gera um número aleatório entre -maxJitter e +maxJitter
   const randomNoise = Math.random() * maxJitter * 2 - maxJitter;
   return value + randomNoise;
 }
@@ -56,28 +54,24 @@ export class GetEffortMatrixService {
     }
 
     const classUsers = await UserAnalysis.find({ classId: new Types.ObjectId(classId) }).select('totalUsageTime totalCorrectWrongAnswers');
-    const classMatrix = this.calculateMatrixBase(classUsers); // Usa o método base que calcula as médias
+    const classMatrix = this.calculateMatrixBase(classUsers);
 
-    // PONTO DO ALUNO
     const originalStudentPoint = this.formatUserToPoint(student, student.name);
     const studentPoint = {
       ...originalStudentPoint,
-      // Aplicamos JITTER no valor que será plotado
       effort: parseFloat(applyJitter(originalStudentPoint.effort, MAX_JITTER_EFFORT).toFixed(1)),
       performance: parseFloat(applyJitter(originalStudentPoint.performance, MAX_JITTER_PERFORMANCE).toFixed(1)),
-      // Mantemos os valores originais para o Tooltip
       originalEffort: originalStudentPoint.effort,
       originalPerformance: originalStudentPoint.performance,
     };
 
-    // PONTO DA MÉDIA
     const averageName = filters.classId ? `Média da Turma (${student.className})` : "Média do Grupo";
 
     const classAveragePoint = {
       name: averageName,
       performance: classMatrix.averages.avgPerformance,
       effort: classMatrix.averages.avgEffort,
-      originalEffort: classMatrix.averages.avgEffort, // Média também tem valor original para o Tooltip
+      originalEffort: classMatrix.averages.avgEffort,
       originalPerformance: classMatrix.averages.avgPerformance,
       isAverage: true
     };
@@ -95,7 +89,6 @@ export class GetEffortMatrixService {
       return matrix;
     }
 
-    // Determina o nome do ponto de média com base nos filtros
     let averageName = "Média do Grupo";
     if (filters.classId) {
       averageName = "Média da Turma";
@@ -114,13 +107,11 @@ export class GetEffortMatrixService {
       isAverage: true
     };
 
-    // Adiciona o ponto de média à lista de pontos dos usuários
     matrix.points.push(groupAveragePoint);
 
     return matrix;
   }
 
-  // Método base para calcular a matriz e as médias (inclui JITTER nos pontos)
   private calculateMatrixBase(users: any[]): EffortMatrixDTO {
     if (users.length === 0) {
       return { points: [], averages: { avgPerformance: 0, avgEffort: 0 } };
@@ -132,7 +123,6 @@ export class GetEffortMatrixService {
     const points = users.map(user => {
       const originalPoint = this.formatUserToPoint(user);
 
-      // Aplica o JITTER para evitar sobreposição, mas mantém a precisão do Tooltip
       const jittteredPoint = {
         ...originalPoint,
         effort: parseFloat(applyJitter(originalPoint.effort, MAX_JITTER_EFFORT).toFixed(1)),
@@ -141,13 +131,12 @@ export class GetEffortMatrixService {
         originalPerformance: originalPoint.performance,
       };
 
-      totalPerformanceSum += originalPoint.performance; // SOMA O VALOR ORIGINAL
-      totalEffortSum += originalPoint.effort;           // SOMA O VALOR ORIGINAL
+      totalPerformanceSum += originalPoint.performance;
+      totalEffortSum += originalPoint.effort;
 
       return jittteredPoint;
     });
 
-    // O cálculo da média usa os valores NÃO-JITTRED
     const avgPerformance = users.length > 0 ? totalPerformanceSum / users.length : 0;
     const avgEffort = users.length > 0 ? totalEffortSum / users.length : 0;
 

@@ -1,16 +1,10 @@
-// src/services/bot/quiz/quizService.ts
-
 import fs from 'fs';
 import path from 'path';
 import { AppError } from '../../../exceptions/AppError';
 import { Quiz, QuizQuestion, ResultDetail } from './quiz.types';
 import { levels, categories, subcategories } from './quizData';
 
-// Caminho para o banco de dados de quizzes.
-// const DB_PATH = path.join(process.cwd(), 'src', 'database', 'quiz_database.json');
 const DB_PATH = path.join(__dirname, '../../../database/quiz_database.json');
-
-// --- Serviços de Menu (sem alterações) ---
 
 export function getLevelsService() {
   return levels.map(level => ({ title: level.charAt(0).toUpperCase() + level.slice(1), payload: level }));
@@ -28,10 +22,7 @@ export function getSubcategoriesService(category: string) {
   return subs.map(sub => ({ title: sub.replace(/_/g, ' ').charAt(0).toUpperCase() + sub.slice(1).replace(/_/g, ' '), payload: sub }));
 }
 
-// --- Serviços de Lógica do Quiz ---
-
 export function generateQuizService(subtopic: string, level: string): Quiz {
-  // Nenhuma mudança necessária aqui
   try {
     const fileContent = fs.readFileSync(DB_PATH, 'utf-8');
     const allQuizzes: Quiz[] = JSON.parse(fileContent);
@@ -60,7 +51,7 @@ export function verifyQuizAnswersService(
   correctAnswers: string[],
   originalQuestions: QuizQuestion[]
 ) {
-  const resultDetails: Partial<ResultDetail>[] = []; // Usamos Partial para construção incremental
+  const resultDetails: Partial<ResultDetail>[] = [];
   let correctCount = 0;
 
   for (let i = 0; i < correctAnswers.length; i++) {
@@ -72,19 +63,14 @@ export function verifyQuizAnswersService(
       correctCount++;
     }
 
-    // --- MUDANÇA PRINCIPAL AQUI ---
-    // Função auxiliar para obter o texto da opção a partir da letra
     const getOptionText = (letter: string, question: QuizQuestion): string => {
       if (!letter || !question || !question.options) return "Resposta inválida";
-      // Mapeia a letra para o índice do array (A=0, B=1, etc.)
       const index = letter.charCodeAt(0) - 'A'.charCodeAt(0);
       return question.options[index] || "Opção não encontrada";
     };
 
     const selectedText = getOptionText(userAnswer, originalQuestions[i]);
     const correctText = getOptionText(correctAnswer, originalQuestions[i]);
-    // --- FIM DA MUDANÇA ---
-
     const explanationObject = originalQuestions[i]?.explanation || {};
     const explanationText =
       explanationObject[userAnswer] ||
@@ -96,7 +82,6 @@ export function verifyQuizAnswersService(
       correct: correctAnswer,
       isCorrect: isCorrect,
       explanation: explanationText,
-      // MUDANÇA: Adicionando os textos das opções ao objeto de retorno
       selectedText: selectedText,
       correctText: correctText,
     });

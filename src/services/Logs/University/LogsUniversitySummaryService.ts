@@ -36,8 +36,6 @@ export async function LogsUniversitySummaryService(universityId: string) {
     totalWrongAnswers += ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
     totalUsageTime += ua.totalUsageTime || 0;
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // Itera pelas sessões de CADA usuário para somar os dados do CHAT
     if (ua.sessions && ua.sessions.length > 0) {
       for (const session of ua.sessions) {
         if (session.subjectCountsChat) {
@@ -49,9 +47,7 @@ export async function LogsUniversitySummaryService(universityId: string) {
         }
       }
     }
-    // --- FIM DA CORREÇÃO ---
 
-    // (O resto do seu código para coletar `allSessions` permanece o mesmo)
     if (ua.sessions && Array.isArray(ua.sessions)) {
       ua.sessions.forEach(session => {
         if (session.sessionStart && session.sessionEnd && session.sessionDuration) {
@@ -69,7 +65,6 @@ export async function LogsUniversitySummaryService(universityId: string) {
     }
   });
 
-  // (O resto do seu código para processar `dailyUsage` e `processedSessions` permanece o mesmo)
   const usageTimeObj = calculateUsageTime(totalUsageTime);
 
   const processedSessions = allSessions
@@ -113,7 +108,7 @@ export async function LogsUniversitySummaryService(universityId: string) {
     totalWrongAnswers,
     usageTimeInSeconds: totalUsageTime,
     usageTime: usageTimeObj,
-    subjectCounts, // <-- USA O OBJETO CORRIGIDO E SOMADO
+    subjectCounts,
     dailyUsage,
     sessions: processedSessions
   };

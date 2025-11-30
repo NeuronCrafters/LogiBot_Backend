@@ -11,12 +11,7 @@ interface ProfessorStudentDataParams {
 }
 
 export class ProfessorStudentsService {
-    static async getStudentData({
-                                    professor,
-                                    studentId,
-                                    disciplineId,
-                                    classId
-                                }: ProfessorStudentDataParams) {
+    static async getStudentData({ professor, studentId, disciplineId, classId }: ProfessorStudentDataParams) {
         try {
             let disciplineQuery: any = {
                 _id: { $in: professor.disciplines },
@@ -103,8 +98,6 @@ export class ProfessorStudentsService {
     }
 
     private static getDetailedStudentData(user: any) {
-
-        // --- CORREÇÃO: Calcular subjectCounts CHAT a partir das sessões ---
         const chatSubjectCounts = { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 };
 
         if (user.sessions && Array.isArray(user.sessions)) {
@@ -165,13 +158,8 @@ export class ProfessorStudentsService {
             totalWrongAnswers: user.totalCorrectWrongAnswers?.totalWrongAnswers || 0,
             usageTimeInSeconds: user.totalUsageTime || 0,
             usageTime: usageTimeObj,
-
-            // AQUI: Retorna o acumulado do CHAT para o gráfico de Categoria
             subjectCounts: chatSubjectCounts,
-
-            // Mantém o do Quiz disponível se outro gráfico precisar
             subjectCountsQuiz: user.subjectCountsQuiz,
-
             dailyUsage,
             sessions: processedSessions.map((session: any) => ({
                 date: session.sessionStart.toISOString().split("T")[0],
@@ -189,7 +177,7 @@ export class ProfessorStudentsService {
             users: {
                 ...user._doc,
                 usageTime: usageTimeObj,
-                subjectCounts: chatSubjectCounts, // Atualiza no objeto aninhado também
+                subjectCounts: chatSubjectCounts,
                 dailyUsage,
             },
             students: [],
@@ -202,8 +190,6 @@ export class ProfessorStudentsService {
         let totalCorrectAnswers = 0;
         let totalWrongAnswers = 0;
         let totalUsageTime = 0;
-
-        // Acumulador GERAL do CHAT para todos os alunos
         const chatSubjectCounts: Record<string, number> = {
             variaveis: 0,
             tipos: 0,
@@ -220,20 +206,16 @@ export class ProfessorStudentsService {
             totalWrongAnswers += ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
             totalUsageTime += ua.totalUsageTime || 0;
 
-            // Acumulador INDIVIDUAL do aluno (Chat)
             const studentChatCounts = { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 };
 
             if (ua.sessions && Array.isArray(ua.sessions)) {
                 ua.sessions.forEach((session: any) => {
                     if (session.subjectCountsChat) {
-                        // Soma no total GERAL
                         chatSubjectCounts.variaveis += session.subjectCountsChat.variaveis || 0;
                         chatSubjectCounts.tipos += session.subjectCountsChat.tipos || 0;
                         chatSubjectCounts.funcoes += session.subjectCountsChat.funcoes || 0;
                         chatSubjectCounts.loops += session.subjectCountsChat.loops || 0;
                         chatSubjectCounts.verificacoes += session.subjectCountsChat.verificacoes || 0;
-
-                        // Soma no total INDIVIDUAL
                         studentChatCounts.variaveis += session.subjectCountsChat.variaveis || 0;
                         studentChatCounts.tipos += session.subjectCountsChat.tipos || 0;
                         studentChatCounts.funcoes += session.subjectCountsChat.funcoes || 0;
@@ -266,10 +248,8 @@ export class ProfessorStudentsService {
                 usageTime: calculateUsageTime(ua.totalUsageTime || 0),
                 totalCorrectAnswers: ua.totalCorrectWrongAnswers?.totalCorrectAnswers || 0,
                 totalWrongAnswers: ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0,
-
-                // Envia o dado somado do CHAT para cada aluno na lista
                 subjectCounts: studentChatCounts,
-                subjectCountsQuiz: ua.subjectCountsQuiz // Mantém o Quiz original
+                subjectCountsQuiz: ua.subjectCountsQuiz
             });
         });
 
@@ -315,10 +295,7 @@ export class ProfessorStudentsService {
             totalWrongAnswers,
             usageTimeInSeconds: totalUsageTime,
             usageTime: usageTimeObj,
-
-            // Retorna o total agregado do CHAT
             subjectCounts: chatSubjectCounts,
-
             dailyUsage,
             sessions: processedSessions,
             students: studentsData,
@@ -329,11 +306,10 @@ export class ProfessorStudentsService {
     }
 
     static async getStudentsList({
-                                     professor,
-                                     disciplineId,
-                                     classId
-                                 }: Omit<ProfessorStudentDataParams, 'studentId'>) {
-        // ... (código existente de getStudentsList permanece inalterado) ...
+        professor,
+        disciplineId,
+        classId
+    }: Omit<ProfessorStudentDataParams, 'studentId'>) {
         try {
             let disciplineQuery: any = {
                 _id: { $in: professor.disciplines },

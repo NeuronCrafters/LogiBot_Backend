@@ -23,17 +23,13 @@ export class GetTopicPerformanceService {
     if (filters.classId) query.classId = new Types.ObjectId(filters.classId);
     if (filters.studentId) query.userId = filters.studentId;
 
-    // 1. Busca os documentos, selecionando apenas o campo necessário para otimizar.
-    // O método .lean() retorna objetos JavaScript puros, o que é mais rápido.
     const usersAnalysis = await UserAnalysis.find(query).select('performanceBySubject').lean();
 
-    // 2. Agrega os resultados na aplicação.
     const performanceByCategory: Record<string, { correct: number; wrong: number }> = {};
 
     for (const user of usersAnalysis) {
       if (!user.performanceBySubject) continue;
 
-      // Itera sobre os subtópicos salvos no banco (ex: "o_que_são_variáveis")
       for (const subtopic in user.performanceBySubject) {
         if (Object.prototype.hasOwnProperty.call(user.performanceBySubject, subtopic)) {
           const mainCategory = subcategoryToCategoryMap[subtopic];
@@ -50,7 +46,6 @@ export class GetTopicPerformanceService {
       }
     }
 
-    // 3. Formata os dados para o DTO de resposta.
     const formattedData: TopicPerformanceDTO[] = Object.entries(performanceByCategory).map(([topic, totals]) => {
       const totalAnswers = totals.correct + totals.wrong;
       if (totalAnswers === 0) {

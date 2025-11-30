@@ -4,7 +4,6 @@ export interface QuizQuestion {
   explanation: Record<string, string>;
 }
 
-// define a estrutura completa de um quiz
 export interface Quiz {
   subject: string;
   level: string;
@@ -12,7 +11,6 @@ export interface Quiz {
   answer_keys: string[];
 }
 
-// define a estrutura do detalhe do resultado para uma questão
 export interface ResultDetail {
   question: string;
   selected: string;

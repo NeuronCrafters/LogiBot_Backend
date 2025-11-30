@@ -9,7 +9,6 @@ interface DeleteStudentResult {
 
 export async function adminDeleteStudentService(studentId: string): Promise<DeleteStudentResult> {
     try {
-        // Validar se o ID é um ObjectId válido
         if (!mongoose.Types.ObjectId.isValid(studentId)) {
             return {
                 success: false,
@@ -17,7 +16,6 @@ export async function adminDeleteStudentService(studentId: string): Promise<Dele
             };
         }
 
-        // Buscar o estudante
         const student = await User.findById(studentId);
 
         if (!student) {
@@ -27,7 +25,6 @@ export async function adminDeleteStudentService(studentId: string): Promise<Dele
             };
         }
 
-        // Verificar se o usuário é realmente um estudante
         if (!student.role.includes("student")) {
             return {
                 success: false,
@@ -35,7 +32,6 @@ export async function adminDeleteStudentService(studentId: string): Promise<Dele
             };
         }
 
-        // Deletar o estudante
         const deletedStudent = await User.findByIdAndDelete(studentId);
 
         if (!deletedStudent) {

@@ -37,7 +37,6 @@ const passwordRouter = Router();
  *       400:
  *         description: Requisição inválida
  */
-// Rota para enviar o e-mail de redefinição
 passwordRouter.post("/send-reset-password", new SendResetPasswordEmailController().handle);
 
 
@@ -68,7 +67,6 @@ passwordRouter.post("/send-reset-password", new SendResetPasswordEmailController
  *       400:
  *         description: Token inválido ou expirado
  */
-// Rota para redefinir a senha
 passwordRouter.patch("/reset-password", new ResetPasswordController().handle);
 
 
@@ -101,7 +99,6 @@ passwordRouter.patch("/reset-password", new ResetPasswordController().handle);
  *       400:
  *         description: Senha atual incorreta
  */
-// Rota para atualizar a senha (somente usuários autenticados)
 passwordRouter.patch("/update-password", ...isPermissions.isAuthenticated(), new UpdatePasswordController().handle);
 
 export { passwordRouter };

@@ -45,7 +45,6 @@ const academicInstitutionRouter = Router();
  *       409:
  *         description: Universidade já existente
  */
-// Rotas para Universidades (Somente Admin)
 academicInstitutionRouter.post("/university", ...isPermissions.isAdmin(), new CreateUniversityController().handle);
 
 /**
@@ -109,7 +108,6 @@ academicInstitutionRouter.delete("/university/:universityId", ...isPermissions.i
  *       409:
  *         description: Curso já existente
  */
-// Rotas para Cursos (Somente Admin)
 academicInstitutionRouter.post("/course", ...isPermissions.isAdmin(), new CreateCourseController().handle);
 
 /**
@@ -177,7 +175,6 @@ academicInstitutionRouter.delete("/course/:courseId", ...isPermissions.isAdmin()
  *       201:
  *         description: Turma criada com sucesso
  */
-// Rotas para Turmas (Admin e Coordenadores)
 academicInstitutionRouter.post("/class", ...isPermissions.isAdminOrCoordinator(), new CreateClassController().handle);
 
 /**
@@ -252,7 +249,6 @@ academicInstitutionRouter.delete("/class/:classId", ...isPermissions.isAdminOrCo
  *       201:
  *         description: Disciplina criada com sucesso
  */
-// Rotas para Disciplinas (Admin e Coordenadores)
 academicInstitutionRouter.post("/discipline", ...isPermissions.isAdminOrCoordinator(), new CreateDisciplineController().handle);
 
 /**

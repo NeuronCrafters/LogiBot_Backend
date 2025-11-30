@@ -69,7 +69,6 @@ const adminRouter = Router();
  *       404:
  *         description: Curso não encontrado
  */
-//  Criar um Professor (apenas admin)
 adminRouter.post(
   "/professor",
   ...isPermissions.isAdmin(),
@@ -98,7 +97,6 @@ adminRouter.post(
  *       404:
  *         description: Professor não encontrado
  */
-//  Deletar um Professor (apenas admin)
 adminRouter.delete(
   "/professor/:professorId",
   ...isPermissions.isAdmin(),
@@ -120,7 +118,6 @@ adminRouter.delete(
  *       403:
  *         description: Acesso negado
  */
-//  Listar todos os professores do sistema (apenas admin)
 adminRouter.get(
   "/professors",
   ...isPermissions.isAdmin(),
@@ -149,7 +146,6 @@ adminRouter.get(
  *       404:
  *         description: Nenhum professor encontrado
  */
-//  Listar professores por universidade (apenas admin)
 adminRouter.get(
   "/university/:schoolId/professors",
   ...isPermissions.isAdmin(),
@@ -178,7 +174,6 @@ adminRouter.get(
  *       404:
  *         description: Curso não encontrado
  */
-//  Listar professores por curso (admin ou coordenador)
 adminRouter.get(
   "/course/:courseId/professors",
   ...isPermissions.isAdminOrCoordinator(),
@@ -226,7 +221,6 @@ adminRouter.get(
  *       409:
  *         description: Já existe um coordenador para este curso nesta universidade
  */
-//  Atualizar Professor e dar/remover o papel/role de coordenador de curso (apenas admin)
 adminRouter.patch(
   "/professor/:id/role",
   ...isPermissions.isAdmin(),
@@ -254,7 +248,6 @@ adminRouter.patch(
  *       500:
  *         description: Erro interno ao processar a listagem de alunos
  */
-//  Listar alunos (admin, coordenadores e professores)
 adminRouter.get(
   "/students",
   ...isPermissions.isAuthenticated(),
@@ -359,8 +352,6 @@ adminRouter.get(
   ...isPermissions.isAdminOrCoordinator(),
   ListStudentsByDisciplineForCoordinatorController
 );
-
-// ...
 
 /**
  * @swagger

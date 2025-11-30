@@ -5,10 +5,8 @@ export function parseQuestionsFromTextService(text: string) {
   let currentQuestion: { question: string; options: string[] } | null = null;
 
   for (const line of lines) {
-    // Exemplo: "1) O que é uma variável?"
     const questionMatch = line.match(/^\d+\)\s*(.+)/);
     if (questionMatch) {
-      // Salva a pergunta anterior
       if (currentQuestion) {
         questions.push(currentQuestion);
       }
@@ -19,27 +17,22 @@ export function parseQuestionsFromTextService(text: string) {
       };
       continue;
     }
-
-    // Exemplo de alternativa: "- (a) É um espaço na memória"
     const optionMatch = line.match(/^[-*]\s*\(?[a-eA-E]\)?\s*(.+)/);
     if (optionMatch && currentQuestion) {
       currentQuestion.options.push(optionMatch[1].trim());
       continue;
     }
 
-    // Fallback: aceita também formatos como "a) texto", "b) texto"
     const fallbackOptionMatch = line.match(/^[a-eA-E]\)\s*(.+)/);
     if (fallbackOptionMatch && currentQuestion) {
       currentQuestion.options.push(fallbackOptionMatch[1].trim());
     }
   }
 
-  // Adiciona última pergunta
   if (currentQuestion) {
     questions.push(currentQuestion);
   }
 
-  // Validação: cada pergunta deve ter no mínimo 2 alternativas
   for (const q of questions) {
     if (q.options.length < 2) {
       throw new Error(`pergunta incompleta: "${q.question}"`);

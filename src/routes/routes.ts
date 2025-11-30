@@ -17,7 +17,6 @@ import { dashboardRoutes } from "./routesPaths/dashboardRoutes";
 
 const routes = Router();
 
-// Rotas de saúde do sistema (health checks)
 routes.use(healthRoutes);
 
 routes.use("/", authRoute);

@@ -114,7 +114,7 @@ export interface IUserAnalysis extends Document {
     loops: number;
     verificacoes: number;
   };
-  // INCLUSÃO DO NOVO CAMPO AQUI
+
   performanceBySubject: Map<string, { correct: number; wrong: number }>;
   sessions: Array<{
     lastActivityAt: Date;
@@ -178,7 +178,6 @@ const UserAnalysisSchema = new Schema<IUserAnalysis>({
     loops: { type: Number, default: 0 },
     verificacoes: { type: Number, default: 0 },
   },
-  // INCLUSÃO DO NOVO CAMPO NO SCHEMA
   performanceBySubject: {
     type: Map,
     of: new Schema({
@@ -264,7 +263,6 @@ UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, 
   this.markModified(`sessions.${idx}.subjectCountsChat`);
 };
 
-// --- ALTERAÇÃO NO MÉTODO ABAIXO ---
 UserAnalysisSchema.methods.addAnswerHistory = function (
   level: string,
   question: string,

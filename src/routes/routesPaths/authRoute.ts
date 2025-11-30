@@ -21,8 +21,6 @@ const detailsUserController = new DetailsUserController();
  *   description: Rotas de autenticação, criação de usuários e gerenciamento de perfil.
  */
 
-// ---------------------- ROTAS PÚBLICAS ----------------------
-
 /**
  * @swagger
  * /users:
@@ -127,8 +125,6 @@ authRoute.post("/users", createUserController.handle.bind(createUserController))
  *         description: Credenciais inválidas (email ou senha incorretos).
  */
 authRoute.post("/session", authUserController.handle.bind(authUserController));
-
-// ---------------------- ROTAS PROTEGIDAS ----------------------
 
 /**
  * @swagger

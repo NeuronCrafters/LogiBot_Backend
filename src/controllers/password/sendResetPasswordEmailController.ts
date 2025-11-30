@@ -15,11 +15,11 @@ class SendResetPasswordEmailController {
 
       return res.status(200).json({
         message: "E-mail de redefinição enviado com sucesso.",
-        ...(process.env.NODE_ENV !== "production" && { resetLink }) // só expõe link fora de prod
+        ...(process.env.NODE_ENV !== "production" && { resetLink })
       });
     } catch (error: unknown) {
       const errMsg =
-          error instanceof Error ? error.message : "Erro ao enviar e-mail de redefinição.";
+        error instanceof Error ? error.message : "Erro ao enviar e-mail de redefinição.";
       const status = errMsg === "Usuário não encontrado." ? 404 : 400;
       return res.status(status).json({ error: errMsg });
     }

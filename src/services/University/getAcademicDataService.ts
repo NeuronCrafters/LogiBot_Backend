@@ -100,11 +100,7 @@ interface AcademicDataResponse {
 }
 
 export async function getAcademicDataService(user: UserContext): Promise<AcademicDataResponse> {
-
-    // Define que dados buscar baseado no papel do usuário
     const accessConfig = determineUserAccess(user);
-
-    // Busca universidades baseada no acesso
     const universities = await University.find(accessConfig.universityFilter)
         .populate('courses', 'name')
         .lean();
@@ -117,7 +113,6 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                 courses: []
             };
 
-            // Busca cursos baseado no acesso do usuário
             const courses = await Course.find({
                 university: university._id,
                 ...accessConfig.courseFilter
@@ -138,7 +133,6 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                         students: []
                     };
 
-                    // TURMAS - apenas coordenadores e admin podem ver
                     if (accessConfig.canViewClasses) {
                         const classes = await Class.find({
                             course: course._id,
@@ -157,7 +151,6 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                                     disciplines: classDoc.disciplines || []
                                 };
 
-                                // Estudantes da turma (com validação de filtro de acesso)
                                 if (accessConfig.canViewStudents) {
                                     const studentFilter = {
                                         class: classDoc._id,
@@ -178,7 +171,6 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                         );
                     }
 
-                    // DISCIPLINAS - coordenadores e professores podem ver
                     if (accessConfig.canViewDisciplines) {
                         const disciplines = await Discipline.find({
                             course: course._id,
@@ -199,18 +191,15 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                                     classes: discipline.classes || []
                                 };
 
-                                // Professores da disciplina (com filtro de acesso)
                                 if (accessConfig.canViewProfessors) {
                                     let professorFilter: any = {
                                         disciplines: discipline._id
                                     };
 
-                                    // Para admin, não aplica filtro por school
                                     if (!user.role.includes('admin') && user.school) {
                                         professorFilter.school = user.school;
                                     }
 
-                                    // Aplica filtros adicionais baseados no access config
                                     if (accessConfig.professorFilter && Object.keys(accessConfig.professorFilter).length > 0) {
                                         professorFilter = { ...professorFilter, ...accessConfig.professorFilter };
                                     }
@@ -223,7 +212,6 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                                     disciplineData.professors = professors;
                                 }
 
-                                // Estudantes da disciplina (com filtro de acesso)
                                 if (accessConfig.canViewStudents) {
                                     const studentFilter = {
                                         disciplines: discipline._id,
@@ -246,18 +234,15 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                         );
                     }
 
-                    // PROFESSORES DO CURSO - apenas coordenadores e admin podem ver
                     if (accessConfig.canViewProfessors) {
                         let professorFilter: any = {
                             courses: course._id
                         };
 
-                        // Para admin, não aplica filtro por school
                         if (!user.role.includes('admin')) {
                             professorFilter.school = university._id;
                         }
 
-                        // Aplica filtros adicionais baseados no access config
                         if (accessConfig.professorFilter && Object.keys(accessConfig.professorFilter).length > 0) {
                             professorFilter = { ...professorFilter, ...accessConfig.professorFilter };
                         }
@@ -272,7 +257,6 @@ export async function getAcademicDataService(user: UserContext): Promise<Academi
                         courseData.professors = professors;
                     }
 
-                    // ESTUDANTES DO CURSO - coordenadores e professores podem ver
                     if (accessConfig.canViewStudents) {
                         const studentFilter = {
                             course: course._id,

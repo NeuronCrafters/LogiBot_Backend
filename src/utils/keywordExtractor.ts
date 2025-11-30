@@ -22,68 +22,43 @@ function normalizeText(text: string): string {
 }
 
 const keywordsMap: Record<string, keyof SubjectCounts> = {
-    // VARIÁVEIS
     "\\bvariavel(?:is)?\\b": "variaveis",
     "\\bvariable(?:s)?\\b": "variaveis",
-
-    // TIPOS
     "\\bnumero(?:s)?\\b": "tipos",
     "\\bnumbers?\\b": "tipos",
     "\\bstring\\b": "tipos",
     "\\btexto\\b": "tipos",
     "\\bchar(?:acteres?)?\\b": "tipos",
     "\\bboolean(?:o|s)?\\b": "tipos",
-
-    // FUNÇÕES
     "\\bfuncao(?:es)?\\b": "funcoes",
     "\\bfunction(?:s)?\\b": "funcoes",
-
-    // LOOPS
     "\\bloops?\\b": "loops",
     "\\bfor\\b": "loops",
     "\\bwhile\\b": "loops",
     "\\brepeat\\b": "loops",
-
-    // CONDICIONAIS
     "\\bif\\b": "verificacoes",
     "\\belse\\b": "verificacoes",
     "\\bswitch\\b": "verificacoes",
     "\\bcase\\b": "verificacoes",
-
-    // OPERADORES
     "\\bmais\\b": "operacoes",
     "\\bmenos\\b": "operacoes",
     "\\bsoma\\b": "operacoes",
     "[+\\-*/]": "operacoes",
     "&&|\\|\\||!": "operacoes",
-
-    // SAUDAÇÕES
     "\\bola\\b": "greeting",
     "\\boi\\b": "greeting",
-
-    // DESPEDIDAS
     "\\btchau\\b": "farewell",
     "\\badeus\\b": "farewell",
-
-    // USO OU CONTEXTO
     "\\bquando usar\\b": "usage",
     "\\bonde usar\\b": "usage",
     "\\bpara que serve\\b": "usage",
-
-    // EXEMPLOS
     "\\bexemplo(?:s)?\\b": "example",
     "\\bpor exemplo\\b": "example",
-
-    // CÓDIGO
     "\\bcod(?:igo|e)\\b": "code",
     "\\bsnippet\\b": "code",
-
-    // QUIZ 
     "\\bquiz\\b": "quiz",
     "\\bpraticar\\b": "quiz",
     "\\bexercicio(?:s)?\\b": "quiz",
-
-    // FALLBACK
     "\\bduvida\\b": "general",
     "\\bajuda\\b": "general",
     "\\bpergunta\\b": "general",

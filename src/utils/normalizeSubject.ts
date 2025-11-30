@@ -14,12 +14,9 @@ export type SubjectCounts = {
 };
 
 const keywordsMap: Record<string, keyof SubjectCounts> = {
-    // VARIÁVEIS
     "variavel": "variaveis",
     "variaveis": "variaveis",
     "variable": "variaveis",
-
-    // TIPOS
     "numero": "tipos",
     "numeros": "tipos",
     "number": "tipos",
@@ -32,13 +29,9 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "booleano": "tipos",
     "true": "tipos",
     "false": "tipos",
-
-    // FUNÇÕES
     "funcao": "funcoes",
     "funcoes": "funcoes",
     "function": "funcoes",
-
-    // LOOPS / REPETIÇÃO
     "laco": "loops",
     "lacos": "loops",
     "loop": "loops",
@@ -47,8 +40,6 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
     "dowhile": "loops",
     "repeat": "loops",
     "repetição": "loops",
-
-    // VERIFICAÇÕES / CONDICIONAIS
     "if": "verificacoes",
     "else": "verificacoes",
     "elif": "verificacoes",

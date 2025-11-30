@@ -2,8 +2,6 @@ node_modules
 .rasa
 .rasa/
 **/__pycache__/
-
-# Ignorar arquivos e pastas do dotenv
 .env
 backend/express/dotenv
 dotenv

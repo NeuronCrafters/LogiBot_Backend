@@ -1,13 +1,6 @@
-# Ignora node_modules 
 node_modules
-
-# Ignora dist 
 dist
-
-# Ignora arquivos de log
 *.log
-
-# Ignora arquivos de configuração do editor vscode
 .vscode
 .idea
 .dockerignore
@@ -15,23 +8,13 @@ dist
 .gitignore
 Dockerfile.dev
 docker-compose.dev.yml
-
-# Ignora arquivos de IDEs da Jetbrains
 .idea
-
-# Ignora sistema operacional
 .DS_Store
-
-# Ignora testes 
 test
 tests
 coverage
 __tests__
-
-# Ignora arquivos de ambiente locais
 .env.local
 .env.*.local
-
-# Ignora arquivos temporários
 tmp
 *.swp

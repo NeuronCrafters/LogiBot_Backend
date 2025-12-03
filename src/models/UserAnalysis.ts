@@ -66,10 +66,7 @@ const SubjectCountsSchema = new Schema({
     operadores_logicos: { type: Number, default: 0 },
     funcoes: { type: Number, default: 0 },
     repeticao: { type: Number, default: 0 },
-    // Campos legados mantidos para leitura
-    tipos: { type: Number, default: 0 },
     verificacoes: { type: Number, default: 0 },
-    loops: { type: Number, default: 0 }
 }, { _id: false });
 
 export const getEmptySubjectCounts = () => ({
@@ -79,9 +76,7 @@ export const getEmptySubjectCounts = () => ({
     operadores_logicos: 0,
     funcoes: 0,
     repeticao: 0,
-    tipos: 0,
-    verificacoes: 0,
-    loops: 0
+    verificacoes: 0
 });
 
 const SessionSchema = new Schema({
@@ -138,9 +133,7 @@ export interface IUserAnalysis extends Document {
             operadores_logicos: number;
             funcoes: number;
             repeticao: number;
-            tipos?: number;
-            verificacoes?: number;
-            loops?: number;
+            verificacoes: number;
         };
         answerHistory: Array<{
             questions: Array<{
@@ -232,17 +225,17 @@ UserAnalysisSchema.methods.updateSubjectCountsQuiz = function (subject: string) 
 UserAnalysisSchema.methods.updateSubjectCountsChat = function (subject: string, sessionIndex?: number) {
     const chatSubjectMapping: Record<string, string[]> = {
         variaveis: ['variaveis'],
-        variaveis_tipos: ['tipos'],
-        tipos: ['tipos'],
+        variaveis_tipos: ['variaveis'],
+        tipos: ['variaveis'],
 
         listas: ['listas'],
         arrays: ['listas'],
         manipulacao_listas: ['listas'],
 
-        condicionais: ['condicionais'],
-        if: ['condicionais'],
-        else: ['condicionais'],
-        comando_if: ['condicionais'],
+        condicionais: ['condicionais', 'verificacoes'],
+        if: ['condicionais', 'verificacoes'],
+        else: ['condicionais', 'verificacoes'],
+        comando_if: ['condicionais', 'verificacoes'],
 
         switch_case: ['verificacoes'],
         switch: ['verificacoes'],

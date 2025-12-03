@@ -105,7 +105,15 @@ async function ensureUserAnalysisSession(userId: string, email: string): Promise
       sessionStart: new Date(),
       totalCorrectAnswers: 0,
       totalWrongAnswers: 0,
-      subjectCountsChat: { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 },
+      subjectCountsChat: {
+        variaveis: 0,
+        listas: 0,
+        condicionais: 0,
+        operadores_logicos: 0,
+        funcoes: 0,
+        repeticao: 0,
+        verificacoes: 0
+      },
       answerHistory: [],
       lastActivityAt: undefined
     });

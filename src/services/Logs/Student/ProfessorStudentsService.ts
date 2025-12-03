@@ -85,7 +85,15 @@ export class ProfessorStudentsService {
             totalWrongAnswers: 0,
             usageTimeInSeconds: 0,
             usageTime: { totalSeconds: 0, formatted: "00:00:00", humanized: "0s", hours: 0, minutes: 0, seconds: 0 },
-            subjectCounts: { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 },
+            subjectCounts: {
+                variaveis: 0,
+                listas: 0,
+                condicionais: 0,
+                verificacoes: 0,
+                operadores_logicos: 0,
+                funcoes: 0,
+                repeticao: 0
+            },
             sessions: [],
             dailyUsage: [],
             users: null,
@@ -98,16 +106,29 @@ export class ProfessorStudentsService {
     }
 
     private static getDetailedStudentData(user: any) {
-        const chatSubjectCounts = { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 };
+        const chatSubjectCounts = {
+            variaveis: 0,
+            listas: 0,
+            condicionais: 0,
+            verificacoes: 0,
+            operadores_logicos: 0,
+            funcoes: 0,
+            repeticao: 0
+        };
 
         if (user.sessions && Array.isArray(user.sessions)) {
             user.sessions.forEach((session: any) => {
                 if (session.subjectCountsChat) {
-                    chatSubjectCounts.variaveis += session.subjectCountsChat.variaveis || 0;
-                    chatSubjectCounts.tipos += session.subjectCountsChat.tipos || 0;
-                    chatSubjectCounts.funcoes += session.subjectCountsChat.funcoes || 0;
-                    chatSubjectCounts.loops += session.subjectCountsChat.loops || 0;
+                    const oldLoops = (session.subjectCountsChat as any).loops || 0;
+                    const oldTipos = (session.subjectCountsChat as any).tipos || 0;
+
+                    chatSubjectCounts.variaveis += (session.subjectCountsChat.variaveis || 0) + oldTipos;
+                    chatSubjectCounts.listas += session.subjectCountsChat.listas || 0;
+                    chatSubjectCounts.condicionais += session.subjectCountsChat.condicionais || 0;
                     chatSubjectCounts.verificacoes += session.subjectCountsChat.verificacoes || 0;
+                    chatSubjectCounts.operadores_logicos += session.subjectCountsChat.operadores_logicos || 0;
+                    chatSubjectCounts.funcoes += session.subjectCountsChat.funcoes || 0;
+                    chatSubjectCounts.repeticao += (session.subjectCountsChat.repeticao || 0) + oldLoops;
                 }
             });
         }
@@ -192,10 +213,12 @@ export class ProfessorStudentsService {
         let totalUsageTime = 0;
         const chatSubjectCounts: Record<string, number> = {
             variaveis: 0,
-            tipos: 0,
+            listas: 0,
+            condicionais: 0,
+            verificacoes: 0,
+            operadores_logicos: 0,
             funcoes: 0,
-            loops: 0,
-            verificacoes: 0
+            repeticao: 0
         };
 
         const allSessions: Array<any> = [];
@@ -206,21 +229,39 @@ export class ProfessorStudentsService {
             totalWrongAnswers += ua.totalCorrectWrongAnswers?.totalWrongAnswers || 0;
             totalUsageTime += ua.totalUsageTime || 0;
 
-            const studentChatCounts = { variaveis: 0, tipos: 0, funcoes: 0, loops: 0, verificacoes: 0 };
+            const studentChatCounts = {
+                variaveis: 0,
+                listas: 0,
+                condicionais: 0,
+                verificacoes: 0,
+                operadores_logicos: 0,
+                funcoes: 0,
+                repeticao: 0
+            };
 
             if (ua.sessions && Array.isArray(ua.sessions)) {
                 ua.sessions.forEach((session: any) => {
                     if (session.subjectCountsChat) {
-                        chatSubjectCounts.variaveis += session.subjectCountsChat.variaveis || 0;
-                        chatSubjectCounts.tipos += session.subjectCountsChat.tipos || 0;
-                        chatSubjectCounts.funcoes += session.subjectCountsChat.funcoes || 0;
-                        chatSubjectCounts.loops += session.subjectCountsChat.loops || 0;
+                        const oldLoops = (session.subjectCountsChat as any).loops || 0;
+                        const oldTipos = (session.subjectCountsChat as any).tipos || 0;
+                        const repeticao = (session.subjectCountsChat.repeticao || 0) + oldLoops;
+                        const variaveisTotal = (session.subjectCountsChat.variaveis || 0) + oldTipos;
+
+                        chatSubjectCounts.variaveis += variaveisTotal;
+                        chatSubjectCounts.listas += session.subjectCountsChat.listas || 0;
+                        chatSubjectCounts.condicionais += session.subjectCountsChat.condicionais || 0;
                         chatSubjectCounts.verificacoes += session.subjectCountsChat.verificacoes || 0;
-                        studentChatCounts.variaveis += session.subjectCountsChat.variaveis || 0;
-                        studentChatCounts.tipos += session.subjectCountsChat.tipos || 0;
-                        studentChatCounts.funcoes += session.subjectCountsChat.funcoes || 0;
-                        studentChatCounts.loops += session.subjectCountsChat.loops || 0;
+                        chatSubjectCounts.operadores_logicos += session.subjectCountsChat.operadores_logicos || 0;
+                        chatSubjectCounts.funcoes += session.subjectCountsChat.funcoes || 0;
+                        chatSubjectCounts.repeticao += repeticao;
+
+                        studentChatCounts.variaveis += variaveisTotal;
+                        studentChatCounts.listas += session.subjectCountsChat.listas || 0;
+                        studentChatCounts.condicionais += session.subjectCountsChat.condicionais || 0;
                         studentChatCounts.verificacoes += session.subjectCountsChat.verificacoes || 0;
+                        studentChatCounts.operadores_logicos += session.subjectCountsChat.operadores_logicos || 0;
+                        studentChatCounts.funcoes += session.subjectCountsChat.funcoes || 0;
+                        studentChatCounts.repeticao += repeticao;
                     }
 
                     if (session.sessionStart && session.sessionEnd && session.sessionDuration) {
@@ -306,10 +347,10 @@ export class ProfessorStudentsService {
     }
 
     static async getStudentsList({
-        professor,
-        disciplineId,
-        classId
-    }: Omit<ProfessorStudentDataParams, 'studentId'>) {
+                                     professor,
+                                     disciplineId,
+                                     classId
+                                 }: Omit<ProfessorStudentDataParams, 'studentId'>) {
         try {
             let disciplineQuery: any = {
                 _id: { $in: professor.disciplines },

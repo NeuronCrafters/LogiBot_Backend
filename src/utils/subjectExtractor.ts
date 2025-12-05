@@ -154,7 +154,6 @@ export function validateAndEnrichPrompt(userText: string): { subject: string; pr
   }
 
 
-
   const executionPrompt = `Você é um tutor de programação especialista e didático. O usuário está perguntando sobre o tópico específico de **${subject}**. Responda a pergunta dele de forma clara, concisa e focada neste tópico, sempre usando exemplos de código quando apropriado. A pergunta do usuário é: '${userText}'`;
 
   return {

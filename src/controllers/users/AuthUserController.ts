@@ -16,7 +16,7 @@ class AuthUserController {
             const { email, password, googleId, recaptchaToken } = req.body;
 
             if (!googleId) {
-                //await verifyRecaptcha(recaptchaToken);
+                await verifyRecaptcha(recaptchaToken);
             }
 
             const authUserService = new AuthUserService();

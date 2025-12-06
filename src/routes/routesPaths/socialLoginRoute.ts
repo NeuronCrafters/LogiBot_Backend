@@ -16,7 +16,6 @@ socialLoginRoute.get(
             { session: false },
             (err, data, info) => {
                 if (err) return next(err);
-
                 if (!data) {
                     return res.status(404).json({
                         success: false,
@@ -30,7 +29,8 @@ socialLoginRoute.get(
                     httpOnly: true,
                     secure: true,
                     sameSite: "none",
-                    maxAge: 1000 * 60 * 60 * 2, // 2 horas
+                    maxAge: 1000 * 60 * 60 * 2,
+                    domain: ".saellogibot.com"
                 });
 
                 return res.redirect("https://saellogibot.com/chat");

@@ -6,13 +6,6 @@ import { verifyRecaptcha } from "../../utils/recaptcha";
 class AuthUserController {
     async handle(req: Request, res: Response) {
         try {
-            console.log("requisição recebida no backend - corpo:", {
-                email: req.body.email,
-                hasPassword: !!req.body.password,
-                hasGoogleId: !!req.body.googleId,
-                hasRecaptchaToken: !!req.body.recaptchaToken
-            });
-
             const { email, password, googleId, recaptchaToken } = req.body;
 
             if (!googleId) {
@@ -24,14 +17,13 @@ class AuthUserController {
 
             const { token, ...userData } = result;
 
-            const isProduction = process.env.NODE_ENV === "production";
-
             res.cookie("token", token, {
                 httpOnly: true,
-                secure: isProduction,
-                sameSite: isProduction ? "none" : "lax",
-                maxAge: 1000 * 60 * 60 * 2,
-                domain: isProduction ? process.env.COOKIE_DOMAIN : "localhost",
+                secure: true,
+                sameSite: "none",
+                maxAge: 1000 * 60 * 60 * 2, // 2 horas
+                domain: process.env.COOKIE_DOMAIN || ".saellogibot.com",
+                path: "/",
             });
 
             return res.json({
@@ -42,18 +34,15 @@ class AuthUserController {
 
         } catch (error: any) {
             if (error instanceof AppError) {
-
                 return res.status(error.statusCode).json({
                     success: false,
                     message: error.message
                 });
             }
 
-
             return res.status(500).json({
                 success: false,
-                message: "Erro interno no servidor.",
-                error: process.env.NODE_ENV === "development" ? error.message : undefined
+                message: "Erro interno no servidor."
             });
         }
     }

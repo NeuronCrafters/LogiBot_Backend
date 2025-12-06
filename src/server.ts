@@ -9,12 +9,13 @@ import { setupSwagger } from "./config/swagger/swaggerConfig";
 import "./config/socialLogin/passport";
 import { routes } from "./routes/routes";
 import { errorHandler } from "./middlewares/errorHandler/errorHandler";
-import { corsConfig, getCorsInfo, logCorsConfig } from "./config/cors/ccorsConfig";
 import { corsErrorHandler } from "./middlewares/corsErrorHandler/corsErrorHandler";
 import { corsAccessLogger } from "./middlewares/corsErrorHandler/corsAccessLogger";
 import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 
 const app = express();
+
+app.set("trust proxy", 1);
 
 async function initializeApp() {
     try {
@@ -33,9 +34,13 @@ async function initializeApp() {
         }
     }
 
-    logCorsConfig();
+    app.use(cors({
+        origin: ["https://saellogibot.com", "https://www.saellogibot.com"],
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+    }));
 
-    app.use(cors(corsConfig));
     app.use(corsAccessLogger);
     app.use(cookieParser());
     app.use(express.json({ limit: "10mb" }));

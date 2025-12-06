@@ -40,8 +40,6 @@ socialLoginRoute.get(
                         <meta charset="UTF-8" />
                         <title>Autenticando...</title>
                         <script>
-                            // Força o redirecionamento no cliente. 
-                            // O cookie já estará salvo e será enviado nesta nova requisição.
                             window.location.href = "https://saellogibot.com/chat";
                         </script>
                     </head>

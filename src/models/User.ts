@@ -42,9 +42,22 @@ const UserSchema: Schema = new Schema<IUser>(
             select: false,
         },
         role: { type: [String], default: ["student"] },
-        school: { type: mongoose.Schema.Types.ObjectId, ref: "University", required: true },
-        course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
-        class: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
+        school: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "University",
+            required: function (this: IUser) { return !this.role.includes("admin"); }
+        },
+        course: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Course",
+            required: function (this: IUser) { return !this.role.includes("admin"); }
+        },
+        class: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Class",
+            required: function (this: IUser) { return !this.role.includes("admin"); }
+        },
+
         disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
         level: { type: String, default: "desconhecido" },
         status: {

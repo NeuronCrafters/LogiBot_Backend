@@ -23,18 +23,38 @@ socialLoginRoute.get(
                     });
                 }
 
-                const { user, token } = data as any;
+                const { token } = data as any;
 
                 res.cookie("token", token, {
                     httpOnly: true,
                     secure: true,
-                    sameSite: "none",
+                    sameSite: "strict",
                     maxAge: 1000 * 60 * 60 * 2,
                     domain: ".saellogibot.com",
                     path: "/"
                 });
 
-                return res.redirect("https://saellogibot.com/chat");
+                const htmlRedirect = `
+                <html>
+                    <head>
+                        <meta charset="UTF-8" />
+                        <title>Autenticando...</title>
+                        <script>
+                            // Força o redirecionamento no cliente. 
+                            // O cookie já estará salvo e será enviado nesta nova requisição.
+                            window.location.href = "https://saellogibot.com/chat";
+                        </script>
+                    </head>
+                    <body style="background-color: #121212; color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif;">
+                        <div style="text-align: center;">
+                            <h3>Login realizado com sucesso!</h3>
+                            <p>Redirecionando para o chat...</p>
+                        </div>
+                    </body>
+                </html>
+                `;
+
+                return res.send(htmlRedirect);
             }
         )(req, res, next)
 );

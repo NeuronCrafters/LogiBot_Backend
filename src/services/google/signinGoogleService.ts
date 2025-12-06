@@ -23,7 +23,7 @@ class SigninGoogleService {
 
     if (!user) {
       user = await User.findOne({ email }).select(
-        "name email role school course class status"
+        "name email role status googleId photo school course class"
       );
 
       if (user) {
@@ -40,7 +40,7 @@ class SigninGoogleService {
       return {
         user: null,
         token: null,
-        message: "Usuário não encontrado."
+        message: "Usuário não encontrado.",
       };
     }
 
@@ -48,7 +48,7 @@ class SigninGoogleService {
       return {
         user: null,
         token: null,
-        message: "Usuário inativo. Entre em contato com o administrador."
+        message: "Usuário inativo. Entre em contato com o administrador.",
       };
     }
 
@@ -63,8 +63,10 @@ class SigninGoogleService {
       role: roles,
     };
 
-    if (user.school) {
-      tokenPayload.school = user.school;
+    if (userType !== "admin") {
+      if (user.school) tokenPayload.school = user.school;
+      if (user.course) tokenPayload.course = user.course;
+      if (user.class) tokenPayload.class = user.class;
     }
 
     const token = sign(tokenPayload, secret, {

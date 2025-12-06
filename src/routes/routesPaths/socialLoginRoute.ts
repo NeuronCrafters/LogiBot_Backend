@@ -30,7 +30,8 @@ socialLoginRoute.get(
                     secure: true,
                     sameSite: "none",
                     maxAge: 1000 * 60 * 60 * 2,
-                    domain: ".saellogibot.com"
+                    domain: ".saellogibot.com",
+                    path: "/"
                 });
 
                 return res.redirect("https://saellogibot.com/chat");

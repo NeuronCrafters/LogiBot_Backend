@@ -38,7 +38,7 @@ async function initializeApp() {
         origin: ["https://saellogibot.com", "https://www.saellogibot.com"],
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "x-api-key", "X-API-KEY"]
     }));
 
     app.use(corsAccessLogger);

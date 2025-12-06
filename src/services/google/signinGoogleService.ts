@@ -11,20 +11,23 @@ class SigninGoogleService {
     if (!email) throw new Error("email não encontrado no perfil do google.");
 
     let user: any = await Professor
-        .findOne({ email })
-        .select("name email role school googleId photo courses classes");
+      .findOne({ email })
+      .select("name email role school googleId photo courses classes");
     let isProfessor = !!user;
 
     if (!user) {
       user = await User
-          .findOne({ email })
-          .select("name email role school googleId photo course class");
+        .findOne({ email })
+        .select("name email role school googleId photo course class");
       isProfessor = false;
     }
 
     if (!user) {
       return { user: null, token: null, message: "Usuário não encontrado." };
     }
+
+    const roles = Array.isArray(user.role) ? user.role : [user.role];
+    const isAdmin = roles.includes("admin");
 
     let updated = false;
     if (!user.googleId) {
@@ -35,24 +38,26 @@ class SigninGoogleService {
       user.photo = photo;
       updated = true;
     }
-    if (updated) await user.save();
 
-    const roles = user.role;
+    if (updated) {
+      await user.save({ validateBeforeSave: false });
+    }
+
     const secret = process.env.JWT_SECRET || "defaultSecret";
 
     const token = sign(
-        {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          role: roles,
-          school: user.school,
-        },
-        secret,
-        {
-          subject: user._id.toString(),
-          expiresIn: "1d",
-        }
+      {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: roles,
+        school: user.school,
+      },
+      secret,
+      {
+        subject: user._id.toString(),
+        expiresIn: "1d",
+      }
     );
 
     return {

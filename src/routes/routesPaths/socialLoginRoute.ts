@@ -30,7 +30,7 @@ socialLoginRoute.get(
                     httpOnly: true,
                     secure: true,
                     sameSite: "none",
-                    maxAge: 24 * 60 * 60 * 1000,
+                    maxAge: 1000 * 60 * 60 * 2,
                 });
 
                 const redirectTo = process.env.GOOGLE_LOGIN_REDIRECT || "https://saellogibot.com/chat";

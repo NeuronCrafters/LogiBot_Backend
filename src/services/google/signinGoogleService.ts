@@ -27,20 +27,23 @@ class SigninGoogleService {
     }
 
     const roles = Array.isArray(user.role) ? user.role : [user.role];
-    const isAdmin = roles.includes("admin");
 
-    let updated = false;
+    const updateData: any = {};
     if (!user.googleId) {
+      updateData.googleId = googleId;
       user.googleId = googleId;
-      updated = true;
     }
     if (photo && !user.photo) {
+      updateData.photo = photo;
       user.photo = photo;
-      updated = true;
     }
 
-    if (updated) {
-      await user.save({ validateBeforeSave: false });
+    if (Object.keys(updateData).length > 0) {
+      if (isProfessor) {
+        await Professor.updateOne({ _id: user._id }, { $set: updateData });
+      } else {
+        await User.updateOne({ _id: user._id }, { $set: updateData });
+      }
     }
 
     const secret = process.env.JWT_SECRET || "defaultSecret";

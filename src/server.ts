@@ -20,16 +20,21 @@ async function initializeApp() {
     try {
         await connectDB();
         await initAdminUser();
-    } catch {
+    } catch (err) {
+        console.error("Erro ao conectar DB ou iniciar admin:", err);
         process.exit(1);
     }
 
     const requiredEnvVars = ["FRONT_URL", "MONGO_URI", "JWT_SECRET"];
     for (const varName of requiredEnvVars) {
-        if (!process.env[varName]) process.exit(1);
+        if (!process.env[varName]) {
+            console.error(`Variável de ambiente ausente: ${varName}`);
+            process.exit(1);
+        }
     }
 
     logCorsConfig();
+
     app.use(cors(corsConfig));
     app.use(corsAccessLogger);
     app.use(cookieParser());
@@ -43,11 +48,17 @@ async function initializeApp() {
     app.use(corsErrorHandler);
     app.use(errorHandler);
 
-    process.on("unhandledRejection", () => {});
-    process.on("uncaughtException", () => {});
+    process.on("unhandledRejection", (reason) => {
+        console.error("Unhandled Rejection:", reason);
+    });
+    process.on("uncaughtException", (err) => {
+        console.error("Uncaught Exception:", err);
+    });
 
     const port = parseInt(process.env.PORT || "3000", 10);
-    app.listen(port, "0.0.0.0");
+    app.listen(port, "0.0.0.0", () => {
+        console.log(`Backend rodando na porta ${port}`);
+    });
 }
 
 initializeApp();

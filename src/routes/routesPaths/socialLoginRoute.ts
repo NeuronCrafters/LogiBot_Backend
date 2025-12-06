@@ -26,16 +26,36 @@ socialLoginRoute.get(
 
                 const { user, token } = data as any;
 
+                const isProduction = process.env.NODE_ENV === "production";
+
+                // configuração de dev
+                // res.cookie("token", token, {
+                //     httpOnly: true,
+                //     secure: isProduction,
+                //     sameSite: isProduction ? "none" : "lax",
+                //     maxAge: 1000 * 60 * 60 * 2,
+                //     domain: isProduction ? process.env.COOKIE_DOMAIN : "localhost",
+                // });
+
+                // const redirectTo =
+                //     process.env.GOOGLE_LOGIN_REDIRECT ||
+                //     (isProduction
+                //         ? "https://saellogibot.com/chat"
+                //         : "http://localhost:5173/chat");
+
+                // return res.redirect(redirectTo);
+
+                // configuração de produção
+
                 res.cookie("token", token, {
                     httpOnly: true,
                     secure: true,
                     sameSite: "none",
                     maxAge: 1000 * 60 * 60 * 2,
+                    domain: process.env.COOKIE_DOMAIN,
                 });
 
-                const redirectTo = process.env.GOOGLE_LOGIN_REDIRECT || "https://saellogibot.com/chat";
-
-                return res.redirect(redirectTo);
+                return res.redirect(process.env.GOOGLE_LOGIN_REDIRECT || "https://saellogibot.com/chat");
             }
         )(req, res, next)
 );

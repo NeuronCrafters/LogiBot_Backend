@@ -18,10 +18,8 @@ import { dashboardRoutes } from "./routesPaths/dashboardRoutes";
 const routes = Router();
 
 routes.use(healthRoutes);
-
 routes.use("/", authRoute);
 routes.use("/", socialLoginRoute);
-
 routes.use("/password", passwordRouter);
 routes.use("/", logoutRoute);
 

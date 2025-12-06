@@ -62,7 +62,8 @@ export const corsConfig: CorsOptions = {
     "Authorization",
     "x-api-key",
     "Cache-Control",
-    "Pragma"
+    "Pragma",
+    "Cookie"
   ],
 
   exposedHeaders: [

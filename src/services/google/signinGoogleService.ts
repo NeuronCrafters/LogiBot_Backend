@@ -5,76 +5,97 @@ import { Professor } from "../../models/Professor";
 class SigninGoogleService {
   async login(profile: any) {
     const email = profile.emails?.[0]?.value;
-    const photo = profile.photos?.[0]?.value;
-    const googleId = profile.id;
 
-    if (!email) throw new Error("email não encontrado no perfil do google.");
+    if (!email) {
+      throw new Error("Email não encontrado no perfil do Google.");
+    }
 
-    let user: any = await Professor
-      .findOne({ email })
-      .select("name email role school googleId photo courses classes");
-    let isProfessor = !!user;
+    let user: any = null;
+    let userType: "professor" | "student" | "admin" | null = null;
 
-    if (!user) {
-      user = await User
-        .findOne({ email })
-        .select("name email role school googleId photo course class");
-      isProfessor = false;
+    user = await Professor.findOne({ email }).select(
+      "name email role school courses classes status"
+    );
+
+    if (user) {
+      userType = "professor";
     }
 
     if (!user) {
-      return { user: null, token: null, message: "Usuário não encontrado." };
+      user = await User.findOne({ email }).select(
+        "name email role school course class status"
+      );
+
+      if (user) {
+        const roles = Array.isArray(user.role) ? user.role : [user.role];
+        if (roles.includes("admin")) {
+          userType = "admin";
+        } else {
+          userType = "student";
+        }
+      }
+    }
+
+    if (!user || !userType) {
+      return {
+        user: null,
+        token: null,
+        message: "Usuário não encontrado."
+      };
+    }
+
+    if (user.status !== "active") {
+      return {
+        user: null,
+        token: null,
+        message: "Usuário inativo. Entre em contato com o administrador."
+      };
     }
 
     const roles = Array.isArray(user.role) ? user.role : [user.role];
 
-    const updateData: any = {};
-    if (!user.googleId) {
-      updateData.googleId = googleId;
-      user.googleId = googleId;
-    }
-    if (photo && !user.photo) {
-      updateData.photo = photo;
-      user.photo = photo;
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      if (isProfessor) {
-        await Professor.updateOne({ _id: user._id }, { $set: updateData });
-      } else {
-        await User.updateOne({ _id: user._id }, { $set: updateData });
-      }
-    }
-
     const secret = process.env.JWT_SECRET || "defaultSecret";
 
-    const token = sign(
-      {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: roles,
-        school: user.school,
-      },
-      secret,
-      {
-        subject: user._id.toString(),
-        expiresIn: "1d",
-      }
-    );
+    const tokenPayload: any = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: roles,
+    };
+
+    if (user.school) {
+      tokenPayload.school = user.school;
+    }
+
+    const token = sign(tokenPayload, secret, {
+      subject: user._id.toString(),
+      expiresIn: "1d",
+    });
+
+    const userResponse: any = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: roles,
+      userType,
+    };
+
+    if (userType === "professor") {
+      userResponse.school = user.school ?? null;
+      userResponse.courses = user.courses ?? [];
+      userResponse.classes = user.classes ?? [];
+    } else if (userType === "student") {
+      userResponse.school = user.school ?? null;
+      userResponse.course = user.course ?? null;
+      userResponse.class = user.class ?? null;
+    } else if (userType === "admin") {
+      userResponse.school = null;
+      userResponse.course = null;
+      userResponse.class = null;
+    }
 
     return {
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: roles,
-        school: user.school,
-        photo: user.photo,
-        courses: isProfessor ? user.courses ?? [] : user.course ?? null,
-        classes: isProfessor ? user.classes ?? [] : undefined,
-        class: isProfessor ? undefined : user.class ?? null,
-      },
+      user: userResponse,
       token,
       message: null,
     };

@@ -51,7 +51,11 @@ class GoogleAuthController {
       const isProfessor = user.type === "professor";
       const roles = prioritizeRole(normalizeRoles(user.role));
 
-      if (!isProfessor && roles.includes("student")) {
+      const isStudent = roles.includes("student");
+      const isAdmin = roles.includes("admin");
+      const hasAcademicData = user.course && user.class;
+
+      if (!isProfessor && isStudent && !isAdmin && hasAcademicData) {
         let userAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
 
         if (!userAnalysis) {
@@ -59,37 +63,41 @@ class GoogleAuthController {
           const courseDoc = await Course.findById(user.course);
           const classDoc = await Class.findById(user.class);
 
-          userAnalysis = new UserAnalysis({
-            userId: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            schoolId: user.school,
-            schoolName: schoolDoc?.name || "",
-            courseId: user.course,
-            courseName: courseDoc?.name || "",
-            classId: user.class,
-            className: classDoc?.name || "",
-          });
+          if (schoolDoc && courseDoc && classDoc) {
+            userAnalysis = new UserAnalysis({
+              userId: user._id.toString(),
+              name: user.name,
+              email: user.email,
+              schoolId: user.school,
+              schoolName: schoolDoc.name,
+              courseId: user.course,
+              courseName: courseDoc.name,
+              classId: user.class,
+              className: classDoc.name,
+            });
+          }
         }
 
-        const lastSession = userAnalysis.sessions.at(-1);
-        if (lastSession && !lastSession.sessionEnd) {
-          lastSession.sessionEnd = new Date(lastSession.lastActivityAt || lastSession.sessionStart);
-          lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+        if (userAnalysis) {
+          const lastSession = userAnalysis.sessions.at(-1);
+          if (lastSession && !lastSession.sessionEnd) {
+            lastSession.sessionEnd = new Date(lastSession.lastActivityAt || lastSession.sessionStart);
+            lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+          }
+
+          const newSession = {
+            sessionStart: new Date(),
+            lastActivityAt: new Date(),
+            totalCorrectAnswers: 0,
+            totalWrongAnswers: 0,
+            subjectCountsChat: getEmptySubjectCounts(),
+            answerHistory: [],
+          };
+
+          userAnalysis.sessions.push(newSession);
+          await userAnalysis.save();
+          console.log("sessão de useranalysis criada para o estudante");
         }
-
-        const newSession = {
-          sessionStart: new Date(),
-          lastActivityAt: new Date(),
-          totalCorrectAnswers: 0,
-          totalWrongAnswers: 0,
-          subjectCountsChat: getEmptySubjectCounts(),
-          answerHistory: [],
-        };
-
-        userAnalysis.sessions.push(newSession);
-        await userAnalysis.save();
-        console.log("sessão de useranalysis criada para o estudante");
       }
 
       const token = sign(

@@ -53,48 +53,59 @@ class AuthUserService {
             if (!match) throw new AppError("credenciais inválidas.", 401);
         }
 
-        if (!isProfessor && normalizeRoles(user.role).includes("student")) {
+        const roles = normalizeRoles(user.role);
+
+        const isStudent = roles.includes("student");
+        const isAdmin = roles.includes("admin");
+        const hasAcademicData = user.course && user.class;
+
+        if (!isProfessor && isStudent && !isAdmin && hasAcademicData) {
             let userAnalysis = await UserAnalysis.findOne({ userId: user._id.toString() });
+
             if (!userAnalysis) {
                 const schoolDoc = await University.findById(user.school);
                 const courseDoc = await Course.findById(user.course);
                 const classDoc = await Class.findById(user.class);
 
-                userAnalysis = new UserAnalysis({
-                    userId: user._id.toString(),
-                    name: user.name,
-                    email: user.email,
-                    schoolId: user.school,
-                    schoolName: schoolDoc?.name || "",
-                    courseId: user.course,
-                    courseName: courseDoc?.name || "",
-                    classId: user.class,
-                    className: classDoc?.name || "",
-                });
+                if (schoolDoc && courseDoc && classDoc) {
+                    userAnalysis = new UserAnalysis({
+                        userId: user._id.toString(),
+                        name: user.name,
+                        email: user.email,
+                        schoolId: user.school,
+                        schoolName: schoolDoc.name,
+                        courseId: user.course,
+                        courseName: courseDoc.name,
+                        classId: user.class,
+                        className: classDoc.name,
+                    });
+                }
             }
 
-            const lastSession = userAnalysis.sessions.at(-1);
-            if (lastSession && !lastSession.sessionEnd) {
-                lastSession.sessionEnd = new Date(lastSession.lastActivityAt || lastSession.sessionStart);
-                lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+            if (userAnalysis) {
+                const lastSession = userAnalysis.sessions.at(-1);
+                if (lastSession && !lastSession.sessionEnd) {
+                    lastSession.sessionEnd = new Date(lastSession.lastActivityAt || lastSession.sessionStart);
+                    lastSession.sessionDuration = (lastSession.sessionEnd.getTime() - lastSession.sessionStart.getTime()) / 1000;
+                }
+
+                const newSession = {
+                    sessionStart: new Date(),
+                    lastActivityAt: new Date(),
+                    totalCorrectAnswers: 0,
+                    totalWrongAnswers: 0,
+                    subjectCountsChat: getEmptySubjectCounts(),
+                    answerHistory: [],
+                };
+
+                userAnalysis.sessions.push(newSession);
+                await userAnalysis.save();
             }
-
-            const newSession = {
-                sessionStart: new Date(),
-                lastActivityAt: new Date(),
-                totalCorrectAnswers: 0,
-                totalWrongAnswers: 0,
-                subjectCountsChat: getEmptySubjectCounts(),
-                answerHistory: [],
-            };
-
-            userAnalysis.sessions.push(newSession);
-            await userAnalysis.save();
         }
 
-        const roles = prioritizeRole(normalizeRoles(user.role));
+        const finalRoles = prioritizeRole(roles);
         const token = sign(
-            { id: user._id.toString(), name: user.name, email: user.email, role: roles, school: user.school },
+            { id: user._id.toString(), name: user.name, email: user.email, role: finalRoles, school: user.school },
             process.env.JWT_SECRET!,
             { subject: user._id.toString(), expiresIn: "2h" }
         );
@@ -103,7 +114,7 @@ class AuthUserService {
             id: user._id.toString(),
             name: user.name,
             email: user.email,
-            role: roles,
+            role: finalRoles,
             school: user.school,
             courses: isProfessor ? user.courses : user.course,
             classes: isProfessor ? (Array.isArray(user.classes) ? user.classes : []) : undefined,

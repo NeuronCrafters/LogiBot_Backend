@@ -67,7 +67,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
           if (!user.googleId) {
             user.googleId = googleId;
-            await user.save();
+
+            await user.save({ validateBeforeSave: false });
+
             console.log("googleid vinculado ao usuário:", email);
           }
 

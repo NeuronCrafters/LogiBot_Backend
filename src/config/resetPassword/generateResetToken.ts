@@ -14,10 +14,13 @@ class GenerateResetToken {
     const token = jwt.sign({ email: user.email }, secret, { expiresIn: "1h" });
 
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000);
-    await user.save();
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    await user.save({ validateBeforeSave: false });
+
+    const frontendUrl = process.env.FRONT_URL || "http://localhost:5173";
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
     return { token, resetLink };
   }
 }

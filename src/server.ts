@@ -16,7 +16,6 @@ import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 
 const app = express();
 
-
 async function initializeApp() {
     try {
         console.log("tentando conectar ao mongodb...");

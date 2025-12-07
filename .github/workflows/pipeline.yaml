@@ -55,6 +55,7 @@ jobs:
 
             docker-compose.yml.
 
+            export RASA="${{ secrets.SESSION_SECRET }}"
             export RASA="${{ secrets.RASA }}"
             export RASA_ACTION="${{ secrets.RASA_ACTION }}"
             export RASA_API="${{ secrets.RASA_API }}"

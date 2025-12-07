@@ -18,16 +18,29 @@ const app = express();
 
 async function initializeApp() {
     try {
+        console.log("tentando conectar ao mongodb...");
         await connectDB();
+        console.log("conexão com mongodb bem-sucedida.");
+
         await initAdminUser();
-    } catch {
+        console.log("verificação do usuário admin (inicialização) concluída.");
+
+    } catch (error) {
+        console.error("=====================================================");
+        console.error("erro crítico na inicialização (mongodb ou admin). o processo será encerrado:");
+        console.error(error);
+        console.error("=====================================================");
         process.exit(1);
     }
 
     const requiredEnvVars = ["FRONT_URL", "MONGO_URI", "JWT_SECRET"];
     for (const varName of requiredEnvVars) {
-        if (!process.env[varName]) process.exit(1);
+        if (!process.env[varName]) {
+            console.error(`erro: variável de ambiente necessária ausente: ${varName}`);
+            process.exit(1);
+        }
     }
+    console.log("variáveis de ambiente essenciais verificadas.");
 
     logCorsConfig();
     app.use(cors(corsConfig));
@@ -43,11 +56,16 @@ async function initializeApp() {
     app.use(corsErrorHandler);
     app.use(errorHandler);
 
-    process.on("unhandledRejection", () => {});
-    process.on("uncaughtException", () => {});
+    process.on("unhandledRejection", (reason) => { console.error("unhandled rejection:", reason); });
+    process.on("uncaughtException", (error) => { console.error("uncaught exception:", error); });
 
     const port = parseInt(process.env.PORT || "3000", 10);
-    app.listen(port, "0.0.0.0");
+
+    console.log(`servidor express pronto para ouvir na porta ${port}...`);
+
+    app.listen(port, "0.0.0.0", () => {
+        console.log(`servidor express rodando em http://localhost:${port}`);
+    });
 }
 
 initializeApp();

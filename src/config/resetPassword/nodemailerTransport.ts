@@ -14,5 +14,8 @@ export const createTransporter = (
       user: email,
       pass: password,
     },
+    tls: {
+      rejectUnauthorized: process.env.NODE_ENV === "production"
+    }
   });
 };

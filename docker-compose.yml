@@ -19,7 +19,8 @@ services:
 
   backend:
     container_name: logibot_backend
-    image: ghcr.io/ramoncbarbosa/logibot_backend:latest
+    #image: ghcr.io/ramoncbarbosa/logibot_backend:latest
+    build: .
     ports:
       - "3000:3000"
 
@@ -31,7 +32,7 @@ services:
       - MONGO_USER_ADMIN
       - MONGO_PASSWORD_ROOT
       - DB_NAME
-
+      - SESSION_SECRET
       - API_KEY
       - FRONT_URL
       - GHCR_PAT

@@ -19,8 +19,7 @@ services:
 
   backend:
     container_name: logibot_backend
-    #image: ghcr.io/ramoncbarbosa/logibot_backend:latest
-    build: .
+    image: ghcr.io/ramoncbarbosa/logibot_backend:latest
     ports:
       - "3000:3000"
 

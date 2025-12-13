@@ -29,6 +29,7 @@ export interface IProfessor extends Document {
     photo?: string;
     resetPasswordToken?: string;
     resetPasswordExpires?: Date;
+    lastFeedbackAt?: Date;
 }
 
 const ProfessorSchema: Schema = new Schema<IProfessor>(
@@ -60,6 +61,7 @@ const ProfessorSchema: Schema = new Schema<IProfessor>(
         photo: { type: String },
         resetPasswordToken: { type: String },
         resetPasswordExpires: { type: Date },
+        lastFeedbackAt: { type: Date },
     },
     {
         timestamps: true,

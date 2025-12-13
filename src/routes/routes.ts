@@ -14,6 +14,7 @@ import { logoutRoute } from "./routesPaths/logoutRoute";
 import { updateUserActivity } from "../middlewares/updateUserActivity/updateUserActivity";
 import { quizRouter } from "./routesPaths/quizRoute";
 import { dashboardRoutes } from "./routesPaths/dashboardRoutes";
+import { feedbackRoutes } from "./routesPaths/feedbackRoute";
 
 const routes = Router();
 
@@ -36,5 +37,6 @@ routes.use("/academic-institution", academicInstitutionRouter);
 routes.use("/academicFilters", academicRoutes);
 routes.use("/useranalysis", useAnalysis);
 routes.use("/dashboard", dashboardRoutes);
+routes.use("/feedbacks", feedbackRoutes);
 
 export { routes };

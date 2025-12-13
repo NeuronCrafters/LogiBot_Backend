@@ -4,15 +4,19 @@ import { CreateUserController } from "../../controllers/users/CreateUserControll
 import { DetailsUserController } from "../../controllers/users/DetailsUserController";
 import { AuthUserController } from "../../controllers/users/AuthUserController";
 import { LogoutUserController } from "../../controllers/users/LogoutUserController";
-import { UpdateProfileController } from "../../controllers/users/UpdateProfileController";
+import { UpdatePasswordController } from "../../controllers/users/updatePasswordController";
+import { UpdateNameController } from "../../controllers/users/UpdateNameController";
+import { UpdateEmailController } from "../../controllers/users/UpdateEmailController";
 
 const authRoute = Router();
 
 const createUserController = new CreateUserController();
-const updateProfileController = new UpdateProfileController();
 const authUserController = new AuthUserController();
 // const logoutController = new LogoutUserController();
 const detailsUserController = new DetailsUserController();
+const updatePasswordController = new UpdatePasswordController();
+const updateNameController = new UpdateNameController();
+const updateEmailController = new UpdateEmailController();
 
 /**
  * @swagger
@@ -126,50 +130,6 @@ authRoute.post("/users", createUserController.handle.bind(createUserController))
  */
 authRoute.post("/session", authUserController.handle.bind(authUserController));
 
-/**
- * @swagger
- * /profile/{userId}:
- *   put:
- *     tags: [Auth]
- *     summary: Atualizar perfil do usuário
- *     description: Permite que um usuário autenticado atualize seu próprio nome, email ou senha.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - name: userId
- *         in: path
- *         required: true
- *         description: ID do usuário a ser atualizado.
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: "João da Silva Santos"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "joao.santos@email.com"
- *               password:
- *                 type: string
- *                 format: password
- *                 example: "novaSenhaSuperForte456"
- *     responses:
- *       '200':
- *         description: Perfil atualizado com sucesso.
- *       '401':
- *         description: Não autorizado (token inválido ou ausente).
- *       '404':
- *         description: Usuário não encontrado.
- */
-authRoute.put("/profile/:userId", ...isPermissions.isAuthenticated(), updateProfileController.handle.bind(updateProfileController));
-
 // /**
 //  * @swagger
 //  * /logout:
@@ -218,5 +178,11 @@ authRoute.put("/profile/:userId", ...isPermissions.isAuthenticated(), updateProf
  *         description: Não autorizado (token inválido ou ausente).
  */
 authRoute.get("/me", ...isPermissions.isAuthenticated(), detailsUserController.handle.bind(detailsUserController));
+
+authRoute.patch("/users/password", ...isPermissions.isAuthenticated(), updatePasswordController.handle.bind(updatePasswordController));
+
+authRoute.patch("/users/:userId/name", ...isPermissions.isAuthenticated(), updateNameController.handle.bind(updateNameController));
+
+authRoute.patch("/users/:userId/email", ...isPermissions.isAuthenticated(), updateEmailController.handle.bind(updateEmailController));
 
 export { authRoute };

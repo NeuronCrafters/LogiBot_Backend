@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { feedbackService } from '../../services/feedback/feedbackService';
+import { AgentModerationService } from '../../services/agentModeration/agentModerationService';
 
 class feedbackController {
   async handle(req: Request, res: Response): Promise<Response> {
@@ -13,6 +14,17 @@ class feedbackController {
 
     if (!message) {
       return res.status(400).json({ error: 'a mensagem é obrigatória.' });
+    }
+
+    if (message.length > 5) {
+      const moderator = new AgentModerationService();
+      const analysis = await moderator.checkContent(message);
+
+      if (!analysis.safe) {
+        return res.status(400).json({
+          error: `Mensagem bloqueada: ${analysis.reason || 'Conteúdo impróprio detectado.'}`
+        });
+      }
     }
 
     const feedbackServices = new feedbackService();

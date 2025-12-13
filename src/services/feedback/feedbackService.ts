@@ -5,14 +5,16 @@ import { createTransporter } from '../../config/resetPassword/nodemailerTranspor
 
 interface FeedbackRequest {
   userId: string;
-  userRoles: string[];
+  userRoles: string[] | string;
   message: string;
   type: string;
 }
 
 class feedbackService {
   async execute({ userId, userRoles, message, type }: FeedbackRequest) {
-    const isStudent = userRoles.includes('student');
+    const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
+    const isStudent = rolesArray.includes('student');
+    const isVip = rolesArray.includes('course-coordinator') || rolesArray.includes('admin');
 
     const TargetModel = (isStudent ? User : Professor) as Model<any>;
 
@@ -22,41 +24,55 @@ class feedbackService {
       throw new Error('UserNotFound');
     }
 
-    const lastFeedback = user.lastFeedbackAt;
+    if (!isVip) {
+      const lastFeedback = user.lastFeedbackAt;
 
-    if (lastFeedback) {
-      const now = new Date();
-      const lastDate = new Date(lastFeedback);
-      const diffTime = Math.abs(now.getTime() - lastDate.getTime());
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      if (lastFeedback) {
+        const now = new Date();
+        const lastDate = new Date(lastFeedback);
 
-      if (diffDays < 3) {
-        const daysRemaining = Math.ceil(3 - diffDays);
-        throw new Error(`RateLimit: aguarde ${daysRemaining} dia(s) para enviar novamente.`);
+        const diffTime = Math.abs(now.getTime() - lastDate.getTime());
+        const diffMinutes = diffTime / (1000 * 60);
+
+        if (diffMinutes < 2) {
+          const minutesRemaining = Math.ceil(2 - diffMinutes);
+          throw new Error(`RateLimit: aguarde ${minutesRemaining} minuto(s) para enviar novamente.`);
+        }
       }
     }
 
-    const userLabel = isStudent ? 'Aluno(a)' : 'Professor(a)/Coord.';
+    const userLabel = isStudent ? 'Aluno(a)' : isVip ? 'Coordenador(a)' : 'Professor(a)';
+    const priorityTag = isVip ? '[PRIORIDADE]' : '';
+    const subjectLine = `${priorityTag} [${type || 'GERAL'}] Feedback de ${user.name}`;
+    const headerColor = isVip ? '#dc2626' : '#007bff';
+
+    const senderEmail = process.env.SMTP_EMAIL as string;
+    const senderPass = process.env.SMTP_PASSWORD as string;
+    const senderDomain = process.env.SMTP_DOMAIN || 'gmail.com';
+    const supportEmail = process.env.EMAIL_SUPPORT || senderEmail;
 
     const transporter = createTransporter(
-      process.env.EMAIL_USER as string,
-      process.env.EMAIL_PASS as string,
-      process.env.EMAIL_DOMAIN || 'gmail.com'
+      senderEmail,
+      senderPass,
+      senderDomain
     );
 
     const mailOptions = {
-      from: `"Sistema de Feedback" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_SUPPORT,
-      subject: `[${type || 'GERAL'}] Feedback de ${user.name}`,
+      from: `"Sistema de Feedback" <${senderEmail}>`,
+      to: supportEmail,
+      subject: subjectLine,
       html: `
         <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
-          <h2 style="border-bottom: 2px solid #007bff; padding-bottom: 10px;">Novo Feedback Recebido</h2>
+          <h2 style="border-bottom: 2px solid ${headerColor}; padding-bottom: 10px;">
+            ${isVip ? '⚠️ Relatório de Coordenação' : 'Novo Feedback Recebido'}
+          </h2>
            
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <p><strong>ID:</strong> ${user._id}</p>
             <p><strong>Nome:</strong> ${user.name}</p>
             <p><strong>Email:</strong> ${user.email}</p>
             <p><strong>Perfil:</strong> ${userLabel}</p>
+            <p><strong>Tipo:</strong> ${type}</p>
           </div>
 
           <h3>Mensagem:</h3>

@@ -7,7 +7,7 @@ const feedbackRoutes = Router();
 const controller = new feedbackController();
 
 feedbackRoutes.post(
-  '',
+  '/send',
   isAuthenticated,
   controller.handle
 );

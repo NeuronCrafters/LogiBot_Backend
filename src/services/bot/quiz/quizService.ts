@@ -4,7 +4,7 @@ import { AppError } from '../../../exceptions/AppError';
 import { Quiz, QuizQuestion, ResultDetail } from './quiz.types';
 import { levels, categories, subcategories } from './quizData';
 
-const DB_PATH = path.join(__dirname, '../../../database/quiz_database.json');
+const DB_PATH = path.join(__dirname, '../../../database/quiz/quiz_database.json');
 
 export function getLevelsService() {
   return levels.map(level => ({ title: level.charAt(0).toUpperCase() + level.slice(1), payload: level }));

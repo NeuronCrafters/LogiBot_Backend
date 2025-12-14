@@ -139,7 +139,7 @@ UserChatHistorySchema.methods.addMessageToSession = async function (
     this.sessions.push(newSession);
   }
 
-  if (message.detectedTopic) {
+  if (message.detectedTopic && message.role === 'user') {
     const category = normalizeTopic(message.detectedTopic);
 
     if (this.topicCounts && typeof (this.topicCounts as any)[category] === 'number') {

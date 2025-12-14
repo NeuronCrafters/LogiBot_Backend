@@ -20,14 +20,16 @@ export async function actionPerguntarController(req: Request, res: Response) {
   if (!validationResult) {
     const fallbackResponse = "Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!";
 
-    await chatService.addMessage({
+    const userMsgResult = await chatService.addMessage({
       userId: senderId,
       sessionId: currentSessionId,
       role: 'user',
       content: message
     });
 
-    const chatSession = await chatService.addMessage({
+    currentSessionId = userMsgResult.sessionId;
+
+    await chatService.addMessage({
       userId: senderId,
       sessionId: currentSessionId,
       role: 'assistant',
@@ -36,14 +38,14 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
     return res.status(200).json({
       responses: [{ text: fallbackResponse }],
-      sessionId: chatSession.sessionId
+      sessionId: currentSessionId
     });
   }
 
   const { subject, prompt, systemPrompt } = validationResult;
 
   try {
-    const userChatDoc = await chatService.addMessage({
+    const userMsgResult = await chatService.addMessage({
       userId: senderId,
       sessionId: currentSessionId,
       role: 'user',
@@ -51,7 +53,7 @@ export async function actionPerguntarController(req: Request, res: Response) {
       topic: subject
     });
 
-    currentSessionId = userChatDoc.sessionId;
+    currentSessionId = userMsgResult.sessionId;
 
     const response = await actionPerguntarService(prompt, senderId, systemPrompt);
     const aiText = response.responses[0]?.text || "Erro ao gerar resposta.";
@@ -68,7 +70,6 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
     if (userAnalysis) {
       const lastSession = userAnalysis.sessions.at(-1);
-
       if (lastSession && !lastSession.sessionEnd) {
         userAnalysis.updateSubjectCountsChat(subject as any);
         await userAnalysis.save();

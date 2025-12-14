@@ -49,6 +49,8 @@ jobs:
           script: |
             cd ../logibot/LogiBot_Backend
 
+            npm install
+
             docker network inspect logibot-network >/dev/null 2>&1 || docker network create logibot-network
 
             export SESSION_SECRET="${{ secrets.SESSION_SECRET }}"

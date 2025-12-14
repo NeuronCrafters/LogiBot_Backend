@@ -1,5 +1,4 @@
-import { ChatHistory } from "../../../models/ChatHistory";
-import { AppError } from "../../../exceptions/AppError";
+import { UserChatHistory } from "../../../models/ChatHistory";
 import { v4 as uuidv4 } from 'uuid';
 
 interface AddMessageDTO {
@@ -19,49 +18,58 @@ class ChatHistoryService {
       currentSessionId = uuidv4();
     }
 
-    const messageData = {
+    let userHistory = await UserChatHistory.findOne({ userId });
+
+    if (!userHistory) {
+      userHistory = new UserChatHistory({ userId, sessions: [] });
+    }
+
+    await userHistory.addMessageToSession(currentSessionId, {
       role,
       content,
-      timestamp: new Date(),
       detectedTopic: topic
+    });
+
+    return {
+      sessionId: currentSessionId,
+      userId
     };
-
-    const chat = await ChatHistory.findOneAndUpdate(
-      { userId, sessionId: currentSessionId },
-      {
-        $push: { messages: messageData },
-        $set: { lastActivityAt: new Date() },
-        $setOnInsert: { startedAt: new Date(), title: "Nova Conversa" }
-      },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
-
-    return chat;
   }
 
   async getUserSessions(userId: string) {
-    const sessions = await ChatHistory.find({ userId })
-      .select("sessionId title startedAt lastActivityAt")
-      .sort({ lastActivityAt: -1 })
-      .lean();
+    const userHistory = await UserChatHistory.findOne({ userId }).lean();
 
-    return sessions;
+    if (!userHistory || !userHistory.sessions) {
+      return [];
+    }
+
+    return userHistory.sessions
+      .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime())
+      .map(session => ({
+        sessionId: session.sessionId,
+        title: session.title,
+        startedAt: session.startedAt,
+        lastActivityAt: session.lastActivityAt
+      }));
   }
 
   async getSessionMessages(userId: string, sessionId: string) {
-    const chat = await ChatHistory.findOne({ userId, sessionId }).lean();
+    const userHistory = await UserChatHistory.findOne(
+      { userId, "sessions.sessionId": sessionId },
+      { "sessions.$": 1 }
+    ).lean();
 
-    if (!chat) {
-      throw new AppError("Sessão de chat não encontrada.", 404);
+    if (!userHistory || !userHistory.sessions || userHistory.sessions.length === 0) {
+      return { messages: [] };
     }
 
-    return chat;
+    return userHistory.sessions[0];
   }
 
   async updateSessionTitle(userId: string, sessionId: string, newTitle: string) {
-    await ChatHistory.updateOne(
-      { userId, sessionId },
-      { title: newTitle }
+    await UserChatHistory.updateOne(
+      { userId, "sessions.sessionId": sessionId },
+      { $set: { "sessions.$.title": newTitle } }
     );
   }
 }

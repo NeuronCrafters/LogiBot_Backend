@@ -2,29 +2,67 @@ import { Request, Response } from "express";
 import { actionPerguntarService } from "../../../services/rasa/ActionChat/perguntarService";
 import { UserAnalysis } from "@/models/UserAnalysis";
 import { validateAndEnrichPrompt } from "../../../utils/subjectExtractor";
+import { ChatHistoryService } from "../../../services/bot/chat/chatHistoryService";
 
 export async function actionPerguntarController(req: Request, res: Response) {
-  const { message } = req.body;
+  const { message, sessionId } = req.body;
   const senderId = req.user?.id || "user";
 
   if (!message) {
     return res.status(400).json({ error: "Texto da mensagem é obrigatório." });
   }
 
+  const chatService = new ChatHistoryService();
+  let currentSessionId = sessionId;
+
   const validationResult = validateAndEnrichPrompt(message);
 
   if (!validationResult) {
+    const fallbackResponse = "Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!";
+
+    await chatService.addMessage({
+      userId: senderId,
+      sessionId: currentSessionId,
+      role: 'user',
+      content: message
+    });
+
+    const chatSession = await chatService.addMessage({
+      userId: senderId,
+      sessionId: currentSessionId,
+      role: 'assistant',
+      content: fallbackResponse
+    });
+
     return res.status(200).json({
-      responses: [{
-        text: "Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!"
-      }]
+      responses: [{ text: fallbackResponse }],
+      sessionId: chatSession.sessionId
     });
   }
 
   const { subject, prompt, systemPrompt } = validationResult;
 
   try {
+    const userChatDoc = await chatService.addMessage({
+      userId: senderId,
+      sessionId: currentSessionId,
+      role: 'user',
+      content: message,
+      topic: subject
+    });
+
+    currentSessionId = userChatDoc.sessionId;
+
     const response = await actionPerguntarService(prompt, senderId, systemPrompt);
+    const aiText = response.responses[0]?.text || "Erro ao gerar resposta.";
+
+    await chatService.addMessage({
+      userId: senderId,
+      sessionId: currentSessionId,
+      role: 'assistant',
+      content: aiText,
+      topic: subject
+    });
 
     const userAnalysis = await UserAnalysis.findOne({ userId: senderId });
 
@@ -33,20 +71,16 @@ export async function actionPerguntarController(req: Request, res: Response) {
 
       if (lastSession && !lastSession.sessionEnd) {
         userAnalysis.updateSubjectCountsChat(subject as any);
-
-        const newCount = lastSession.subjectCountsChat[subject as any] || 1;
-
         await userAnalysis.save();
-
-
-
       }
     }
 
-    res.status(200).json(response);
+    res.status(200).json({
+      ...response,
+      sessionId: currentSessionId
+    });
 
   } catch (error: any) {
-
     res.status(500).json({ message: "erro ao conversar com o assistente", error: error.message });
   }
 }

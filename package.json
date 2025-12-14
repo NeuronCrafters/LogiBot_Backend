@@ -14,9 +14,9 @@
     "docker:down:clean": "docker compose -f docker-compose.dev.yml down -v",
     "docker:up": "docker compose -f docker-compose.dev.yml up -d --build",
     "wait": "node -e \"\"",
-    "db:restore:internal": "docker exec logibot_mongodb_dev mongorestore --username chatsael --password chatsael_password --authenticationDatabase admin --db logibot_db --drop /data/backup_files",
-    "fresh-start": "npm run docker:down:clean && npm run docker:up && npm run wait && npm run db:restore:internal",
-    "dev:setup": "npm-run-all -s docker:dev wait db:seed dev"
+    "db:restore:local": "docker exec logibot_mongodb_dev mongorestore --username ${MONGO_USER_ADMIN} --password ${MONGO_PASSWORD_ROOT} --authenticationDatabase admin --drop /docker-entrypoint-initdb.d/mock_data",
+    "fresh-start": "npm run docker:down:clean && npm run docker:up && npm run wait && npm run db:restore:local",
+    "dev:setup": "npm-run-all -s docker:dev wait db:restore:local dev"
   },
   "keywords": [],
   "author": "",

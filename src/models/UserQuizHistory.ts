@@ -1,38 +1,33 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-const mainSubjects = [
+const mainTopics = [
   "variaveis", "listas", "condicionais", "verificacoes",
   "funcoes", "repeticao", "operadores_logicos"
 ];
 
-const normalizeSubject = (subject: string): string => {
-  const lower = subject.toLowerCase().trim();
-  if (lower.includes('_')) {
-    const parts = lower.split('_');
-    if (mainSubjects.includes(parts[0])) return parts[0];
-  }
-  return mainSubjects.includes(lower) ? lower : "outros";
+const topicMapping: Record<string, string> = {
+  "variaveis": "variaveis", "tipos": "variaveis", "constantes": "variaveis",
+  "listas": "listas", "arrays": "listas", "vetores": "listas", "matrizes": "listas",
+  "condicionais": "condicionais", "if": "condicionais", "else": "condicionais",
+  "switch": "verificacoes", "case": "verificacoes",
+  "operadores_logicos": "operadores_logicos", "booleano": "operadores_logicos",
+  "funcoes": "funcoes", "metodos": "funcoes", "procedimentos": "funcoes", "return": "funcoes",
+  "repeticao": "repeticao", "loops": "repeticao", "for": "repeticao", "while": "repeticao"
 };
 
-const QuestionAttemptSchema = new Schema({
-  question: { type: String, required: true },
-  selectedOption: { type: String, required: true },
-  isCorrect: { type: Boolean, required: true },
-  subject: { type: String, required: true },
-  level: { type: String },
-  timestamp: { type: Date, default: Date.now }
-}, { _id: false });
+const normalizeTopic = (topic: string): string => {
+  if (!topic) return "outros";
+  const lower = topic.toLowerCase().trim();
 
-const QuizSessionSchema = new Schema({
-  quizId: { type: String, required: true },
-  title: { type: String, default: "Quiz Prático" },
-  completedAt: { type: Date, default: Date.now },
-  totalQuestions: { type: Number, default: 0 },
-  score: { type: Number, default: 0 },
-  questions: { type: [QuestionAttemptSchema], default: [] }
-}, { _id: false });
+  if (topicMapping[lower]) return topicMapping[lower];
 
-const SubjectCountsSchema = new Schema({
+  const parts = lower.split('_');
+  if (mainTopics.includes(parts[0])) return parts[0];
+
+  return "outros";
+};
+
+const TopicCountsSchema = new Schema({
   variaveis: { type: Number, default: 0 },
   listas: { type: Number, default: 0 },
   condicionais: { type: Number, default: 0 },
@@ -43,9 +38,28 @@ const SubjectCountsSchema = new Schema({
   outros: { type: Number, default: 0 }
 }, { _id: false });
 
-export interface IUserQuizHistory extends Document {
+const MessageSchema = new Schema({
+  role: {
+    type: String,
+    enum: ['user', 'assistant', 'system'],
+    required: true
+  },
+  content: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  detectedTopic: { type: String }
+}, { _id: false });
+
+const ChatSessionSchema = new Schema({
+  sessionId: { type: String, required: true },
+  title: { type: String, default: "Nova Conversa" },
+  startedAt: { type: Date, default: Date.now },
+  lastActivityAt: { type: Date, default: Date.now },
+  messages: { type: [MessageSchema], default: [] }
+}, { _id: false });
+
+export interface IUserChatHistory extends Document {
   userId: string;
-  subjectCounts: {
+  topicCounts: {
     variaveis: number;
     listas: number;
     condicionais: number;
@@ -56,82 +70,92 @@ export interface IUserQuizHistory extends Document {
     outros: number;
   };
   sessions: Array<{
-    quizId: string;
+    sessionId: string;
     title: string;
-    completedAt: Date;
-    totalQuestions: number;
-    score: number;
-    questions: Array<{
-      question: string;
-      selectedOption: string;
-      isCorrect: boolean;
-      subject: string;
-      level?: string;
+    startedAt: Date;
+    lastActivityAt: Date;
+    messages: Array<{
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+      timestamp: Date;
+      detectedTopic?: string;
     }>;
   }>;
-
-  addQuizAttempt: (
-    quizId: string,
-    questionsData: Array<{
-      question: string;
-      selectedOption: string;
-      isCorrect: boolean;
-      subject: string;
-      level?: string;
-    }>,
-    customTitle?: string
+  addMessageToSession: (
+    sessionId: string,
+    message: { role: string; content: string; detectedTopic?: string }
   ) => Promise<void>;
 }
 
-const UserQuizHistorySchema = new Schema<IUserQuizHistory>({
+const UserChatHistorySchema = new Schema<IUserChatHistory>({
   userId: { type: String, required: true, unique: true, index: true },
-  subjectCounts: { type: SubjectCountsSchema, default: () => ({}) },
-  sessions: { type: [QuizSessionSchema], default: [] }
+  topicCounts: { type: TopicCountsSchema, default: () => ({}) },
+  sessions: { type: [ChatSessionSchema], default: [] }
 }, {
-  collection: 'quizhistories'
+  collection: 'chathistories'
 });
 
-UserQuizHistorySchema.index({ userId: 1 });
-UserQuizHistorySchema.index({ "sessions.quizId": 1 });
+UserChatHistorySchema.index({ userId: 1 });
+UserChatHistorySchema.index({ "sessions.sessionId": 1 });
 
-UserQuizHistorySchema.methods.addQuizAttempt = async function (
-  quizId: string,
-  questionsData: Array<any>,
-  customTitle?: string
+UserChatHistorySchema.methods.addMessageToSession = async function (
+  sessionId: string,
+  message: { role: string; content: string; detectedTopic?: string }
 ) {
+  const sessionIndex = this.sessions.findIndex((s) => s.sessionId === sessionId);
 
-  const totalQuestions = questionsData.length;
-  const score = questionsData.filter(q => q.isCorrect).length;
-
-  const newSession = {
-    quizId,
-    title: customTitle || `Quiz - ${new Date().toLocaleDateString('pt-BR')}`,
-    completedAt: new Date(),
-    totalQuestions,
-    score,
-    questions: questionsData
+  const newMessage = {
+    role: message.role,
+    content: message.content,
+    detectedTopic: message.detectedTopic,
+    timestamp: new Date()
   };
 
-  questionsData.forEach((q) => {
-    const key = normalizeSubject(q.subject);
+  if (sessionIndex >= 0) {
+    this.sessions[sessionIndex].messages.push(newMessage);
+    this.sessions[sessionIndex].lastActivityAt = new Date();
 
-    if (this.subjectCounts && typeof (this.subjectCounts as any)[key] === 'number') {
-      (this.subjectCounts as any)[key]++;
-    } else {
-
-      if (this.subjectCounts) this.subjectCounts.outros++;
+    if (this.sessions[sessionIndex].title === "Nova Conversa" && message.role === 'user') {
+      const generatedTitle = message.content.substring(0, 30) + (message.content.length > 30 ? "..." : "");
+      this.sessions[sessionIndex].title = generatedTitle;
     }
-  });
 
-  this.sessions.push(newSession);
+    this.markModified('sessions');
+  } else {
+    let initialTitle = "Nova Conversa";
 
-  this.markModified('sessions');
-  this.markModified('subjectCounts');
+    if (message.role === 'user') {
+      initialTitle = message.content.substring(0, 30) + (message.content.length > 30 ? "..." : "");
+    }
+
+    const newSession = {
+      sessionId: sessionId,
+      title: initialTitle,
+      startedAt: new Date(),
+      lastActivityAt: new Date(),
+      messages: [newMessage]
+    };
+
+    this.sessions.push(newSession);
+  }
+
+  // CORREÇÃO AQUI: Só incrementa topicCounts se message.role for 'user'
+  if (message.detectedTopic && message.role === 'user') {
+    const category = normalizeTopic(message.detectedTopic);
+
+    if (this.topicCounts && typeof (this.topicCounts as any)[category] === 'number') {
+      (this.topicCounts as any)[category]++;
+    } else {
+      if (this.topicCounts) this.topicCounts.outros++;
+    }
+
+    this.markModified('topicCounts');
+  }
 
   return this.save();
 };
 
-export const UserQuizHistory = mongoose.model<IUserQuizHistory>(
-  "UserQuizHistory",
-  UserQuizHistorySchema
+export const UserChatHistory = mongoose.model<IUserChatHistory>(
+  "UserChatHistory",
+  UserChatHistorySchema
 );

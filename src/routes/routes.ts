@@ -15,6 +15,7 @@ import { updateUserActivity } from "../middlewares/updateUserActivity/updateUser
 import { quizRouter } from "./routesPaths/quizRoute";
 import { dashboardRoutes } from "./routesPaths/dashboardRoutes";
 import { feedbackRoutes } from "./routesPaths/feedbackRoute";
+import { historyRouter } from "./routesPaths/historyRoutes";
 
 const routes = Router();
 
@@ -33,6 +34,7 @@ routes.use("/admin", adminRouter);
 routes.use("/quiz", quizRouter);
 routes.use("/sael", rasaRouter);
 routes.use("/logs", logRoutes);
+routes.use("/history", historyRouter);
 routes.use("/academic-institution", academicInstitutionRouter);
 routes.use("/academicFilters", academicRoutes);
 routes.use("/useranalysis", useAnalysis);

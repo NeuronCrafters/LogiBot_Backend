@@ -1,6 +1,7 @@
 import { Model } from "mongoose";
 import { AppError } from "../../exceptions/AppError";
 import { getUserModelByRole } from "../../utils/getUserModelByRole";
+import { UserAnalysis } from "../../models/UserAnalysis";
 
 interface UpdateEmailDTO {
   userId: string;
@@ -30,6 +31,8 @@ class UpdateEmailService {
 
       user.email = email;
       await user.save();
+
+      await UserAnalysis.updateOne({ userId }, { email });
     }
 
     return {

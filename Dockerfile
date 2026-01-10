@@ -19,7 +19,7 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
-COPY --from=builder /app/src/database/quiz_database.json ./dist/database/quiz_database.json
+COPY --from=builder /app/src/database/quiz/quiz_database.json ./dist/database/quiz/quiz_database.json
 
 EXPOSE 3000
 

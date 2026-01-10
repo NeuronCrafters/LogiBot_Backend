@@ -52,67 +52,8 @@ services:
       RASA: ${RASA}
       RASA_ACTION: ${RASA_ACTION}
       RASA_API: ${RASA_API}
-      OLLAMA_COOKIE: ${OLLAMA_COOKIE}
       OLLAMA_API_URL_1: ${OLLAMA_API_URL_1}
       Key_A1: ${Key_A1}
-      OLLAMA_API_URL_2: ${OLLAMA_API_URL_2}
-      Key_A2: ${Key_A2}
-      OLLAMA_API_URL_3: ${OLLAMA_API_URL_3}
-      Key_A3: ${Key_A3}
-      OLLAMA_API_URL_4: ${OLLAMA_API_URL_4}
-      Key_A4: ${Key_A4}
-      OLLAMA_API_URL_5: ${OLLAMA_API_URL_5}
-      Key_A5: ${Key_A5}
-      OLLAMA_API_URL_6: ${OLLAMA_API_URL_6}
-      Key_A6: ${Key_A6}
-      OLLAMA_API_URL_7: ${OLLAMA_API_URL_7}
-      Key_A7: ${Key_A7}
-      OLLAMA_API_URL_8: ${OLLAMA_API_URL_8}
-      Key_A8: ${Key_A8}
-      OLLAMA_API_URL_9: ${OLLAMA_API_URL_9}
-      Key_A9: ${Key_A9}
-      OLLAMA_API_URL_10: ${OLLAMA_API_URL_10}
-      Key_A10: ${Key_A10}
-      OLLAMA_API_URL_11: ${OLLAMA_API_URL_11}
-      Key_A11: ${Key_A11}
-      OLLAMA_API_URL_12: ${OLLAMA_API_URL_12}
-      Key_A12: ${Key_A12}
-      OLLAMA_API_URL_13: ${OLLAMA_API_URL_13}
-      Key_A13: ${Key_A13}
-      OLLAMA_API_URL_14: ${OLLAMA_API_URL_14}
-      Key_A14: ${Key_A14}
-      OLLAMA_API_URL_15: ${OLLAMA_API_URL_15}
-      Key_A15: ${Key_A15}
-      OLLAMA_API_URL_16: ${OLLAMA_API_URL_16}
-      Key_A16: ${Key_A16}
-      OLLAMA_API_URL_17: ${OLLAMA_API_URL_17}
-      Key_A17: ${Key_A17}
-      OLLAMA_API_URL_18: ${OLLAMA_API_URL_18}
-      Key_A18: ${Key_A18}
-      OLLAMA_API_URL_19: ${OLLAMA_API_URL_19}
-      Key_A19: ${Key_A19}
-      OLLAMA_API_URL_20: ${OLLAMA_API_URL_20}
-      Key_A20: ${Key_A20}
-      OLLAMA_API_URL_21: ${OLLAMA_API_URL_21}
-      Key_A21: ${Key_A21}
-      OLLAMA_API_URL_22: ${OLLAMA_API_URL_22}
-      Key_A22: ${Key_A22}
-      OLLAMA_API_URL_23: ${OLLAMA_API_URL_23}
-      Key_A23: ${Key_A23}
-      OLLAMA_API_URL_24: ${OLLAMA_API_URL_24}
-      Key_A24: ${Key_A24}
-      OLLAMA_API_URL_25: ${OLLAMA_API_URL_25}
-      Key_A25: ${Key_A25}
-      OLLAMA_API_URL_26: ${OLLAMA_API_URL_26}
-      Key_A26: ${Key_A26}
-      OLLAMA_API_URL_27: ${OLLAMA_API_URL_27}
-      Key_A27: ${Key_A27}
-      OLLAMA_API_URL_28: ${OLLAMA_API_URL_28}
-      Key_A28: ${Key_A28}
-      OLLAMA_API_URL_29: ${OLLAMA_API_URL_29}
-      Key_A29: ${Key_A29}
-      OLLAMA_API_URL_30: ${OLLAMA_API_URL_30}
-      Key_A30: ${Key_A30}
 
     restart: unless-stopped
     networks:

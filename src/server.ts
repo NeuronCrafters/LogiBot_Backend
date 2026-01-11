@@ -59,6 +59,7 @@ async function initializeApp() {
         process.env.FRONT_URL
     ].filter(Boolean);
 
+
     app.use(cors({
         origin: function (origin, callback) {
             if (!origin || allowedOrigins.includes(origin)) {

@@ -49,13 +49,12 @@ async function initializeApp() {
     console.log("variáveis de ambiente essenciais verificadas.");
 
     const allowedOrigins = [
-        "https://logibotsai.neuroncrafters.dev",
+        "https://saellogibots.com",
+        "https://www.saellogibots.com",
         "https://saellogibot.com",
+        "https://www.saellogibot.com",
         "http://localhost:3001",
         "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3001",
         process.env.FRONT_URL
     ].filter(Boolean);
 

@@ -5,7 +5,7 @@ import { AppError } from "../../exceptions/AppError";
 function isProductionRequest(req: Request): boolean {
     const origin = req.get("origin") || "";
     const host = req.get("host") || "";
-    return origin.includes("saellogibot.com") || host.includes("saellogibot.com");
+    return origin.includes("logibotsai.com") || host.includes("logibotsai.com");
 }
 
 class AuthUserController {
@@ -14,15 +14,14 @@ class AuthUserController {
             console.log("requisição recebida no backend - corpo:", {
                 email: req.body.email,
                 hasPassword: !!req.body.password,
-                hasGoogleId: !!req.body.googleId,
                 origin: req.get("origin"),
                 host: req.get("host")
             });
 
-            const { email, password, googleId } = req.body;
+            const { email, password } = req.body;
 
             const authUserService = new AuthUserService();
-            const result = await authUserService.signin({ email, password, googleId });
+            const result = await authUserService.signin({ email, password });
 
             const { token, ...userData } = result;
 
@@ -33,7 +32,7 @@ class AuthUserController {
                 secure: isProduction,
                 sameSite: isProduction ? "none" : "lax",
                 maxAge: 1000 * 60 * 60 * 2,
-                domain: isProduction ? ".saellogibot.com" : undefined,
+                domain: isProduction ? ".logibotsai.com" : undefined,
                 path: "/"
             });
 
@@ -41,7 +40,7 @@ class AuthUserController {
                 isProduction,
                 secure: isProduction,
                 sameSite: isProduction ? "none" : "lax",
-                domain: isProduction ? ".saellogibot.com" : "undefined"
+                domain: isProduction ? ".logibotsai.com" : "undefined"
             });
 
             return res.json({

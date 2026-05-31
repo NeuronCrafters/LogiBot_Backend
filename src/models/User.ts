@@ -25,7 +25,6 @@ export interface IUser extends Document {
     disciplines: Types.ObjectId[];
     level?: string;
     status: "active" | "inactive";
-    googleId?: string;
     photo?: string;
     resetPasswordToken?: string;
     resetPasswordExpires?: Date;
@@ -53,7 +52,6 @@ const UserSchema: Schema = new Schema<IUser>(
             enum: ["active", "inactive", "graduated", "dropped"],
             default: "active",
         },
-        googleId: { type: String },
         photo: { type: String },
         resetPasswordToken: { type: String },
         resetPasswordExpires: { type: Date },

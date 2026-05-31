@@ -9,20 +9,11 @@ class SendResetPasswordEmailController {
       return res.status(400).json({ error: "O campo 'email' é obrigatório." });
     }
 
-    try {
-      const service = new SendResetPasswordEmailService();
-      const { resetLink } = await service.sendEmail(email);
-
-      return res.status(200).json({
-        message: "E-mail de redefinição enviado com sucesso.",
-        ...(process.env.NODE_ENV !== "production" && { resetLink })
-      });
-    } catch (error: unknown) {
-      const errMsg =
-        error instanceof Error ? error.message : "Erro ao enviar e-mail de redefinição.";
-      const status = errMsg === "Usuário não encontrado." ? 404 : 400;
-      return res.status(status).json({ error: errMsg });
-    }
+    const service = new SendResetPasswordEmailService();
+    await service.sendEmail(email);
+    return res.status(410).json({
+      error: "Recuperação de senha por e-mail foi removida. Contate o administrador.",
+    });
   }
 }
 

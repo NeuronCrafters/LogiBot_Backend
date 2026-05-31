@@ -24,34 +24,24 @@ function prioritizeRole(roles: string[]): string[] {
 interface AuthRequest {
     email: string;
     password?: string;
-    googleId?: string;
 }
 
 class AuthUserService {
-    async signin({ email, password, googleId }: AuthRequest) {
-        const isSocial = !!googleId;
+    async signin({ email, password }: AuthRequest) {
         let user: any;
         let isProfessor = false;
 
-        if (isSocial) {
-            user = await Professor.findOne({ googleId });
-            isProfessor = !!user;
-            if (!user) user = await User.findOne({ googleId });
-        } else {
-            user = await Professor.findOne({ email }).select("name email role school courses classes password previousPasswords status");
-            isProfessor = !!user;
-            if (!user) user = await User.findOne({ email }).select("name email role school course class password status");
-        }
+        user = await Professor.findOne({ email }).select("name email role school courses classes password previousPasswords status");
+        isProfessor = !!user;
+        if (!user) user = await User.findOne({ email }).select("name email role school course class password status");
 
         if (!user) throw new AppError("credenciais inválidas.", 401);
         if (user.status !== 'active') throw new AppError("sua conta está inativa. entre em contato com o administrador.", 403);
 
-        if (!isSocial) {
-            if (!password) throw new AppError("senha não fornecida.", 400);
-            if (!user.password) throw new AppError("este usuário precisa redefinir sua senha. entre em contato com o administrador.", 401);
-            const match = await compare(password, user.password);
-            if (!match) throw new AppError("credenciais inválidas.", 401);
-        }
+        if (!password) throw new AppError("senha não fornecida.", 400);
+        if (!user.password) throw new AppError("este usuário precisa redefinir sua senha. entre em contato com o administrador.", 401);
+        const match = await compare(password, user.password);
+        if (!match) throw new AppError("credenciais inválidas.", 401);
 
         const roles = normalizeRoles(user.role);
 

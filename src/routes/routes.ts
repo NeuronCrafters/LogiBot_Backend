@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { isAuthenticated } from "../middlewares/isAuthenticated/isAuthenticated";
 import { authRoute } from "./routesPaths/authRoute";
-import { authRoutes } from "./routesPaths/socialLoginRoute";
 import { adminRouter } from "./routesPaths/adminRoute";
 import { passwordRouter } from "./routesPaths/passwordRoute";
 import { rasaRouter } from "./routesPaths/rasaRoute";
@@ -22,7 +21,6 @@ const routes = Router();
 routes.use(healthRoutes);
 
 routes.use("/", authRoute);
-routes.use("/", authRoutes);
 
 routes.use("/password", passwordRouter);
 routes.use("/", logoutRoute);

@@ -1,0 +1,12 @@
+name = "logibot-backend"
+main = "src/index.ts"
+compatibility_date = "2026-05-31"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[vars]
+NODE_ENV = "production"
+FRONT_URL = "https://logibotsai.com"
+COOKIE_DOMAIN = ".logibotsai.com"

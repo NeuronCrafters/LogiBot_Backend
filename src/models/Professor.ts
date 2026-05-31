@@ -25,7 +25,6 @@ export interface IProfessor extends Document {
     disciplines: Types.ObjectId[];
     students: Types.ObjectId[];
     status: "active" | "inactive";
-    googleId?: string;
     photo?: string;
     resetPasswordToken?: string;
     resetPasswordExpires?: Date;
@@ -57,7 +56,6 @@ const ProfessorSchema: Schema = new Schema<IProfessor>(
             enum: ["active", "inactive"],
             default: "active"
         },
-        googleId: { type: String },
         photo: { type: String },
         resetPasswordToken: { type: String },
         resetPasswordExpires: { type: Date },

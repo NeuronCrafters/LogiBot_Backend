@@ -3,11 +3,14 @@ import { secureHeaders } from "hono/secure-headers";
 import { getErrorPayload, HttpError } from "./errors";
 import { requireApiKey } from "./http/auth";
 import { corsMiddleware } from "./http/cors";
+import { academicFiltersRoutes } from "./routes/academicFilters";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
+import { historyRoutes } from "./routes/history";
 import { notImplementedRoutes } from "./routes/notImplemented";
 import { quizRoutes } from "./routes/quiz";
 import { saelRoutes } from "./routes/sael";
+import { useranalysisRoutes } from "./routes/useranalysis";
 import type { AppBindings } from "./types";
 
 const app = new Hono<AppBindings>();
@@ -25,6 +28,9 @@ app.route("/", healthRoutes);
 app.route("/", authRoutes);
 app.route("/", quizRoutes);
 app.route("/", saelRoutes);
+app.route("/", historyRoutes);
+app.route("/", useranalysisRoutes);
+app.route("/", academicFiltersRoutes);
 app.route("/", notImplementedRoutes);
 
 app.notFound((c) => c.json({

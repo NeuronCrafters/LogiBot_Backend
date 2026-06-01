@@ -7,10 +7,7 @@ const pendingPrefixes = [
   "/password",
   "/admin",
   "/logs",
-  "/history",
   "/academic-institution",
-  "/academicFilters",
-  "/useranalysis",
   "/dashboard",
   "/feedbacks",
 ];

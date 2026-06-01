@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 import { HttpError } from "../errors";
 import { requireAuth } from "../http/auth";
+import { addChatMessage, incrementTopicCount } from "../services/chatHistory";
 import { callRasaAction, generateRasaQuestions } from "../services/rasa";
 import { getRuntimeSession } from "../services/sessionMemory";
 import type { AppBindings } from "../types";
@@ -108,5 +110,67 @@ saelRoutes.get("/sael/action/get_gabarito", (c) => {
   return c.json({
     answer_keys: session.lastAnswerKeys,
     assunto: session.lastSubject,
+  });
+});
+
+saelRoutes.post("/sael/action/perguntar", async (c) => {
+  const { message, sessionId } = await c.req.json<{ message?: string; sessionId?: string }>();
+  const user = c.get("user");
+  if (!message) throw new HttpError("message e obrigatorio", 400);
+  if (!user?.id) throw new HttpError("usuario obrigatorio", 401);
+
+  const FALLBACK = "Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!";
+  const validationResult = validateAndEnrichPrompt(message);
+
+  const { sessionId: currentSessionId } = await addChatMessage(c.env, {
+    userId: user.id,
+    sessionId,
+    role: "user",
+    content: message,
+    topic: validationResult?.subject ?? null,
+  });
+
+  if (!validationResult) {
+    await addChatMessage(c.env, {
+      userId: user.id,
+      sessionId: currentSessionId,
+      role: "assistant",
+      content: FALLBACK,
+    });
+    return c.json({ responses: [{ text: FALLBACK }], sessionId: currentSessionId });
+  }
+
+  const { subject, prompt, systemPrompt } = validationResult;
+
+  const ai = c.env.AI as { run: (model: string, input: Record<string, unknown>) => Promise<{ response?: string }> };
+  const model = c.env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct-fp8";
+
+  const aiResult = await ai.run(model, {
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt },
+    ],
+    max_tokens: 1024,
+  });
+
+  let aiText = aiResult?.response || FALLBACK;
+
+  if (aiText.includes("I'm not able to respond to that request")) {
+    aiText = FALLBACK;
+  }
+
+  await addChatMessage(c.env, {
+    userId: user.id,
+    sessionId: currentSessionId,
+    role: "assistant",
+    content: aiText,
+    topic: subject,
+  });
+
+  await incrementTopicCount(c.env, user.id, subject);
+
+  return c.json({
+    responses: [{ recipient_id: user.id, text: aiText }],
+    sessionId: currentSessionId,
   });
 });

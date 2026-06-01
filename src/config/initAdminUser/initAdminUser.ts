@@ -5,7 +5,7 @@ import { accountRoles, accounts } from "../../db/schema";
 const ADMIN_USER_DATA = {
   name: "admin",
   email: "ch47b07sa3l@gmail.com",
-  passwordHash: "$2a$10$Fn3Y7Pxd7Yb3TMTsS2QYjOx9sOwUWIQfrMsVMr5xALfQ1K9fNnAXy",
+  passwordHash: "$2a$10$EmiRe/ZX5XLSN1JJp/GJ.O87MELljrlQBtabyJUyp7z/lwLKshBfW",
   role: "admin",
   status: "active",
 };

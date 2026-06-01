@@ -58,6 +58,7 @@ async function hydrateAccount(db: AnyDbClient, account: typeof accounts.$inferSe
   const professorCourseRows = await db.select({ id: professorCourses.courseId }).from(professorCourses).where(eq(professorCourses.professorId, account.id));
   const professorClassRows = await db.select({ id: professorClasses.classId }).from(professorClasses).where(eq(professorClasses.professorId, account.id));
   const professorDisciplineRows = await db.select({ id: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, account.id));
+  const studentDisciplineRows = await db.select({ id: studentDisciplines.disciplineId }).from(studentDisciplines).where(eq(studentDisciplines.studentId, account.id));
 
   return {
     ...account,
@@ -68,7 +69,7 @@ async function hydrateAccount(db: AnyDbClient, account: typeof accounts.$inferSe
     level: studentProfile?.level || null,
     courses: professorCourseRows.map((row) => row.id),
     classes: professorClassRows.map((row) => row.id),
-    disciplines: professorDisciplineRows.map((row) => row.id),
+    disciplines: [...studentDisciplineRows, ...professorDisciplineRows].map((row) => row.id),
   };
 }
 

@@ -5,7 +5,7 @@ import type { AppBindings } from "../types";
 function isProductionRequest(c: Context<AppBindings>) {
   const origin = c.req.header("origin") || "";
   const host = c.req.header("host") || "";
-  return origin.includes("logibotsai.com") || host.includes("logibotsai.com");
+  return origin.includes("saellogibot.com") || host.includes("saellogibot.com");
 }
 
 export function setAuthCookie(c: Context<AppBindings>, token: string) {

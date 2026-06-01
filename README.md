@@ -81,6 +81,8 @@ src/
 | `/history` | GET /chat/sessions/:userId, /chat/messages/:userId/:sessionId | Histórico salvo em PostgreSQL |
 | `/useranalysis` | POST /interaction, /subject-clicks | Rastreamento de assuntos por sessão |
 | `/academicFilters` | GET /data | Filtrado por role (admin / professor / coordenador) |
+| `/dashboard` | POST /topic-performance, /proficiency-radar, /effort-matrix, /learning-journey, /session-details, /access-pattern | Analytics de desempenho |
+| `/logs` | POST /student/summary/filtered, GET /university/:id/summary, /course/:id/summary, /class/:id/summary, /professor/students, /professor/students/:id, /professor/students-stats | Logs de uso com controle de acesso por role |
 
 ### 🚧 Rotas ainda não portadas (retornam 501)
 
@@ -88,8 +90,6 @@ src/
 |---|---|
 | `/admin` | Gestão de professores, estudantes e coordenadores (20+ endpoints) |
 | `/password` | Fluxo de redefinição de senha |
-| `/logs` | Analytics de uso |
-| `/dashboard` | 6 endpoints de analytics de desempenho |
 | `/feedbacks` | Coleta de feedbacks |
 | `/academic-institution` | CRUD de universidades, cursos, turmas e disciplinas |
 

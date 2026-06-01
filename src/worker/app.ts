@@ -5,8 +5,10 @@ import { requireApiKey } from "./http/auth";
 import { corsMiddleware } from "./http/cors";
 import { academicFiltersRoutes } from "./routes/academicFilters";
 import { authRoutes } from "./routes/auth";
+import { dashboardRoutes } from "./routes/dashboard";
 import { healthRoutes } from "./routes/health";
 import { historyRoutes } from "./routes/history";
+import { logsRoutes } from "./routes/logs";
 import { notImplementedRoutes } from "./routes/notImplemented";
 import { quizRoutes } from "./routes/quiz";
 import { saelRoutes } from "./routes/sael";
@@ -31,6 +33,8 @@ app.route("/", saelRoutes);
 app.route("/", historyRoutes);
 app.route("/", useranalysisRoutes);
 app.route("/", academicFiltersRoutes);
+app.route("/", dashboardRoutes);
+app.route("/", logsRoutes);
 app.route("/", notImplementedRoutes);
 
 app.notFound((c) => c.json({

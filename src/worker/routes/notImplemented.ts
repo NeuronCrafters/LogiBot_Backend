@@ -6,9 +6,7 @@ export const notImplementedRoutes = new Hono<AppBindings>();
 const pendingPrefixes = [
   "/password",
   "/admin",
-  "/logs",
   "/academic-institution",
-  "/dashboard",
   "/feedbacks",
 ];
 

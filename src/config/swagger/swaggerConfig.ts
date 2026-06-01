@@ -12,6 +12,9 @@ const options: swaggerJSDoc.Options = {
     },
     servers: [
       {
+        url: "https://api.saellogibot.com",
+      },
+      {
         url: "http://localhost:3000",
       },
     ],

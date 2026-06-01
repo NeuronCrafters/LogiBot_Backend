@@ -4,8 +4,8 @@ const getAllowedOrigins = (): string[] => {
   const origins = [
     process.env.FRONT_URL,
     process.env.FRONT_URL_TESTE,
-    'https://www.logibotsai.com',
-    'https://logibotsai.com',
+    'https://www.saellogibot.com',
+    'https://saellogibot.com',
     'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:5174'

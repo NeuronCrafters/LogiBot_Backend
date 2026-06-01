@@ -2,8 +2,8 @@ import { cors } from "hono/cors";
 import type { AppBindings } from "../types";
 
 const staticAllowedOrigins = [
-  "https://logibotsai.com",
-  "https://www.logibotsai.com",
+  "https://saellogibot.com",
+  "https://www.saellogibot.com",
   "http://localhost:3001",
   "http://localhost:5173",
 ];

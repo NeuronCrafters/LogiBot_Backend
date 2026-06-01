@@ -8,5 +8,5 @@ enabled = true
 
 [vars]
 NODE_ENV = "production"
-FRONT_URL = "https://logibotsai.com"
-COOKIE_DOMAIN = ".logibotsai.com"
+FRONT_URL = "https://saellogibot.com"
+COOKIE_DOMAIN = ".saellogibot.com"

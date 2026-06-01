@@ -1,10 +1,10 @@
 import { Course } from "../../../models/Course";
 import { AppError } from "../../../exceptions/AppError";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 
 class DeleteCourseService {
   async execute(courseId: string) {
-    if (!Types.ObjectId.isValid(courseId)) {
+    if (!Types.Uuid.isValid(courseId)) {
       throw new AppError("id do curso inválido!", 400);
     }
 

@@ -3,7 +3,7 @@ import { LogsFilteredStudentSummaryService } from "../../../services/Logs/Studen
 import { UserAnalysis } from "../../../models/UserAnalysis";
 import { Professor } from "../../../models/Professor";
 import { Discipline } from "../../../models/Discipline";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 import { isAdmin, isCourseCoordinator, isProfessor } from "../../../utils/RoleChecker";
 
 export async function LogsFilteredStudentSummaryController(req: Request, res: Response) {
@@ -56,11 +56,11 @@ export async function LogsFilteredStudentSummaryController(req: Request, res: Re
       disciplines: professorData.disciplines.map(d => d._id)
     });
 
-    const courseObjectId = courseId ? new Types.ObjectId(courseId) : null;
-    const classObjectId = classId ? new Types.ObjectId(classId) : null;
+    const courseUuid = courseId ? new Types.Uuid(courseId) : null;
+    const classUuid = classId ? new Types.Uuid(classId) : null;
 
-    if (isCourseCoordinator(userRole) && courseObjectId) {
-      if (professorData.courses.some(c => c.equals(courseObjectId))) {
+    if (isCourseCoordinator(userRole) && courseUuid) {
+      if (professorData.courses.some(c => c.equals(courseUuid))) {
         const summary = await LogsFilteredStudentSummaryService(universityId, courseId, classId, studentId);
         return res.status(200).json(summary);
       }

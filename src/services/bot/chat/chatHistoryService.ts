@@ -1,5 +1,4 @@
 import { UserChatHistory } from "../../../models/UserChatHistory";
-import { v4 as uuidv4 } from 'uuid';
 
 interface AddMessageDTO {
   userId: string;
@@ -15,7 +14,7 @@ class ChatHistoryService {
     let currentSessionId = sessionId;
 
     if (!currentSessionId) {
-      currentSessionId = uuidv4();
+      currentSessionId = crypto.randomUUID();
     }
 
     let userHistory = await UserChatHistory.findOne({ userId });

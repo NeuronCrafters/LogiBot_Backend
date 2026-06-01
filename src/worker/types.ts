@@ -1,9 +1,7 @@
-import type { ObjectId } from "mongodb";
-
 export type Role = "admin" | "student" | "professor" | "course-coordinator";
 
 export interface Env {
-  MONGO_URI: string;
+  DATABASE_URL?: string;
   JWT_SECRET: string;
   API_KEY?: string;
   FRONT_URL?: string;
@@ -41,13 +39,13 @@ export interface PasswordHistoryEntry {
 }
 
 export interface BaseUserDocument {
-  _id?: ObjectId;
+  id: string;
   name: string;
   email: string;
-  password?: string;
+  password?: string | null;
   previousPasswords?: PasswordHistoryEntry[];
   role: Role[];
-  school?: ObjectId;
+  school?: string | null;
   status?: "active" | "inactive" | "graduated" | "dropped";
   photo?: string;
   resetPasswordToken?: string;
@@ -58,70 +56,70 @@ export interface BaseUserDocument {
 }
 
 export interface StudentDocument extends BaseUserDocument {
-  course?: ObjectId;
-  class?: ObjectId;
-  disciplines?: ObjectId[];
+  course?: string | null;
+  class?: string | null;
+  disciplines?: string[];
   level?: string;
 }
 
 export interface ProfessorDocument extends BaseUserDocument {
-  courses?: ObjectId[];
-  classes?: ObjectId[];
-  disciplines?: ObjectId[];
-  students?: ObjectId[];
+  courses?: string[];
+  classes?: string[];
+  disciplines?: string[];
+  students?: string[];
 }
 
 export interface UniversityDocument {
-  _id?: ObjectId;
+  id: string;
   name: string;
-  courses?: ObjectId[];
+  courses?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface CourseDocument {
-  _id?: ObjectId;
+  id: string;
   name: string;
-  university: ObjectId;
-  classes?: ObjectId[];
-  professors?: ObjectId[];
-  disciplines?: ObjectId[];
+  university: string;
+  classes?: string[];
+  professors?: string[];
+  disciplines?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface ClassDocument {
-  _id?: ObjectId;
+  id: string;
   name: string;
-  course: ObjectId;
-  students?: ObjectId[];
-  disciplines?: ObjectId[];
+  course: string;
+  students?: string[];
+  disciplines?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface DisciplineDocument {
-  _id?: ObjectId;
+  id: string;
   name: string;
-  course: ObjectId;
-  classes?: ObjectId[];
-  professors?: ObjectId[];
-  students?: ObjectId[];
+  course: string;
+  classes?: string[];
+  professors?: string[];
+  students?: string[];
   code: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface UserAnalysisDocument {
-  _id?: ObjectId;
+  id: string;
   userId: string;
   name: string;
   email: string;
-  schoolId: ObjectId;
+  schoolId: string;
   schoolName: string;
-  courseId: ObjectId;
+  courseId: string;
   courseName: string;
-  classId: ObjectId;
+  classId: string;
   className: string;
   totalUsageTime?: number;
   sessions?: Array<Record<string, unknown>>;

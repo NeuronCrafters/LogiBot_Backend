@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
+import dbErrorCompat from '@/types/UuidCompat';
 import { AppError } from '../../exceptions/AppError';
 
 export const errorHandler = (
@@ -15,7 +15,7 @@ export const errorHandler = (
     return res.status(err.statusCode).json({ error: err.message });
   }
 
-  if (err instanceof mongoose.Error.ValidationError) {
+  if (err instanceof dbErrorCompat.Error.ValidationError) {
     const details = Object.values(err.errors).map((e: any) => e.message);
     return res.status(422).json({
       error: 'validation error',
@@ -23,7 +23,7 @@ export const errorHandler = (
     });
   }
 
-  if (err instanceof mongoose.Error.CastError) {
+  if (err instanceof dbErrorCompat.Error.CastError) {
     return res.status(400).json({
       error: `invalid ${err.path}: ${err.value}`,
     });

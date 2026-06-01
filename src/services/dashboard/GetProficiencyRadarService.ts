@@ -1,5 +1,5 @@
 import { UserAnalysis } from '../../models/UserAnalysis';
-import { Types } from 'mongoose';
+import { Types } from '@/types/UuidCompat';
 import { subcategoryToCategoryMap } from '../../utils/quizUtils';
 
 interface ProficiencyRadarDTO {
@@ -17,9 +17,9 @@ interface IFilters {
 export class GetProficiencyRadarService {
   public async execute(filters: IFilters): Promise<ProficiencyRadarDTO> {
     const query: any = {};
-    if (filters.universityId) query.schoolId = new Types.ObjectId(filters.universityId);
-    if (filters.courseId) query.courseId = new Types.ObjectId(filters.courseId);
-    if (filters.classId) query.classId = new Types.ObjectId(filters.classId);
+    if (filters.universityId) query.schoolId = new Types.Uuid(filters.universityId);
+    if (filters.courseId) query.courseId = new Types.Uuid(filters.courseId);
+    if (filters.classId) query.classId = new Types.Uuid(filters.classId);
     if (filters.studentId) query.userId = filters.studentId;
 
     const usersAnalysis = await UserAnalysis.find(query).select('performanceBySubject').lean();

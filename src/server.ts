@@ -14,84 +14,82 @@ import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 const app = express();
 
 async function initializeApp() {
-    try {
-        console.log("tentando conectar ao mongodb...");
-        await connectDB();
-        console.log("conexão com mongodb bem-sucedida.");
+  try {
+    console.log("tentando conectar ao postgresql...");
+    await connectDB();
+    console.log("conexao com postgresql bem-sucedida.");
 
-        await initAdminUser();
-        console.log("verificação do usuário admin concluída.");
+    await initAdminUser();
+    console.log("verificacao do usuario admin concluida.");
+  } catch (error) {
+    console.error("erro critico na inicializacao. o processo sera encerrado:");
+    console.error(error);
+    process.exit(1);
+  }
 
-    } catch (error) {
-        console.error("erro crítico na inicialização. o processo será encerrado:");
-        console.error(error);
-        process.exit(1);
+  const requiredEnvVars = ["FRONT_URL", "DATABASE_URL", "JWT_SECRET"];
+
+  for (const varName of requiredEnvVars) {
+    if (!process.env[varName]) {
+      console.error(`erro: variavel de ambiente necessaria ausente: ${varName}`);
+      process.exit(1);
     }
+  }
+  console.log("variaveis de ambiente essenciais verificadas.");
 
-    const requiredEnvVars = ["FRONT_URL", "MONGO_URI", "JWT_SECRET"];
+  const allowedOrigins = [
+    "https://saellogibot.com",
+    "https://www.saellogibot.com",
+    "http://localhost:3001",
+    "http://localhost:5173",
+    process.env.FRONT_URL,
+  ].filter(Boolean);
 
-    for (const varName of requiredEnvVars) {
-        if (!process.env[varName]) {
-            console.error(`erro: variável de ambiente necessária ausente: ${varName}`);
-            process.exit(1);
-        }
-    }
-    console.log("variáveis de ambiente essenciais verificadas.");
+  app.use(cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("origem bloqueada por cors:", origin);
+        callback(new Error("not allowed by cors"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "X-Requested-With",
+      "x-api-key",
+      "X-API-Key",
+    ],
+    exposedHeaders: ["Set-Cookie"],
+    maxAge: 86400,
+  }));
 
-    const allowedOrigins = [
-        "https://saellogibot.com",
-        "https://www.saellogibot.com",
-        "http://localhost:3001",
-        "http://localhost:5173",
-        process.env.FRONT_URL
-    ].filter(Boolean);
+  app.use(corsAccessLogger);
+  app.use(cookieParser());
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+  app.use(routes);
 
-    app.use(cors({
-        origin: function (origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                console.log("origem bloqueada por cors:", origin);
-                callback(new Error("not allowed by cors"));
-            }
-        },
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        allowedHeaders: [
-            "Content-Type",
-            "Authorization",
-            "Cookie",
-            "X-Requested-With",
-            "x-api-key",
-            "X-API-Key"
-        ],
-        exposedHeaders: ["Set-Cookie"],
-        maxAge: 86400
-    }));
+  setupSwagger(app);
 
-    app.use(corsAccessLogger);
-    app.use(cookieParser());
-    app.use(express.json({ limit: "10mb" }));
-    app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(corsErrorHandler);
+  app.use(errorHandler);
 
-    app.use(routes);
+  process.on("unhandledRejection", (reason) => { console.error("unhandled rejection:", reason); });
+  process.on("uncaughtException", (error) => { console.error("uncaught exception:", error); });
 
-    setupSwagger(app);
+  const port = parseInt(process.env.PORT || "3000", 10);
 
-    app.use(corsErrorHandler);
-    app.use(errorHandler);
+  console.log(`servidor express pronto para ouvir na porta ${port}...`);
 
-    process.on("unhandledRejection", (reason) => { console.error("unhandled rejection:", reason); });
-    process.on("uncaughtException", (error) => { console.error("uncaught exception:", error); });
-
-    const port = parseInt(process.env.PORT || "3000", 10);
-
-    console.log(`servidor express pronto para ouvir na porta ${port}...`);
-
-    app.listen(port, "0.0.0.0", () => {
-        console.log(`servidor express rodando em http://localhost:${port}`);
-    });
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`servidor express rodando em http://localhost:${port}`);
+  });
 }
 
 initializeApp();

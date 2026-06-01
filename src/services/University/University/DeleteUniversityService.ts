@@ -4,11 +4,11 @@ import { Class } from "../../../models/Class";
 import { Discipline } from "../../../models/Discipline";
 import { User } from "../../../models/User";
 import { AppError } from "../../../exceptions/AppError";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 
 class DeleteUniversityService {
   async execute(universityId: string) {
-    if (!Types.ObjectId.isValid(universityId)) {
+    if (!Types.Uuid.isValid(universityId)) {
       throw new AppError("id da universidade inválido!", 400);
     }
 

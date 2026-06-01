@@ -1,5 +1,5 @@
 import { UserAnalysis } from '../../models/UserAnalysis';
-import { Types } from 'mongoose';
+import { Types } from '@/types/UuidCompat';
 
 interface IFilters {
   universityId?: string;
@@ -16,9 +16,9 @@ interface LearningJourneyDTO {
 export class GetLearningJourneyService {
   public async execute(filters: IFilters): Promise<LearningJourneyDTO> {
     const query: any = {};
-    if (filters.universityId) query.schoolId = new Types.ObjectId(filters.universityId);
-    if (filters.courseId) query.courseId = new Types.ObjectId(filters.courseId);
-    if (filters.classId) query.classId = new Types.ObjectId(filters.classId);
+    if (filters.universityId) query.schoolId = new Types.Uuid(filters.universityId);
+    if (filters.courseId) query.courseId = new Types.Uuid(filters.courseId);
+    if (filters.classId) query.classId = new Types.Uuid(filters.classId);
     if (filters.studentId) query.userId = filters.studentId;
 
     const allQuestions = await UserAnalysis.aggregate([

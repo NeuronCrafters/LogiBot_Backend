@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { checkDatabase } from "../../db/client";
 import { getDb } from "../db/client";
 import type { AppBindings } from "../types";
 
@@ -9,7 +10,7 @@ healthRoutes.get("/health", async (c) => {
   let database = "unknown";
 
   try {
-    await getDb(c.env);
+    await checkDatabase(getDb(c.env));
     database = "ok";
   } catch {
     database = "error";
@@ -26,7 +27,7 @@ healthRoutes.get("/health", async (c) => {
 
 healthRoutes.get("/health/simple", (c) => c.text("OK"));
 healthRoutes.get("/health/ready", async (c) => {
-  await getDb(c.env);
+  await checkDatabase(getDb(c.env));
   return c.json({ ready: true });
 });
 healthRoutes.get("/ping", (c) => c.text("pong"));

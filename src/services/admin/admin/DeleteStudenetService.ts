@@ -1,5 +1,5 @@
 import { User } from "../../../models/User";
-import mongoose from "mongoose";
+import dbIdCompat from "@/types/UuidCompat";
 
 interface DeleteStudentResult {
     success: boolean;
@@ -9,7 +9,7 @@ interface DeleteStudentResult {
 
 export async function adminDeleteStudentService(studentId: string): Promise<DeleteStudentResult> {
     try {
-        if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        if (!dbIdCompat.Types.Uuid.isValid(studentId)) {
             return {
                 success: false,
                 message: "ID do estudante inválido"

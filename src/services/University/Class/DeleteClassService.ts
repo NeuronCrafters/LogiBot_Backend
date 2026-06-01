@@ -1,10 +1,10 @@
 import { Class } from "../../../models/Class";
 import { AppError } from "../../../exceptions/AppError";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 
 class DeleteClassService {
   async deleteClass(classId: string) {
-    if (!Types.ObjectId.isValid(classId)) {
+    if (!Types.Uuid.isValid(classId)) {
       throw new AppError("id da turma inválido!", 400);
     }
 

@@ -1,4 +1,4 @@
-import { Model } from "mongoose";
+import { Model } from "@/types/UuidCompat";
 import { User, IUser } from "../models/User";
 import { Professor, IProfessor } from "../models/Professor";
 

@@ -1,63 +1,30 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import { createSqlCompatModel } from "./sqlCompatModel";
 
 export interface PasswordHistoryEntry {
-    hash: string;
-    changedAt: Date;
+  hash: string;
+  changedAt: Date;
 }
 
-const historySubSchema = new Schema<PasswordHistoryEntry>(
-    {
-        hash: { type: String, required: true },
-        changedAt: { type: Date, required: true },
-    },
-    { _id: false }
-);
-
-export interface IUser extends Document {
-    name: string;
-    email: string;
-    password?: string;
-    previousPasswords: PasswordHistoryEntry[];
-    role: string[];
-    school: Types.ObjectId;
-    course: Types.ObjectId;
-    class: Types.ObjectId;
-    disciplines: Types.ObjectId[];
-    level?: string;
-    status: "active" | "inactive";
-    photo?: string;
-    resetPasswordToken?: string;
-    resetPasswordExpires?: Date;
-    lastFeedbackAt?: Date;
+export interface IUser {
+  _id?: string;
+  id?: string;
+  name: string;
+  email: string;
+  password?: string;
+  passwordHash?: string;
+  previousPasswords?: PasswordHistoryEntry[];
+  role: string[];
+  school?: string;
+  course?: string;
+  class?: string;
+  disciplines?: string[];
+  level?: string;
+  status: "active" | "inactive" | "graduated" | "dropped";
+  photo?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+  lastFeedbackAt?: Date;
+  save?: () => Promise<IUser>;
 }
 
-const UserSchema: Schema = new Schema<IUser>(
-    {
-        name: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
-        password: { type: String, required: false, select: false },
-        previousPasswords: {
-            type: [historySubSchema],
-            default: [],
-            select: false,
-        },
-        role: { type: [String], default: ["student"] },
-        school: { type: mongoose.Schema.Types.ObjectId, ref: "University", required: true },
-        course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
-        class: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
-        disciplines: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discipline" }],
-        level: { type: String, default: "desconhecido" },
-        status: {
-            type: String,
-            enum: ["active", "inactive", "graduated", "dropped"],
-            default: "active",
-        },
-        photo: { type: String },
-        resetPasswordToken: { type: String },
-        resetPasswordExpires: { type: Date },
-        lastFeedbackAt: { type: Date },
-    },
-    { timestamps: true }
-);
-
-export const User = mongoose.model<IUser>("User", UserSchema);
+export const User = createSqlCompatModel("User");

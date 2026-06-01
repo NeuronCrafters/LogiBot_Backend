@@ -1,18 +1,10 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import { createSqlCompatModel } from "./sqlCompatModel";
 
-export interface IUniversity extends Document {
+export interface IUniversity {
+  _id?: string;
+  id?: string;
   name: string;
-  courses: Types.ObjectId[];
+  courses?: string[];
 }
 
-const UniversitySchema: Schema = new Schema(
-  {
-    name: { type: String, required: true },
-    courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
-  },
-  {
-    timestamps: true,
-  }
-);
-
-export const University = mongoose.model<IUniversity>("University", UniversitySchema);
+export const University = createSqlCompatModel("University");

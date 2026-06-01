@@ -1,10 +1,10 @@
 import { Discipline } from "../../../models/Discipline";
 import { AppError } from "../../../exceptions/AppError";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 
 class DeleteDisciplineService {
   async execute(disciplineId: string) {
-    if (!Types.ObjectId.isValid(disciplineId)) {
+    if (!Types.Uuid.isValid(disciplineId)) {
       throw new AppError("id da disciplina inválido!", 400);
     }
 

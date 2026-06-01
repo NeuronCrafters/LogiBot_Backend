@@ -1,10 +1,10 @@
 import { Professor } from "../../../models/Professor";
 import { AppError } from "../../../exceptions/AppError";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 
 class DeleteProfessorService {
   async execute(professorId: string) {
-    if (!Types.ObjectId.isValid(professorId)) {
+    if (!Types.Uuid.isValid(professorId)) {
       throw new AppError("id do professor inválido!", 400);
     }
 

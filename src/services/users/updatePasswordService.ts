@@ -1,4 +1,4 @@
-import { Model } from "mongoose";
+import { Model } from "@/types/UuidCompat";
 import { hash, compare } from "bcryptjs";
 import { AppError } from "../../exceptions/AppError";
 import { getUserModelByRole } from "../../utils/getUserModelByRole";

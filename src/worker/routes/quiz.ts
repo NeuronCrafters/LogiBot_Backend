@@ -1,6 +1,5 @@
 import { Hono } from "hono";
-import { ObjectId } from "mongodb";
-import { collections } from "../db/collections";
+import { saveStudentQuizResult } from "../../db/repositories/authRepository";
 import { getDb } from "../db/client";
 import { HttpError } from "../errors";
 import { requireAuth } from "../http/auth";
@@ -97,51 +96,18 @@ async function saveQuizResult(
   subject: string | null,
   level: string | null,
 ) {
-  const db = await getDb(env);
-  const col = collections(db);
-  const userAnalysis = await col.userAnalyses.findOne({ userId, email });
-  if (!userAnalysis?._id) {
+  const db = getDb(env);
+  const saved = await saveStudentQuizResult(db, {
+    userId,
+    email,
+    subject: subject || "Assunto nao definido",
+    level: level || "Nivel nao definido",
+    totalCorrectAnswers: result.totalCorrectAnswers,
+    totalWrongAnswers: result.totalWrongAnswers,
+    detalhes: result.detalhes,
+  });
+
+  if (!saved) {
     throw new HttpError("analise de usuario nao encontrada.", 404);
   }
-
-  const sessions = userAnalysis.sessions || [];
-  const currentSession = sessions.at(-1) || {};
-  currentSession.totalCorrectAnswers = Number(currentSession.totalCorrectAnswers || 0) + result.totalCorrectAnswers;
-  currentSession.totalWrongAnswers = Number(currentSession.totalWrongAnswers || 0) + result.totalWrongAnswers;
-
-  const attempt = {
-    questions: result.detalhes.map((detail) => ({
-      level: level || "Nivel nao definido",
-      subject: subject || "Assunto nao definido",
-      selectedOption: {
-        question: detail.question,
-        isCorrect: detail.isCorrect,
-        isSelected: detail.selected,
-      },
-      totalCorrectAnswers: detail.isCorrect ? 1 : 0,
-      totalWrongAnswers: detail.isCorrect ? 0 : 1,
-      timestamp: new Date(),
-    })),
-    totalCorrectWrongAnswersSession: {
-      totalCorrectAnswers: result.totalCorrectAnswers,
-      totalWrongAnswers: result.totalWrongAnswers,
-    },
-  };
-
-  const answerHistory = Array.isArray(currentSession.answerHistory) ? currentSession.answerHistory : [];
-  answerHistory.push(attempt);
-  currentSession.answerHistory = answerHistory;
-
-  if (!sessions.length) sessions.push(currentSession);
-
-  await col.userAnalyses.updateOne(
-    { _id: new ObjectId(String(userAnalysis._id)) },
-    {
-      $set: { sessions },
-      $inc: {
-        "totalCorrectWrongAnswers.totalCorrectAnswers": result.totalCorrectAnswers,
-        "totalCorrectWrongAnswers.totalWrongAnswers": result.totalWrongAnswers,
-      },
-    },
-  );
 }

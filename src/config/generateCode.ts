@@ -1,3 +1,5 @@
+import { Discipline } from "../models/Discipline";
+
 function generateHash(universityId: string, courseId: string, classId: string, disciplineId: string): string {
   const combined = `${universityId}${courseId}${classId}${disciplineId}`;
   let hash = 0;
@@ -22,8 +24,6 @@ export function generateDisciplineCode(
 }
 
 export async function findEntitiesByCode(code: string) {
-  const { Discipline } = await import("@/models/Discipline");
-
   try {
     const discipline = await Discipline.findOne({ code })
       .populate({

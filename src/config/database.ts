@@ -1,22 +1,13 @@
-import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { checkDatabase, getExpressDb } from "../db/client";
 
 dotenv.config();
 
 export async function connectDB(): Promise<void> {
   try {
-    const uri = process.env.MONGO_URI as string;
-
-    if (!uri) {
-      throw new Error("mongo_uri não está configurada no .env");
-    }
-
-    await mongoose.connect(uri, {
-    });
-
-
+    await checkDatabase(getExpressDb());
   } catch (error) {
-
+    console.error("erro ao conectar ao PostgreSQL:", error);
     process.exit(1);
   }
 }

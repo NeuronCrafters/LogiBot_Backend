@@ -1,4 +1,4 @@
-import { Model } from "mongoose";
+import { Model } from "@/types/UuidCompat";
 import { AppError } from "../../exceptions/AppError";
 import { getUserModelByRole } from "../../utils/getUserModelByRole";
 import { UserAnalysis } from "../../models/UserAnalysis";

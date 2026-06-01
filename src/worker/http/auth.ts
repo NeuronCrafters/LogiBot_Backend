@@ -1,7 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
-import { ObjectId } from "mongodb";
-import { collections } from "../db/collections";
+import { getAccountById } from "../../db/repositories/authRepository";
 import { getDb } from "../db/client";
 import { HttpError } from "../errors";
 import { clearAuthCookie } from "../security/cookies";
@@ -27,17 +26,12 @@ export const requireAuth: MiddlewareHandler<AppBindings> = async (c, next) => {
 
   try {
     const claims = await verifySession(token, c.env);
-    if (!claims.id || !ObjectId.isValid(claims.id)) {
+    if (!claims.id) {
       throw new HttpError("token invalido", 401);
     }
 
-    const db = await getDb(c.env);
-    const col = collections(db);
-    const id = new ObjectId(claims.id);
-    const isProfessor = claims.role.some((role) => ["professor", "course-coordinator"].includes(role));
-    const document = isProfessor
-      ? await col.professors.findOne({ _id: id }, { projection: { password: 0, previousPasswords: 0 } })
-      : await col.users.findOne({ _id: id }, { projection: { password: 0, previousPasswords: 0 } });
+    const db = getDb(c.env);
+    const document = await getAccountById(db, claims.id);
 
     if (!document) {
       throw new HttpError("usuario nao encontrado", 401);
@@ -48,13 +42,13 @@ export const requireAuth: MiddlewareHandler<AppBindings> = async (c, next) => {
     }
 
     c.set("user", {
-      id: String(document._id),
+      id: document.id,
       name: document.name,
       email: document.email,
-      role: document.role,
-      school: document.school ? String(document.school) : null,
-      courses: "courses" in document && document.courses ? document.courses.map(String) : "course" in document && document.course ? String(document.course) : null,
-      classes: "classes" in document && document.classes ? document.classes.map(String) : "class" in document && document.class ? String(document.class) : null,
+      role: document.roles,
+      school: document.schoolId || null,
+      courses: document.courses?.length ? document.courses : document.courseId || null,
+      classes: document.classes?.length ? document.classes : document.classId || null,
     });
 
     return next();

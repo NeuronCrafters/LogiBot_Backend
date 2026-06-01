@@ -1,16 +1,21 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import { ObjectId } from "mongodb";
-import { collections } from "../db/collections";
+import {
+  createStudentAccount,
+  findEntitiesByDisciplineCode,
+  getAccountByEmail,
+  getAccountById,
+  getPublicMe,
+  startStudentSession,
+} from "../../db/repositories/authRepository";
 import { getDb } from "../db/client";
 import { HttpError } from "../errors";
+import { requireAuth } from "../http/auth";
 import { clearAuthCookie, setAuthCookie } from "../security/cookies";
 import { prioritizeRoles, signSession } from "../security/jwt";
 import { hashPassword, verifyPassword } from "../security/password";
-import { generateDisciplineCode, findEntitiesByCode } from "../services/disciplineCode";
-import { startStudentSession } from "../services/userAnalysis";
-import type { AppBindings, ProfessorDocument, StudentDocument } from "../types";
-import { requireAuth } from "../http/auth";
+import { generateDisciplineCode } from "../services/disciplineCode";
+import type { AppBindings } from "../types";
 
 export const authRoutes = new Hono<AppBindings>();
 
@@ -41,76 +46,58 @@ function validateSignup(input: Record<string, unknown>) {
 
 authRoutes.post("/users", async (c) => {
   const body = validateSignup(await c.req.json<Record<string, unknown>>());
-  const db = await getDb(c.env);
-  const col = collections(db);
+  const db = getDb(c.env);
 
-  const existingUser = await col.users.findOne({ email: body.email });
+  const existingUser = await getAccountByEmail(db, body.email);
   if (existingUser) {
     throw new HttpError("usuario ja existe com este email!", 409);
   }
 
-  const entities = await findEntitiesByCode(col, body.code);
+  const entities = await findEntitiesByDisciplineCode(db, body.code);
   if (!entities) {
     throw new HttpError("codigo de disciplina invalido!", 404);
   }
 
   const { university, course, discipline, classes } = entities;
-  if (!university._id || !course._id || !discipline._id) {
-    throw new HttpError("dados academicos incompletos para o codigo informado", 400);
-  }
-
   if (classes.length === 0) {
     throw new HttpError("a disciplina nao possui turmas cadastradas!", 400);
   }
 
   let selectedClass = classes.find((classItem) => (
-    generateDisciplineCode(String(university._id), String(course._id), String(classItem._id), String(discipline._id)) === body.code
+    generateDisciplineCode(university.id, course.id, classItem.id, discipline.id) === body.code
   ));
-
   if (!selectedClass) selectedClass = classes[0];
-  if (!selectedClass._id) {
-    throw new HttpError("turma vinculada ao codigo esta invalida", 400);
-  }
 
-  const now = new Date();
-  const password = await hashPassword(body.password);
-  const insertResult = await col.users.insertOne({
+  const passwordHash = await hashPassword(body.password);
+  const user = await createStudentAccount(db, {
     name: body.name,
     email: body.email,
-    password,
-    previousPasswords: [],
-    school: university._id,
-    course: course._id,
-    class: selectedClass._id,
-    disciplines: [discipline._id],
-    role: ["student"],
-    status: "active",
-    level: "desconhecido",
-    createdAt: now,
-    updatedAt: now,
+    passwordHash,
+    schoolId: university.id,
+    courseId: course.id,
+    classId: selectedClass.id,
+    disciplineId: discipline.id,
   });
-
-  await Promise.all([
-    col.disciplines.updateOne({ _id: discipline._id }, { $addToSet: { students: insertResult.insertedId } }),
-    col.classes.updateOne({ _id: selectedClass._id }, { $addToSet: { students: insertResult.insertedId } }),
-  ]);
-
-  const user = await col.users.findOne({ _id: insertResult.insertedId }, { projection: { password: 0, previousPasswords: 0 } });
+  if (!user) throw new HttpError("falha ao criar usuario.", 500);
 
   return c.json({
     message: "Usuario criado com sucesso!",
     user: {
       user: {
-        ...user,
-        school: { _id: university._id, name: university.name },
-        course: { _id: course._id, name: course.name },
-        class: { _id: selectedClass._id, name: selectedClass.name },
-        disciplines: [{ _id: discipline._id, name: discipline.name, code: discipline.code }],
+        _id: user.id,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.roles,
+        school: { _id: university.id, id: university.id, name: university.name },
+        course: { _id: course.id, id: course.id, name: course.name },
+        class: { _id: selectedClass.id, id: selectedClass.id, name: selectedClass.name },
+        disciplines: [{ _id: discipline.id, id: discipline.id, name: discipline.name, code: discipline.code }],
       },
-      assignedClass: { id: selectedClass._id, name: selectedClass.name },
-      discipline: { id: discipline._id, name: discipline.name },
-      course: { id: course._id, name: course.name },
-      university: { id: university._id, name: university.name },
+      assignedClass: { id: selectedClass.id, name: selectedClass.name },
+      discipline: { id: discipline.id, name: discipline.name },
+      course: { id: course.id, name: course.name },
+      university: { id: university.id, name: university.name },
     },
   }, 201);
 });
@@ -118,49 +105,42 @@ authRoutes.post("/users", async (c) => {
 authRoutes.post("/session", async (c) => {
   const body = await c.req.json<{ email?: string; password?: string }>();
   const email = String(body.email || "").trim().toLowerCase();
-  const db = await getDb(c.env);
-  const col = collections(db);
-
-  let user = await col.professors.findOne({ email });
-  let isProfessor = Boolean(user);
-  if (!user) {
-    user = await col.users.findOne({ email });
-    isProfessor = false;
-  }
+  const db = getDb(c.env);
+  const user = await getAccountByEmail(db, email);
 
   if (!user) throw new HttpError("credenciais invalidas.", 401);
   if (user.status !== "active") throw new HttpError("sua conta esta inativa. entre em contato com o administrador.", 403);
 
   if (!body.password) throw new HttpError("senha nao fornecida.", 400);
-  if (!user.password) throw new HttpError("este usuario precisa redefinir sua senha. entre em contato com o administrador.", 401);
-  const matches = await verifyPassword(body.password, user.password);
+  if (!user.passwordHash) throw new HttpError("este usuario precisa redefinir sua senha. entre em contato com o administrador.", 401);
+  const matches = await verifyPassword(body.password, user.passwordHash);
   if (!matches) throw new HttpError("credenciais invalidas.", 401);
 
-  const roles = prioritizeRoles(user.role || []);
-  if (!isProfessor && roles.includes("student")) {
-    await startStudentSession(col, user as StudentDocument);
+  const roles = prioritizeRoles(user.roles || []);
+  if (roles.includes("student")) {
+    await startStudentSession(db, user);
   }
 
   const token = await signSession({
-    id: String(user._id),
+    id: user.id,
     name: user.name,
     email: user.email,
     role: roles,
-    school: user.school ? String(user.school) : null,
+    school: user.schoolId || null,
   }, c.env);
   setAuthCookie(c, token);
 
   return c.json({
     success: true,
     user: {
-      id: String(user._id),
+      id: user.id,
       name: user.name,
       email: user.email,
       role: roles,
-      school: user.school,
-      courses: isProfessor ? (user as ProfessorDocument).courses : (user as StudentDocument).course,
-      classes: isProfessor ? ((user as ProfessorDocument).classes || []) : undefined,
-      class: isProfessor ? undefined : (user as StudentDocument).class,
+      school: user.schoolId,
+      courses: roles.some((role) => ["professor", "course-coordinator"].includes(role)) ? (user.courses || []) : user.courseId,
+      classes: roles.some((role) => ["professor", "course-coordinator"].includes(role)) ? (user.classes || []) : undefined,
+      class: roles.includes("student") ? user.classId : undefined,
     },
     message: "login realizado com sucesso",
   });
@@ -168,42 +148,13 @@ authRoutes.post("/session", async (c) => {
 
 authRoutes.get("/me", requireAuth, async (c) => {
   const currentUser = c.get("user");
-  if (!currentUser || !ObjectId.isValid(currentUser.id)) throw new HttpError("usuario nao encontrado", 404);
+  if (!currentUser?.id) throw new HttpError("usuario nao encontrado", 404);
 
-  const db = await getDb(c.env);
-  const col = collections(db);
-  const id = new ObjectId(currentUser.id);
-  const isProfessor = currentUser.role.some((role) => ["professor", "course-coordinator"].includes(role));
-  const raw = isProfessor
-    ? await col.professors.findOne({ _id: id }, { projection: { password: 0, previousPasswords: 0 } })
-    : await col.users.findOne({ _id: id }, { projection: { password: 0, previousPasswords: 0 } });
+  const db = getDb(c.env);
+  const account = await getAccountById(db, currentUser.id);
+  if (!account) throw new HttpError("usuario nao encontrado!", 404);
 
-  if (!raw) throw new HttpError("usuario nao encontrado!", 404);
-
-  const [school, course, classDoc, courses, classes, disciplines] = await Promise.all([
-    raw.school ? col.universities.findOne({ _id: new ObjectId(String(raw.school)) }) : null,
-    "course" in raw && raw.course ? col.courses.findOne({ _id: new ObjectId(String(raw.course)) }) : null,
-    "class" in raw && raw.class ? col.classes.findOne({ _id: new ObjectId(String(raw.class)) }) : null,
-    "courses" in raw && raw.courses?.length ? col.courses.find({ _id: { $in: raw.courses } }).toArray() : [],
-    "classes" in raw && raw.classes?.length ? col.classes.find({ _id: { $in: raw.classes } }).toArray() : [],
-    "disciplines" in raw && raw.disciplines?.length ? col.disciplines.find({ _id: { $in: raw.disciplines } }).toArray() : [],
-  ]);
-
-  return c.json({
-    _id: String(raw._id),
-    name: raw.name,
-    email: raw.email,
-    role: raw.role,
-    schoolId: school ? String(school._id) : "",
-    schoolName: school?.name || "",
-    courseId: course ? String(course._id) : undefined,
-    courseName: course?.name,
-    classId: classDoc ? String(classDoc._id) : undefined,
-    className: classDoc?.name,
-    courses: courses.map((item) => ({ id: String(item._id), name: item.name })),
-    classes: classes.map((item) => ({ id: String(item._id), name: item.name })),
-    disciplines: disciplines.map((item) => ({ id: String(item._id), name: item.name, code: item.code || "" })),
-  });
+  return c.json(await getPublicMe(db, account));
 });
 
 authRoutes.post("/logout", async (c) => {

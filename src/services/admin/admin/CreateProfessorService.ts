@@ -1,7 +1,7 @@
 import { Professor } from "../../../models/Professor";
 import { Course } from "../../../models/Course";
 import { AppError } from "../../../exceptions/AppError";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 import { hash } from "bcryptjs";
 
 interface CreateProfessorDTO {
@@ -40,12 +40,12 @@ class CreateProfessorService {
       password: hashedPassword,
       role: ["professor"],
       school,
-      courses: courses.map((courseId) => new Types.ObjectId(courseId)),
+      courses: courses.map((courseId) => new Types.Uuid(courseId)),
     });
 
     for (const course of courseObjects) {
-      if (!course.professors.includes(newProfessor._id as Types.ObjectId)) {
-        course.professors.push(newProfessor._id as Types.ObjectId);
+      if (!course.professors.includes(newProfessor._id as Types.Uuid)) {
+        course.professors.push(newProfessor._id as Types.Uuid);
         await course.save();
       }
     }

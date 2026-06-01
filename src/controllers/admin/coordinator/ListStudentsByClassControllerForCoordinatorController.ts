@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { isValidObjectId } from "mongoose";
+import { isValidUuid } from "@/types/UuidCompat";
 import { ListStudentsByClassService } from "../../../services/admin/coordinator/ListStudentsByClassService";
 
 export async function ListStudentsByClassForCoordinatorController(
@@ -12,7 +12,7 @@ export async function ListStudentsByClassForCoordinatorController(
     if (!isAllowed) return res.status(403).json({ message: "Acesso negado." });
 
     const classId = String(req.params.classId || "");
-    if (!isValidObjectId(classId)) {
+    if (!isValidUuid(classId)) {
         return res.status(400).json({ message: "classId inválido." });
     }
 

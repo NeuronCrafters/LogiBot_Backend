@@ -55,7 +55,7 @@ const keywordsMap: Record<string, string> = {
   "\\b(security|seguranca|cryptography|criptografia|hash|sha256|sha512|md5|encryption|cifragem|jwt|oauth|token|ssl|tls)\\b": "seguranca_cripto",
   "\\b(network|rede|protocol|protocolo|http|https|tcp|udp|ip|dns|api|rest|graphql|websocket|socket)\\b": "redes_protocolos",
   "\\b(os|so|sistema operacional|operating system|linux|windows|macos|kernel|process|thread|memory management|gerenciamento de memoria)\\b": "sistemas_operacionais",
-  "\\b(database|banco de dados|sql|nosql|mysql|postgresql|sqlite|mongodb|redis|query|select|insert|update|delete|transaction|transacao|index|indice|orm)\\b": "banco_de_dados",
+  "\\b(database|banco de dados|sql|nosql|mysql|postgresql|sqlite|redis|query|select|insert|update|delete|transaction|transacao|index|indice|orm)\\b": "banco_de_dados",
   "\\b(docker|container|kubernetes|k8s|ci/cd|jenkins|github actions|aws|azure|gcp|cloud|serverless|lambda|terraform|ansible|devops)\\b": "devops_cloud",
   "\\b(python|javascript|js|typescript|ts|java|c#|csharp|c\\+\\+|php|ruby|go|rust|kotlin|swift|git|npm|pip|maven|gradle|vscode|ide|debug|debugging|refactoring)\\b": "linguagens_ferramentas",
 

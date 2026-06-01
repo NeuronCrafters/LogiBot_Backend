@@ -1,5 +1,5 @@
 import { UserAnalysis } from '../../models/UserAnalysis';
-import { Types } from 'mongoose';
+import { Types } from '@/types/UuidCompat';
 
 interface IFilters {
   universityId?: string;
@@ -38,9 +38,9 @@ export class GetEffortMatrixService {
     }
 
     const query: any = {};
-    if (filters.universityId) query.schoolId = new Types.ObjectId(filters.universityId);
-    if (filters.courseId) query.courseId = new Types.ObjectId(filters.courseId);
-    if (filters.classId) query.classId = new Types.ObjectId(filters.classId);
+    if (filters.universityId) query.schoolId = new Types.Uuid(filters.universityId);
+    if (filters.courseId) query.courseId = new Types.Uuid(filters.courseId);
+    if (filters.classId) query.classId = new Types.Uuid(filters.classId);
 
     const users = await UserAnalysis.find(query).select('name className totalUsageTime totalCorrectWrongAnswers');
 
@@ -48,12 +48,12 @@ export class GetEffortMatrixService {
   }
 
   private async getSingleStudentMatrix(studentId: string, classId: string, filters: IFilters): Promise<EffortMatrixDTO> {
-    const student = await UserAnalysis.findOne({ userId: studentId, classId: new Types.ObjectId(classId) });
+    const student = await UserAnalysis.findOne({ userId: studentId, classId: new Types.Uuid(classId) });
     if (!student) {
       return { points: [], averages: { avgPerformance: 0, avgEffort: 0 } };
     }
 
-    const classUsers = await UserAnalysis.find({ classId: new Types.ObjectId(classId) }).select('totalUsageTime totalCorrectWrongAnswers');
+    const classUsers = await UserAnalysis.find({ classId: new Types.Uuid(classId) }).select('totalUsageTime totalCorrectWrongAnswers');
     const classMatrix = this.calculateMatrixBase(classUsers);
 
     const originalStudentPoint = this.formatUserToPoint(student, student.name);

@@ -1,4 +1,3 @@
-import { SignJWT, jwtVerify } from "jose";
 import type { Env, Role } from "../types";
 
 const encoder = new TextEncoder();
@@ -18,8 +17,13 @@ function secretKey(env: Env) {
   return encoder.encode(env.JWT_SECRET);
 }
 
+async function jose() {
+  return import("jose");
+}
+
 export async function signSession(claims: SessionClaims, env: Env) {
-  return new SignJWT({ ...claims })
+  const { SignJWT } = await jose();
+  return new SignJWT({ ...claims } as any)
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(claims.id)
     .setIssuedAt()
@@ -28,6 +32,7 @@ export async function signSession(claims: SessionClaims, env: Env) {
 }
 
 export async function verifySession(token: string, env: Env) {
+  const { jwtVerify } = await jose();
   const { payload } = await jwtVerify(token, secretKey(env));
   return {
     id: String(payload.id || payload.sub || ""),

@@ -16,7 +16,7 @@ class GenerateResetToken {
     user.resetPasswordToken = token;
     user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
 
-    await user.save({ validateBeforeSave: false });
+    await user.save();
 
     const frontendUrl = process.env.FRONT_URL || "http://localhost:5173";
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;

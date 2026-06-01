@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 import { Class } from "../../../models/Class";
 import { User, IUser } from "../../../models/User";
 
@@ -7,13 +7,13 @@ export async function ListStudentsByClassForCoordinatorService(
     courseId: string,
     classId: string
 ): Promise<Pick<IUser, "_id" | "name" | "email">[]> {
-    if (!Types.ObjectId.isValid(classId)) {
+    if (!Types.Uuid.isValid(classId)) {
         throw new Error("classid inválido");
     }
 
     const classDoc = await Class.findById(classId)
         .select("course students")
-        .lean<{ course: Types.ObjectId; students: Types.ObjectId[] }>();
+        .lean();
 
     if (!classDoc) {
         throw new Error("turma não encontrada");
@@ -37,6 +37,6 @@ export async function ListStudentsByClassForCoordinatorService(
 
     return User.find(query)
         .select("_id name email")
-        .lean<Pick<IUser, "_id" | "name" | "email">[]>()
+        .lean()
         .exec();
 }

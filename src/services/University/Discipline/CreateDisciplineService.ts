@@ -3,46 +3,46 @@ import { Course } from "../../../models/Course";
 import { Class } from "../../../models/Class";
 import { Professor } from "../../../models/Professor";
 import { AppError } from "../../../exceptions/AppError";
-import { Types } from "mongoose";
+import { Types } from "@/types/UuidCompat";
 import { generateDisciplineCode } from "../../../config/generateCode";
 
 class CreateDisciplineService {
   async execute(name: string, courseId: string, classIds: string[], professorIds: string[]) {
-    if (!Types.ObjectId.isValid(courseId)) {
+    if (!Types.Uuid.isValid(courseId)) {
       throw new AppError("id do curso inválido!", 400);
     }
-    const courseObjectId = new Types.ObjectId(courseId);
+    const courseUuid = new Types.Uuid(courseId);
 
-    const course = await Course.findById(courseObjectId).populate("university");
+    const course = await Course.findById(courseUuid).populate("university");
     if (!course) {
       throw new AppError("curso não encontrado!", 404);
     }
 
-    if (!Array.isArray(classIds) || classIds.some(id => !Types.ObjectId.isValid(id))) {
+    if (!Array.isArray(classIds) || classIds.some(id => !Types.Uuid.isValid(id))) {
       throw new AppError("ids de turma inválidos!", 400);
     }
-    const classObjectIds = classIds.map(id => new Types.ObjectId(id));
+    const classUuids = classIds.map(id => new Types.Uuid(id));
 
-    const classes = await Class.find({ _id: { $in: classObjectIds } });
+    const classes = await Class.find({ _id: { $in: classUuids } });
     if (classes.length !== classIds.length) {
       throw new AppError("uma ou mais turmas não foram encontradas!", 404);
     }
 
-    if (!Array.isArray(professorIds) || professorIds.some(id => !Types.ObjectId.isValid(id))) {
+    if (!Array.isArray(professorIds) || professorIds.some(id => !Types.Uuid.isValid(id))) {
       throw new AppError("ids de professor inválidos!", 400);
     }
-    const professorObjectIds = professorIds.map(id => new Types.ObjectId(id));
+    const professorUuids = professorIds.map(id => new Types.Uuid(id));
 
-    const existingDiscipline = await Discipline.findOne({ name, course: courseObjectId });
+    const existingDiscipline = await Discipline.findOne({ name, course: courseUuid });
     if (existingDiscipline) {
       throw new AppError("disciplina já existe para este curso!", 409);
     }
 
     const discipline = await Discipline.create({
       name,
-      course: courseObjectId,
-      classes: classObjectIds,
-      professors: professorObjectIds,
+      course: courseUuid,
+      classes: classUuids,
+      professors: professorUuids,
       students: [],
       code: "TEMP",
     });
@@ -81,20 +81,20 @@ class CreateDisciplineService {
     discipline.code = classCodes[0].code;
     await discipline.save();
 
-    course.disciplines.push(discipline._id as Types.ObjectId);
+    course.disciplines.push(discipline._id as Types.Uuid);
     await course.save();
 
     await Class.updateMany(
-        { _id: { $in: classObjectIds } },
+        { _id: { $in: classUuids } },
         { $addToSet: { disciplines: discipline._id } }
     );
 
     await Professor.updateMany(
-        { _id: { $in: professorObjectIds } },
+        { _id: { $in: professorUuids } },
         {
           $addToSet: {
             disciplines: discipline._id,
-            classes: { $each: classObjectIds }
+            classes: { $each: classUuids }
           }
         }
     );

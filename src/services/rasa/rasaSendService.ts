@@ -9,21 +9,20 @@ export async function rasaSendService(message: string, sender: string): Promise<
   const prompt = `Você é um tutor de lógica de programação. Responda a pergunta do usuário de forma clara, concisa e didática. A pergunta do usuário é: '${message}'`;
 
   const body = {
-    model: 'llama3',
     messages: [{ role: 'user', content: prompt }],
     stream: false,
   };
 
   try {
     const response = await makeRequestWithFallback(body);
-    const ollamaReply = response.data?.choices?.[0]?.message?.content;
+    const aiReply = response.data?.choices?.[0]?.message?.content;
 
-    if (!ollamaReply) {
+    if (!aiReply) {
 
       return [{ recipient_id: sender, text: "Desculpe, não consegui obter uma resposta do assistente." }];
     }
 
-    return [{ recipient_id: sender, text: ollamaReply }];
+    return [{ recipient_id: sender, text: aiReply }];
 
   } catch (error: any) {
 

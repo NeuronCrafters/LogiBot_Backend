@@ -4,16 +4,15 @@ import { conversarService } from "../../../services/rasa/ActionChat/conversarSer
 export async function conversarController(req: Request, res: Response) {
   try {
     const data = await conversarService();
+    const legacyData = data as any;
     const text =
-      Array.isArray(data.messages) && data.messages[0]?.text
-        ? data.messages[0].text
-        :
-        (data.text as string) ||
-        "Desculpe, não entendi.";
+      data.responses?.[0]?.text ||
+      legacyData.messages?.[0]?.text ||
+      legacyData.text ||
+      "Desculpe, nao entendi.";
 
     return res.json({ responses: [{ text }] });
   } catch (error) {
-
     return res.json({
       responses: [
         {

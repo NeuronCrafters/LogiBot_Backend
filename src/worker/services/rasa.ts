@@ -1,96 +1,66 @@
 import { HttpError } from "../errors";
 import type { Env } from "../types";
+import {
+  generateQuiz,
+  getCategories,
+  getLevels,
+  getSubcategories,
+} from "./quiz";
 
-interface RasaQuestion {
+interface SaelQuestion {
   question: string;
   options: string[];
 }
 
-interface RasaGeneratedQuestions {
-  questions: RasaQuestion[];
-  answer_keys: string[];
-  metadata?: {
-    subject: string;
-    level: string;
-    generated_at: string;
-  };
+export async function callRasaAction(_env: Env, payload: Record<string, unknown>) {
+  const action = payload.next_action;
+  const tracker = payload.tracker as { slots?: Record<string, string> } | undefined;
+
+  if (action === "action_escolher_caminho") {
+    return { responses: [{ text: "Escolha se deseja conversar ou praticar com um quiz." }] };
+  }
+
+  if (action === "action_listar_niveis") {
+    return { responses: [{ text: "Escolha um nivel:", buttons: getLevels() }] };
+  }
+
+  if (action === "action_definir_nivel") {
+    return { responses: [{ text: `Nivel ${tracker?.slots?.nivel || ""} definido.` }] };
+  }
+
+  if (action === "action_listar_opcoes") {
+    return { responses: [{ text: "Escolha um assunto:", buttons: getCategories() }] };
+  }
+
+  if (action === "action_listar_subopcoes") {
+    const categoria = tracker?.slots?.categoria;
+    if (!categoria) throw new HttpError("categoria obrigatoria", 400);
+    return { responses: [{ text: "Escolha um topico:", buttons: getSubcategories(categoria) }] };
+  }
+
+  throw new HttpError("acao SAEL legada nao suportada sem Rasa.", 501);
 }
 
-export async function callRasaAction(env: Env, payload: Record<string, unknown>) {
-  if (!env.RASA_ACTION) {
-    throw new HttpError("RASA_ACTION nao configurado", 503);
-  }
-
-  const response = await fetch(env.RASA_ACTION, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    throw new HttpError(`erro no servidor Rasa: ${response.statusText}`, 502);
-  }
-
-  return response.json();
-}
-
-export async function generateRasaQuestions(env: Env, pergunta: string, nivel: string) {
-  const data = await callRasaAction(env, {
-    next_action: "action_gerar_perguntas_chatgpt",
-    tracker: {
-      sender_id: "user",
-      slots: { subtopico: pergunta, nivel },
-    },
-  });
-
-  const responses = (data as { responses?: Array<Record<string, unknown>> }).responses || [];
-  let payload: RasaGeneratedQuestions | null = null;
-
-  for (const response of responses) {
-    const custom = response.custom as RasaGeneratedQuestions | undefined;
-    if (custom && Array.isArray(custom.questions) && Array.isArray(custom.answer_keys)) {
-      payload = custom;
-      break;
-    }
-  }
-
-  if (!payload) {
-    const rawText = responses.find((response) => typeof response.text === "string")?.text as string | undefined;
-    if (rawText) {
-      try {
-        const parsed = JSON.parse(extractJson(rawText));
-        if (Array.isArray(parsed.questions) && Array.isArray(parsed.answer_keys)) {
-          payload = parsed;
-        }
-      } catch {
-        payload = null;
-      }
-    }
-  }
-
-  if (!payload) {
-    throw new HttpError("nao foi possivel extrair perguntas da resposta do rasa.", 502);
-  }
+export async function generateRasaQuestions(_env: Env, pergunta: string, nivel: string) {
+  const payload = generateQuiz(pergunta, nivel);
+  const questions = cleanQuestionOptions(payload.questions);
 
   return {
-    perguntas: cleanQuestionOptions(payload.questions),
+    perguntas: questions,
+    questions,
     gabarito: payload.answer_keys,
+    answer_keys: payload.answer_keys,
     nivel,
     assunto: pergunta,
-    metadata: payload.metadata,
+    metadata: {
+      subject: pergunta,
+      level: nivel,
+      generated_at: new Date().toISOString(),
+    },
   };
 }
 
-function extractJson(text: string) {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start < 0 || end < 0 || start >= end) {
-    throw new Error("texto nao contem json reconhecivel");
-  }
-  return text.slice(start, end + 1);
-}
-
-function cleanQuestionOptions(questions: RasaQuestion[]) {
+function cleanQuestionOptions(questions: SaelQuestion[]) {
   const prefixRegex = /^\s*\(?[a-zA-Z]\)?[\.\)]\s*/;
   return questions.map((question) => ({
     ...question,

@@ -12,7 +12,7 @@ class HealthCheckController {
       try {
         const response = await axios.post(
           config.url,
-          { model: "llama3", messages: [{ role: "user", content: "ping" }], stream: false },
+          { messages: [{ role: "user", content: "ping" }], stream: false },
           {
             headers: { 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
             timeout: 10000

@@ -10,3 +10,7 @@ enabled = true
 NODE_ENV = "production"
 FRONT_URL = "https://saellogibot.com"
 COOKIE_DOMAIN = ".saellogibot.com"
+CLOUDFLARE_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+
+[ai]
+binding = "AI"

@@ -1,9 +1,6 @@
-import axios from "axios";
 import { AppError } from "../../../exceptions/AppError";
 import { UserAnalysis } from "../../../models/UserAnalysis";
 import { RasaSessionData } from "../types/RasaSessionData";
-
-const RASA_ACTION_URL = process.env.RASA_ACTION as string;
 
 interface QuizResultData {
   message: string;
@@ -27,55 +24,40 @@ export async function verificarRespostasService(
   email: string,
   session: RasaSessionData,
   role: string | string[]
-): Promise<QuizResultData & { source: "rasa" }> {
-  if (
-    !session.lastAnswerKeys?.length ||
-    !session.lastQuestions?.length
-  ) {
-    throw new AppError("sessão inválida: perguntas ou gabarito ausentes.", 400);
+): Promise<QuizResultData & { source: "local" }> {
+  if (!session.lastAnswerKeys?.length || !session.lastQuestions?.length) {
+    throw new AppError("sessao invalida: perguntas ou gabarito ausentes.", 400);
   }
+
   if (respostas.length !== session.lastAnswerKeys.length) {
-    throw new AppError("número de respostas não corresponde ao número de perguntas.", 400);
+    throw new AppError("numero de respostas nao corresponde ao numero de perguntas.", 400);
   }
 
-  let rasaResp;
-  try {
-    rasaResp = await axios.post(RASA_ACTION_URL, {
-      next_action: "action_check_answers_with_AI",
-      tracker: {
-        sender_id: userId,
-        slots: {
-          respostas_usuario: respostas,
-          nivel: session.nivelAtual,
-          subtopico: session.lastSubject,
-        },
-      },
-    },
-      {
-        timeout: 310000
-      });
-  } catch (err: any) {
-    if (err.response) {
-      throw new AppError(`Erro no servidor de correção: ${err.response.statusText}`, 502);
-    }
-    throw new AppError("não foi possível conectar ao servidor de correção.", 503);
-  }
+  const detalhes = session.lastAnswerKeys.map((correctAnswer, index) => {
+    const selected = (respostas[index] || "").trim().toUpperCase();
+    const correct = (correctAnswer || "").trim().toUpperCase();
+    const question = session.lastFullQuestions?.[index];
 
-  const responses = rasaResp.data.responses;
-  let structuredResponse = null;
-  for (const response of responses) {
-    if (response.custom?.type === "quiz_result") {
-      structuredResponse = response.custom.data;
-      break;
-    }
-  }
+    return {
+      question: session.lastQuestions[index] || question?.question || "Pergunta nao encontrada",
+      selected,
+      correct,
+      isCorrect: selected === correct,
+      explanation: question?.explanation?.[selected] || "",
+    };
+  });
 
-  if (!structuredResponse) {
+  const totalCorrectAnswers = detalhes.filter((detail) => detail.isCorrect).length;
+  const totalWrongAnswers = detalhes.length - totalCorrectAnswers;
 
-    throw new AppError("resposta do servidor de correção mal formatada.", 502);
-  }
-
-  const result: QuizResultData = structuredResponse;
+  const result: QuizResultData = {
+    message: `Voce acertou ${totalCorrectAnswers} de ${detalhes.length}.`,
+    totalCorrectAnswers,
+    totalWrongAnswers,
+    detalhes,
+    subject: session.lastSubject || "",
+    nivel: session.nivelAtual || "",
+  };
 
   const isStudent = Array.isArray(role)
     ? role.includes("student")
@@ -83,7 +65,7 @@ export async function verificarRespostasService(
 
   if (isStudent) {
     const ua = await UserAnalysis.findOne({ userId, email }).exec();
-    if (!ua) throw new AppError("usuário não encontrado.", 404);
+    if (!ua) throw new AppError("usuario nao encontrado.", 404);
 
     if (!ua.sessions.length || ua.sessions[ua.sessions.length - 1].sessionEnd) {
       ua.sessions.push({
@@ -93,20 +75,21 @@ export async function verificarRespostasService(
         answerHistory: [],
       } as any);
     }
-    const si = ua.sessions.length - 1;
 
-    ua.sessions[si].answerHistory.push({
-      questions: result.detalhes.map((d) => ({
-        level: session.nivelAtual || "Nível",
+    const sessionIndex = ua.sessions.length - 1;
+
+    ua.sessions[sessionIndex].answerHistory.push({
+      questions: result.detalhes.map((detail) => ({
+        level: session.nivelAtual || "Nivel",
         subject: session.lastSubject || "assunto",
         selectedOption: {
-          question: d.question,
-          isCorrect: d.isCorrect,
-          isSelected: d.selected,
+          question: detail.question,
+          isCorrect: detail.isCorrect,
+          isSelected: detail.selected,
         },
-        explanation: d.explanation,
-        totalCorrectAnswers: d.isCorrect ? 1 : 0,
-        totalWrongAnswers: d.isCorrect ? 0 : 1,
+        explanation: detail.explanation,
+        totalCorrectAnswers: detail.isCorrect ? 1 : 0,
+        totalWrongAnswers: detail.isCorrect ? 0 : 1,
         timestamp: new Date(),
       })),
       totalCorrectWrongAnswersSession: {
@@ -115,17 +98,17 @@ export async function verificarRespostasService(
       },
     });
 
-    ua.sessions[si].totalCorrectAnswers += result.totalCorrectAnswers;
-    ua.sessions[si].totalWrongAnswers += result.totalWrongAnswers;
+    ua.sessions[sessionIndex].totalCorrectAnswers += result.totalCorrectAnswers;
+    ua.sessions[sessionIndex].totalWrongAnswers += result.totalWrongAnswers;
     ua.totalCorrectWrongAnswers.totalCorrectAnswers += result.totalCorrectAnswers;
     ua.totalCorrectWrongAnswers.totalWrongAnswers += result.totalWrongAnswers;
 
-    ua.markModified(`sessions.${si}`);
+    ua.markModified(`sessions.${sessionIndex}`);
     await ua.save();
   }
 
   return {
     ...result,
-    source: "rasa",
+    source: "local",
   };
 }

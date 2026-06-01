@@ -4,7 +4,6 @@ import { makeRequestWithFallback } from '../../../utils/agentUtils';
 
 export async function actionPerguntarService(prompt: string, senderId: string, systemPrompt: string) {
   const body = {
-    model: 'llama3',
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt }
@@ -17,26 +16,26 @@ export async function actionPerguntarService(prompt: string, senderId: string, s
   const MSG_FORA_ESCOPO_EN_PADRAO = "I'm not able to respond to that request, but I can answer other questions. How can I help you with something else?";
 
   try {
-    const ollamaApiResponse = await makeRequestWithFallback(body);
-    let ollamaReply = ollamaApiResponse.data?.choices?.[0]?.message?.content;
+    const aiResponse = await makeRequestWithFallback(body);
+    let aiReply = aiResponse.data?.choices?.[0]?.message?.content;
 
-    if (!ollamaReply) {
+    if (!aiReply) {
       throw new AppError('resposta inválida do assistente de ia.', 500);
     }
 
-    const cleanedOllamaReply = ollamaReply.trim();
+    const cleanedAiReply = aiReply.trim();
 
-    if (cleanedOllamaReply.includes(MSG_FORA_ESCOPO_EN_PADRAO) ||
-      cleanedOllamaReply.toLowerCase().includes("i'm not able to respond to that request") ||
-      cleanedOllamaReply.includes(MSG_FORA_ESCOPO_PT)
+    if (cleanedAiReply.includes(MSG_FORA_ESCOPO_EN_PADRAO) ||
+      cleanedAiReply.toLowerCase().includes("i'm not able to respond to that request") ||
+      cleanedAiReply.includes(MSG_FORA_ESCOPO_PT)
     ) {
-      ollamaReply = MSG_FORA_ESCOPO_PT;
+      aiReply = MSG_FORA_ESCOPO_PT;
     }
 
     return {
       responses: [{
         recipient_id: senderId,
-        text: ollamaReply,
+        text: aiReply,
       }],
     };
   } catch (error: any) {

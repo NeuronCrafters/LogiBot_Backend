@@ -8,8 +8,10 @@ export interface Env {
   API_KEY?: string;
   FRONT_URL?: string;
   COOKIE_DOMAIN?: string;
-  RASA_URL?: string;
-  RASA_ACTION?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  CLOUDFLARE_AUTH_TOKEN?: string;
+  CLOUDFLARE_AI_MODEL?: string;
+  AI?: unknown;
   NODE_ENV?: string;
 }
 

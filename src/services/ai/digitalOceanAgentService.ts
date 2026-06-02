@@ -52,10 +52,7 @@ export async function askDigitalOceanAgent(messages: AgentMessage[]): Promise<Ag
   try {
     const response = await axios.post(
       endpoint,
-      {
-        messages,
-        stream: false,
-      },
+      { messages },
       {
         headers: {
           Authorization: `Bearer ${accessKey}`,
@@ -76,6 +73,7 @@ export async function askDigitalOceanAgent(messages: AgentMessage[]): Promise<Ag
     logger.error("DigitalOceanAgent", "Failed to call DigitalOcean Agent.", {
       status: error?.response?.status,
       message: error?.response?.data?.message || error?.message,
+      responseData: JSON.stringify(error?.response?.data),
     });
     return null;
   }

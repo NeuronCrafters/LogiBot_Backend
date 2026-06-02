@@ -17,6 +17,10 @@ npm start          # roda dist/server.js
 npm run db:generate
 npm run db:migrate
 npm run db:seed
+npm run db:migrate:prod # roda migrations compiladas em dist/
+npm run db:seed:prod    # roda seed compilado em dist/
+npm run start:prod      # migrate + start
+npm run start:prod:seed # migrate + seed + start
 ```
 
 ## Variaveis De Ambiente
@@ -74,7 +78,7 @@ O endpoint `/sael/action/perguntar` esta sem provedor externo de IA neste ciclo.
 4. Rode `npm run db:migrate`.
 5. Rode `npm run db:seed` se o banco for novo.
 6. Rode `npm run build`.
-7. Inicie `npm start` com seu gerenciador de processo, por exemplo PM2 ou systemd.
+7. Inicie `npm run start:prod` com seu gerenciador de processo, por exemplo PM2 ou systemd.
 
 ## Docker / Dokploy
 
@@ -102,3 +106,19 @@ DB_POOL_MAX=10
 ```
 
 Se o PostgreSQL do LogiBot for acessado pelo host publicado, use a porta `5437` no `DATABASE_URL`. Se backend e banco estiverem na mesma rede/stack Docker, use a porta interna `5432`.
+
+Comandos uteis no Dokploy:
+
+```bash
+# start command padrao do Dockerfile
+npm run start:prod
+
+# primeira subida em banco novo, se quiser criar admin/dados iniciais
+npm run start:prod:seed
+
+# executar manualmente em console/job
+npm run db:migrate:prod
+npm run db:seed:prod
+```
+
+Use `start:prod:seed` apenas quando quiser popular/atualizar os dados iniciais. Para deploy normal, prefira `start:prod`, que roda migrations e sobe a API.

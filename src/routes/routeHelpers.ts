@@ -467,7 +467,7 @@ export async function handleAsk(req: any, res: any) {
   const providedSessionId = req.body.sessionId ? String(req.body.sessionId) : undefined;
   if (!message) throw new AppError("message e obrigatorio", 400);
 
-  const detectedTopic = validateAndEnrichPrompt(message).subject;
+  const detectedTopic = validateAndEnrichPrompt(message)?.subject ?? null;
   const userMessage = await addChatMessage({ userId, sessionId: providedSessionId, role: "user", content: message, topic: detectedTopic });
   if (detectedTopic) await incrementTopicCount(userId, detectedTopic);
 

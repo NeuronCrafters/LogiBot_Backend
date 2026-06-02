@@ -32,7 +32,7 @@ export function setupSwagger(app: Express) {
       },
       security: [{ bearerAuth: [] }],
     },
-    apis: ["./src/routes/routesPaths/*.ts"],
+    apis: ["./src/routes/modules/*.ts"],
   });
 
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

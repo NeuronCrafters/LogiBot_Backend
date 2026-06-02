@@ -49,34 +49,30 @@ O schema Drizzle fica em `src/db/schema.ts`, as migracoes em `drizzle/` e o seed
 O seed cria:
 
 - usuario admin
-- universidade, curso, turma e disciplina de teste
+- universidade, curso, turma e disciplina base
 - aluno de teste vinculado a disciplina
 
 ## Rotas Principais
 
-- `GET /health`, `/health/simple`, `/health/ready`, `/ping`
-- `POST /users`, `/session`, `/logout`
-- `GET /me`
-- `PATCH /users/password`, `/users/:userId/name`, `/users/:userId/email`
-- `POST/PATCH /password/*`
+- `GET /health`, `/health/simple`, `/health/ready`, `/health/ping`
+- `/auth/*`
+- `/account/*`
 - `/quiz/*`
-- `/sael/*`
-- `/history/*`
-- `/useranalysis/*`
-- `/academicFilters/data`
-- `/academic-institution/*`
+- `/chat/*`
+- `/academic/*`
 - `/admin/*`
 - `/dashboard/*`
 - `/logs/*`
-- `POST /feedbacks/send`
+- `/analytics/*`
+- `POST /feedback`
 
 ## IA
 
-O endpoint `/sael/action/perguntar` esta sem provedor externo de IA neste ciclo. Ele valida o topico, salva historico no PostgreSQL e retorna uma resposta fallback controlada.
+O endpoint `POST /chat/messages` esta sem provedor externo de IA neste ciclo. Ele valida o topico, salva historico no PostgreSQL e retorna uma resposta fallback controlada.
 
 ## Emails
 
-O fluxo `POST /password/send-reset-password` envia email via SMTP usando Nodemailer. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM` no Dokploy.
+O fluxo `POST /auth/password-reset-requests` envia email via SMTP usando Nodemailer. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM` no Dokploy.
 
 ## Deploy VPS
 

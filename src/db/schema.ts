@@ -228,6 +228,14 @@ export const quizSubjectCounts = pgTable("quiz_subject_counts", {
   count: integer("count").notNull().default(0),
 }, (table) => ({ pk: primaryKey({ columns: [table.userId, table.subject] }) }));
 
+export const feedbacks = pgTable("feedbacks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  type: text("type").notNull().default("general"),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Account = typeof accounts.$inferSelect;
 export type RoleRow = typeof accountRoles.$inferSelect;
 export type StudentProfile = typeof studentProfiles.$inferSelect;

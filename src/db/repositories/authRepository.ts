@@ -19,7 +19,7 @@ import {
   universities,
   userAnalyses,
 } from "../schema";
-import type { Role } from "../../worker/types";
+import type { Role } from "../../types/Role";
 
 export type AccountWithAuth = typeof accounts.$inferSelect & {
   roles: Role[];

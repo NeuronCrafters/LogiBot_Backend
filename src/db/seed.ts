@@ -37,11 +37,11 @@ const ACADEMIC_SEED_DATA = {
   },
   course: {
     id: "00000000-0000-4000-8000-000000000102",
-    name: "Lógica de Programação",
+    name: "Sistemas de Informação",
   },
   class: {
     id: "00000000-0000-4000-8000-000000000103",
-    name: "Turma Teste",
+    name: "Turma 2026",
   },
   discipline: {
     id: "00000000-0000-4000-8000-000000000104",
@@ -57,36 +57,41 @@ async function seed() {
   });
 
   const [account] = existing
-    ? await db.update(accounts)
-      .set({
-        name: ADMIN_USER_DATA.name,
-        passwordHash: ADMIN_USER_DATA.passwordHash,
-        status: ADMIN_USER_DATA.status,
-        updatedAt: new Date(),
-      })
-      .where(eq(accounts.id, existing.id))
-      .returning()
-    : await db.insert(accounts)
-      .values({
-        name: ADMIN_USER_DATA.name,
-        email: ADMIN_USER_DATA.email,
-        passwordHash: ADMIN_USER_DATA.passwordHash,
-        status: ADMIN_USER_DATA.status,
-      })
-      .returning();
+    ? await db
+        .update(accounts)
+        .set({
+          name: ADMIN_USER_DATA.name,
+          passwordHash: ADMIN_USER_DATA.passwordHash,
+          status: ADMIN_USER_DATA.status,
+          updatedAt: new Date(),
+        })
+        .where(eq(accounts.id, existing.id))
+        .returning()
+    : await db
+        .insert(accounts)
+        .values({
+          name: ADMIN_USER_DATA.name,
+          email: ADMIN_USER_DATA.email,
+          passwordHash: ADMIN_USER_DATA.passwordHash,
+          status: ADMIN_USER_DATA.status,
+        })
+        .returning();
 
-  await db.insert(accountRoles)
+  await db
+    .insert(accountRoles)
     .values({ accountId: account.id, role: ADMIN_USER_DATA.role })
     .onConflictDoNothing();
 
-  await db.insert(universities)
+  await db
+    .insert(universities)
     .values(ACADEMIC_SEED_DATA.university)
     .onConflictDoUpdate({
       target: universities.id,
       set: { name: ACADEMIC_SEED_DATA.university.name, updatedAt: new Date() },
     });
 
-  await db.insert(courses)
+  await db
+    .insert(courses)
     .values({
       ...ACADEMIC_SEED_DATA.course,
       universityId: ACADEMIC_SEED_DATA.university.id,
@@ -100,7 +105,8 @@ async function seed() {
       },
     });
 
-  await db.insert(classes)
+  await db
+    .insert(classes)
     .values({
       ...ACADEMIC_SEED_DATA.class,
       courseId: ACADEMIC_SEED_DATA.course.id,
@@ -114,7 +120,8 @@ async function seed() {
       },
     });
 
-  await db.insert(disciplines)
+  await db
+    .insert(disciplines)
     .values({
       ...ACADEMIC_SEED_DATA.discipline,
       courseId: ACADEMIC_SEED_DATA.course.id,
@@ -129,14 +136,16 @@ async function seed() {
       },
     });
 
-  await db.insert(classDisciplines)
+  await db
+    .insert(classDisciplines)
     .values({
       classId: ACADEMIC_SEED_DATA.class.id,
       disciplineId: ACADEMIC_SEED_DATA.discipline.id,
     })
     .onConflictDoNothing();
 
-  const [student] = await db.insert(accounts)
+  const [student] = await db
+    .insert(accounts)
     .values({
       id: STUDENT_USER_DATA.id,
       name: STUDENT_USER_DATA.name,
@@ -155,11 +164,13 @@ async function seed() {
     })
     .returning();
 
-  await db.insert(accountRoles)
+  await db
+    .insert(accountRoles)
     .values({ accountId: student.id, role: STUDENT_USER_DATA.role })
     .onConflictDoNothing();
 
-  await db.insert(studentProfiles)
+  await db
+    .insert(studentProfiles)
     .values({
       accountId: student.id,
       schoolId: ACADEMIC_SEED_DATA.university.id,
@@ -177,7 +188,8 @@ async function seed() {
       },
     });
 
-  await db.insert(studentDisciplines)
+  await db
+    .insert(studentDisciplines)
     .values({
       studentId: student.id,
       disciplineId: ACADEMIC_SEED_DATA.discipline.id,

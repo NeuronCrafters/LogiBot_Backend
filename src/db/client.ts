@@ -1,19 +1,20 @@
 import "dotenv/config";
-import { neon } from "@neondatabase/serverless";
-import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
 export type DbClient = ReturnType<typeof drizzle<typeof schema>>;
-export type NeonDbClient = ReturnType<typeof drizzleNeon<typeof schema>>;
-export type AnyDbClient = DbClient | NeonDbClient;
+export type AnyDbClient = DbClient;
 
 let expressPool: Pool | undefined;
-let workerClients = new Map<string, NeonDbClient>();
 
 function createPool(connectionString: string) {
-  return new Pool({ connectionString, max: 5 });
+  return new Pool({
+    connectionString,
+    max: Number(process.env.DB_POOL_MAX || 10),
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+  });
 }
 
 export function getDatabaseUrl() {
@@ -29,21 +30,17 @@ export function getExpressDb(): DbClient {
   return drizzle(expressPool, { schema });
 }
 
-export function getWorkerDb(env: { DATABASE_URL?: string }): NeonDbClient {
-  const connectionString = env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL nao configurado");
-  }
-
-  let client = workerClients.get(connectionString);
-  if (!client) {
-    client = drizzleNeon(neon(connectionString), { schema });
-    workerClients.set(connectionString, client);
-  }
-
-  return client;
+export function getDb(): DbClient {
+  return getExpressDb();
 }
 
-export async function checkDatabase(db: DbClient | NeonDbClient) {
+export async function checkDatabase(db: DbClient = getDb()) {
   await db.execute("select 1");
+}
+
+export async function closeDatabasePool() {
+  if (expressPool) {
+    await expressPool.end();
+    expressPool = undefined;
+  }
 }

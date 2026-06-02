@@ -110,6 +110,14 @@ CREATE TABLE "disciplines" (
 	CONSTRAINT "disciplines_code_unique" UNIQUE("code")
 );
 --> statement-breakpoint
+CREATE TABLE "feedbacks" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"account_id" uuid NOT NULL,
+	"type" text DEFAULT 'general' NOT NULL,
+	"message" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "password_history" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"account_id" uuid NOT NULL,
@@ -234,6 +242,7 @@ ALTER TABLE "class_disciplines" ADD CONSTRAINT "class_disciplines_discipline_id_
 ALTER TABLE "classes" ADD CONSTRAINT "classes_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "courses" ADD CONSTRAINT "courses_university_id_universities_id_fk" FOREIGN KEY ("university_id") REFERENCES "public"."universities"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "disciplines" ADD CONSTRAINT "disciplines_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "feedbacks" ADD CONSTRAINT "feedbacks_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "password_history" ADD CONSTRAINT "password_history_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "performance_by_subject" ADD CONSTRAINT "performance_by_subject_analysis_id_user_analyses_id_fk" FOREIGN KEY ("analysis_id") REFERENCES "public"."user_analyses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "professor_classes" ADD CONSTRAINT "professor_classes_professor_id_accounts_id_fk" FOREIGN KEY ("professor_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

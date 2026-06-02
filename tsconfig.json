@@ -124,6 +124,7 @@
     "src/config/swagger/**/*.ts",
     "src/exceptions/**/*.ts",
     "src/http/**/*.ts",
+    "src/services/email/**/*.ts",
     "src/utils/normalizeSubject.ts",
     "src/utils/subjectExtractor.ts",
     "src/types/Role.ts",

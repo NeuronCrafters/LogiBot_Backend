@@ -29,13 +29,19 @@ Copie `.env.example` para `.env` em desenvolvimento ou configure as variaveis eq
 
 ```env
 NODE_ENV=production
-PORT=3004
+PORT=43187
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 JWT_SECRET=change-me
 API_KEY=
 FRONT_URL=https://saellogibot.com
 COOKIE_DOMAIN=.saellogibot.com
 DB_POOL_MAX=10
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=user@example.com
+SMTP_PASS=change-me
+MAIL_FROM="LogiBot <user@example.com>"
 ```
 
 ## Banco
@@ -70,6 +76,10 @@ O seed cria:
 
 O endpoint `/sael/action/perguntar` esta sem provedor externo de IA neste ciclo. Ele valida o topico, salva historico no PostgreSQL e retorna uma resposta fallback controlada.
 
+## Emails
+
+O fluxo `POST /password/send-reset-password` envia email via SMTP usando Nodemailer. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM` no Dokploy.
+
 ## Deploy VPS
 
 1. Instale Node.js LTS e PostgreSQL.
@@ -87,16 +97,16 @@ O backend possui um `Dockerfile` multi-stage pronto para Dokploy.
 Portas ja ocupadas no servidor: `3002`, `3003`, `3010`, `3333`, `5173`, `5189`, `5433`, `5435`, `5436`. Para o LogiBot backend foi escolhido:
 
 ```env
-PORT=3004
+PORT=43187
 ```
 
-No Dokploy, configure a aplicacao para expor a porta `3004`.
+No Dokploy, configure a aplicacao para expor a porta `43187`.
 
 Variaveis recomendadas para o container:
 
 ```env
 NODE_ENV=production
-PORT=3004
+PORT=43187
 DATABASE_URL=postgresql://USER:PASSWORD@logibot-db:5432/DATABASE
 JWT_SECRET=change-me
 API_KEY=

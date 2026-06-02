@@ -17,7 +17,7 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3004
+ENV PORT=43187
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
@@ -27,7 +27,7 @@ COPY --from=build /app/drizzle ./drizzle
 
 USER node
 
-EXPOSE 3004
+EXPOSE 43187
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- "http://127.0.0.1:${PORT}/health/simple" || exit 1

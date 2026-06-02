@@ -434,27 +434,12 @@ export async function summaryByEntity(entity: string, id: string) {
 
 function buildAgentMessages(
   history: AgentMessage[],
-  detectedTopic: string | null,
-  currentMessage: string,
+  _detectedTopic: string | null,
+  _currentMessage: string,
 ): AgentMessage[] {
-  const systemLines = [
-    "Voce e o LogiBot, um tutor de logica de programacao.",
-    "Responda SEMPRE em portugues do Brasil.",
-    "REGRA PRINCIPAL: responda diretamente a pergunta do usuario. Nao peca mais contexto quando a pergunta ja e clara.",
-    "Seja claro, direto e didatico. Use exemplos de codigo em JavaScript ou pseudocodigo quando ajudar.",
-    "Priorize a base de conhecimento conectada ao Agent da DigitalOcean quando ela trouxer contexto relevante.",
-    "Ajude o aluno a raciocinar; se parecer uma avaliacao ou quiz, guie sem entregar a resposta pronta.",
-    "Perguntas fora de programacao, algoritmos e logica: responda 'Posso ajudar com programacao, algoritmos e logica de programacao. Pode me perguntar sobre variaveis, funcoes, estruturas de dados, etc!'",
-  ];
-
-  if (detectedTopic) {
-    systemLines.push(`Topico identificado: ${formatTitle(detectedTopic)}. Responda a pergunta do usuario sobre este topico.`);
-  }
-
-  return [
-    { role: "system", content: systemLines.join("\n") },
-    ...history,
-  ];
+  // DigitalOcean Agent does not accept system messages —
+  // the agent's system prompt is configured on the platform side.
+  return history;
 }
 
 export async function handleAsk(req: any, res: any) {

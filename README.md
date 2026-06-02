@@ -32,6 +32,7 @@ JWT_SECRET=change-me
 API_KEY=
 DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
+ENABLE_SWAGGER=false
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -97,7 +98,7 @@ Portas ja ocupadas no servidor: `3002`, `3003`, `3010`, `3333`, `5173`, `5189`, 
 PORT=43187
 ```
 
-A fonte da verdade da porta do backend e sempre a variavel `PORT` quando ela existir no ambiente. Se `PORT` nao for carregada, o backend usa o fallback interno `43187`. O codigo Express, CORS local, Swagger local e healthcheck seguem essa mesma regra.
+A fonte da verdade da porta do backend e sempre a variavel `PORT` quando ela existir no ambiente. Se `PORT` nao for carregada, o backend usa o fallback interno `43187`. O codigo Express, CORS local e Swagger local seguem essa mesma regra.
 
 No Dokploy, configure a aplicacao para expor a mesma porta definida em `PORT`.
 
@@ -110,6 +111,7 @@ JWT_SECRET=change-me
 API_KEY=
 DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
+ENABLE_SWAGGER=false
 ```
 
 Os dominios de frontend e cookie ficam hardcoded no backend: `https://saellogibot.com`, `https://www.saellogibot.com` e localhosts de teste (`5173`, `5174`, `3000`, `3001`). O cookie de producao usa `.saellogibot.com`.
@@ -120,7 +122,7 @@ Comandos uteis no Dokploy:
 
 ```bash
 # start command padrao do Dockerfile
-npm start
+node dist/server.js
 
 # executar manualmente em console/job
 npm run db:migrate:prod

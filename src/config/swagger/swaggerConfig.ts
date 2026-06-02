@@ -1,40 +1,39 @@
-import swaggerJSDoc from "swagger-jsdoc";
-import swaggerUi from "swagger-ui-express";
-import { Express } from "express";
+import type { Express } from "express";
 import { getLocalBackendOrigin } from "../env";
 
-const options: swaggerJSDoc.Options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "LogiBots.AI API",
-      version: "1.0.0",
-      description: "Documentação da API do LogiBots.AI",
-    },
-    servers: [
-      {
-        url: "https://api.saellogibot.com",
+export function setupSwagger(app: Express) {
+  if (process.env.ENABLE_SWAGGER !== "true") {
+    return;
+  }
+
+  const swaggerJSDoc = require("swagger-jsdoc") as typeof import("swagger-jsdoc");
+  const swaggerUi = require("swagger-ui-express") as typeof import("swagger-ui-express");
+
+  const swaggerSpec = swaggerJSDoc({
+    definition: {
+      openapi: "3.0.0",
+      info: {
+        title: "LogiBots.AI API",
+        version: "1.0.0",
+        description: "Documentacao da API do LogiBots.AI",
       },
-      ...(getLocalBackendOrigin() ? [{ url: getLocalBackendOrigin() as string }] : []),
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
+      servers: [
+        { url: "https://api.saellogibot.com" },
+        { url: getLocalBackendOrigin() },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
         },
       },
+      security: [{ bearerAuth: [] }],
     },
-    security: [{ bearerAuth: [] }],
-  },
-  apis: [
-    "./src/routes/routesPaths/*.ts",
-  ],
-};
+    apis: ["./src/routes/routesPaths/*.ts"],
+  });
 
-const swaggerSpec = swaggerJSDoc(options);
-
-export function setupSwagger(app: Express) {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }

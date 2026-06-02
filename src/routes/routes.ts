@@ -420,8 +420,6 @@ function getEmptySummary() {
   };
 }
 
-routes.use(requireApiKey);
-
 routes.get("/health", asyncHandler(async (_req, res) => {
   const startedAt = Date.now();
   let database = "ok";
@@ -444,6 +442,8 @@ routes.get("/health/ready", asyncHandler(async (_req, res) => {
   return res.json({ ready: true });
 }));
 routes.get("/ping", (_req, res) => res.send("pong"));
+
+routes.use(requireApiKey);
 
 routes.post("/users", asyncHandler(async (req, res) => {
   const name = String(req.body.name || "").trim();

@@ -10,7 +10,6 @@ import { routes } from "./routes/routes";
 import { errorHandler } from "./http/errorHandler";
 import { corsAccessLogger, corsOptions } from "./http/cors";
 import { initAdminUser } from "./config/initAdminUser/initAdminUser";
-import { closeDatabasePool } from "./db/client";
 import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
@@ -52,19 +51,9 @@ export async function bootstrap() {
     });
   });
 
-  const shutdown = async (signal: string) => {
-    logger.info("Server", "Shutdown signal received. Closing server.", { signal });
-    server.close(async () => {
-      await closeDatabasePool();
-      logger.info("Server", "Shutdown completed.");
-      process.exit(0);
-    });
-  };
-
-  process.on("SIGTERM", () => void shutdown("SIGTERM"));
-  process.on("SIGINT", () => void shutdown("SIGINT"));
   process.on("unhandledRejection", (reason) => logger.error("Process", "Unhandled promise rejection.", reason));
   process.on("uncaughtException", (error) => logger.error("Process", "Uncaught exception.", error));
+  process.on("exit", (code) => logger.info("Process", "Node process exited.", { code }));
 
   return server;
 }

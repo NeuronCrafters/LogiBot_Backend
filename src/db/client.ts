@@ -19,7 +19,7 @@ function createPool(connectionString: string) {
 
 export function getDatabaseUrl() {
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL nao configurado");
+  if (!url) throw new Error("DATABASE_URL is not configured.");
   return url;
 }
 

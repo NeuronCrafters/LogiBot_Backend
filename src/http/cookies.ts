@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { AUTH_COOKIE_DOMAIN } from "../config/env";
 
 export function isProductionRequest(req: Request) {
   const origin = req.get("origin") || "";
@@ -13,15 +14,14 @@ export function setAuthCookie(req: Request, res: Response, token: string) {
     secure: isProduction,
     sameSite: isProduction ? "none" : "lax",
     maxAge: 1000 * 60 * 60 * 2,
-    domain: isProduction ? process.env.COOKIE_DOMAIN : undefined,
+    domain: isProduction ? AUTH_COOKIE_DOMAIN : undefined,
     path: "/",
   });
 }
 
 export function clearAuthCookie(req: Request, res: Response) {
   res.clearCookie("token", {
-    domain: isProductionRequest(req) ? process.env.COOKIE_DOMAIN : undefined,
+    domain: isProductionRequest(req) ? AUTH_COOKIE_DOMAIN : undefined,
     path: "/",
   });
 }
-

@@ -47,6 +47,7 @@ import { asyncHandler } from "../http/asyncHandler";
 import { requireApiKey, requireAuth, requireEnv, requireRoles, prioritizeRoles, signSession } from "../http/auth";
 import { clearAuthCookie, setAuthCookie } from "../http/cookies";
 import { sendPasswordResetEmail } from "../services/email/mailService";
+import { getFrontendOrigin } from "../config/env";
 
 const routes = Router();
 const runtimeSessions = new Map<string, RuntimeSession>();
@@ -582,7 +583,7 @@ routes.post("/password/send-reset-password", asyncHandler(async (req, res) => {
   const account = await getAccountByEmail(getDb(), email);
   if (!account) return res.json({ message: "se o email existir, a recuperacao sera iniciada" });
   const token = jwt.sign({ email }, requireEnv("JWT_SECRET"), { expiresIn: "30m" });
-  const frontendUrl = process.env.FRONT_URL || "http://localhost:5173";
+  const frontendUrl = getFrontendOrigin(req.get("origin"));
   const resetLink = `${frontendUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
 
   await getDb().update(accounts)

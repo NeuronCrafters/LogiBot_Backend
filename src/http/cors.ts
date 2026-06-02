@@ -1,13 +1,12 @@
 import type { CorsOptions } from "cors";
 import type { NextFunction, Request, Response } from "express";
-import { getLocalBackendOrigin } from "../config/env";
+import { getAllowedFrontendOrigins, getLocalBackendOrigin } from "../config/env";
+import { logger } from "../logger";
 
 export function getAllowedOrigins() {
   return [
-    "https://www.saellogibot.com",
+    ...getAllowedFrontendOrigins(),
     getLocalBackendOrigin(),
-    "http://localhost:5173",
-    process.env.FRONT_URL,
   ].filter(Boolean) as string[];
 }
 
@@ -17,7 +16,7 @@ export const corsOptions: CorsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error(`origin '${origin}' nao permitido pelo cors`));
+      callback(new Error(`Origin '${origin}' is not allowed by CORS.`));
     }
   },
   credentials: true,
@@ -41,7 +40,7 @@ export function corsAccessLogger(
 ) {
   const origin = req.headers.origin;
   if (origin && !getAllowedOrigins().includes(origin)) {
-    console.warn("tentativa de acesso de origin nao autorizado:", {
+    logger.warn("CORS", "Blocked request from unauthorized origin.", {
       origin,
       method: req.method,
       path: req.path,

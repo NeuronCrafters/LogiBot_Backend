@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { findUserByEmail } from "../../config/resetPassword/findUserByEmail";
+import { getFrontendOrigin } from "../env";
 
 class GenerateResetToken {
   async execute(email: string) {
@@ -18,7 +19,7 @@ class GenerateResetToken {
 
     await user.save();
 
-    const frontendUrl = process.env.FRONT_URL || "http://localhost:5173";
+    const frontendUrl = getFrontendOrigin();
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     return { token, resetLink };

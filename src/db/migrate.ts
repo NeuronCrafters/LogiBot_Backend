@@ -1,11 +1,12 @@
 import "dotenv/config";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { closeDatabasePool, getDb } from "./client";
+import { logger } from "../logger";
 
 async function runMigrations() {
-  console.log("executando migrations do PostgreSQL...");
+  logger.info("Migration", "Running PostgreSQL migrations.");
   await migrate(getDb(), { migrationsFolder: "./drizzle" });
-  console.log("migrations concluidas");
+  logger.info("Migration", "PostgreSQL migrations completed.");
 }
 
 runMigrations()
@@ -14,8 +15,7 @@ runMigrations()
     process.exit(0);
   })
   .catch(async (error) => {
-    console.error("erro ao executar migrations", error);
+    logger.error("Migration", "Failed to run PostgreSQL migrations.", error);
     await closeDatabasePool();
     process.exit(1);
   });
-

@@ -30,9 +30,8 @@ PORT=43187
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 JWT_SECRET=change-me
 API_KEY=
-FRONT_URL=https://saellogibot.com
-COOKIE_DOMAIN=.saellogibot.com
 DB_POOL_MAX=10
+HTTP_REQUEST_LOGS=true
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -81,7 +80,7 @@ O fluxo `POST /password/send-reset-password` envia email via SMTP usando Nodemai
 ## Deploy VPS
 
 1. Instale Node.js LTS e PostgreSQL.
-2. Configure `.env` com `DATABASE_URL`, `JWT_SECRET`, `FRONT_URL` e `COOKIE_DOMAIN`.
+2. Configure `.env` com `DATABASE_URL` e `JWT_SECRET`.
 3. Rode `npm ci`.
 4. Rode `npm run db:migrate`.
 5. Rode `npm run db:seed` se o banco for novo.
@@ -109,10 +108,11 @@ PORT=43187
 DATABASE_URL=postgresql://USER:PASSWORD@logibot-db:5432/DATABASE
 JWT_SECRET=change-me
 API_KEY=
-FRONT_URL=https://saellogibot.com
-COOKIE_DOMAIN=.saellogibot.com
 DB_POOL_MAX=10
+HTTP_REQUEST_LOGS=true
 ```
+
+Os dominios de frontend e cookie ficam hardcoded no backend: `https://saellogibot.com`, `https://www.saellogibot.com` e localhosts de teste (`5173`, `5174`, `3000`, `3001`). O cookie de producao usa `.saellogibot.com`.
 
 Se o PostgreSQL do LogiBot for acessado pelo host publicado, use a porta `5437` no `DATABASE_URL`. Se backend e banco estiverem na mesma rede/stack Docker, use a porta interna `5432`.
 

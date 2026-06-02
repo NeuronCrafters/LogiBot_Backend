@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getExpressDb } from "../../db/client";
 import { accountRoles, accounts } from "../../db/schema";
+import { logger } from "../../logger";
 
 const ADMIN_USER_DATA = {
   name: "admin",
@@ -40,6 +41,7 @@ export async function initAdminUser(): Promise<void> {
       .values({ accountId: account.id, role: ADMIN_USER_DATA.role })
       .onConflictDoNothing();
   } catch (error) {
-    console.error("erro ao inicializar admin:", error);
+    logger.error("Bootstrap", "Failed to initialize admin account.", error);
+    throw error;
   }
 }

@@ -7,9 +7,9 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(err.statusCode).json({ error: err.message, message: err.message });
   }
 
-  if (err instanceof Error && err.message.toLowerCase().includes("nao permitido pelo cors")) {
+  if (err instanceof Error && err.message.toLowerCase().includes("not allowed by cors")) {
     return res.status(403).json({
-      error: "Acesso negado pelo CORS",
+      error: "Access denied by CORS",
       origin: req.headers.origin,
       allowedOrigins: getAllowedOrigins(),
       timestamp: new Date().toISOString(),
@@ -20,6 +20,5 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(400).json({ error: err.message, message: err.message });
   }
 
-  return res.status(500).json({ error: "internal server error", message: "internal server error" });
+  return res.status(500).json({ error: "Internal server error", message: "Internal server error" });
 }
-

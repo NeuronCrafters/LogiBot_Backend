@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getExpressDb } from "./client";
+import { logger } from "../logger";
 import {
   accountRoles,
   accounts,
@@ -199,10 +200,10 @@ async function seed() {
 
 seed()
   .then(() => {
-    console.log("seed concluido");
+    logger.info("Seed", "Database seed completed.");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("erro ao executar seed", error);
+    logger.error("Seed", "Failed to run database seed.", error);
     process.exit(1);
   });

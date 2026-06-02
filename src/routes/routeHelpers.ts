@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import quizDatabase from "../database/quiz/quiz_database.json";
 import { AppError } from "../exceptions/AppError";
 import { getDb } from "../db/client";
+import { askDigitalOceanAgent, AgentMessage } from "../services/ai/digitalOceanAgentService";
 import {
   analysisSessions,
   answerAttempts,
@@ -265,6 +266,28 @@ export async function addChatMessage(input: {
   return { sessionId: currentSessionId };
 }
 
+export async function getRecentChatMessages(userId: string, sessionId: string, limit = 10): Promise<AgentMessage[]> {
+  const db = getDb();
+  const [session] = await db
+    .select({ id: chatSessions.id })
+    .from(chatSessions)
+    .where(and(eq(chatSessions.userId, userId), eq(chatSessions.sessionId, sessionId)));
+
+  if (!session) return [];
+
+  const rows = await db
+    .select({ role: chatMessages.role, content: chatMessages.content })
+    .from(chatMessages)
+    .where(eq(chatMessages.chatSessionId, session.id))
+    .orderBy(desc(chatMessages.timestamp))
+    .limit(limit);
+
+  return rows
+    .reverse()
+    .filter((row) => row.role === "user" || row.role === "assistant")
+    .map((row) => ({ role: row.role as "user" | "assistant", content: row.content }));
+}
+
 export async function incrementTopicCount(userId: string, topic: string) {
   await getDb().insert(chatTopicCounts)
     .values({ userId, topic, count: 1 })
@@ -409,6 +432,35 @@ export async function summaryByEntity(entity: string, id: string) {
   return getEmptySummary();
 }
 
+function getChatFallbackResponse(detectedTopic: string | null) {
+  return detectedTopic
+    ? `Vamos falar sobre ${formatTitle(detectedTopic)}. O que voce gostaria de saber?`
+    : "Nao consegui identificar um assunto especifico. Pode reformular sua pergunta?";
+}
+
+function buildAgentMessages(history: AgentMessage[], detectedTopic: string | null): AgentMessage[] {
+  const topicInstruction = detectedTopic
+    ? `O assunto detectado na mensagem atual e: ${formatTitle(detectedTopic)}.`
+    : "Nenhum assunto especifico foi detectado na mensagem atual.";
+
+  return [
+    {
+      role: "system",
+      content: [
+        "Voce e o LogiBot, um tutor educacional de logica de programacao.",
+        "Responda sempre em portugues do Brasil.",
+        "Explique de forma clara, curta e didatica.",
+        "Priorize a base de conhecimento conectada ao Agent da DigitalOcean quando ela trouxer contexto relevante.",
+        "Ajude o aluno a raciocinar; se parecer uma avaliacao ou quiz, nao entregue apenas a resposta final.",
+        "Use exemplos simples em pseudocodigo ou JavaScript quando isso ajudar.",
+        "Se a pergunta fugir de logica de programacao, redirecione com gentileza.",
+        topicInstruction,
+      ].join("\n"),
+    },
+    ...history,
+  ];
+}
+
 export async function handleAsk(req: any, res: any) {
   const userId = req.user!.id;
   const message = String(req.body.message || req.body.text || "").trim();
@@ -419,10 +471,11 @@ export async function handleAsk(req: any, res: any) {
   const userMessage = await addChatMessage({ userId, sessionId: providedSessionId, role: "user", content: message, topic: detectedTopic });
   if (detectedTopic) await incrementTopicCount(userId, detectedTopic);
 
-  const responseText = detectedTopic
-    ? `Vamos falar sobre ${formatTitle(detectedTopic)}. O que voce gostaria de saber?`
-    : "Nao consegui identificar um assunto especifico. Pode reformular sua pergunta?";
+  const history = await getRecentChatMessages(userId, userMessage.sessionId);
+  const agentResponse = await askDigitalOceanAgent(buildAgentMessages(history, detectedTopic));
+  const responseText = agentResponse?.text || getChatFallbackResponse(detectedTopic);
+  const provider = agentResponse?.provider || "fallback";
 
   await addChatMessage({ userId, sessionId: userMessage.sessionId, role: "assistant", content: responseText, topic: detectedTopic });
-  return res.json({ responses: [{ text: responseText }], sessionId: userMessage.sessionId, detectedTopic });
+  return res.json({ responses: [{ text: responseText }], sessionId: userMessage.sessionId, detectedTopic, provider });
 }

@@ -17,8 +17,6 @@ npm start          # roda dist/server.js
 npm run db:generate
 npm run db:migrate
 npm run db:seed
-npm run db:migrate:prod # roda migrations compiladas em dist/
-npm run db:seed:prod    # roda seed compilado em dist/
 ```
 
 ## Variaveis De Ambiente
@@ -40,6 +38,9 @@ SMTP_USER=user@example.com
 SMTP_PASS=change-me
 MAIL_FROM="LogiBot <user@example.com>"
 PASSWORD_RESET_DEBUG_RESPONSE=false
+DIGITALOCEAN_AGENT_ENDPOINT=
+DIGITALOCEAN_AGENT_ACCESS_KEY=
+DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
 ```
 
 ## Banco
@@ -68,7 +69,7 @@ O seed cria:
 
 ## IA
 
-O endpoint `POST /chat/messages` esta sem provedor externo de IA neste ciclo. Ele valida o topico, salva historico no PostgreSQL e retorna uma resposta fallback controlada.
+O endpoint `POST /chat/messages` usa o Agent da DigitalOcean quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Se o Agent falhar ou nao estiver configurado, o backend preserva uma resposta fallback controlada.
 
 ## Emails
 
@@ -108,6 +109,9 @@ API_KEY=
 DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
 ENABLE_SWAGGER=false
+DIGITALOCEAN_AGENT_ENDPOINT=
+DIGITALOCEAN_AGENT_ACCESS_KEY=
+DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
 ```
 
 Os dominios de frontend e cookie ficam hardcoded no backend: `https://saellogibot.com`, `https://www.saellogibot.com` e localhosts de teste (`5173`, `5174`, `3000`, `3001`). O cookie de producao usa `.saellogibot.com`.

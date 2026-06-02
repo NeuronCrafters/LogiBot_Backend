@@ -11,6 +11,7 @@ import { errorHandler } from "./http/errorHandler";
 import { corsAccessLogger, corsOptions } from "./http/cors";
 import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 import { closeDatabasePool } from "./db/client";
+import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
 
 export const app = express();
 
@@ -24,8 +25,7 @@ setupSwagger(app);
 app.use(errorHandler);
 
 export async function bootstrap() {
-  const requiredEnvVars = ["FRONT_URL", "DATABASE_URL", "JWT_SECRET"];
-  for (const varName of requiredEnvVars) {
+  for (const varName of getRequiredBootstrapEnvVars()) {
     if (!process.env[varName]) {
       throw new Error(`variavel de ambiente necessaria ausente: ${varName}`);
     }
@@ -38,7 +38,7 @@ export async function bootstrap() {
   await initAdminUser();
   console.log("verificacao do usuario admin concluida.");
 
-  const port = parseInt(process.env.PORT || "3000", 10);
+  const port = getAppPort();
   const server = createServer(app);
 
   server.listen(port, "0.0.0.0", () => {

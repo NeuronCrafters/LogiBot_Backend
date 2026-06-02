@@ -1,10 +1,11 @@
 import type { CorsOptions } from "cors";
 import type { NextFunction, Request, Response } from "express";
+import { getLocalBackendOrigin } from "../config/env";
 
 export function getAllowedOrigins() {
   return [
     "https://www.saellogibot.com",
-    "http://localhost:43187",
+    getLocalBackendOrigin(),
     "http://localhost:5173",
     process.env.FRONT_URL,
   ].filter(Boolean) as string[];

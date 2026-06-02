@@ -590,11 +590,12 @@ routes.post("/password/send-reset-password", asyncHandler(async (req, res) => {
     .where(eq(accounts.id, account.id));
 
   await sendPasswordResetEmail({ to: account.email, name: account.name, resetLink });
+  const includeDebugResetData = process.env.PASSWORD_RESET_DEBUG_RESPONSE === "true";
 
   return res.json({
     message: "se o email existir, a recuperacao sera iniciada",
-    resetToken: process.env.NODE_ENV === "production" ? undefined : token,
-    resetLink: process.env.NODE_ENV === "production" ? undefined : resetLink,
+    resetToken: includeDebugResetData ? token : undefined,
+    resetLink: includeDebugResetData ? resetLink : undefined,
   });
 }));
 

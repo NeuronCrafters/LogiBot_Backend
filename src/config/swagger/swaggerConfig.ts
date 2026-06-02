@@ -1,6 +1,7 @@
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
+import { getLocalBackendOrigin } from "../env";
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -14,9 +15,7 @@ const options: swaggerJSDoc.Options = {
       {
         url: "https://api.saellogibot.com",
       },
-      {
-        url: "http://localhost:3000",
-      },
+      ...(getLocalBackendOrigin() ? [{ url: getLocalBackendOrigin() as string }] : []),
     ],
     components: {
       securitySchemes: {

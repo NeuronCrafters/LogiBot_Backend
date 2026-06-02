@@ -19,8 +19,6 @@ npm run db:migrate
 npm run db:seed
 npm run db:migrate:prod # roda migrations compiladas em dist/
 npm run db:seed:prod    # roda seed compilado em dist/
-npm run start:prod      # migrate + start
-npm run start:prod:seed # migrate + seed + start
 ```
 
 ## Variaveis De Ambiente
@@ -28,7 +26,6 @@ npm run start:prod:seed # migrate + seed + start
 Copie `.env.example` para `.env` em desenvolvimento ou configure as variaveis equivalentes na VPS:
 
 ```env
-NODE_ENV=production
 PORT=43187
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
 JWT_SECRET=change-me
@@ -42,6 +39,7 @@ SMTP_SECURE=false
 SMTP_USER=user@example.com
 SMTP_PASS=change-me
 MAIL_FROM="LogiBot <user@example.com>"
+PASSWORD_RESET_DEBUG_RESPONSE=false
 ```
 
 ## Banco
@@ -88,7 +86,7 @@ O fluxo `POST /password/send-reset-password` envia email via SMTP usando Nodemai
 4. Rode `npm run db:migrate`.
 5. Rode `npm run db:seed` se o banco for novo.
 6. Rode `npm run build`.
-7. Inicie `npm run start:prod` com seu gerenciador de processo, por exemplo PM2 ou systemd.
+7. Inicie `npm start` com seu gerenciador de processo, por exemplo PM2 ou systemd.
 
 ## Docker / Dokploy
 
@@ -100,12 +98,13 @@ Portas ja ocupadas no servidor: `3002`, `3003`, `3010`, `3333`, `5173`, `5189`, 
 PORT=43187
 ```
 
-No Dokploy, configure a aplicacao para expor a porta `43187`.
+A fonte da verdade da porta do backend e sempre a variavel `PORT` quando ela existir no ambiente. Se `PORT` nao for carregada, o backend usa o fallback interno `43187`. O codigo Express, CORS local, Swagger local e healthcheck seguem essa mesma regra.
+
+No Dokploy, configure a aplicacao para expor a mesma porta definida em `PORT`.
 
 Variaveis recomendadas para o container:
 
 ```env
-NODE_ENV=production
 PORT=43187
 DATABASE_URL=postgresql://USER:PASSWORD@logibot-db:5432/DATABASE
 JWT_SECRET=change-me
@@ -121,14 +120,11 @@ Comandos uteis no Dokploy:
 
 ```bash
 # start command padrao do Dockerfile
-npm run start:prod
-
-# primeira subida em banco novo, se quiser criar admin/dados iniciais
-npm run start:prod:seed
+npm start
 
 # executar manualmente em console/job
 npm run db:migrate:prod
 npm run db:seed:prod
 ```
 
-Use `start:prod:seed` apenas quando quiser popular/atualizar os dados iniciais. Para deploy normal, prefira `start:prod`, que roda migrations e sobe a API.
+Rode `db:migrate:prod` antes do primeiro start ou como job de deploy. Rode `db:seed:prod` apenas quando quiser popular/atualizar os dados iniciais.

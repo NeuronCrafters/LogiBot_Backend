@@ -143,22 +143,8 @@ export function extractAllowedSubject(message: string): string | null {
   return null;
 }
 
-export function validateAndEnrichPrompt(userText: string): { subject: string; prompt: string; systemPrompt: string } | null {
+export function validateAndEnrichPrompt(userText: string): { subject: string } | null {
   const subject = extractAllowedSubject(userText);
-
-  const SYSTEM_PROMPT_RIGIDO = "Você é um assistente de programação. Seu foco estrito é em programação, algoritmos, lógica, linguagens de código e ferramentas de desenvolvimento (como Docker). SE a pergunta do usuário não for sobre este escopo, você DEVE responder EXCLUSIVAMENTE com a frase: 'Desculpe, só posso conversar sobre programação, algoritmos e tópicos relacionados. Pode me perguntar sobre variáveis, listas, ou até mesmo Docker!' NUNCA tente ser criativo ou relacionar tópicos não-técnicos ao seu escopo. Respeite sempre esta regra.";
-
-  if (subject === null) {
-
-    return null;
-  }
-
-
-  const executionPrompt = `Você é um tutor de programação especialista e didático. O usuário está perguntando sobre o tópico específico de **${subject}**. Responda a pergunta dele de forma clara, concisa e focada neste tópico, sempre usando exemplos de código quando apropriado. A pergunta do usuário é: '${userText}'`;
-
-  return {
-    subject,
-    prompt: executionPrompt,
-    systemPrompt: SYSTEM_PROMPT_RIGIDO
-  };
+  if (subject === null) return null;
+  return { subject };
 }

@@ -432,31 +432,27 @@ export async function summaryByEntity(entity: string, id: string) {
   return getEmptySummary();
 }
 
-function getChatFallbackResponse(detectedTopic: string | null) {
-  return detectedTopic
-    ? `Vamos falar sobre ${formatTitle(detectedTopic)}. O que voce gostaria de saber?`
-    : "Nao consegui identificar um assunto especifico. Pode reformular sua pergunta?";
-}
+function buildAgentMessages(
+  history: AgentMessage[],
+  detectedTopic: string | null,
+  currentMessage: string,
+): AgentMessage[] {
+  const systemLines = [
+    "Voce e o LogiBot, um tutor de logica de programacao.",
+    "Responda SEMPRE em portugues do Brasil.",
+    "REGRA PRINCIPAL: responda diretamente a pergunta do usuario. Nao peca mais contexto quando a pergunta ja e clara.",
+    "Seja claro, direto e didatico. Use exemplos de codigo em JavaScript ou pseudocodigo quando ajudar.",
+    "Priorize a base de conhecimento conectada ao Agent da DigitalOcean quando ela trouxer contexto relevante.",
+    "Ajude o aluno a raciocinar; se parecer uma avaliacao ou quiz, guie sem entregar a resposta pronta.",
+    "Perguntas fora de programacao, algoritmos e logica: responda 'Posso ajudar com programacao, algoritmos e logica de programacao. Pode me perguntar sobre variaveis, funcoes, estruturas de dados, etc!'",
+  ];
 
-function buildAgentMessages(history: AgentMessage[], detectedTopic: string | null): AgentMessage[] {
-  const topicInstruction = detectedTopic
-    ? `O assunto detectado na mensagem atual e: ${formatTitle(detectedTopic)}.`
-    : "Nenhum assunto especifico foi detectado na mensagem atual.";
+  if (detectedTopic) {
+    systemLines.push(`Topico identificado: ${formatTitle(detectedTopic)}. Responda a pergunta do usuario sobre este topico.`);
+  }
 
   return [
-    {
-      role: "system",
-      content: [
-        "Voce e o LogiBot, um tutor educacional de logica de programacao.",
-        "Responda sempre em portugues do Brasil.",
-        "Explique de forma clara, curta e didatica.",
-        "Priorize a base de conhecimento conectada ao Agent da DigitalOcean quando ela trouxer contexto relevante.",
-        "Ajude o aluno a raciocinar; se parecer uma avaliacao ou quiz, nao entregue apenas a resposta final.",
-        "Use exemplos simples em pseudocodigo ou JavaScript quando isso ajudar.",
-        "Se a pergunta fugir de logica de programacao, redirecione com gentileza.",
-        topicInstruction,
-      ].join("\n"),
-    },
+    { role: "system", content: systemLines.join("\n") },
     ...history,
   ];
 }
@@ -467,14 +463,17 @@ export async function handleAsk(req: any, res: any) {
   const providedSessionId = req.body.sessionId ? String(req.body.sessionId) : undefined;
   if (!message) throw new AppError("message e obrigatorio", 400);
 
-  const detectedTopic = validateAndEnrichPrompt(message)?.subject ?? null;
+  const enriched = validateAndEnrichPrompt(message);
+  const detectedTopic = enriched?.subject ?? null;
+
   const userMessage = await addChatMessage({ userId, sessionId: providedSessionId, role: "user", content: message, topic: detectedTopic });
   if (detectedTopic) await incrementTopicCount(userId, detectedTopic);
 
   const history = await getRecentChatMessages(userId, userMessage.sessionId);
-  const agentResponse = await askDigitalOceanAgent(buildAgentMessages(history, detectedTopic));
-  const responseText = agentResponse?.text || getChatFallbackResponse(detectedTopic);
-  const provider = agentResponse?.provider || "fallback";
+  const agentResponse = await askDigitalOceanAgent(buildAgentMessages(history, detectedTopic, message));
+
+  const responseText = agentResponse?.text ?? "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
+  const provider = agentResponse?.provider ?? "fallback";
 
   await addChatMessage({ userId, sessionId: userMessage.sessionId, role: "assistant", content: responseText, topic: detectedTopic });
   return res.json({ responses: [{ text: responseText }], sessionId: userMessage.sessionId, detectedTopic, provider });

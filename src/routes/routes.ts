@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { NextFunction, Request, Response, Router } from "express";
+import { Request, Response, Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
@@ -43,7 +43,9 @@ import {
 } from "../db/repositories/authRepository";
 import { normalizeSubjectFromMessage } from "../utils/normalizeSubject";
 import { validateAndEnrichPrompt } from "../utils/subjectExtractor";
-import type { Role } from "../types/Role";
+import { asyncHandler } from "../http/asyncHandler";
+import { requireApiKey, requireAuth, requireEnv, requireRoles, prioritizeRoles, signSession } from "../http/auth";
+import { clearAuthCookie, setAuthCookie } from "../http/cookies";
 
 const routes = Router();
 const runtimeSessions = new Map<string, RuntimeSession>();
@@ -110,115 +112,6 @@ const subcategories: Record<string, string[]> = {
   operadores_logicos: ["o_que_sao_operadores_logicos"],
   "operadores_lógicos": ["o_que_são_operadores_lógicos"],
 };
-
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
-function requireEnv(name: string) {
-  const value = process.env[name];
-  if (!value) throw new AppError(`${name} nao configurado`, 500);
-  return value;
-}
-
-function isProductionRequest(req: Request) {
-  const origin = req.get("origin") || "";
-  const host = req.get("host") || "";
-  return origin.includes("saellogibot.com") || host.includes("saellogibot.com");
-}
-
-function setAuthCookie(req: Request, res: Response, token: string) {
-  const isProduction = isProductionRequest(req);
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
-    maxAge: 1000 * 60 * 60 * 2,
-    domain: isProduction ? process.env.COOKIE_DOMAIN : undefined,
-    path: "/",
-  });
-}
-
-function clearAuthCookie(req: Request, res: Response) {
-  res.clearCookie("token", {
-    domain: isProductionRequest(req) ? process.env.COOKIE_DOMAIN : undefined,
-    path: "/",
-  });
-}
-
-function signSession(claims: { id: string; name: string; email: string; role: Role[]; school?: string | null }) {
-  return jwt.sign(claims, requireEnv("JWT_SECRET"), { expiresIn: "2h", subject: claims.id });
-}
-
-function normalizeRoles(roleField: string | string[] | null | undefined): Role[] {
-  if (!roleField) return [];
-  const roles = Array.isArray(roleField) ? roleField : [roleField];
-  return roles.filter(Boolean) as Role[];
-}
-
-function prioritizeRoles(roles: Role[]) {
-  if (roles.includes("course-coordinator")) return ["course-coordinator"] as Role[];
-  return roles;
-}
-
-function requireApiKey(req: Request, res: Response, next: NextFunction) {
-  if (!process.env.API_KEY) return next();
-  const providedKey = req.header("x-api-key") || req.header("X-API-Key");
-  if (providedKey !== process.env.API_KEY) {
-    return res.status(401).json({ success: false, message: "api key invalida" });
-  }
-  return next();
-}
-
-async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies?.token;
-  if (!token) return next(new AppError("nao autenticado: token ausente", 401));
-
-  try {
-    const decoded = jwt.verify(token, requireEnv("JWT_SECRET")) as jwt.JwtPayload & {
-      id?: string;
-      name?: string;
-      email?: string;
-      role?: Role[] | Role;
-      school?: string | null;
-    };
-
-    const id = String(decoded.id || decoded.sub || "");
-    if (!id) throw new AppError("token invalido", 401);
-
-    const account = await getAccountById(getDb(), id);
-    if (!account) throw new AppError("usuario nao encontrado", 401);
-    if (account.status !== "active") throw new AppError("acesso negado. sua conta esta inativa.", 403);
-
-    req.user = {
-      id: account.id,
-      name: account.name,
-      email: account.email,
-      role: normalizeRoles(account.roles),
-      school: account.schoolId || null,
-      courses: account.courses?.length ? account.courses : account.courseId || null,
-      classes: account.classes?.length ? account.classes : account.classId || null,
-    };
-
-    return next();
-  } catch (error) {
-    clearAuthCookie(req, res);
-    if (error instanceof jwt.JsonWebTokenError) return next(new AppError("token invalido", 401));
-    return next(error);
-  }
-}
-
-function requireRoles(allowedRoles: Role[]) {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    const roles = normalizeRoles(req.user?.role);
-    if (!roles.some((role) => allowedRoles.includes(role))) {
-      return next(new AppError("acesso negado", 403));
-    }
-    return next();
-  };
-}
 
 function getRuntimeSession(userId: string): RuntimeSession {
   const existing = runtimeSessions.get(userId);

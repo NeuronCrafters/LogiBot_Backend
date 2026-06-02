@@ -7,46 +7,20 @@ import { createServer } from "http";
 import { connectDB } from "./config/database";
 import { setupSwagger } from "./config/swagger/swaggerConfig";
 import { routes } from "./routes/routes";
-import { errorHandler } from "./middlewares/errorHandler/errorHandler";
-import { corsErrorHandler } from "./middlewares/corsErrorHandler/corsErrorHandler";
-import { corsAccessLogger } from "./middlewares/corsErrorHandler/corsAccessLogger";
+import { errorHandler } from "./http/errorHandler";
+import { corsAccessLogger, corsOptions } from "./http/cors";
 import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 import { closeDatabasePool } from "./db/client";
 
 export const app = express();
 
-const allowedOrigins = [
-  "https://saellogibot.com",
-  "https://www.saellogibot.com",
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:5173",
-  "http://localhost:5174",
-  process.env.FRONT_URL,
-].filter(Boolean) as string[];
-
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`origin '${origin}' nao permitido pelo cors`));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With", "x-api-key", "X-API-Key"],
-  exposedHeaders: ["Set-Cookie"],
-  maxAge: 86400,
-}));
-
+app.use(cors(corsOptions));
 app.use(corsAccessLogger);
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(routes);
 setupSwagger(app);
-app.use(corsErrorHandler);
 app.use(errorHandler);
 
 export async function bootstrap() {

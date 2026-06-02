@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"code":{"$numberInt":"1"}},"name":"code_1","background":true,"unique":true}],"uuid":"52425eb9ae404aa48b70f2c1ca7a4db5","collectionName":"disciplines","type":"collection"}

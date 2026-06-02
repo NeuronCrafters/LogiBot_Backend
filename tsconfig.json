@@ -114,6 +114,21 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "include": ["src/**/*.ts", "src/**/*.json", "src/jest.config.ts", "src/models/UserAnalysis"],
-  "exclude": ["node_modules", "src/worker/**"]
+  "include": [
+    "src/index.ts",
+    "src/server.ts",
+    "src/routes/routes.ts",
+    "src/db/**/*.ts",
+    "src/config/database.ts",
+    "src/config/initAdminUser/**/*.ts",
+    "src/config/swagger/**/*.ts",
+    "src/exceptions/**/*.ts",
+    "src/http/**/*.ts",
+    "src/utils/normalizeSubject.ts",
+    "src/utils/subjectExtractor.ts",
+    "src/types/Role.ts",
+    "src/@types/**/*.d.ts",
+    "src/database/quiz/**/*.json"
+  ],
+  "exclude": ["node_modules"]
 }

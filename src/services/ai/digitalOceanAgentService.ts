@@ -14,7 +14,9 @@ type AgentResponse = {
 };
 
 function getAgentEndpoint() {
-  return process.env.DIGITALOCEAN_AGENT_ENDPOINT?.trim().replace(/\/+$/, "");
+  const base = process.env.DIGITALOCEAN_AGENT_ENDPOINT?.trim().replace(/\/+$/, "");
+  if (!base) return undefined;
+  return base.endsWith("/chat/completions") ? base : `${base}/api/v1/chat/completions`;
 }
 
 function getAgentAccessKey() {

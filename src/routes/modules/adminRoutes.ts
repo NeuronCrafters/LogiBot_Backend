@@ -23,15 +23,35 @@ export const adminRouter = Router();
 
 adminRouter.use(requireAuth);
 
-adminRouter.post("/professors", requireRoles(["admin"]), asyncHandler(async (req, res) => {
+adminRouter.post("/professors", requireRoles(["admin", "course-coordinator"]), asyncHandler(async (req, res) => {
   const name = String(req.body.name || "").trim();
   const email = String(req.body.email || "").trim().toLowerCase();
   const password = String(req.body.password || "");
-  const schoolId = String(req.body.school || req.body.schoolId || "");
+  const isAdmin = req.user!.role.includes("admin");
+  const coordinatorCourseIds = Array.isArray(req.user!.courses) ? req.user!.courses as string[] : [];
+  const schoolId = isAdmin ? String(req.body.school || req.body.schoolId || "") : String(req.user!.school || "");
   const courseIds = Array.isArray(req.body.courses) ? req.body.courses as string[] : [];
   const classIds = Array.isArray(req.body.classes) ? req.body.classes as string[] : [];
   const disciplineIds = Array.isArray(req.body.disciplines) ? req.body.disciplines as string[] : [];
   if (!name || !email || !password || !schoolId) throw new AppError("campos obrigatorios ausentes", 400);
+  if (!isAdmin) {
+    if (!courseIds.length) throw new AppError("selecione pelo menos um curso", 400);
+    if (courseIds.some((courseId) => !coordinatorCourseIds.includes(courseId))) throw new AppError("coordenador so pode criar professor nos seus cursos", 403);
+
+    if (classIds.length) {
+      const classRows = await getDb().select().from(classes).where(inArray(classes.id, classIds));
+      if (classRows.length !== classIds.length || classRows.some((item) => !coordinatorCourseIds.includes(item.courseId))) {
+        throw new AppError("uma ou mais turmas nao pertencem aos cursos do coordenador", 403);
+      }
+    }
+
+    if (disciplineIds.length) {
+      const disciplineRows = await getDb().select().from(disciplines).where(inArray(disciplines.id, disciplineIds));
+      if (disciplineRows.length !== disciplineIds.length || disciplineRows.some((item) => !coordinatorCourseIds.includes(item.courseId))) {
+        throw new AppError("uma ou mais disciplinas nao pertencem aos cursos do coordenador", 403);
+      }
+    }
+  }
   const passwordHash = await bcrypt.hash(password, 10);
   const [account] = await getDb().insert(accounts).values({ name, email, passwordHash, status: "active" }).returning();
   await getDb().insert(accountRoles).values({ accountId: account.id, role: "professor" }).onConflictDoNothing();

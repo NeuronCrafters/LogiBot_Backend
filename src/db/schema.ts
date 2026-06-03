@@ -97,7 +97,11 @@ export const studentDisciplines = pgTable("student_disciplines", {
 export const classDisciplines = pgTable("class_disciplines", {
   classId: uuid("class_id").notNull().references(() => classes.id, { onDelete: "cascade" }),
   disciplineId: uuid("discipline_id").notNull().references(() => disciplines.id, { onDelete: "cascade" }),
-}, (table) => ({ pk: primaryKey({ columns: [table.classId, table.disciplineId] }) }));
+  code: text("code"),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.classId, table.disciplineId] }),
+  uniqueCode: uniqueIndex("class_disciplines_code_idx").on(table.code),
+}));
 
 export const professorCourses = pgTable("professor_courses", {
   professorId: uuid("professor_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),

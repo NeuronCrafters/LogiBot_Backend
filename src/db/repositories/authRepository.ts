@@ -74,6 +74,27 @@ async function hydrateAccount(db: AnyDbClient, account: typeof accounts.$inferSe
 }
 
 export async function findEntitiesByDisciplineCode(db: AnyDbClient, code: string) {
+  const [classDiscipline] = await db.select()
+    .from(classDisciplines)
+    .where(eq(classDisciplines.code, code))
+    .limit(1);
+
+  if (classDiscipline) {
+    const [[discipline], [linkedClass]] = await Promise.all([
+      db.select().from(disciplines).where(eq(disciplines.id, classDiscipline.disciplineId)).limit(1),
+      db.select().from(classes).where(eq(classes.id, classDiscipline.classId)).limit(1),
+    ]);
+    if (!discipline || !linkedClass) return null;
+
+    const [course] = await db.select().from(courses).where(eq(courses.id, discipline.courseId)).limit(1);
+    if (!course) return null;
+
+    const [university] = await db.select().from(universities).where(eq(universities.id, course.universityId)).limit(1);
+    if (!university) return null;
+
+    return { university, course, discipline, classes: [linkedClass], registrationCode: code };
+  }
+
   const [discipline] = await db.select().from(disciplines).where(eq(disciplines.code, code)).limit(1);
   if (!discipline) return null;
 
@@ -91,7 +112,7 @@ export async function findEntitiesByDisciplineCode(db: AnyDbClient, code: string
     ? await db.select().from(classes).where(inArray(classes.id, classIds))
     : [];
 
-  return { university, course, discipline, classes: linkedClasses };
+  return { university, course, discipline, classes: linkedClasses, registrationCode: discipline.code };
 }
 
 export async function createStudentAccount(db: AnyDbClient, input: {

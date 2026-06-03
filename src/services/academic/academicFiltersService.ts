@@ -21,11 +21,17 @@ type AcademicFiltersUser = {
   email: string;
   role: string[];
   school?: string | null;
+  courses?: string[] | string | null;
 };
 
 export async function buildAcademicFilters(user: AcademicFiltersUser) {
   const db = getDb();
   const isAdmin = user.role.includes("admin");
+  const userCourseIds = Array.isArray(user.courses)
+    ? user.courses
+    : typeof user.courses === "string"
+      ? [user.courses]
+      : [];
   const schoolId = user.school || undefined;
 
   const universityRows = isAdmin
@@ -34,9 +40,12 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
       ? await db.select().from(universities).where(eq(universities.id, schoolId))
       : [];
   const universityIds = universityRows.map((item) => item.id);
-  const courseRows = universityIds.length
+  const allCourseRows = universityIds.length
     ? await db.select().from(courses).where(inArray(courses.universityId, universityIds))
     : [];
+  const courseRows = isAdmin || !userCourseIds.length
+    ? allCourseRows
+    : allCourseRows.filter((course) => userCourseIds.includes(course.id));
   const courseIds = courseRows.map((item) => item.id);
   const classRows = courseIds.length
     ? await db.select().from(classes).where(inArray(classes.courseId, courseIds))
@@ -128,7 +137,7 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
                     _id: discipline.id,
                     id: discipline.id,
                     name: discipline.name,
-                    code: discipline.code,
+                    code: link.code || discipline.code,
                   })),
               ),
             students: studentRows
@@ -159,6 +168,7 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
                     _id: classItem.id,
                     id: classItem.id,
                     name: classItem.name,
+                    code: link.code || discipline.code,
                   })),
               ),
             professors: professorDisciplineLinks

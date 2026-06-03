@@ -18,7 +18,6 @@ import {
 } from "../../db/repositories/authRepository";
 import { sendPasswordResetEmail } from "../../services/email/mailService";
 import { getFrontendOrigin } from "../../config/env";
-import { generateDisciplineCode } from "../../services/academic/disciplineCode";
 import { closeOpenStudentSession } from "../../services/auth/studentSessionService";
 
 export const authRouter = Router();
@@ -42,7 +41,7 @@ authRouter.post("/register", asyncHandler(async (req, res) => {
   const { university, course, discipline, classes: linkedClasses } = entities;
   if (!linkedClasses.length) throw new AppError("a disciplina nao possui turmas cadastradas!", 400);
 
-  const selectedClass = linkedClasses.find((item) => generateDisciplineCode(university.id, course.id, item.id, discipline.id) === code) || linkedClasses[0];
+  const selectedClass = linkedClasses[0];
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await createStudentAccount(db, {
     name,
@@ -67,7 +66,7 @@ authRouter.post("/register", asyncHandler(async (req, res) => {
         school: { _id: university.id, id: university.id, name: university.name },
         course: { _id: course.id, id: course.id, name: course.name },
         class: { _id: selectedClass.id, id: selectedClass.id, name: selectedClass.name },
-        disciplines: [{ _id: discipline.id, id: discipline.id, name: discipline.name, code: discipline.code }],
+        disciplines: [{ _id: discipline.id, id: discipline.id, name: discipline.name, code: entities.registrationCode || discipline.code }],
       },
       assignedClass: { id: selectedClass.id, name: selectedClass.name },
       discipline: { id: discipline.id, name: discipline.name },

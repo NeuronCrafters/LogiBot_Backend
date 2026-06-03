@@ -17,6 +17,7 @@ import {
   studentProfiles,
   universities,
 } from "./schema";
+import { generateUniqueRegistrationCode } from "../services/academic/disciplineCode";
 
 const ADMIN_USER_DATA = {
   name: "admin",
@@ -226,8 +227,12 @@ async function seed() {
     .values({
       classId: ACADEMIC_SEED_DATA.class.id,
       disciplineId: ACADEMIC_SEED_DATA.discipline.id,
+      code: ACADEMIC_SEED_DATA.discipline.code,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: [classDisciplines.classId, classDisciplines.disciplineId],
+      set: { code: ACADEMIC_SEED_DATA.discipline.code || await generateUniqueRegistrationCode(db) },
+    });
 
   await seedProfessorLikeUser(db, PROFESSOR_USER_DATA);
   await seedProfessorLikeUser(db, COORDINATOR_USER_DATA);

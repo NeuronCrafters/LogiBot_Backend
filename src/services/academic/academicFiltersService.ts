@@ -36,21 +36,34 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
   const universityRows = isAdmin
     ? await db.select().from(universities)
     : schoolId
-      ? await db.select().from(universities).where(eq(universities.id, schoolId))
+      ? await db
+          .select()
+          .from(universities)
+          .where(eq(universities.id, schoolId))
       : [];
   const universityIds = universityRows.map((item) => item.id);
   const allCourseRows = universityIds.length
-    ? await db.select().from(courses).where(inArray(courses.universityId, universityIds))
+    ? await db
+        .select()
+        .from(courses)
+        .where(inArray(courses.universityId, universityIds))
     : [];
-  const courseRows = isAdmin || !userCourseIds.length
-    ? allCourseRows
-    : allCourseRows.filter((course) => userCourseIds.includes(course.id));
+  const courseRows =
+    isAdmin || !userCourseIds.length
+      ? allCourseRows
+      : allCourseRows.filter((course) => userCourseIds.includes(course.id));
   const courseIds = courseRows.map((item) => item.id);
   const classRows = courseIds.length
-    ? await db.select().from(classes).where(inArray(classes.courseId, courseIds))
+    ? await db
+        .select()
+        .from(classes)
+        .where(inArray(classes.courseId, courseIds))
     : [];
   const disciplineRows = courseIds.length
-    ? await db.select().from(disciplines).where(inArray(disciplines.courseId, courseIds))
+    ? await db
+        .select()
+        .from(disciplines)
+        .where(inArray(disciplines.courseId, courseIds))
     : [];
   const professorRows = await db
     .select({
@@ -78,32 +91,53 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
         .innerJoin(studentProfiles, eq(studentProfiles.accountId, accounts.id))
         .where(inArray(studentProfiles.courseId, courseIds))
     : [];
-  const [classLinks, professorCourseLinks, professorDisciplineLinks, roleRows] = await Promise.all([
-    disciplineRows.length
-      ? db
-          .select()
-          .from(classDisciplines)
-          .where(inArray(classDisciplines.disciplineId, disciplineRows.map((item) => item.id)))
-      : [],
-    professorRows.length
-      ? db
-          .select()
-          .from(professorCourses)
-          .where(inArray(professorCourses.professorId, professorRows.map((item) => item.id)))
-      : [],
-    professorRows.length
-      ? db
-          .select()
-          .from(professorDisciplines)
-          .where(inArray(professorDisciplines.professorId, professorRows.map((item) => item.id)))
-      : [],
-    professorRows.length
-      ? db
-          .select()
-          .from(accountRoles)
-          .where(inArray(accountRoles.accountId, professorRows.map((item) => item.id)))
-      : [],
-  ]);
+  const [classLinks, professorCourseLinks, professorDisciplineLinks, roleRows] =
+    await Promise.all([
+      disciplineRows.length
+        ? db
+            .select()
+            .from(classDisciplines)
+            .where(
+              inArray(
+                classDisciplines.disciplineId,
+                disciplineRows.map((item) => item.id),
+              ),
+            )
+        : [],
+      professorRows.length
+        ? db
+            .select()
+            .from(professorCourses)
+            .where(
+              inArray(
+                professorCourses.professorId,
+                professorRows.map((item) => item.id),
+              ),
+            )
+        : [],
+      professorRows.length
+        ? db
+            .select()
+            .from(professorDisciplines)
+            .where(
+              inArray(
+                professorDisciplines.professorId,
+                professorRows.map((item) => item.id),
+              ),
+            )
+        : [],
+      professorRows.length
+        ? db
+            .select()
+            .from(accountRoles)
+            .where(
+              inArray(
+                accountRoles.accountId,
+                professorRows.map((item) => item.id),
+              ),
+            )
+        : [],
+    ]);
 
   const data = universityRows.map((university) => ({
     _id: university.id,
@@ -181,7 +215,11 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
               ),
             students: studentRows
               .filter((student) =>
-                classLinks.some((link) => link.disciplineId === discipline.id && link.classId === student.classId),
+                classLinks.some(
+                  (link) =>
+                    link.disciplineId === discipline.id &&
+                    link.classId === student.classId,
+                ),
               )
               .map((student) => ({
                 _id: student.id,

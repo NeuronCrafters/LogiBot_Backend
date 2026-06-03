@@ -16,7 +16,10 @@ export type Filters = {
 };
 
 export function formatSeconds(seconds: number) {
-  const totalSeconds = Math.max(0, Math.round(Number.isFinite(seconds) ? seconds : 0));
+  const totalSeconds = Math.max(
+    0,
+    Math.round(Number.isFinite(seconds) ? seconds : 0),
+  );
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const secs = totalSeconds % 60;
@@ -27,34 +30,60 @@ export function formatSeconds(seconds: number) {
     minutes,
     seconds: secs,
     formatted: `${pad(hours)}:${pad(minutes)}:${pad(secs)}`,
-    humanized: hours > 0 ? `${hours}h ${minutes}min ${secs}s` : minutes > 0 ? `${minutes}min ${secs}s` : `${secs}s`,
+    humanized:
+      hours > 0
+        ? `${hours}h ${minutes}min ${secs}s`
+        : minutes > 0
+          ? `${minutes}min ${secs}s`
+          : `${secs}s`,
   };
 }
 
 export function emptySubjectCounts() {
-  return { variaveis: 0, listas: 0, condicionais: 0, verificacoes: 0, operadores_logicos: 0, funcoes: 0, repeticao: 0 };
+  return {
+    variaveis: 0,
+    listas: 0,
+    condicionais: 0,
+    verificacoes: 0,
+    operadores_logicos: 0,
+    funcoes: 0,
+    repeticao: 0,
+  };
 }
 
 export function analysisWhere(filters: Filters) {
   const conditions = [];
-  if (filters.universityId) conditions.push(eq(userAnalyses.schoolId, filters.universityId));
-  if (filters.courseId) conditions.push(eq(userAnalyses.courseId, filters.courseId));
-  if (filters.classId) conditions.push(eq(userAnalyses.classId, filters.classId));
-  if (filters.studentId) conditions.push(eq(userAnalyses.userId, filters.studentId));
+  if (filters.universityId)
+    conditions.push(eq(userAnalyses.schoolId, filters.universityId));
+  if (filters.courseId)
+    conditions.push(eq(userAnalyses.courseId, filters.courseId));
+  if (filters.classId)
+    conditions.push(eq(userAnalyses.classId, filters.classId));
+  if (filters.studentId)
+    conditions.push(eq(userAnalyses.userId, filters.studentId));
   return conditions.length ? and(...conditions) : undefined;
 }
 
 export async function queryQuestions(filters: Filters) {
   return getDb()
-    .select({ subject: answerQuestions.subject, isCorrect: answerQuestions.isCorrect, timestamp: answerQuestions.timestamp })
+    .select({
+      subject: answerQuestions.subject,
+      isCorrect: answerQuestions.isCorrect,
+      timestamp: answerQuestions.timestamp,
+    })
     .from(answerQuestions)
     .innerJoin(answerAttempts, eq(answerAttempts.id, answerQuestions.attemptId))
-    .innerJoin(analysisSessions, eq(analysisSessions.id, answerAttempts.sessionId))
+    .innerJoin(
+      analysisSessions,
+      eq(analysisSessions.id, answerAttempts.sessionId),
+    )
     .innerJoin(userAnalyses, eq(userAnalyses.id, analysisSessions.analysisId))
     .where(analysisWhere(filters));
 }
 
-export function aggregateByCategory(rows: { subject: string; isCorrect: boolean }[]) {
+export function aggregateByCategory(
+  rows: { subject: string; isCorrect: boolean }[],
+) {
   const map: Record<string, { correct: number; wrong: number }> = {};
   for (const row of rows) {
     const category = normalizeSubjectFromMessage(row.subject) || row.subject;
@@ -65,14 +94,25 @@ export function aggregateByCategory(rows: { subject: string; isCorrect: boolean 
   return map;
 }
 
-export async function getSummary(filters: { universityId: string; courseId?: string; classId?: string; studentId?: string }) {
+export async function getSummary(filters: {
+  universityId: string;
+  courseId?: string;
+  classId?: string;
+  studentId?: string;
+}) {
   const db = getDb();
   const conditions = [eq(userAnalyses.schoolId, filters.universityId)];
-  if (filters.courseId) conditions.push(eq(userAnalyses.courseId, filters.courseId));
-  if (filters.classId) conditions.push(eq(userAnalyses.classId, filters.classId));
-  if (filters.studentId) conditions.push(eq(userAnalyses.userId, filters.studentId));
+  if (filters.courseId)
+    conditions.push(eq(userAnalyses.courseId, filters.courseId));
+  if (filters.classId)
+    conditions.push(eq(userAnalyses.classId, filters.classId));
+  if (filters.studentId)
+    conditions.push(eq(userAnalyses.userId, filters.studentId));
 
-  const analyses = await db.select().from(userAnalyses).where(and(...conditions));
+  const analyses = await db
+    .select()
+    .from(userAnalyses)
+    .where(and(...conditions));
   if (!analyses.length) return getEmptySummary();
 
   const analysisIds = analyses.map((analysis) => analysis.id);
@@ -82,7 +122,12 @@ export async function getSummary(filters: { universityId: string; courseId?: str
     .where(inArray(analysisSessions.analysisId, analysisIds))
     .orderBy(desc(analysisSessions.sessionStart));
 
-  const analysisUserMap = new Map(analyses.map((analysis) => [analysis.id, { userId: analysis.userId, name: analysis.name }]));
+  const analysisUserMap = new Map(
+    analyses.map((analysis) => [
+      analysis.id,
+      { userId: analysis.userId, name: analysis.name },
+    ]),
+  );
   const subjectCounts = emptySubjectCounts();
   let totalCorrectAnswers = 0;
   let totalWrongAnswers = 0;
@@ -105,10 +150,16 @@ export async function getSummary(filters: { universityId: string; courseId?: str
   }
 
   for (const session of sessions) {
-    const chatCounts = (session.subjectCountsChat || {}) as Record<string, number>;
+    const chatCounts = (session.subjectCountsChat || {}) as Record<
+      string,
+      number
+    >;
     for (const [key, value] of Object.entries(chatCounts)) {
       const normalized = normalizeSubjectFromMessage(key) || key;
-      if (normalized in subjectCounts) subjectCounts[normalized as keyof typeof subjectCounts] += Number(value || 0);
+      if (normalized in subjectCounts)
+        subjectCounts[normalized as keyof typeof subjectCounts] += Number(
+          value || 0,
+        );
     }
 
     if (session.sessionStart && session.sessionEnd && session.sessionDuration) {
@@ -139,12 +190,24 @@ export async function getSummary(filters: { universityId: string; courseId?: str
   };
 }
 
-export function buildDailyUsage(sessions: Array<{ date: string; sessionDuration: number }>) {
-  const byDay: Record<string, { date: string; usage: number; formatted: string }> = {};
+export function buildDailyUsage(
+  sessions: Array<{ date: string; sessionDuration: number }>,
+) {
+  const byDay: Record<
+    string,
+    { date: string; usage: number; formatted: string }
+  > = {};
   for (const session of sessions) {
-    if (!byDay[session.date]) byDay[session.date] = { date: session.date, usage: 0, formatted: "00:00:00" };
+    if (!byDay[session.date])
+      byDay[session.date] = {
+        date: session.date,
+        usage: 0,
+        formatted: "00:00:00",
+      };
     byDay[session.date].usage += session.sessionDuration / 60;
-    byDay[session.date].formatted = formatSeconds(Math.round(byDay[session.date].usage * 60)).formatted;
+    byDay[session.date].formatted = formatSeconds(
+      Math.round(byDay[session.date].usage * 60),
+    ).formatted;
   }
   return Object.values(byDay).sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -163,18 +226,46 @@ export function getEmptySummary() {
 }
 
 export async function summaryByEntity(entity: string, id: string) {
-  if (entity === "university" || entity === "universities") return getSummary({ universityId: id });
+  if (entity === "university" || entity === "universities")
+    return getSummary({ universityId: id });
   if (entity === "course" || entity === "courses") {
-    const [analysis] = await getDb().select().from(userAnalyses).where(eq(userAnalyses.courseId, id)).limit(1);
-    return analysis ? getSummary({ universityId: analysis.schoolId, courseId: id }) : getEmptySummary();
+    const [analysis] = await getDb()
+      .select()
+      .from(userAnalyses)
+      .where(eq(userAnalyses.courseId, id))
+      .limit(1);
+    return analysis
+      ? getSummary({ universityId: analysis.schoolId, courseId: id })
+      : getEmptySummary();
   }
   if (entity === "class" || entity === "classes") {
-    const [analysis] = await getDb().select().from(userAnalyses).where(eq(userAnalyses.classId, id)).limit(1);
-    return analysis ? getSummary({ universityId: analysis.schoolId, courseId: analysis.courseId, classId: id }) : getEmptySummary();
+    const [analysis] = await getDb()
+      .select()
+      .from(userAnalyses)
+      .where(eq(userAnalyses.classId, id))
+      .limit(1);
+    return analysis
+      ? getSummary({
+          universityId: analysis.schoolId,
+          courseId: analysis.courseId,
+          classId: id,
+        })
+      : getEmptySummary();
   }
   if (entity === "student" || entity === "students") {
-    const [analysis] = await getDb().select().from(userAnalyses).where(eq(userAnalyses.userId, id)).limit(1);
-    return analysis ? getSummary({ universityId: analysis.schoolId, courseId: analysis.courseId, classId: analysis.classId, studentId: id }) : getEmptySummary();
+    const [analysis] = await getDb()
+      .select()
+      .from(userAnalyses)
+      .where(eq(userAnalyses.userId, id))
+      .limit(1);
+    return analysis
+      ? getSummary({
+          universityId: analysis.schoolId,
+          courseId: analysis.courseId,
+          classId: analysis.classId,
+          studentId: id,
+        })
+      : getEmptySummary();
   }
   return getEmptySummary();
 }

@@ -49,9 +49,15 @@ export async function bootstrap() {
     });
   });
 
-  process.on("unhandledRejection", (reason) => logger.error("Process", "Unhandled promise rejection.", reason));
-  process.on("uncaughtException", (error) => logger.error("Process", "Uncaught exception.", error));
-  process.on("exit", (code) => logger.info("Process", "Node process exited.", { code }));
+  process.on("unhandledRejection", (reason) =>
+    logger.error("Process", "Unhandled promise rejection.", reason),
+  );
+  process.on("uncaughtException", (error) =>
+    logger.error("Process", "Uncaught exception.", error),
+  );
+  process.on("exit", (code) =>
+    logger.info("Process", "Node process exited.", { code }),
+  );
 
   return server;
 }

@@ -51,7 +51,12 @@ export function getAllowedFrontendOrigins() {
 }
 
 export function getFrontendOrigin(candidate?: string) {
-  if (candidate && getAllowedFrontendOrigins().includes(candidate as typeof FRONTEND_ORIGINS[number])) {
+  if (
+    candidate &&
+    getAllowedFrontendOrigins().includes(
+      candidate as (typeof FRONTEND_ORIGINS)[number],
+    )
+  ) {
     return candidate;
   }
 

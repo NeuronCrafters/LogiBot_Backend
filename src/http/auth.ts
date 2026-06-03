@@ -12,18 +12,30 @@ export function requireEnv(name: string) {
   return value;
 }
 
-export function signSession(claims: { id: string; name: string; email: string; role: Role[]; school?: string | null }) {
-  return jwt.sign(claims, requireEnv("JWT_SECRET"), { expiresIn: "2h", subject: claims.id });
+export function signSession(claims: {
+  id: string;
+  name: string;
+  email: string;
+  role: Role[];
+  school?: string | null;
+}) {
+  return jwt.sign(claims, requireEnv("JWT_SECRET"), {
+    expiresIn: "2h",
+    subject: claims.id,
+  });
 }
 
-export function normalizeRoles(roleField: string | string[] | null | undefined): Role[] {
+export function normalizeRoles(
+  roleField: string | string[] | null | undefined,
+): Role[] {
   if (!roleField) return [];
   const roles = Array.isArray(roleField) ? roleField : [roleField];
   return roles.filter(Boolean) as Role[];
 }
 
 export function prioritizeRoles(roles: Role[]) {
-  if (roles.includes("course-coordinator")) return ["course-coordinator"] as Role[];
+  if (roles.includes("course-coordinator"))
+    return ["course-coordinator"] as Role[];
   return roles;
 }
 
@@ -32,18 +44,27 @@ export function requireApiKey(req: Request, res: Response, next: NextFunction) {
 
   const providedKey = req.header("x-api-key") || req.header("X-API-Key");
   if (providedKey !== process.env.API_KEY) {
-    return res.status(401).json({ success: false, message: "api key invalida" });
+    return res
+      .status(401)
+      .json({ success: false, message: "api key invalida" });
   }
 
   return next();
 }
 
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   const token = req.cookies?.token;
   if (!token) return next(new AppError("nao autenticado: token ausente", 401));
 
   try {
-    const decoded = jwt.verify(token, requireEnv("JWT_SECRET")) as jwt.JwtPayload & {
+    const decoded = jwt.verify(
+      token,
+      requireEnv("JWT_SECRET"),
+    ) as jwt.JwtPayload & {
       id?: string;
       role?: Role[] | Role;
     };
@@ -53,7 +74,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     const account = await getAccountById(getDb(), id);
     if (!account) throw new AppError("usuario nao encontrado", 401);
-    if (account.status !== "active") throw new AppError("acesso negado. sua conta esta inativa.", 403);
+    if (account.status !== "active")
+      throw new AppError("acesso negado. sua conta esta inativa.", 403);
 
     req.user = {
       id: account.id,
@@ -61,14 +83,19 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       email: account.email,
       role: normalizeRoles(account.roles),
       school: account.schoolId || null,
-      courses: account.courses?.length ? account.courses : account.courseId || null,
-      classes: account.classes?.length ? account.classes : account.classId || null,
+      courses: account.courses?.length
+        ? account.courses
+        : account.courseId || null,
+      classes: account.classes?.length
+        ? account.classes
+        : account.classId || null,
     };
 
     return next();
   } catch (error) {
     clearAuthCookie(req, res);
-    if (error instanceof jwt.JsonWebTokenError) return next(new AppError("token invalido", 401));
+    if (error instanceof jwt.JsonWebTokenError)
+      return next(new AppError("token invalido", 401));
     return next(error);
   }
 }
@@ -82,4 +109,3 @@ export function requireRoles(allowedRoles: Role[]) {
     return next();
   };
 }
-

@@ -14,9 +14,14 @@ type AgentResponse = {
 };
 
 function getAgentEndpoint() {
-  const base = process.env.DIGITALOCEAN_AGENT_ENDPOINT?.trim().replace(/\/+$/, "");
+  const base = process.env.DIGITALOCEAN_AGENT_ENDPOINT?.trim().replace(
+    /\/+$/,
+    "",
+  );
   if (!base) return undefined;
-  return base.endsWith("/chat/completions") ? base : `${base}/api/v1/chat/completions`;
+  return base.endsWith("/chat/completions")
+    ? base
+    : `${base}/api/v1/chat/completions`;
 }
 
 function getAgentAccessKey() {
@@ -43,7 +48,9 @@ function extractResponseText(data: any) {
   return typeof text === "string" ? text.trim() : "";
 }
 
-export async function askDigitalOceanAgent(messages: AgentMessage[]): Promise<AgentResponse | null> {
+export async function askDigitalOceanAgent(
+  messages: AgentMessage[],
+): Promise<AgentResponse | null> {
   const endpoint = getAgentEndpoint();
   const accessKey = getAgentAccessKey();
 

@@ -19,7 +19,9 @@ function getTransporter() {
   const pass = process.env.SMTP_PASS;
 
   if (!host || !user || !pass) {
-    throw new Error("SMTP nao configurado. Defina SMTP_HOST, SMTP_PORT, SMTP_USER e SMTP_PASS.");
+    throw new Error(
+      "SMTP nao configurado. Defina SMTP_HOST, SMTP_PORT, SMTP_USER e SMTP_PASS.",
+    );
   }
 
   return nodemailer.createTransport({
@@ -32,7 +34,8 @@ function getTransporter() {
 
 export async function sendMail(input: MailInput) {
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
-  if (!from) throw new Error("MAIL_FROM ou SMTP_USER precisa estar configurado.");
+  if (!from)
+    throw new Error("MAIL_FROM ou SMTP_USER precisa estar configurado.");
 
   const transporter = getTransporter();
   await transporter.sendMail({
@@ -44,7 +47,11 @@ export async function sendMail(input: MailInput) {
   });
 }
 
-export async function sendPasswordResetEmail(input: { to: string; name: string; resetLink: string }) {
+export async function sendPasswordResetEmail(input: {
+  to: string;
+  name: string;
+  resetLink: string;
+}) {
   await sendMail({
     to: input.to,
     subject: "Redefinicao de senha - LogiBot",
@@ -69,4 +76,3 @@ export async function sendPasswordResetEmail(input: { to: string; name: string; 
     `,
   });
 }
-

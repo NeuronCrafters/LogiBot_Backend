@@ -25,7 +25,13 @@ export type Quiz = {
 const allQuizzes = quizDatabase as Quiz[];
 const runtimeSessions = new Map<string, RuntimeSession>();
 const levels = ["basico", "intermediario"];
-const categories = ["variÃ¡veis", "listas", "condicionais", "funÃ§Ãµes", "operadores_lÃ³gicos"];
+const categories = [
+  "variÃ¡veis",
+  "listas",
+  "condicionais",
+  "funÃ§Ãµes",
+  "operadores_lÃ³gicos",
+];
 const subcategories: Record<string, string[]> = {
   variaveis: [
     "o_que_sao_variaveis",
@@ -52,7 +58,11 @@ const subcategories: Record<string, string[]> = {
   ],
   condicionais: ["o_que_sao_condicionais", "o_que_sÃ£o_condicionais"],
   funcoes: ["o_que_sao_funcoes", "como_usar_funcoes", "tipos_de_funcoes"],
-  "funÃ§Ãµes": ["o_que_sÃ£o_funÃ§Ãµes", "como_usar_funÃ§Ãµes", "tipos_de_funÃ§Ãµes"],
+  "funÃ§Ãµes": [
+    "o_que_sÃ£o_funÃ§Ãµes",
+    "como_usar_funÃ§Ãµes",
+    "tipos_de_funÃ§Ãµes",
+  ],
   operadores_logicos: ["o_que_sao_operadores_logicos"],
   "operadores_lÃ³gicos": ["o_que_sÃ£o_operadores_lÃ³gicos"],
 };
@@ -77,11 +87,15 @@ export function getRuntimeSession(userId: string): RuntimeSession {
 }
 
 export function getLevels() {
-  return levels.map((level) => button(level.charAt(0).toUpperCase() + level.slice(1), level));
+  return levels.map((level) =>
+    button(level.charAt(0).toUpperCase() + level.slice(1), level),
+  );
 }
 
 export function getCategories() {
-  return categories.map((category) => button(category.toUpperCase().replace(/_/g, " "), category));
+  return categories.map((category) =>
+    button(category.toUpperCase().replace(/_/g, " "), category),
+  );
 }
 
 export function getSubcategories(category: string) {
@@ -91,7 +105,11 @@ export function getSubcategories(category: string) {
 }
 
 export function normalizeKey(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/Ã§/g, "c").replace(/Ãµ/g, "o");
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/Ã§/g, "c")
+    .replace(/Ãµ/g, "o");
 }
 
 export function formatTitle(value: string) {
@@ -101,13 +119,18 @@ export function formatTitle(value: string) {
 
 export function generateQuiz(subtopic: string, level: string): Quiz {
   const normalizedSubtopic = normalizeKey(subtopic).toLowerCase();
-  const matchingQuizzes = allQuizzes.filter((quiz) => (
-    normalizeKey(quiz.subject).toLowerCase() === normalizedSubtopic
-    && normalizeKey(quiz.level).toLowerCase() === normalizeKey(level).toLowerCase()
-  ));
+  const matchingQuizzes = allQuizzes.filter(
+    (quiz) =>
+      normalizeKey(quiz.subject).toLowerCase() === normalizedSubtopic &&
+      normalizeKey(quiz.level).toLowerCase() ===
+        normalizeKey(level).toLowerCase(),
+  );
 
   if (!matchingQuizzes.length) {
-    throw new AppError(`Nenhum quiz encontrado para o topico '${subtopic}' no nivel '${level}'.`, 404);
+    throw new AppError(
+      `Nenhum quiz encontrado para o topico '${subtopic}' no nivel '${level}'.`,
+      404,
+    );
   }
 
   return matchingQuizzes[Math.floor(Math.random() * matchingQuizzes.length)];
@@ -119,7 +142,11 @@ function optionText(letter: string, question?: QuizQuestion) {
   return question.options[index] || "Opcao nao encontrada";
 }
 
-export function verifyQuizAnswers(userAnswers: string[], correctAnswers: string[], originalQuestions: QuizQuestion[]) {
+export function verifyQuizAnswers(
+  userAnswers: string[],
+  correctAnswers: string[],
+  originalQuestions: QuizQuestion[],
+) {
   let correctCount = 0;
   const detalhes = correctAnswers.map((correctAnswerRaw, index) => {
     const selected = (userAnswers[index] || "").trim().toUpperCase();
@@ -132,7 +159,9 @@ export function verifyQuizAnswers(userAnswers: string[], correctAnswers: string[
       selected,
       correct,
       isCorrect,
-      explanation: question?.explanation?.[selected] || "Nao foi encontrada uma explicacao para esta opcao.",
+      explanation:
+        question?.explanation?.[selected] ||
+        "Nao foi encontrada uma explicacao para esta opcao.",
       selectedText: optionText(selected, question),
       correctText: optionText(correct, question),
     };

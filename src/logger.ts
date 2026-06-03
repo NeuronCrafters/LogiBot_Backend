@@ -1,6 +1,11 @@
 type LogLevel = "INFO" | "WARN" | "ERROR";
 
-function writeLog(level: LogLevel, scope: string, message: string, details?: unknown) {
+function writeLog(
+  level: LogLevel,
+  scope: string,
+  message: string,
+  details?: unknown,
+) {
   const line = `${new Date().toISOString()} ${level} [${scope}] ${message}`;
 
   if (level === "ERROR") {

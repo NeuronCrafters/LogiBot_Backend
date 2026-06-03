@@ -3,7 +3,10 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { chatMessages, chatSessions, chatTopicCounts } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
-import { askDigitalOceanAgent, AgentMessage } from "../ai/digitalOceanAgentService";
+import {
+  askDigitalOceanAgent,
+  AgentMessage,
+} from "../ai/digitalOceanAgentService";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 
 const DEFAULT_CHAT_TITLE = "Nova Conversa";
@@ -34,9 +37,13 @@ export async function addChatMessage(input: {
 }) {
   const db = getDb();
   const currentSessionId = input.sessionId || randomUUID();
-  const title = input.role === "user" ? buildChatSessionTitle(input.content) : DEFAULT_CHAT_TITLE;
+  const title =
+    input.role === "user"
+      ? buildChatSessionTitle(input.content)
+      : DEFAULT_CHAT_TITLE;
 
-  await db.insert(chatSessions)
+  await db
+    .insert(chatSessions)
     .values({ userId: input.userId, sessionId: currentSessionId, title })
     .onConflictDoUpdate({
       target: [chatSessions.userId, chatSessions.sessionId],
@@ -46,10 +53,16 @@ export async function addChatMessage(input: {
   const [session] = await db
     .select({ id: chatSessions.id, title: chatSessions.title })
     .from(chatSessions)
-    .where(and(eq(chatSessions.userId, input.userId), eq(chatSessions.sessionId, currentSessionId)));
+    .where(
+      and(
+        eq(chatSessions.userId, input.userId),
+        eq(chatSessions.sessionId, currentSessionId),
+      ),
+    );
 
   if (input.role === "user" && isDefaultChatTitle(session.title)) {
-    await db.update(chatSessions)
+    await db
+      .update(chatSessions)
       .set({ title })
       .where(eq(chatSessions.id, session.id));
   }
@@ -64,12 +77,21 @@ export async function addChatMessage(input: {
   return { sessionId: currentSessionId };
 }
 
-export async function getRecentChatMessages(userId: string, sessionId: string, limit = 10): Promise<AgentMessage[]> {
+export async function getRecentChatMessages(
+  userId: string,
+  sessionId: string,
+  limit = 10,
+): Promise<AgentMessage[]> {
   const db = getDb();
   const [session] = await db
     .select({ id: chatSessions.id })
     .from(chatSessions)
-    .where(and(eq(chatSessions.userId, userId), eq(chatSessions.sessionId, sessionId)));
+    .where(
+      and(
+        eq(chatSessions.userId, userId),
+        eq(chatSessions.sessionId, sessionId),
+      ),
+    );
 
   if (!session) return [];
 
@@ -83,11 +105,15 @@ export async function getRecentChatMessages(userId: string, sessionId: string, l
   return rows
     .reverse()
     .filter((row) => row.role === "user" || row.role === "assistant")
-    .map((row) => ({ role: row.role as "user" | "assistant", content: row.content }));
+    .map((row) => ({
+      role: row.role as "user" | "assistant",
+      content: row.content,
+    }));
 }
 
 export async function incrementTopicCount(userId: string, topic: string) {
-  await getDb().insert(chatTopicCounts)
+  await getDb()
+    .insert(chatTopicCounts)
     .values({ userId, topic, count: 1 })
     .onConflictDoUpdate({
       target: [chatTopicCounts.userId, chatTopicCounts.topic],
@@ -99,24 +125,50 @@ function buildAgentMessages(history: AgentMessage[]): AgentMessage[] {
   return history;
 }
 
-export async function sendChatMessage(input: { userId: string; message: string; sessionId?: string }) {
+export async function sendChatMessage(input: {
+  userId: string;
+  message: string;
+  sessionId?: string;
+}) {
   const message = String(input.message || "").trim();
   if (!message) throw new AppError("message e obrigatorio", 400);
 
   const enriched = validateAndEnrichPrompt(message);
   const detectedTopic = enriched?.subject ?? null;
 
-  const userMessage = await addChatMessage({ userId: input.userId, sessionId: input.sessionId, role: "user", content: message, topic: detectedTopic });
+  const userMessage = await addChatMessage({
+    userId: input.userId,
+    sessionId: input.sessionId,
+    role: "user",
+    content: message,
+    topic: detectedTopic,
+  });
   if (detectedTopic) await incrementTopicCount(input.userId, detectedTopic);
 
-  const history = await getRecentChatMessages(input.userId, userMessage.sessionId);
+  const history = await getRecentChatMessages(
+    input.userId,
+    userMessage.sessionId,
+  );
   const agentResponse = await askDigitalOceanAgent(buildAgentMessages(history));
 
-  const responseText = agentResponse?.text ?? "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
+  const responseText =
+    agentResponse?.text ??
+    "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
   const provider = agentResponse?.provider ?? "fallback";
 
-  await addChatMessage({ userId: input.userId, sessionId: userMessage.sessionId, role: "assistant", content: responseText, topic: detectedTopic });
-  return { responses: [{ text: responseText }], sessionId: userMessage.sessionId, detectedTopic, provider };
+  await addChatMessage({
+    userId: input.userId,
+    sessionId: userMessage.sessionId,
+    role: "assistant",
+    content: responseText,
+    topic: detectedTopic,
+  });
+  return {
+    responses: [{ text: responseText }],
+    sessionId: userMessage.sessionId,
+    detectedTopic,
+    provider,
+  };
 }
 
 export async function listChatSessions(userId: string) {
@@ -127,33 +179,49 @@ export async function listChatSessions(userId: string) {
     .where(eq(chatSessions.userId, userId))
     .orderBy(desc(chatSessions.lastActivityAt));
 
-  return Promise.all(rows.map(async (session) => {
-    if (!isDefaultChatTitle(session.title)) return session;
+  return Promise.all(
+    rows.map(async (session) => {
+      if (!isDefaultChatTitle(session.title)) return session;
 
-    const [firstUserMessage] = await db
-      .select({ content: chatMessages.content })
-      .from(chatMessages)
-      .where(and(eq(chatMessages.chatSessionId, session.id), eq(chatMessages.role, "user")))
-      .orderBy(asc(chatMessages.timestamp))
-      .limit(1);
+      const [firstUserMessage] = await db
+        .select({ content: chatMessages.content })
+        .from(chatMessages)
+        .where(
+          and(
+            eq(chatMessages.chatSessionId, session.id),
+            eq(chatMessages.role, "user"),
+          ),
+        )
+        .orderBy(asc(chatMessages.timestamp))
+        .limit(1);
 
-    if (!firstUserMessage?.content) return session;
+      if (!firstUserMessage?.content) return session;
 
-    const title = buildChatSessionTitle(firstUserMessage.content);
-    await db.update(chatSessions)
-      .set({ title })
-      .where(eq(chatSessions.id, session.id));
+      const title = buildChatSessionTitle(firstUserMessage.content);
+      await db
+        .update(chatSessions)
+        .set({ title })
+        .where(eq(chatSessions.id, session.id));
 
-    return { ...session, title };
-  }));
+      return { ...session, title };
+    }),
+  );
 }
 
-export async function listChatSessionMessages(userId: string, sessionId: string) {
+export async function listChatSessionMessages(
+  userId: string,
+  sessionId: string,
+) {
   const db = getDb();
   const [session] = await db
     .select({ id: chatSessions.id })
     .from(chatSessions)
-    .where(and(eq(chatSessions.userId, userId), eq(chatSessions.sessionId, sessionId)));
+    .where(
+      and(
+        eq(chatSessions.userId, userId),
+        eq(chatSessions.sessionId, sessionId),
+      ),
+    );
 
   if (!session) return [];
 

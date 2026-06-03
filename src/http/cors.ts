@@ -1,13 +1,15 @@
 import type { CorsOptions } from "cors";
 import type { NextFunction, Request, Response } from "express";
-import { getAllowedFrontendOrigins, getLocalBackendOrigin } from "../config/env";
+import {
+  getAllowedFrontendOrigins,
+  getLocalBackendOrigin,
+} from "../config/env";
 import { logger } from "../logger";
 
 export function getAllowedOrigins() {
-  return [
-    ...getAllowedFrontendOrigins(),
-    getLocalBackendOrigin(),
-  ].filter(Boolean) as string[];
+  return [...getAllowedFrontendOrigins(), getLocalBackendOrigin()].filter(
+    Boolean,
+  ) as string[];
 }
 
 export const corsOptions: CorsOptions = {

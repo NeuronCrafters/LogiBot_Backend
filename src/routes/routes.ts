@@ -29,6 +29,10 @@ routes.use("/dashboard", dashboardRouter);
 routes.use("/logs", logRouter);
 routes.use("/feedback", feedbackRouter);
 
-routes.use((req, res) => res.status(404).json({ success: false, message: "rota nao encontrada", path: req.path }));
+routes.use((req, res) =>
+  res
+    .status(404)
+    .json({ success: false, message: "rota nao encontrada", path: req.path }),
+);
 
 export { routes };

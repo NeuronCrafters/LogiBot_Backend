@@ -1,10 +1,18 @@
 import type { NextFunction, Request, Response } from "express";
 import { logger } from "../logger";
 
-const SKIPPED_PATHS = new Set(["/health", "/health/simple", "/health/ready", "/health/ping"]);
+const SKIPPED_PATHS = new Set([
+  "/health",
+  "/health/simple",
+  "/health/ready",
+  "/health/ping",
+]);
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
-  if (process.env.HTTP_REQUEST_LOGS === "false" || SKIPPED_PATHS.has(req.path)) {
+  if (
+    process.env.HTTP_REQUEST_LOGS === "false" ||
+    SKIPPED_PATHS.has(req.path)
+  ) {
     return next();
   }
 

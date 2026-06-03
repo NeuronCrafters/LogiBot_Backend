@@ -21,25 +21,28 @@ export async function initAdminUser(): Promise<void> {
     });
 
     const [account] = existing
-      ? await db.update(accounts)
-        .set({
-          name: ADMIN_USER_DATA.name,
-          passwordHash,
-          status: ADMIN_USER_DATA.status,
-          updatedAt: new Date(),
-        })
-        .where(eq(accounts.id, existing.id))
-        .returning()
-      : await db.insert(accounts)
-        .values({
-          name: ADMIN_USER_DATA.name,
-          email: ADMIN_USER_DATA.email,
-          passwordHash,
-          status: ADMIN_USER_DATA.status,
-        })
-        .returning();
+      ? await db
+          .update(accounts)
+          .set({
+            name: ADMIN_USER_DATA.name,
+            passwordHash,
+            status: ADMIN_USER_DATA.status,
+            updatedAt: new Date(),
+          })
+          .where(eq(accounts.id, existing.id))
+          .returning()
+      : await db
+          .insert(accounts)
+          .values({
+            name: ADMIN_USER_DATA.name,
+            email: ADMIN_USER_DATA.email,
+            passwordHash,
+            status: ADMIN_USER_DATA.status,
+          })
+          .returning();
 
-    await db.insert(accountRoles)
+    await db
+      .insert(accountRoles)
       .values({ accountId: account.id, role: ADMIN_USER_DATA.role })
       .onConflictDoNothing();
   } catch (error) {

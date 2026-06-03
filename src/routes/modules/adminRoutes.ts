@@ -170,11 +170,11 @@ adminRouter.delete("/students/:studentId", requireRoles(["admin"]), asyncHandler
 adminRouter.get("/professor-students", requireRoles(["admin", "professor", "course-coordinator"]), asyncHandler(async (req, res) => {
   const professorId = req.user!.id;
   const links = await getDb().select({ disciplineId: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, professorId));
-  if (!links.length) return res.json({ students: [] });
+  if (!links.length) return res.json([]);
   const studentLinks = await getDb().select({ studentId: studentDisciplines.studentId }).from(studentDisciplines).where(inArray(studentDisciplines.disciplineId, links.map((link) => link.disciplineId)));
-  if (!studentLinks.length) return res.json({ students: [] });
+  if (!studentLinks.length) return res.json([]);
   const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email, photo: accounts.photo }).from(accounts).where(inArray(accounts.id, [...new Set(studentLinks.map((link) => link.studentId))]));
-  return res.json({ students: rows.map((row) => ({ ...row, _id: row.id })) });
+  return res.json(rows.map((row) => ({ ...row, _id: row.id })));
 }));
 
 adminRouter.get("/coordinator/professors", requireRoles(["admin", "course-coordinator"]), asyncHandler(async (req, res) => {

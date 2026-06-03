@@ -8,6 +8,7 @@ declare namespace Express {
       school: string | null;
       courses?: string[] | string | null;
       classes?: string[] | string | null;
+      disciplines?: string[];
     };
     useragent?: useragent.Details;
   }

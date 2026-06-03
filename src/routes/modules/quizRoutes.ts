@@ -58,7 +58,12 @@ quizRouter.get(
       })
       .from(professorQuizzes)
       .innerJoin(disciplines, eq(professorQuizzes.disciplineId, disciplines.id))
-      .where(inArray(professorQuizzes.disciplineId, disciplineIds))
+      .where(
+        and(
+          inArray(professorQuizzes.disciplineId, disciplineIds),
+          eq(professorQuizzes.status, "published"),
+        ),
+      )
       .orderBy(desc(professorQuizzes.createdAt));
 
     if (!quizzes.length) return res.json([]);

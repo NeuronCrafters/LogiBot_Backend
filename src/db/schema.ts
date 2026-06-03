@@ -428,6 +428,7 @@ export const professorQuizzes = pgTable("professor_quizzes", {
   title: text("title").notNull(),
   topic: text("topic").notNull(),
   description: text("description"),
+  status: text("status").notNull().default("draft"), // "draft" | "published"
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

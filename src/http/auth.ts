@@ -89,6 +89,7 @@ export async function requireAuth(
       classes: account.classes?.length
         ? account.classes
         : account.classId || null,
+      disciplines: account.disciplines ?? [],
     };
 
     return next();

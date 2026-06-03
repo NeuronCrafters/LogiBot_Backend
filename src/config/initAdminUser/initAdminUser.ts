@@ -1,12 +1,13 @@
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { getExpressDb } from "../../db/client";
 import { accountRoles, accounts } from "../../db/schema";
 import { logger } from "../../logger";
 
 const ADMIN_USER_DATA = {
   name: "admin",
-  email: "ch47b07sa3l@gmail.com",
-  passwordHash: "$2a$10$EmiRe/ZX5XLSN1JJp/GJ.O87MELljrlQBtabyJUyp7z/lwLKshBfW",
+  email: "admin@logibot.com",
+  password: "admin@logibot.com",
   role: "admin",
   status: "active",
 };
@@ -14,6 +15,7 @@ const ADMIN_USER_DATA = {
 export async function initAdminUser(): Promise<void> {
   try {
     const db = getExpressDb();
+    const passwordHash = await bcrypt.hash(ADMIN_USER_DATA.password, 10);
     const existing = await db.query.accounts.findFirst({
       where: eq(accounts.email, ADMIN_USER_DATA.email),
     });
@@ -22,7 +24,7 @@ export async function initAdminUser(): Promise<void> {
       ? await db.update(accounts)
         .set({
           name: ADMIN_USER_DATA.name,
-          passwordHash: ADMIN_USER_DATA.passwordHash,
+          passwordHash,
           status: ADMIN_USER_DATA.status,
           updatedAt: new Date(),
         })
@@ -32,7 +34,7 @@ export async function initAdminUser(): Promise<void> {
         .values({
           name: ADMIN_USER_DATA.name,
           email: ADMIN_USER_DATA.email,
-          passwordHash: ADMIN_USER_DATA.passwordHash,
+          passwordHash,
           status: ADMIN_USER_DATA.status,
         })
         .returning();

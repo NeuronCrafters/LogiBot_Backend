@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { getExpressDb } from "./client";
 import { logger } from "../logger";
@@ -8,6 +9,10 @@ import {
   classDisciplines,
   courses,
   disciplines,
+  professorClasses,
+  professorCourses,
+  professorDisciplines,
+  professorProfiles,
   studentDisciplines,
   studentProfiles,
   universities,
@@ -15,20 +20,38 @@ import {
 
 const ADMIN_USER_DATA = {
   name: "admin",
-  email: "ch47b07sa3l@gmail.com",
-  passwordHash: "$2a$10$EmiRe/ZX5XLSN1JJp/GJ.O87MELljrlQBtabyJUyp7z/lwLKshBfW",
+  email: "admin@logibot.com",
+  password: "admin@logibot.com",
   role: "admin",
   status: "active",
 };
 
 const STUDENT_USER_DATA = {
-  id: "00000000-0000-4000-8000-000000000201",
+  id: "00000000-0000-4000-8000-000000000205",
   name: "Aluno Teste",
-  email: "aluno.teste@saellogibot.com",
-  passwordHash: "$2a$10$JgNi9vz/MFYgumVR8z2ci.0kn6ea2hOV4DE0PBHao/q2hMKFBkvQK",
+  email: "aluno@logibot.com",
+  password: "aluno@logibot.com",
   role: "student",
   status: "active",
   level: "iniciante",
+};
+
+const PROFESSOR_USER_DATA = {
+  id: "00000000-0000-4000-8000-000000000206",
+  name: "Professor Teste",
+  email: "professor@logibot.com",
+  password: "professor@logibot.com",
+  roles: ["professor"],
+  status: "active",
+};
+
+const COORDINATOR_USER_DATA = {
+  id: "00000000-0000-4000-8000-000000000207",
+  name: "Coordenador Teste",
+  email: "coordenador@logibot.com",
+  password: "coordenador@logibot.com",
+  roles: ["professor", "course-coordinator"],
+  status: "active",
 };
 
 const ACADEMIC_SEED_DATA = {
@@ -38,7 +61,7 @@ const ACADEMIC_SEED_DATA = {
   },
   course: {
     id: "00000000-0000-4000-8000-000000000102",
-    name: "Sistemas de Informação",
+    name: "Sistemas de Informacao",
   },
   class: {
     id: "00000000-0000-4000-8000-000000000103",
@@ -46,41 +69,102 @@ const ACADEMIC_SEED_DATA = {
   },
   discipline: {
     id: "00000000-0000-4000-8000-000000000104",
-    name: "Fundamentos de Programação",
+    name: "Fundamentos de Programacao",
     code: "LOGI2026",
   },
 };
 
-async function seed() {
-  const db = getExpressDb();
+type SeedUserData = {
+  id?: string;
+  name: string;
+  email: string;
+  password: string;
+  status: string;
+};
+
+type SeedProfessorData = SeedUserData & {
+  id: string;
+  roles: string[];
+};
+
+async function upsertAccount(db: ReturnType<typeof getExpressDb>, user: SeedUserData) {
+  const passwordHash = await bcrypt.hash(user.password, 10);
   const existing = await db.query.accounts.findFirst({
-    where: eq(accounts.email, ADMIN_USER_DATA.email),
+    where: eq(accounts.email, user.email),
   });
+
+  const values = {
+    name: user.name,
+    email: user.email,
+    passwordHash,
+    status: user.status,
+  };
 
   const [account] = existing
     ? await db
         .update(accounts)
-        .set({
-          name: ADMIN_USER_DATA.name,
-          passwordHash: ADMIN_USER_DATA.passwordHash,
-          status: ADMIN_USER_DATA.status,
-          updatedAt: new Date(),
-        })
+        .set({ ...values, updatedAt: new Date() })
         .where(eq(accounts.id, existing.id))
         .returning()
     : await db
         .insert(accounts)
-        .values({
-          name: ADMIN_USER_DATA.name,
-          email: ADMIN_USER_DATA.email,
-          passwordHash: ADMIN_USER_DATA.passwordHash,
-          status: ADMIN_USER_DATA.status,
-        })
+        .values(user.id ? { id: user.id, ...values } : values)
         .returning();
+
+  return account;
+}
+
+async function seedProfessorLikeUser(db: ReturnType<typeof getExpressDb>, user: SeedProfessorData) {
+  const account = await upsertAccount(db, user);
 
   await db
     .insert(accountRoles)
-    .values({ accountId: account.id, role: ADMIN_USER_DATA.role })
+    .values(user.roles.map((role) => ({ accountId: account.id, role })))
+    .onConflictDoNothing();
+
+  await db
+    .insert(professorProfiles)
+    .values({
+      accountId: account.id,
+      schoolId: ACADEMIC_SEED_DATA.university.id,
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(professorCourses)
+    .values({
+      professorId: account.id,
+      courseId: ACADEMIC_SEED_DATA.course.id,
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(professorClasses)
+    .values({
+      professorId: account.id,
+      classId: ACADEMIC_SEED_DATA.class.id,
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(professorDisciplines)
+    .values({
+      professorId: account.id,
+      disciplineId: ACADEMIC_SEED_DATA.discipline.id,
+    })
+    .onConflictDoNothing();
+
+  return account;
+}
+
+async function seed() {
+  const db = getExpressDb();
+
+  const admin = await upsertAccount(db, ADMIN_USER_DATA);
+
+  await db
+    .insert(accountRoles)
+    .values({ accountId: admin.id, role: ADMIN_USER_DATA.role })
     .onConflictDoNothing();
 
   await db
@@ -145,25 +229,10 @@ async function seed() {
     })
     .onConflictDoNothing();
 
-  const [student] = await db
-    .insert(accounts)
-    .values({
-      id: STUDENT_USER_DATA.id,
-      name: STUDENT_USER_DATA.name,
-      email: STUDENT_USER_DATA.email,
-      passwordHash: STUDENT_USER_DATA.passwordHash,
-      status: STUDENT_USER_DATA.status,
-    })
-    .onConflictDoUpdate({
-      target: accounts.email,
-      set: {
-        name: STUDENT_USER_DATA.name,
-        passwordHash: STUDENT_USER_DATA.passwordHash,
-        status: STUDENT_USER_DATA.status,
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
+  await seedProfessorLikeUser(db, PROFESSOR_USER_DATA);
+  await seedProfessorLikeUser(db, COORDINATOR_USER_DATA);
+
+  const student = await upsertAccount(db, STUDENT_USER_DATA);
 
   await db
     .insert(accountRoles)

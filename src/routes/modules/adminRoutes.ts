@@ -67,6 +67,73 @@ adminRouter.delete("/professors/:professorId", requireRoles(["admin"]), asyncHan
   return res.json({ message: "professor removido com sucesso" });
 }));
 
+adminRouter.patch("/professors/:professorId", requireRoles(["admin", "course-coordinator"]), asyncHandler(async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const password = String(req.body.password || "");
+  const isAdmin = req.user!.role.includes("admin");
+  const coordinatorCourseIds = Array.isArray(req.user!.courses) ? req.user!.courses as string[] : [];
+  const schoolId = isAdmin ? String(req.body.school || req.body.schoolId || "") : String(req.user!.school || "");
+  const courseIds = Array.isArray(req.body.courses) ? [...new Set(req.body.courses as string[])] : [];
+
+  if (!name || !email || !schoolId || !courseIds.length) throw new AppError("campos obrigatorios ausentes", 400);
+  if (!isAdmin && courseIds.some((courseId) => !coordinatorCourseIds.includes(courseId))) {
+    throw new AppError("coordenador so pode editar professor nos seus cursos", 403);
+  }
+
+  const courseRows = await getDb().select().from(courses).where(inArray(courses.id, courseIds));
+  if (courseRows.length !== courseIds.length) throw new AppError("um ou mais cursos nao foram encontrados", 400);
+  if (isAdmin && courseRows.some((course) => course.universityId !== schoolId)) {
+    throw new AppError("um ou mais cursos nao pertencem a universidade selecionada", 400);
+  }
+
+  const accountUpdates: Partial<typeof accounts.$inferInsert> = { name, email, updatedAt: new Date() };
+  if (password.trim()) accountUpdates.passwordHash = await bcrypt.hash(password, 10);
+
+  const [account] = await getDb()
+    .update(accounts)
+    .set(accountUpdates)
+    .where(eq(accounts.id, req.params.professorId))
+    .returning();
+  if (!account) throw new AppError("professor nao encontrado", 404);
+
+  await getDb()
+    .update(professorProfiles)
+    .set({ schoolId })
+    .where(eq(professorProfiles.accountId, req.params.professorId));
+
+  await getDb().delete(professorCourses).where(eq(professorCourses.professorId, req.params.professorId));
+  await getDb().insert(professorCourses)
+    .values(courseIds.map((courseId) => ({ professorId: req.params.professorId, courseId })))
+    .onConflictDoNothing();
+
+  const [classLinks, disciplineLinks] = await Promise.all([
+    getDb().select({ classId: professorClasses.classId, courseId: classes.courseId })
+      .from(professorClasses)
+      .innerJoin(classes, eq(classes.id, professorClasses.classId))
+      .where(eq(professorClasses.professorId, req.params.professorId)),
+    getDb().select({ disciplineId: professorDisciplines.disciplineId, courseId: disciplines.courseId })
+      .from(professorDisciplines)
+      .innerJoin(disciplines, eq(disciplines.id, professorDisciplines.disciplineId))
+      .where(eq(professorDisciplines.professorId, req.params.professorId)),
+  ]);
+
+  for (const link of classLinks) {
+    if (!courseIds.includes(link.courseId)) {
+      await getDb().delete(professorClasses)
+        .where(and(eq(professorClasses.professorId, req.params.professorId), eq(professorClasses.classId, link.classId)));
+    }
+  }
+  for (const link of disciplineLinks) {
+    if (!courseIds.includes(link.courseId)) {
+      await getDb().delete(professorDisciplines)
+        .where(and(eq(professorDisciplines.professorId, req.params.professorId), eq(professorDisciplines.disciplineId, link.disciplineId)));
+    }
+  }
+
+  return res.json({ message: "professor atualizado com sucesso", professor: { ...account, _id: account.id } });
+}));
+
 adminRouter.get("/professors", requireRoles(["admin"]), asyncHandler(async (_req, res) => {
   const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email, photo: accounts.photo, schoolId: professorProfiles.schoolId }).from(accounts).innerJoin(professorProfiles, eq(professorProfiles.accountId, accounts.id)).orderBy(asc(accounts.name));
   return res.json(rows.map((row) => ({ ...row, _id: row.id })));

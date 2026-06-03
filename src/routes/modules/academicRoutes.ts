@@ -59,6 +59,25 @@ async function ensureClassDisciplineLinks(classIds: string[], disciplineId: stri
   return registrationCodes;
 }
 
+async function replaceDisciplineLinksForClass(classId: string, disciplineIds: string[]) {
+  const db = getDb();
+  const registrationCodes: Array<{ classId: string; disciplineId: string; code: string }> = [];
+
+  for (const disciplineId of disciplineIds) {
+    registrationCodes.push(...await ensureClassDisciplineLinks([classId], disciplineId));
+  }
+
+  const existingLinks = await db.select().from(classDisciplines).where(eq(classDisciplines.classId, classId));
+  for (const link of existingLinks) {
+    if (!disciplineIds.includes(link.disciplineId)) {
+      await db.delete(classDisciplines)
+        .where(and(eq(classDisciplines.classId, classId), eq(classDisciplines.disciplineId, link.disciplineId)));
+    }
+  }
+
+  return registrationCodes;
+}
+
 academicRouter.get(
   "/filters",
   requireRoles(["admin", "professor", "course-coordinator"]),
@@ -104,6 +123,24 @@ academicRouter.delete(
   }),
 );
 
+academicRouter.patch(
+  "/universities/:universityId",
+  requireRoles(["admin"]),
+  asyncHandler(async (req, res) => {
+    const name = String(req.body.name || "").trim();
+    if (!name) throw new AppError("nome obrigatorio", 400);
+
+    const [university] = await getDb()
+      .update(universities)
+      .set({ name, updatedAt: new Date() })
+      .where(eq(universities.id, req.params.universityId))
+      .returning();
+
+    if (!university) throw new AppError("universidade nao encontrada", 404);
+    return res.json({ message: "universidade atualizada com sucesso", university });
+  }),
+);
+
 academicRouter.post(
   "/courses",
   requireRoles(["admin"]),
@@ -145,6 +182,28 @@ academicRouter.delete(
   }),
 );
 
+academicRouter.patch(
+  "/courses/:courseId",
+  requireRoles(["admin"]),
+  asyncHandler(async (req, res) => {
+    const name = String(req.body.name || "").trim();
+    const universityId = String(req.body.universityId || req.body.university || "");
+    if (!name || !universityId) throw new AppError("nome e universidade sao obrigatorios", 400);
+
+    const [university] = await getDb().select().from(universities).where(eq(universities.id, universityId)).limit(1);
+    if (!university) throw new AppError("universidade nao encontrada", 404);
+
+    const [course] = await getDb()
+      .update(courses)
+      .set({ name, universityId, updatedAt: new Date() })
+      .where(eq(courses.id, req.params.courseId))
+      .returning();
+
+    if (!course) throw new AppError("curso nao encontrado", 404);
+    return res.json({ message: "curso atualizado com sucesso", course });
+  }),
+);
+
 academicRouter.post(
   "/classes",
   requireRoles(["admin", "course-coordinator"]),
@@ -172,6 +231,43 @@ academicRouter.post(
   }),
 );
 
+academicRouter.patch(
+  "/classes/:classId",
+  requireRoles(["admin", "course-coordinator"]),
+  asyncHandler(async (req, res) => {
+    const name = String(req.body.name || "").trim();
+    const courseId = String(req.body.courseId || req.body.course || "");
+    const disciplineIds = Array.isArray(req.body.disciplineIds)
+      ? [...new Set(req.body.disciplineIds as string[])]
+      : undefined;
+    if (!name || !courseId) throw new AppError("nome e curso sao obrigatorios", 400);
+
+    const [course] = await getDb().select().from(courses).where(eq(courses.id, courseId)).limit(1);
+    if (!course) throw new AppError("curso nao encontrado", 404);
+    await assertCanManageCourse(req, courseId);
+
+    if (disciplineIds?.length) {
+      const disciplineRows = await getDb().select().from(disciplines).where(inArray(disciplines.id, disciplineIds));
+      if (disciplineRows.length !== disciplineIds.length || disciplineRows.some((item) => item.courseId !== courseId)) {
+        throw new AppError("uma ou mais disciplinas nao pertencem ao curso selecionado", 400);
+      }
+    }
+
+    const [classItem] = await getDb()
+      .update(classes)
+      .set({ name, courseId, updatedAt: new Date() })
+      .where(eq(classes.id, req.params.classId))
+      .returning();
+    if (!classItem) throw new AppError("turma nao encontrada", 404);
+
+    const registrationCodes = disciplineIds
+      ? await replaceDisciplineLinksForClass(classItem.id, disciplineIds)
+      : [];
+
+    return res.json({ message: "turma atualizada com sucesso", class: classItem, registrationCodes });
+  }),
+);
+
 academicRouter.get(
   "/courses/:courseId/classes",
   requireRoles(["admin", "course-coordinator"]),
@@ -194,6 +290,34 @@ academicRouter.delete(
     return res.json({ message: "turma removida com sucesso" });
   }),
 );
+
+async function replaceClassDisciplineLinks(classIds: string[], disciplineId: string) {
+  const db = getDb();
+  const existingLinks = await db.select().from(classDisciplines).where(eq(classDisciplines.disciplineId, disciplineId));
+  for (const link of existingLinks) {
+    if (!classIds.includes(link.classId)) {
+      await db.delete(classDisciplines)
+        .where(and(eq(classDisciplines.classId, link.classId), eq(classDisciplines.disciplineId, disciplineId)));
+    }
+  }
+  return classIds.length ? ensureClassDisciplineLinks(classIds, disciplineId) : [];
+}
+
+async function replaceProfessorDisciplineLinks(professorIds: string[], disciplineId: string) {
+  const db = getDb();
+  const existingLinks = await db.select().from(professorDisciplines).where(eq(professorDisciplines.disciplineId, disciplineId));
+  for (const link of existingLinks) {
+    if (!professorIds.includes(link.professorId)) {
+      await db.delete(professorDisciplines)
+        .where(and(eq(professorDisciplines.professorId, link.professorId), eq(professorDisciplines.disciplineId, disciplineId)));
+    }
+  }
+  if (professorIds.length) {
+    await db.insert(professorDisciplines)
+      .values(professorIds.map((professorId) => ({ professorId, disciplineId })))
+      .onConflictDoNothing();
+  }
+}
 
 academicRouter.post(
   "/disciplines",
@@ -247,6 +371,51 @@ academicRouter.post(
         discipline,
         registrationCodes,
       });
+  }),
+);
+
+academicRouter.patch(
+  "/disciplines/:disciplineId",
+  requireRoles(["admin", "course-coordinator"]),
+  asyncHandler(async (req, res) => {
+    const name = String(req.body.name || "").trim();
+    const courseId = String(req.body.courseId || req.body.course || "");
+    const classIds = Array.isArray(req.body.classIds)
+      ? [...new Set(req.body.classIds as string[])]
+      : undefined;
+    const professorIds = Array.isArray(req.body.professorIds)
+      ? [...new Set(req.body.professorIds as string[])]
+      : undefined;
+    if (!name || !courseId) throw new AppError("nome e curso sao obrigatorios", 400);
+
+    const [course] = await getDb().select().from(courses).where(eq(courses.id, courseId)).limit(1);
+    if (!course) throw new AppError("curso nao encontrado", 404);
+    await assertCanManageCourse(req, courseId);
+
+    if (classIds?.length) {
+      const classRows = await getDb().select().from(classes).where(inArray(classes.id, classIds));
+      if (classRows.length !== classIds.length || classRows.some((item) => item.courseId !== courseId)) {
+        throw new AppError("uma ou mais turmas nao pertencem ao curso selecionado", 400);
+      }
+    }
+
+    if (professorIds?.length) {
+      const professorCourseRows = await getDb().select().from(professorCourses).where(inArray(professorCourses.professorId, professorIds));
+      const invalidProfessor = professorIds.some((professorId) => !professorCourseRows.some((link) => link.professorId === professorId && link.courseId === courseId));
+      if (invalidProfessor) throw new AppError("um ou mais professores nao pertencem ao curso selecionado", 400);
+    }
+
+    const [discipline] = await getDb()
+      .update(disciplines)
+      .set({ name, courseId, updatedAt: new Date() })
+      .where(eq(disciplines.id, req.params.disciplineId))
+      .returning();
+    if (!discipline) throw new AppError("disciplina nao encontrada", 404);
+
+    const registrationCodes = classIds ? await replaceClassDisciplineLinks(classIds, discipline.id) : [];
+    if (professorIds) await replaceProfessorDisciplineLinks(professorIds, discipline.id);
+
+    return res.json({ message: "disciplina atualizada com sucesso", discipline, registrationCodes });
   }),
 );
 

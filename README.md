@@ -30,7 +30,6 @@ JWT_SECRET=change-me
 API_KEY=
 DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
-ENABLE_SWAGGER=false
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -95,7 +94,7 @@ Portas ja ocupadas no servidor: `3002`, `3003`, `3010`, `3333`, `5173`, `5189`, 
 PORT=43187
 ```
 
-A fonte da verdade da porta do backend e sempre a variavel `PORT` quando ela existir no ambiente. Se `PORT` nao for carregada, o backend usa o fallback interno `43187`. O codigo Express, CORS local e Swagger local seguem essa mesma regra.
+A fonte da verdade da porta do backend e sempre a variavel `PORT` quando ela existir no ambiente. Se `PORT` nao for carregada, o backend usa o fallback interno `43187`. O codigo Express e o CORS local seguem essa mesma regra.
 
 No Dokploy, configure a aplicacao para expor a mesma porta definida em `PORT`.
 
@@ -108,7 +107,6 @@ JWT_SECRET=change-me
 API_KEY=
 DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
-ENABLE_SWAGGER=false
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
 DIGITALOCEAN_AGENT_TIMEOUT_MS=30000

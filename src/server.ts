@@ -5,7 +5,6 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { connectDB } from "./config/database";
-import { setupSwagger } from "./config/swagger/swaggerConfig";
 import { routes } from "./routes/routes";
 import { errorHandler } from "./http/errorHandler";
 import { corsAccessLogger, corsOptions } from "./http/cors";
@@ -23,7 +22,6 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(requestLogger);
 app.use(routes);
-setupSwagger(app);
 app.use(errorHandler);
 
 export async function bootstrap() {

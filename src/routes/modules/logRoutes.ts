@@ -5,7 +5,7 @@ import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
 import { getDb } from "../../db/client";
 import { accounts, professorDisciplines, studentDisciplines, userAnalyses } from "../../db/schema";
-import { getEmptySummary, getSummary, summaryByEntity } from "../routeHelpers";
+import { getEmptySummary, getSummary, summaryByEntity } from "../../services/analytics/analyticsService";
 
 export const logRouter = Router();
 

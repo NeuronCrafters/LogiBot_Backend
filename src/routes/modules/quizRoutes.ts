@@ -13,7 +13,7 @@ import {
   getRuntimeSession,
   getSubcategories,
   verifyQuizAnswers,
-} from "../routeHelpers";
+} from "../../services/quiz/quizService";
 
 export const quizRouter = Router();
 

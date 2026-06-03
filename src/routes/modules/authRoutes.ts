@@ -18,7 +18,8 @@ import {
 } from "../../db/repositories/authRepository";
 import { sendPasswordResetEmail } from "../../services/email/mailService";
 import { getFrontendOrigin } from "../../config/env";
-import { closeOpenStudentSession, generateDisciplineCode } from "../routeHelpers";
+import { generateDisciplineCode } from "../../services/academic/disciplineCode";
+import { closeOpenStudentSession } from "../../services/auth/studentSessionService";
 
 export const authRouter = Router();
 

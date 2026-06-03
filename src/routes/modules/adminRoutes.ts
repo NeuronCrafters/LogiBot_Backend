@@ -8,6 +8,7 @@ import { getDb } from "../../db/client";
 import {
   accountRoles,
   accounts,
+  classDisciplines,
   classes,
   courses,
   disciplines,
@@ -15,7 +16,6 @@ import {
   professorCourses,
   professorDisciplines,
   professorProfiles,
-  studentDisciplines,
   studentProfiles,
 } from "../../db/schema";
 
@@ -169,11 +169,28 @@ adminRouter.delete("/students/:studentId", requireRoles(["admin"]), asyncHandler
 
 adminRouter.get("/professor-students", requireRoles(["admin", "professor", "course-coordinator"]), asyncHandler(async (req, res) => {
   const professorId = req.user!.id;
-  const links = await getDb().select({ disciplineId: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, professorId));
-  if (!links.length) return res.json([]);
-  const studentLinks = await getDb().select({ studentId: studentDisciplines.studentId }).from(studentDisciplines).where(inArray(studentDisciplines.disciplineId, links.map((link) => link.disciplineId)));
-  if (!studentLinks.length) return res.json([]);
-  const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email, photo: accounts.photo }).from(accounts).where(inArray(accounts.id, [...new Set(studentLinks.map((link) => link.studentId))]));
+  const [directClassLinks, disciplineLinks] = await Promise.all([
+    getDb().select({ classId: professorClasses.classId }).from(professorClasses).where(eq(professorClasses.professorId, professorId)),
+    getDb().select({ disciplineId: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, professorId)),
+  ]);
+
+  const classIds = new Set(directClassLinks.map((link) => link.classId));
+  if (disciplineLinks.length) {
+    const classLinks = await getDb()
+      .select({ classId: classDisciplines.classId })
+      .from(classDisciplines)
+      .where(inArray(classDisciplines.disciplineId, disciplineLinks.map((link) => link.disciplineId)));
+    classLinks.forEach((link) => classIds.add(link.classId));
+  }
+
+  if (!classIds.size) return res.json([]);
+  const studentRows = await getDb()
+    .select({ studentId: studentProfiles.accountId })
+    .from(studentProfiles)
+    .where(inArray(studentProfiles.classId, [...classIds]));
+  if (!studentRows.length) return res.json([]);
+
+  const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email, photo: accounts.photo }).from(accounts).where(inArray(accounts.id, [...new Set(studentRows.map((link) => link.studentId))]));
   return res.json(rows.map((row) => ({ ...row, _id: row.id })));
 }));
 
@@ -193,9 +210,19 @@ adminRouter.get("/coordinator/students", requireRoles(["admin", "course-coordina
 }));
 
 adminRouter.get("/coordinator/disciplines/:disciplineId/students", requireRoles(["admin", "course-coordinator"]), asyncHandler(async (req, res) => {
-  const links = await getDb().select({ studentId: studentDisciplines.studentId }).from(studentDisciplines).where(eq(studentDisciplines.disciplineId, req.params.disciplineId));
-  if (!links.length) return res.json([]);
-  const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email }).from(accounts).where(inArray(accounts.id, links.map((link) => link.studentId)));
+  const classLinks = await getDb()
+    .select({ classId: classDisciplines.classId })
+    .from(classDisciplines)
+    .where(eq(classDisciplines.disciplineId, req.params.disciplineId));
+  if (!classLinks.length) return res.json([]);
+
+  const studentRows = await getDb()
+    .select({ studentId: studentProfiles.accountId })
+    .from(studentProfiles)
+    .where(inArray(studentProfiles.classId, classLinks.map((link) => link.classId)));
+  if (!studentRows.length) return res.json([]);
+
+  const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email }).from(accounts).where(inArray(accounts.id, [...new Set(studentRows.map((link) => link.studentId))]));
   return res.json(rows.map((row) => ({ ...row, _id: row.id })));
 }));
 

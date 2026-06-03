@@ -11,7 +11,6 @@ import {
   disciplines,
   professorDisciplines,
   professorCourses,
-  studentDisciplines,
   studentProfiles,
   universities,
 } from "../../db/schema";
@@ -30,43 +29,19 @@ async function assertCanManageCourse(req: Request, courseId: string) {
 
 async function ensureClassDisciplineLinks(classIds: string[], disciplineId: string) {
   const db = getDb();
-  const registrationCodes: Array<{ classId: string; disciplineId: string; code: string }> = [];
 
   for (const classId of classIds) {
-    const [existing] = await db.select()
-      .from(classDisciplines)
-      .where(and(eq(classDisciplines.classId, classId), eq(classDisciplines.disciplineId, disciplineId)))
-      .limit(1);
-
-    if (existing?.code) {
-      registrationCodes.push({ classId, disciplineId, code: existing.code });
-      continue;
-    }
-
-    const code = await generateUniqueRegistrationCode(db);
-
-    if (existing) {
-      await db.update(classDisciplines)
-        .set({ code })
-        .where(and(eq(classDisciplines.classId, classId), eq(classDisciplines.disciplineId, disciplineId)));
-    } else {
-      await db.insert(classDisciplines)
-        .values({ classId, disciplineId, code })
-        .onConflictDoNothing();
-    }
-
-    registrationCodes.push({ classId, disciplineId, code });
+    await db.insert(classDisciplines)
+      .values({ classId, disciplineId })
+      .onConflictDoNothing();
   }
-
-  return registrationCodes;
 }
 
 async function replaceDisciplineLinksForClass(classId: string, disciplineIds: string[]) {
   const db = getDb();
-  const registrationCodes: Array<{ classId: string; disciplineId: string; code: string }> = [];
 
   for (const disciplineId of disciplineIds) {
-    registrationCodes.push(...await ensureClassDisciplineLinks([classId], disciplineId));
+    await ensureClassDisciplineLinks([classId], disciplineId);
   }
 
   const existingLinks = await db.select().from(classDisciplines).where(eq(classDisciplines.classId, classId));
@@ -76,8 +51,6 @@ async function replaceDisciplineLinksForClass(classId: string, disciplineIds: st
         .where(and(eq(classDisciplines.classId, classId), eq(classDisciplines.disciplineId, link.disciplineId)));
     }
   }
-
-  return registrationCodes;
 }
 
 academicRouter.get(
@@ -216,20 +189,21 @@ academicRouter.post(
       ? (req.body.disciplineIds as string[])
       : [];
     await assertCanManageCourse(req, courseId);
+    const registrationCode = await generateUniqueRegistrationCode(getDb());
     const [classItem] = await getDb()
       .insert(classes)
-      .values({ name, courseId })
+      .values({ name, courseId, registrationCode })
       .returning();
-    const registrationCodes = disciplineIds.length
-      ? (await Promise.all(disciplineIds.map(async (disciplineId) => {
+    if (disciplineIds.length) {
+      await Promise.all(disciplineIds.map(async (disciplineId) => {
           const [discipline] = await getDb().select().from(disciplines).where(eq(disciplines.id, disciplineId)).limit(1);
           if (!discipline || discipline.courseId !== courseId) throw new AppError("disciplina invalida para este curso", 400);
-          return ensureClassDisciplineLinks([classItem.id], disciplineId);
-        }))).flat()
-      : [];
+          await ensureClassDisciplineLinks([classItem.id], disciplineId);
+        }));
+    }
     return res
       .status(201)
-      .json({ message: "turma criada com sucesso", class: classItem, registrationCodes });
+      .json({ message: "turma criada com sucesso", class: classItem, registrationCode: classItem.registrationCode });
   }),
 );
 
@@ -262,11 +236,28 @@ academicRouter.patch(
       .returning();
     if (!classItem) throw new AppError("turma nao encontrada", 404);
 
-    const registrationCodes = disciplineIds
-      ? await replaceDisciplineLinksForClass(classItem.id, disciplineIds)
-      : [];
+    if (disciplineIds) await replaceDisciplineLinksForClass(classItem.id, disciplineIds);
 
-    return res.json({ message: "turma atualizada com sucesso", class: classItem, registrationCodes });
+    return res.json({ message: "turma atualizada com sucesso", class: classItem, registrationCode: classItem.registrationCode });
+  }),
+);
+
+academicRouter.patch(
+  "/classes/:classId/registration-code",
+  requireRoles(["admin", "course-coordinator"]),
+  asyncHandler(async (req, res) => {
+    const [classItem] = await getDb().select().from(classes).where(eq(classes.id, req.params.classId)).limit(1);
+    if (!classItem) throw new AppError("turma nao encontrada", 404);
+    await assertCanManageCourse(req, classItem.courseId);
+
+    const registrationCode = await generateUniqueRegistrationCode(getDb());
+    const [updatedClass] = await getDb()
+      .update(classes)
+      .set({ registrationCode, updatedAt: new Date() })
+      .where(eq(classes.id, classItem.id))
+      .returning();
+
+    return res.json({ message: "codigo da turma regenerado com sucesso", class: updatedClass, registrationCode: updatedClass.registrationCode });
   }),
 );
 
@@ -302,7 +293,7 @@ async function replaceClassDisciplineLinks(classIds: string[], disciplineId: str
         .where(and(eq(classDisciplines.classId, link.classId), eq(classDisciplines.disciplineId, disciplineId)));
     }
   }
-  return classIds.length ? ensureClassDisciplineLinks(classIds, disciplineId) : [];
+  if (classIds.length) await ensureClassDisciplineLinks(classIds, disciplineId);
 }
 
 async function replaceProfessorDisciplineLinks(professorIds: string[], disciplineId: string) {
@@ -353,9 +344,9 @@ academicRouter.post(
     }
     const [discipline] = await getDb()
       .insert(disciplines)
-      .values({ name, courseId, code: await generateUniqueRegistrationCode(getDb()) })
+      .values({ name, courseId })
       .returning();
-    const registrationCodes = classIds.length ? await ensureClassDisciplineLinks(classIds, discipline.id) : [];
+    if (classIds.length) await ensureClassDisciplineLinks(classIds, discipline.id);
     if (professorIds.length)
       await getDb()
         .insert(professorDisciplines)
@@ -371,7 +362,6 @@ academicRouter.post(
       .json({
         message: "disciplina criada com sucesso",
         discipline,
-        registrationCodes,
       });
   }),
 );
@@ -414,10 +404,10 @@ academicRouter.patch(
       .returning();
     if (!discipline) throw new AppError("disciplina nao encontrada", 404);
 
-    const registrationCodes = classIds ? await replaceClassDisciplineLinks(classIds, discipline.id) : [];
+    if (classIds) await replaceClassDisciplineLinks(classIds, discipline.id);
     if (professorIds) await replaceProfessorDisciplineLinks(professorIds, discipline.id);
 
-    return res.json({ message: "disciplina atualizada com sucesso", discipline, registrationCodes });
+    return res.json({ message: "disciplina atualizada com sucesso", discipline });
   }),
 );
 
@@ -462,8 +452,8 @@ academicRouter.post(
     if (classItem.courseId !== discipline.courseId) throw new AppError("turma e disciplina devem pertencer ao mesmo curso", 400);
     await assertCanManageCourse(req, classItem.courseId);
 
-    const registrationCodes = await ensureClassDisciplineLinks([classItem.id], discipline.id);
-    return res.json({ message: "disciplina vinculada a turma com sucesso", registrationCodes });
+    await ensureClassDisciplineLinks([classItem.id], discipline.id);
+    return res.json({ message: "disciplina vinculada a turma com sucesso" });
   }),
 );
 
@@ -566,11 +556,7 @@ academicRouter.delete(
     if (!classItem) throw new AppError("turma nao encontrada", 404);
     await assertCanManageCourse(req, classItem.courseId);
 
-    await getDb()
-      .update(studentProfiles)
-      .set({ classId: null })
-      .where(and(eq(studentProfiles.accountId, req.params.studentId), eq(studentProfiles.classId, req.params.classId)));
-    return res.json({ message: "aluno removido da turma com sucesso" });
+    throw new AppError("aluno deve pertencer a uma turma; transfira-o para outra turma", 400);
   }),
 );
 
@@ -589,8 +575,7 @@ academicRouter.post(
     if (!profile) throw new AppError("aluno nao encontrado", 404);
     if (profile.courseId !== discipline.courseId) throw new AppError("aluno nao pertence ao curso desta disciplina", 400);
 
-    await getDb().insert(studentDisciplines).values({ studentId, disciplineId: req.params.disciplineId }).onConflictDoNothing();
-    return res.json({ message: "aluno adicionado a disciplina com sucesso" });
+    throw new AppError("alunos sao gerenciados pela turma; vincule a disciplina a turma do aluno", 400);
   }),
 );
 
@@ -602,9 +587,6 @@ academicRouter.delete(
     if (!discipline) throw new AppError("disciplina nao encontrada", 404);
     await assertCanManageDisciplineStudents(req, discipline);
 
-    await getDb()
-      .delete(studentDisciplines)
-      .where(and(eq(studentDisciplines.studentId, req.params.studentId), eq(studentDisciplines.disciplineId, req.params.disciplineId)));
-    return res.json({ message: "aluno removido da disciplina com sucesso" });
+    throw new AppError("alunos sao gerenciados pela turma; remova a disciplina da grade da turma", 400);
   }),
 );

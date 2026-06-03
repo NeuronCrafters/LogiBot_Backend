@@ -4,7 +4,7 @@ import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
 import { getDb } from "../../db/client";
-import { accounts, professorDisciplines, studentDisciplines, userAnalyses } from "../../db/schema";
+import { accounts, classDisciplines, professorClasses, professorDisciplines, studentProfiles, userAnalyses } from "../../db/schema";
 import { getEmptySummary, getSummary, summaryByEntity } from "../../services/analytics/analyticsService";
 
 export const logRouter = Router();
@@ -34,11 +34,28 @@ logRouter.get("/disciplines/:disciplineId/summary", asyncHandler(async (_req, re
 
 logRouter.get("/professor/students", asyncHandler(async (req, res) => {
   const professorId = req.user!.id;
-  const links = await getDb().select({ disciplineId: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, professorId));
-  if (!links.length) return res.json({ students: [] });
-  const studentLinks = await getDb().select({ studentId: studentDisciplines.studentId }).from(studentDisciplines).where(inArray(studentDisciplines.disciplineId, links.map((link) => link.disciplineId)));
-  if (!studentLinks.length) return res.json({ students: [] });
-  const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email, photo: accounts.photo }).from(accounts).where(inArray(accounts.id, [...new Set(studentLinks.map((link) => link.studentId))]));
+  const [directClassLinks, disciplineLinks] = await Promise.all([
+    getDb().select({ classId: professorClasses.classId }).from(professorClasses).where(eq(professorClasses.professorId, professorId)),
+    getDb().select({ disciplineId: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, professorId)),
+  ]);
+
+  const classIds = new Set(directClassLinks.map((link) => link.classId));
+  if (disciplineLinks.length) {
+    const classLinks = await getDb()
+      .select({ classId: classDisciplines.classId })
+      .from(classDisciplines)
+      .where(inArray(classDisciplines.disciplineId, disciplineLinks.map((link) => link.disciplineId)));
+    classLinks.forEach((link) => classIds.add(link.classId));
+  }
+
+  if (!classIds.size) return res.json({ students: [] });
+  const studentRows = await getDb()
+    .select({ studentId: studentProfiles.accountId })
+    .from(studentProfiles)
+    .where(inArray(studentProfiles.classId, [...classIds]));
+  if (!studentRows.length) return res.json({ students: [] });
+
+  const rows = await getDb().select({ id: accounts.id, name: accounts.name, email: accounts.email, photo: accounts.photo }).from(accounts).where(inArray(accounts.id, [...new Set(studentRows.map((link) => link.studentId))]));
   return res.json({ students: rows.map((row) => ({ ...row, _id: row.id })) });
 }));
 

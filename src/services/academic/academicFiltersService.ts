@@ -10,7 +10,6 @@ import {
   professorCourses,
   professorDisciplines,
   professorProfiles,
-  studentDisciplines,
   studentProfiles,
   universities,
 } from "../../db/schema";
@@ -79,18 +78,12 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
         .innerJoin(studentProfiles, eq(studentProfiles.accountId, accounts.id))
         .where(inArray(studentProfiles.courseId, courseIds))
     : [];
-  const [classLinks, studentLinks, professorCourseLinks, professorDisciplineLinks, roleRows] = await Promise.all([
+  const [classLinks, professorCourseLinks, professorDisciplineLinks, roleRows] = await Promise.all([
     disciplineRows.length
       ? db
           .select()
           .from(classDisciplines)
           .where(inArray(classDisciplines.disciplineId, disciplineRows.map((item) => item.id)))
-      : [],
-    studentRows.length
-      ? db
-          .select()
-          .from(studentDisciplines)
-          .where(inArray(studentDisciplines.studentId, studentRows.map((item) => item.id)))
       : [],
     professorRows.length
       ? db
@@ -128,6 +121,7 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
             _id: classItem.id,
             id: classItem.id,
             name: classItem.name,
+            registrationCode: classItem.registrationCode,
             disciplines: classLinks
               .filter((link) => link.classId === classItem.id)
               .flatMap((link) =>
@@ -137,7 +131,6 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
                     _id: discipline.id,
                     id: discipline.id,
                     name: discipline.name,
-                    code: link.code || discipline.code,
                   })),
               ),
             students: studentRows
@@ -158,7 +151,6 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
             _id: discipline.id,
             id: discipline.id,
             name: discipline.name,
-            code: discipline.code,
             classes: classLinks
               .filter((link) => link.disciplineId === discipline.id)
               .flatMap((link) =>
@@ -168,7 +160,7 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
                     _id: classItem.id,
                     id: classItem.id,
                     name: classItem.name,
-                    code: link.code || discipline.code,
+                    registrationCode: classItem.registrationCode,
                   })),
               ),
             professors: professorDisciplineLinks
@@ -187,20 +179,18 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
                       .map((role) => role.role),
                   })),
               ),
-            students: studentLinks
-              .filter((link) => link.disciplineId === discipline.id)
-              .flatMap((link) =>
-                studentRows
-                  .filter((student) => student.id === link.studentId)
-                  .map((student) => ({
-                    _id: student.id,
-                    id: student.id,
-                    name: student.name,
-                    email: student.email,
-                    status: student.status,
-                    photo: student.photo,
-                  })),
-              ),
+            students: studentRows
+              .filter((student) =>
+                classLinks.some((link) => link.disciplineId === discipline.id && link.classId === student.classId),
+              )
+              .map((student) => ({
+                _id: student.id,
+                id: student.id,
+                name: student.name,
+                email: student.email,
+                status: student.status,
+                photo: student.photo,
+              })),
           })),
         professors: professorCourseLinks
           .filter((link) => link.courseId === course.id)

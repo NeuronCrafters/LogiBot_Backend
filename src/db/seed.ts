@@ -13,14 +13,12 @@ import {
   professorCourses,
   professorDisciplines,
   professorProfiles,
-  studentDisciplines,
   studentProfiles,
   universities,
 } from "./schema";
-import { generateUniqueRegistrationCode } from "../services/academic/disciplineCode";
 
 const ADMIN_USER_DATA = {
-  name: "admin",
+  name: "Admin",
   email: "admin@logibot.com",
   password: "admin@logibot.com",
   role: "admin",
@@ -29,7 +27,7 @@ const ADMIN_USER_DATA = {
 
 const STUDENT_USER_DATA = {
   id: "00000000-0000-4000-8000-000000000205",
-  name: "Aluno Teste",
+  name: "Aluno",
   email: "aluno@logibot.com",
   password: "aluno@logibot.com",
   role: "student",
@@ -39,7 +37,7 @@ const STUDENT_USER_DATA = {
 
 const PROFESSOR_USER_DATA = {
   id: "00000000-0000-4000-8000-000000000206",
-  name: "Professor Teste",
+  name: "Professor",
   email: "professor@logibot.com",
   password: "professor@logibot.com",
   roles: ["professor"],
@@ -48,7 +46,7 @@ const PROFESSOR_USER_DATA = {
 
 const COORDINATOR_USER_DATA = {
   id: "00000000-0000-4000-8000-000000000207",
-  name: "Coordenador Teste",
+  name: "Coordenador",
   email: "coordenador@logibot.com",
   password: "coordenador@logibot.com",
   roles: ["professor", "course-coordinator"],
@@ -62,16 +60,16 @@ const ACADEMIC_SEED_DATA = {
   },
   course: {
     id: "00000000-0000-4000-8000-000000000102",
-    name: "Sistemas de Informacao",
+    name: "Sistemas de Informação",
   },
   class: {
     id: "00000000-0000-4000-8000-000000000103",
     name: "Turma 2026",
+    registrationCode: "LOGI2026",
   },
   discipline: {
     id: "00000000-0000-4000-8000-000000000104",
-    name: "Fundamentos de Programacao",
-    code: "LOGI2026",
+    name: "Programação 1",
   },
 };
 
@@ -88,7 +86,10 @@ type SeedProfessorData = SeedUserData & {
   roles: string[];
 };
 
-async function upsertAccount(db: ReturnType<typeof getExpressDb>, user: SeedUserData) {
+async function upsertAccount(
+  db: ReturnType<typeof getExpressDb>,
+  user: SeedUserData,
+) {
   const passwordHash = await bcrypt.hash(user.password, 10);
   const existing = await db.query.accounts.findFirst({
     where: eq(accounts.email, user.email),
@@ -115,7 +116,10 @@ async function upsertAccount(db: ReturnType<typeof getExpressDb>, user: SeedUser
   return account;
 }
 
-async function seedProfessorLikeUser(db: ReturnType<typeof getExpressDb>, user: SeedProfessorData) {
+async function seedProfessorLikeUser(
+  db: ReturnType<typeof getExpressDb>,
+  user: SeedProfessorData,
+) {
   const account = await upsertAccount(db, user);
 
   await db
@@ -202,6 +206,7 @@ async function seed() {
       set: {
         name: ACADEMIC_SEED_DATA.class.name,
         courseId: ACADEMIC_SEED_DATA.course.id,
+        registrationCode: ACADEMIC_SEED_DATA.class.registrationCode,
         updatedAt: new Date(),
       },
     });
@@ -216,7 +221,6 @@ async function seed() {
       target: disciplines.id,
       set: {
         name: ACADEMIC_SEED_DATA.discipline.name,
-        code: ACADEMIC_SEED_DATA.discipline.code,
         courseId: ACADEMIC_SEED_DATA.course.id,
         updatedAt: new Date(),
       },
@@ -227,12 +231,8 @@ async function seed() {
     .values({
       classId: ACADEMIC_SEED_DATA.class.id,
       disciplineId: ACADEMIC_SEED_DATA.discipline.id,
-      code: ACADEMIC_SEED_DATA.discipline.code,
     })
-    .onConflictDoUpdate({
-      target: [classDisciplines.classId, classDisciplines.disciplineId],
-      set: { code: ACADEMIC_SEED_DATA.discipline.code || await generateUniqueRegistrationCode(db) },
-    });
+    .onConflictDoNothing();
 
   await seedProfessorLikeUser(db, PROFESSOR_USER_DATA);
   await seedProfessorLikeUser(db, COORDINATOR_USER_DATA);
@@ -262,14 +262,6 @@ async function seed() {
         level: STUDENT_USER_DATA.level,
       },
     });
-
-  await db
-    .insert(studentDisciplines)
-    .values({
-      studentId: student.id,
-      disciplineId: ACADEMIC_SEED_DATA.discipline.id,
-    })
-    .onConflictDoNothing();
 }
 
 seed()

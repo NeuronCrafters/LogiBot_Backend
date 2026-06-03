@@ -52,17 +52,18 @@ export const classes = pgTable("classes", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  registrationCode: text("registration_code").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   uniqueNameByCourse: uniqueIndex("classes_name_course_idx").on(table.name, table.courseId),
+  uniqueRegistrationCode: uniqueIndex("classes_registration_code_idx").on(table.registrationCode),
 }));
 
 export const disciplines = pgTable("disciplines", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
-  code: text("code").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
@@ -89,18 +90,11 @@ export const passwordHistory = pgTable("password_history", {
   changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const studentDisciplines = pgTable("student_disciplines", {
-  studentId: uuid("student_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
-  disciplineId: uuid("discipline_id").notNull().references(() => disciplines.id, { onDelete: "cascade" }),
-}, (table) => ({ pk: primaryKey({ columns: [table.studentId, table.disciplineId] }) }));
-
 export const classDisciplines = pgTable("class_disciplines", {
   classId: uuid("class_id").notNull().references(() => classes.id, { onDelete: "cascade" }),
   disciplineId: uuid("discipline_id").notNull().references(() => disciplines.id, { onDelete: "cascade" }),
-  code: text("code"),
 }, (table) => ({
   pk: primaryKey({ columns: [table.classId, table.disciplineId] }),
-  uniqueCode: uniqueIndex("class_disciplines_code_idx").on(table.code),
 }));
 
 export const professorCourses = pgTable("professor_courses", {

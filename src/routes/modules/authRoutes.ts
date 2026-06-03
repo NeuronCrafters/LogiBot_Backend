@@ -10,7 +10,7 @@ import { getDb } from "../../db/client";
 import { accounts, passwordHistory } from "../../db/schema";
 import {
   createStudentAccount,
-  findEntitiesByDisciplineCode,
+  findEntitiesByClassCode,
   getAccountByEmail,
   getAccountById,
   getPublicMe,
@@ -36,12 +36,9 @@ authRouter.post("/register", asyncHandler(async (req, res) => {
   const existingUser = await getAccountByEmail(db, email);
   if (existingUser) throw new AppError("usuario ja existe com este email!", 409);
 
-  const entities = await findEntitiesByDisciplineCode(db, code);
-  if (!entities) throw new AppError("codigo de disciplina invalido!", 404);
-  const { university, course, discipline, classes: linkedClasses } = entities;
-  if (!linkedClasses.length) throw new AppError("a disciplina nao possui turmas cadastradas!", 400);
-
-  const selectedClass = linkedClasses[0];
+  const entities = await findEntitiesByClassCode(db, code);
+  if (!entities) throw new AppError("codigo de turma invalido!", 404);
+  const { university, course, class: selectedClass, disciplines: linkedDisciplines } = entities;
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await createStudentAccount(db, {
     name,
@@ -50,7 +47,6 @@ authRouter.post("/register", asyncHandler(async (req, res) => {
     schoolId: university.id,
     courseId: course.id,
     classId: selectedClass.id,
-    disciplineId: discipline.id,
   });
   if (!user) throw new AppError("falha ao criar usuario.", 500);
 
@@ -65,11 +61,11 @@ authRouter.post("/register", asyncHandler(async (req, res) => {
         role: user.roles,
         school: { _id: university.id, id: university.id, name: university.name },
         course: { _id: course.id, id: course.id, name: course.name },
-        class: { _id: selectedClass.id, id: selectedClass.id, name: selectedClass.name },
-        disciplines: [{ _id: discipline.id, id: discipline.id, name: discipline.name, code: entities.registrationCode || discipline.code }],
+        class: { _id: selectedClass.id, id: selectedClass.id, name: selectedClass.name, registrationCode: selectedClass.registrationCode },
+        disciplines: linkedDisciplines.map((discipline) => ({ _id: discipline.id, id: discipline.id, name: discipline.name })),
       },
       assignedClass: { id: selectedClass.id, name: selectedClass.name },
-      discipline: { id: discipline.id, name: discipline.name },
+      disciplines: linkedDisciplines.map((discipline) => ({ id: discipline.id, name: discipline.name })),
       course: { id: course.id, name: course.name },
       university: { id: university.id, name: university.name },
     },

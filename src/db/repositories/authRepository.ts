@@ -14,7 +14,6 @@ import {
   professorCourses,
   professorDisciplines,
   professorProfiles,
-  studentDisciplines,
   studentProfiles,
   universities,
   userAnalyses,
@@ -58,7 +57,9 @@ async function hydrateAccount(db: AnyDbClient, account: typeof accounts.$inferSe
   const professorCourseRows = await db.select({ id: professorCourses.courseId }).from(professorCourses).where(eq(professorCourses.professorId, account.id));
   const professorClassRows = await db.select({ id: professorClasses.classId }).from(professorClasses).where(eq(professorClasses.professorId, account.id));
   const professorDisciplineRows = await db.select({ id: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, account.id));
-  const studentDisciplineRows = await db.select({ id: studentDisciplines.disciplineId }).from(studentDisciplines).where(eq(studentDisciplines.studentId, account.id));
+  const studentDisciplineRows = studentProfile
+    ? await db.select({ id: classDisciplines.disciplineId }).from(classDisciplines).where(eq(classDisciplines.classId, studentProfile.classId))
+    : [];
 
   return {
     ...account,
@@ -73,46 +74,28 @@ async function hydrateAccount(db: AnyDbClient, account: typeof accounts.$inferSe
   };
 }
 
-export async function findEntitiesByDisciplineCode(db: AnyDbClient, code: string) {
-  const [classDiscipline] = await db.select()
-    .from(classDisciplines)
-    .where(eq(classDisciplines.code, code))
+export async function findEntitiesByClassCode(db: AnyDbClient, code: string) {
+  const [linkedClass] = await db.select()
+    .from(classes)
+    .where(eq(classes.registrationCode, code))
     .limit(1);
+  if (!linkedClass) return null;
 
-  if (classDiscipline) {
-    const [[discipline], [linkedClass]] = await Promise.all([
-      db.select().from(disciplines).where(eq(disciplines.id, classDiscipline.disciplineId)).limit(1),
-      db.select().from(classes).where(eq(classes.id, classDiscipline.classId)).limit(1),
-    ]);
-    if (!discipline || !linkedClass) return null;
-
-    const [course] = await db.select().from(courses).where(eq(courses.id, discipline.courseId)).limit(1);
-    if (!course) return null;
-
-    const [university] = await db.select().from(universities).where(eq(universities.id, course.universityId)).limit(1);
-    if (!university) return null;
-
-    return { university, course, discipline, classes: [linkedClass], registrationCode: code };
-  }
-
-  const [discipline] = await db.select().from(disciplines).where(eq(disciplines.code, code)).limit(1);
-  if (!discipline) return null;
-
-  const [course] = await db.select().from(courses).where(eq(courses.id, discipline.courseId)).limit(1);
+  const [course] = await db.select().from(courses).where(eq(courses.id, linkedClass.courseId)).limit(1);
   if (!course) return null;
 
   const [university] = await db.select().from(universities).where(eq(universities.id, course.universityId)).limit(1);
   if (!university) return null;
 
-  const linkedClassRows = await db.select({ classId: classDisciplines.classId })
+  const linkedDisciplineRows = await db.select({ disciplineId: classDisciplines.disciplineId })
     .from(classDisciplines)
-    .where(eq(classDisciplines.disciplineId, discipline.id));
-  const classIds = linkedClassRows.map((row) => row.classId);
-  const linkedClasses = classIds.length
-    ? await db.select().from(classes).where(inArray(classes.id, classIds))
+    .where(eq(classDisciplines.classId, linkedClass.id));
+  const disciplineIds = linkedDisciplineRows.map((row) => row.disciplineId);
+  const linkedDisciplines = disciplineIds.length
+    ? await db.select().from(disciplines).where(inArray(disciplines.id, disciplineIds))
     : [];
 
-  return { university, course, discipline, classes: linkedClasses, registrationCode: discipline.code };
+  return { university, course, class: linkedClass, disciplines: linkedDisciplines, registrationCode: linkedClass.registrationCode };
 }
 
 export async function createStudentAccount(db: AnyDbClient, input: {
@@ -122,7 +105,6 @@ export async function createStudentAccount(db: AnyDbClient, input: {
   schoolId: string;
   courseId: string;
   classId: string;
-  disciplineId: string;
 }) {
   const [account] = await db.insert(accounts).values({
     name: input.name,
@@ -139,10 +121,6 @@ export async function createStudentAccount(db: AnyDbClient, input: {
     classId: input.classId,
     level: "desconhecido",
   });
-  await db.insert(studentDisciplines)
-    .values({ studentId: account.id, disciplineId: input.disciplineId })
-    .onConflictDoNothing();
-
   return getAccountById(db, account.id);
 }
 
@@ -216,14 +194,20 @@ export async function getPublicMe(db: AnyDbClient, account: AccountWithAuth) {
     className: classDoc?.name,
     courses: courseRows.map((item) => ({ id: item.id, name: item.name })),
     classes: classRows.map((item) => ({ id: item.id, name: item.name })),
-    disciplines: disciplineRows.map((item) => ({ id: item.id, name: item.name, code: item.code })),
+    disciplines: disciplineRows.map((item) => ({ id: item.id, name: item.name })),
   };
 }
 
 export async function listStudentDisciplineIds(db: AnyDbClient, studentId: string) {
-  const rows = await db.select({ id: studentDisciplines.disciplineId })
-    .from(studentDisciplines)
-    .where(eq(studentDisciplines.studentId, studentId));
+  const [profile] = await db.select({ classId: studentProfiles.classId })
+    .from(studentProfiles)
+    .where(eq(studentProfiles.accountId, studentId))
+    .limit(1);
+  if (!profile) return [];
+
+  const rows = await db.select({ id: classDisciplines.disciplineId })
+    .from(classDisciplines)
+    .where(eq(classDisciplines.classId, profile.classId));
   return rows.map((row) => row.id);
 }
 

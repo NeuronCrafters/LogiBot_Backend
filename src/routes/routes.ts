@@ -11,6 +11,7 @@ import { feedbackRouter } from "./modules/feedbackRoutes";
 import { healthRouter } from "./modules/healthRoutes";
 import { logRouter } from "./modules/logRoutes";
 import { quizRouter } from "./modules/quizRoutes";
+import { professorQuizRouter } from "./modules/professorQuizRoutes";
 
 const routes = Router();
 
@@ -21,6 +22,7 @@ routes.use(requireApiKey);
 routes.use("/auth", authRouter);
 routes.use("/account", accountRouter);
 routes.use("/quiz", quizRouter);
+routes.use("/quiz/professor", professorQuizRouter);
 routes.use("/chat", chatRouter);
 routes.use("/academic", academicRouter);
 routes.use("/admin", adminRouter);

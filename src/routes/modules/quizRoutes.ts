@@ -1,90 +1,241 @@
 import { Router } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth } from "../../http/auth";
 import { getDb } from "../../db/client";
 import { saveStudentQuizResult } from "../../db/repositories/authRepository";
 import {
-  analysisSessions,
-  answerAttempts,
-  answerQuestions,
-  userAnalyses,
+  accounts,
+  classDisciplines,
+  disciplines,
+  professorQuizAnswers,
+  professorQuizAttempts,
+  professorQuizQuestions,
+  professorQuizzes,
+  studentProfiles,
 } from "../../db/schema";
-import {
-  generateQuiz,
-  getCategories,
-  getLevels,
-  getRuntimeSession,
-  getSubcategories,
-  verifyQuizAnswers,
-} from "../../services/quiz/quizService";
+import { checkAnswers } from "../../services/quiz/quizService";
 
 export const quizRouter = Router();
-
 quizRouter.use(requireAuth);
 
-quizRouter.get("/levels", (_req, res) => res.json({ buttons: getLevels() }));
+// ── Student hub: list available quizzes for the student's class ───────────────
+quizRouter.get(
+  "/student/hub",
+  asyncHandler(async (req, res) => {
+    if (!req.user!.role.includes("student"))
+      throw new AppError("Apenas alunos podem acessar o hub", 403);
 
-quizRouter.post("/level", (req, res, next) => {
-  try {
-    const level = String(req.body.level || req.body.nivel || "");
-    if (!level) throw new AppError("level e obrigatorio", 400);
-    getRuntimeSession(req.user!.id).nivelAtual = level;
-    return res.json({
-      responses: [{ text: `Nivel definido: ${level}` }],
-      level,
-      nivel: level,
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
+    const db = getDb();
 
-quizRouter.get("/categories", (_req, res) =>
-  res.json({ buttons: getCategories() }),
+    const [profile] = await db
+      .select({ classId: studentProfiles.classId })
+      .from(studentProfiles)
+      .where(eq(studentProfiles.accountId, req.user!.id))
+      .limit(1);
+
+    if (!profile) throw new AppError("Perfil de aluno não encontrado", 404);
+
+    const disciplineRows = await db
+      .select({ disciplineId: classDisciplines.disciplineId })
+      .from(classDisciplines)
+      .where(eq(classDisciplines.classId, profile.classId));
+
+    const disciplineIds = disciplineRows.map((r) => r.disciplineId);
+
+    if (!disciplineIds.length) return res.json([]);
+
+    const quizzes = await db
+      .select({
+        id: professorQuizzes.id,
+        title: professorQuizzes.title,
+        topic: professorQuizzes.topic,
+        description: professorQuizzes.description,
+        disciplineId: professorQuizzes.disciplineId,
+        disciplineName: disciplines.name,
+        createdAt: professorQuizzes.createdAt,
+      })
+      .from(professorQuizzes)
+      .innerJoin(disciplines, eq(professorQuizzes.disciplineId, disciplines.id))
+      .where(inArray(professorQuizzes.disciplineId, disciplineIds))
+      .orderBy(desc(professorQuizzes.createdAt));
+
+    if (!quizzes.length) return res.json([]);
+
+    // Fetch question counts
+    const questionCounts = await db
+      .select({
+        quizId: professorQuizQuestions.quizId,
+      })
+      .from(professorQuizQuestions)
+      .where(
+        inArray(
+          professorQuizQuestions.quizId,
+          quizzes.map((q) => q.id),
+        ),
+      );
+
+    const countMap: Record<string, number> = {};
+    for (const row of questionCounts) {
+      countMap[row.quizId] = (countMap[row.quizId] ?? 0) + 1;
+    }
+
+    // Fetch student's best attempt per quiz
+    const attempts = await db
+      .select({
+        quizId: professorQuizAttempts.quizId,
+        score: professorQuizAttempts.score,
+        totalQuestions: professorQuizAttempts.totalQuestions,
+      })
+      .from(professorQuizAttempts)
+      .where(eq(professorQuizAttempts.studentId, req.user!.id))
+      .orderBy(desc(professorQuizAttempts.score));
+
+    const bestAttemptMap: Record<string, { score: number; totalQuestions: number }> = {};
+    for (const a of attempts) {
+      if (!bestAttemptMap[a.quizId] || a.score > bestAttemptMap[a.quizId].score) {
+        bestAttemptMap[a.quizId] = { score: a.score, totalQuestions: a.totalQuestions };
+      }
+    }
+
+    const result = quizzes.map((q) => ({
+      ...q,
+      questionCount: countMap[q.id] ?? 0,
+      attempted: !!bestAttemptMap[q.id],
+      bestScore: bestAttemptMap[q.id]?.score,
+      bestTotalQuestions: bestAttemptMap[q.id]?.totalQuestions,
+    }));
+
+    return res.json(result);
+  }),
 );
 
-quizRouter.post("/subcategories", (req, res, next) => {
-  try {
-    const category = String(req.body.category || req.body.categoria || "");
-    return res.json({ buttons: getSubcategories(category) });
-  } catch (error) {
-    return next(error);
-  }
-});
+// ── Get single quiz with questions (no answer keys) ───────────────────────────
+quizRouter.get(
+  "/student/:id",
+  asyncHandler(async (req, res) => {
+    if (!req.user!.role.includes("student"))
+      throw new AppError("Apenas alunos podem acessar quizzes", 403);
 
-quizRouter.post("/questions", (req, res, next) => {
-  try {
-    const subtopic = String(req.body.subtopic || req.body.pergunta || "");
-    const session = getRuntimeSession(req.user!.id);
-    if (!session.nivelAtual)
-      throw new AppError("defina um nivel antes de gerar perguntas", 400);
-    const quiz = generateQuiz(subtopic, session.nivelAtual);
-    session.lastSubject = subtopic;
-    session.lastFullQuestions = quiz.questions;
-    session.lastQuestions = quiz.questions.map((question) => question.question);
-    session.lastAnswerKeys = quiz.answer_keys;
-    return res.json({
-      perguntas: quiz.questions,
-      gabarito: quiz.answer_keys,
-      nivel: session.nivelAtual,
-      assunto: subtopic,
+    const db = getDb();
+
+    const [quiz] = await db
+      .select({
+        id: professorQuizzes.id,
+        title: professorQuizzes.title,
+        topic: professorQuizzes.topic,
+        description: professorQuizzes.description,
+        disciplineId: professorQuizzes.disciplineId,
+        disciplineName: disciplines.name,
+      })
+      .from(professorQuizzes)
+      .innerJoin(disciplines, eq(professorQuizzes.disciplineId, disciplines.id))
+      .where(eq(professorQuizzes.id, req.params.id))
+      .limit(1);
+
+    if (!quiz) throw new AppError("Quiz não encontrado", 404);
+
+    const questions = await db
+      .select({
+        id: professorQuizQuestions.id,
+        question: professorQuizQuestions.question,
+        options: professorQuizQuestions.options,
+        orderIndex: professorQuizQuestions.orderIndex,
+      })
+      .from(professorQuizQuestions)
+      .where(eq(professorQuizQuestions.quizId, req.params.id))
+      .orderBy(asc(professorQuizQuestions.orderIndex));
+
+    return res.json({ ...quiz, questions });
+  }),
+);
+
+// ── Submit quiz attempt ───────────────────────────────────────────────────────
+quizRouter.post(
+  "/student/:id/attempt",
+  asyncHandler(async (req, res) => {
+    if (!req.user!.role.includes("student"))
+      throw new AppError("Apenas alunos podem responder quizzes", 403);
+
+    const answers = req.body.answers as Record<string, string> | undefined;
+    if (!answers || typeof answers !== "object" || Array.isArray(answers))
+      throw new AppError("answers deve ser um objeto { questionId: opcaoSelecionada }", 400);
+
+    const db = getDb();
+
+    const [quiz] = await db
+      .select({
+        id: professorQuizzes.id,
+        title: professorQuizzes.title,
+        topic: professorQuizzes.topic,
+      })
+      .from(professorQuizzes)
+      .where(eq(professorQuizzes.id, req.params.id))
+      .limit(1);
+
+    if (!quiz) throw new AppError("Quiz não encontrado", 404);
+
+    const questions = await db
+      .select()
+      .from(professorQuizQuestions)
+      .where(eq(professorQuizQuestions.quizId, req.params.id))
+      .orderBy(asc(professorQuizQuestions.orderIndex));
+
+    if (!questions.length)
+      throw new AppError("Este quiz ainda não possui perguntas", 400);
+
+    const result = checkAnswers(questions, answers);
+
+    // Save attempt
+    const [attempt] = await db
+      .insert(professorQuizAttempts)
+      .values({
+        quizId: quiz.id,
+        studentId: req.user!.id,
+        score: result.correct,
+        totalQuestions: questions.length,
+      })
+      .returning();
+
+    // Save per-question answers
+    if (result.detalhes.length) {
+      await db.insert(professorQuizAnswers).values(
+        questions.map((q, i) => ({
+          attemptId: attempt.id,
+          questionId: q.id,
+          selectedOption: result.detalhes[i].selected,
+          isCorrect: result.detalhes[i].isCorrect,
+        })),
+      );
+    }
+
+    // Feed analytics pipeline so dashboard charts stay up-to-date
+    await saveStudentQuizResult(db, {
+      userId: req.user!.id,
+      email: req.user!.email,
+      subject: quiz.topic,
+      level: "",
+      totalCorrectAnswers: result.correct,
+      totalWrongAnswers: result.wrong,
+      detalhes: result.detalhes.map((d) => ({
+        question: d.question,
+        selected: d.selected,
+        isCorrect: d.isCorrect,
+        explanation: d.explanation,
+      })),
     });
-  } catch (error) {
-    return next(error);
-  }
-});
 
-quizRouter.get("/answer-key", (req, res) => {
-  const session = getRuntimeSession(req.user!.id);
-  return res.json({
-    answer_keys: session.lastAnswerKeys,
-    gabarito: session.lastAnswerKeys,
-    assunto: session.lastSubject,
-  });
-});
+    return res.json({
+      attemptId: attempt.id,
+      score: result.correct,
+      totalQuestions: questions.length,
+      detalhes: result.detalhes,
+    });
+  }),
+);
 
+// ── Quiz history for a user ───────────────────────────────────────────────────
 quizRouter.get(
   "/history/:userId",
   asyncHandler(async (req, res) => {
@@ -95,93 +246,39 @@ quizRouter.get(
       !req.user!.role.includes("professor") &&
       !req.user!.role.includes("course-coordinator")
     ) {
-      throw new AppError("acesso negado", 403);
+      throw new AppError("Acesso negado", 403);
     }
 
-    const rows = await getDb()
+    const db = getDb();
+
+    const rows = await db
       .select({
-        attemptId: answerAttempts.id,
-        score: answerAttempts.totalCorrectAnswers,
-        wrong: answerAttempts.totalWrongAnswers,
-        completedAt: answerAttempts.createdAt,
-        subject: answerQuestions.subject,
-        level: answerQuestions.level,
+        attemptId: professorQuizAttempts.id,
+        quizId: professorQuizAttempts.quizId,
+        quizTitle: professorQuizzes.title,
+        topic: professorQuizzes.topic,
+        disciplineName: disciplines.name,
+        score: professorQuizAttempts.score,
+        totalQuestions: professorQuizAttempts.totalQuestions,
+        completedAt: professorQuizAttempts.completedAt,
       })
-      .from(answerAttempts)
-      .innerJoin(
-        analysisSessions,
-        eq(answerAttempts.sessionId, analysisSessions.id),
-      )
-      .innerJoin(userAnalyses, eq(analysisSessions.analysisId, userAnalyses.id))
-      .leftJoin(
-        answerQuestions,
-        eq(answerQuestions.attemptId, answerAttempts.id),
-      )
-      .where(eq(userAnalyses.userId, userId))
-      .orderBy(desc(answerAttempts.createdAt));
+      .from(professorQuizAttempts)
+      .innerJoin(professorQuizzes, eq(professorQuizAttempts.quizId, professorQuizzes.id))
+      .innerJoin(disciplines, eq(professorQuizzes.disciplineId, disciplines.id))
+      .where(eq(professorQuizAttempts.studentId, userId))
+      .orderBy(desc(professorQuizAttempts.completedAt));
 
-    const attempts = new Map<
-      string,
-      {
-        quizId: string;
-        title: string;
-        score: number;
-        totalQuestions: number;
-        completedAt: Date;
-      }
-    >();
-
-    for (const row of rows) {
-      if (attempts.has(row.attemptId)) continue;
-      attempts.set(row.attemptId, {
-        quizId: row.attemptId,
-        title: row.subject ? `Quiz ${row.subject}` : "Quiz Pratico",
-        score: row.score,
-        totalQuestions: row.score + row.wrong,
-        completedAt: row.completedAt,
-      });
-    }
-
-    return res.json(Array.from(attempts.values()));
-  }),
-);
-
-quizRouter.post(
-  "/answers",
-  asyncHandler(async (req, res) => {
-    const answers = (req.body.answers || req.body.respostas) as string[];
-    if (!Array.isArray(answers))
-      throw new AppError("answers deve ser uma lista", 400);
-    const session = getRuntimeSession(req.user!.id);
-    if (!session.lastAnswerKeys.length || !session.lastFullQuestions.length)
-      throw new AppError(
-        "Nenhum quiz ativo para verificar. Por favor, inicie um novo.",
-        400,
-      );
-    const result = verifyQuizAnswers(
-      answers,
-      session.lastAnswerKeys,
-      session.lastFullQuestions,
+    return res.json(
+      rows.map((r) => ({
+        quizId: r.quizId,
+        attemptId: r.attemptId,
+        title: r.quizTitle,
+        topic: r.topic,
+        disciplineName: r.disciplineName,
+        score: r.score,
+        totalQuestions: r.totalQuestions,
+        completedAt: r.completedAt,
+      })),
     );
-    if (req.user!.role.includes("student")) {
-      await saveStudentQuizResult(getDb(), {
-        userId: req.user!.id,
-        email: req.user!.email,
-        subject: session.lastSubject || "",
-        level: session.nivelAtual || "",
-        totalCorrectAnswers: result.totalCorrectAnswers,
-        totalWrongAnswers: result.totalWrongAnswers,
-        detalhes: result.detalhes,
-      });
-    }
-    session.lastAnswerKeys = [];
-    session.lastQuestions = [];
-    session.lastFullQuestions = [];
-    return res.json({
-      ...result,
-      subject: session.lastSubject || "",
-      nivel: session.nivelAtual || "",
-      source: "local",
-    });
   }),
 );

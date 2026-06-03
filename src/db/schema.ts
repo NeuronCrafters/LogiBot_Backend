@@ -417,6 +417,64 @@ export const quizSubjectCounts = pgTable(
   (table) => ({ pk: primaryKey({ columns: [table.userId, table.subject] }) }),
 );
 
+export const professorQuizzes = pgTable("professor_quizzes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  professorId: uuid("professor_id")
+    .notNull()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  disciplineId: uuid("discipline_id")
+    .notNull()
+    .references(() => disciplines.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  topic: text("topic").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const professorQuizQuestions = pgTable("professor_quiz_questions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  quizId: uuid("quiz_id")
+    .notNull()
+    .references(() => professorQuizzes.id, { onDelete: "cascade" }),
+  question: text("question").notNull(),
+  options: jsonb("options").notNull().$type<string[]>(),
+  correctOption: text("correct_option").notNull(),
+  explanation: text("explanation"),
+  orderIndex: integer("order_index").notNull().default(0),
+});
+
+export const professorQuizAttempts = pgTable("professor_quiz_attempts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  quizId: uuid("quiz_id")
+    .notNull()
+    .references(() => professorQuizzes.id, { onDelete: "cascade" }),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  score: integer("score").notNull().default(0),
+  totalQuestions: integer("total_questions").notNull().default(0),
+  completedAt: timestamp("completed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const professorQuizAnswers = pgTable("professor_quiz_answers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  attemptId: uuid("attempt_id")
+    .notNull()
+    .references(() => professorQuizAttempts.id, { onDelete: "cascade" }),
+  questionId: uuid("question_id")
+    .notNull()
+    .references(() => professorQuizQuestions.id, { onDelete: "cascade" }),
+  selectedOption: text("selected_option").notNull(),
+  isCorrect: boolean("is_correct").notNull(),
+});
+
 export const feedbacks = pgTable("feedbacks", {
   id: uuid("id").primaryKey().defaultRandom(),
   accountId: uuid("account_id")
@@ -433,3 +491,6 @@ export type Account = typeof accounts.$inferSelect;
 export type RoleRow = typeof accountRoles.$inferSelect;
 export type StudentProfile = typeof studentProfiles.$inferSelect;
 export type ProfessorProfile = typeof professorProfiles.$inferSelect;
+export type ProfessorQuiz = typeof professorQuizzes.$inferSelect;
+export type ProfessorQuizQuestion = typeof professorQuizQuestions.$inferSelect;
+export type ProfessorQuizAttempt = typeof professorQuizAttempts.$inferSelect;

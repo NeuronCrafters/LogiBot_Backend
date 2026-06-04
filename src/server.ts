@@ -3,128 +3,68 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import session from "express-session";
-import passport from "./config/socialLogin/passport";
+import { createServer } from "http";
 import { connectDB } from "./config/database";
-import { setupSwagger } from "./config/swagger/swaggerConfig";
 import { routes } from "./routes/routes";
-import { authRoutes } from "./routes/routesPaths/socialLoginRoute";
-import { errorHandler } from "./middlewares/errorHandler/errorHandler";
-import { corsErrorHandler } from "./middlewares/corsErrorHandler/corsErrorHandler";
-import { corsAccessLogger } from "./middlewares/corsErrorHandler/corsAccessLogger";
+import { errorHandler } from "./http/errorHandler";
+import { corsAccessLogger, corsOptions } from "./http/cors";
 import { initAdminUser } from "./config/initAdminUser/initAdminUser";
+import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
+import { requestLogger } from "./http/requestLogger";
+import { logger } from "./logger";
 
-const app = express();
+export const app = express();
 
-async function initializeApp() {
-    try {
-        console.log("tentando conectar ao mongodb...");
-        await connectDB();
-        console.log("conexão com mongodb bem-sucedida.");
+app.use(cors(corsOptions));
+app.use(corsAccessLogger);
+app.use(cookieParser());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(requestLogger);
+app.use(routes);
+app.use(errorHandler);
 
-        await initAdminUser();
-        console.log("verificação do usuário admin concluída.");
-
-    } catch (error) {
-        console.error("erro crítico na inicialização. o processo será encerrado:");
-        console.error(error);
-        process.exit(1);
+export async function bootstrap() {
+  for (const varName of getRequiredBootstrapEnvVars()) {
+    if (!process.env[varName]) {
+      throw new Error(`Required environment variable is missing: ${varName}`);
     }
+  }
 
-    const requiredEnvVars = ["FRONT_URL", "MONGO_URI", "JWT_SECRET"];
+  logger.info("Server", "Starting LogiBot backend.");
+  logger.info("Database", "Connecting to PostgreSQL.");
+  await connectDB();
+  logger.info("Database", "PostgreSQL connection established.");
 
-    const hasGoogleConfig = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+  await initAdminUser();
+  logger.info("Bootstrap", "Admin account verification completed.");
 
-    if (hasGoogleConfig && !process.env.SESSION_SECRET) {
-        console.error("erro: session_secret necessário quando google oauth está configurado");
-        process.exit(1);
-    }
+  const port = getAppPort();
+  const server = createServer(app);
 
-    for (const varName of requiredEnvVars) {
-        if (!process.env[varName]) {
-            console.error(`erro: variável de ambiente necessária ausente: ${varName}`);
-            process.exit(1);
-        }
-    }
-    console.log("variáveis de ambiente essenciais verificadas.");
-
-    const allowedOrigins = [
-        "https://saellogibots.com",
-        "https://www.saellogibots.com",
-        "https://saellogibot.com",
-        "https://www.saellogibot.com",
-        "http://localhost:3001",
-        "http://localhost:5173",
-        process.env.FRONT_URL
-    ].filter(Boolean);
-
-
-    app.use(cors({
-        origin: function (origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                console.log("origem bloqueada por cors:", origin);
-                callback(new Error("not allowed by cors"));
-            }
-        },
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        allowedHeaders: [
-            "Content-Type",
-            "Authorization",
-            "Cookie",
-            "X-Requested-With",
-            "x-api-key",
-            "X-API-Key"
-        ],
-        exposedHeaders: ["Set-Cookie"],
-        maxAge: 86400
-    }));
-
-    app.use(corsAccessLogger);
-    app.use(cookieParser());
-    app.use(express.json({ limit: "10mb" }));
-    app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
-    if (hasGoogleConfig) {
-        app.use(session({
-            secret: process.env.SESSION_SECRET!,
-            resave: false,
-            saveUninitialized: false,
-            cookie: {
-                secure: false,
-                httpOnly: true,
-                maxAge: 1000 * 60 * 60 * 2
-            }
-        }));
-
-        app.use(passport.initialize());
-        app.use(passport.session());
-
-        app.use("/auth", authRoutes);
-        console.log("google oauth configurado e rotas /auth habilitadas");
-    } else {
-        console.log("google oauth não configurado - rotas /auth desabilitadas");
-    }
-
-    app.use(routes);
-
-    setupSwagger(app);
-
-    app.use(corsErrorHandler);
-    app.use(errorHandler);
-
-    process.on("unhandledRejection", (reason) => { console.error("unhandled rejection:", reason); });
-    process.on("uncaughtException", (error) => { console.error("uncaught exception:", error); });
-
-    const port = parseInt(process.env.PORT || "3000", 10);
-
-    console.log(`servidor express pronto para ouvir na porta ${port}...`);
-
-    app.listen(port, "0.0.0.0", () => {
-        console.log(`servidor express rodando em http://localhost:${port}`);
+  server.listen(port, () => {
+    logger.info("Server", "Express server is listening.", {
+      port,
+      healthcheck: "/health/simple",
     });
+  });
+
+  process.on("unhandledRejection", (reason) =>
+    logger.error("Process", "Unhandled promise rejection.", reason),
+  );
+  process.on("uncaughtException", (error) =>
+    logger.error("Process", "Uncaught exception.", error),
+  );
+  process.on("exit", (code) =>
+    logger.info("Process", "Node process exited.", { code }),
+  );
+
+  return server;
 }
 
-initializeApp();
+if (require.main === module) {
+  bootstrap().catch((error) => {
+    logger.error("Server", "Critical startup failure.", error);
+    process.exit(1);
+  });
+}

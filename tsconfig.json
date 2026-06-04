@@ -25,12 +25,12 @@
     // "moduleDetection": "auto",                        /* Control what method is used to detect module-format JS files. */
 
     /* Modules */
-    "module": "commonjs",                                /* Specify what module code is generated. */
+    "module": "node16",                                  /* Specify what module code is generated. */
     "rootDir": "./src",                                  /* Specify the root folder within your source files. */
-    "moduleResolution": "node",                     /* Specify how TypeScript looks up a file from a given module specifier. */
-    "baseUrl": "./src",                                  /* Specify the base directory to resolve non-relative module names. */
+    "moduleResolution": "node16",                    /* Specify how TypeScript looks up a file from a given module specifier. */
     "paths": {
-       "@/*": ["*"]
+       "@/*": ["./src/*"],
+       "*": ["./src/*"]
     },                                      /* Specify a set of entries that re-map imports to additional lookup locations. */
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
     "typeRoots": [
@@ -114,6 +114,21 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "include": ["src/**/*.ts", "src/**/*.json", "src/jest.config.ts", "src/models/UserAnalysis"],           /* Include all TypeScript and JSON files in the `src` directory. */
-  "exclude": ["node_modules"]                            /* Exclude the `node_modules` directory. */
+  "include": [
+    "src/index.ts",
+    "src/server.ts",
+    "src/routes/routes.ts",
+    "src/db/**/*.ts",
+    "src/config/database.ts",
+    "src/config/initAdminUser/**/*.ts",
+    "src/exceptions/**/*.ts",
+    "src/http/**/*.ts",
+    "src/services/**/*.ts",
+    "src/utils/normalizeSubject.ts",
+    "src/utils/subjectExtractor.ts",
+    "src/types/Role.ts",
+    "src/@types/**/*.d.ts",
+    "src/database/quiz/**/*.json"
+  ],
+  "exclude": ["node_modules"]
 }

@@ -1,62 +1,64 @@
 export function normalizeText(text: string): string {
-    return text
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 export type SubjectCounts = {
-    variaveis: number;
-    tipos: number;
-    funcoes: number;
-    loops: number;
-    verificacoes: number;
+  variaveis: number;
+  tipos: number;
+  funcoes: number;
+  loops: number;
+  verificacoes: number;
 };
 
 const keywordsMap: Record<string, keyof SubjectCounts> = {
-    "variavel": "variaveis",
-    "variaveis": "variaveis",
-    "variable": "variaveis",
-    "numero": "tipos",
-    "numeros": "tipos",
-    "number": "tipos",
-    "numbers": "tipos",
-    "string": "tipos",
-    "texto": "tipos",
-    "char": "tipos",
-    "caracter": "tipos",
-    "boolean": "tipos",
-    "booleano": "tipos",
-    "true": "tipos",
-    "false": "tipos",
-    "funcao": "funcoes",
-    "funcoes": "funcoes",
-    "function": "funcoes",
-    "laco": "loops",
-    "lacos": "loops",
-    "loop": "loops",
-    "while": "loops",
-    "for": "loops",
-    "dowhile": "loops",
-    "repeat": "loops",
-    "repetição": "loops",
-    "if": "verificacoes",
-    "else": "verificacoes",
-    "elif": "verificacoes",
-    "switch": "verificacoes",
-    "case": "verificacoes",
-    "condicional": "verificacoes",
-    "condiciones": "verificacoes",
-    "condição": "verificacoes",
-    "condicao": "verificacoes",
+  variavel: "variaveis",
+  variaveis: "variaveis",
+  variable: "variaveis",
+  numero: "tipos",
+  numeros: "tipos",
+  number: "tipos",
+  numbers: "tipos",
+  string: "tipos",
+  texto: "tipos",
+  char: "tipos",
+  caracter: "tipos",
+  boolean: "tipos",
+  booleano: "tipos",
+  true: "tipos",
+  false: "tipos",
+  funcao: "funcoes",
+  funcoes: "funcoes",
+  function: "funcoes",
+  laco: "loops",
+  lacos: "loops",
+  loop: "loops",
+  while: "loops",
+  for: "loops",
+  dowhile: "loops",
+  repeat: "loops",
+  repetição: "loops",
+  if: "verificacoes",
+  else: "verificacoes",
+  elif: "verificacoes",
+  switch: "verificacoes",
+  case: "verificacoes",
+  condicional: "verificacoes",
+  condiciones: "verificacoes",
+  condição: "verificacoes",
+  condicao: "verificacoes",
 };
 
-export function normalizeSubjectFromMessage(text: string): keyof SubjectCounts | null {
-    const norm = normalizeText(text);
-    for (const termo in keywordsMap) {
-        if (norm.includes(termo)) {
-            return keywordsMap[termo];
-        }
+export function normalizeSubjectFromMessage(
+  text: string,
+): keyof SubjectCounts | null {
+  const norm = normalizeText(text);
+  for (const termo in keywordsMap) {
+    if (norm.includes(termo)) {
+      return keywordsMap[termo];
     }
-    return null;
+  }
+  return null;
 }

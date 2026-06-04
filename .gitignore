@@ -1,4 +1,5 @@
 node_modules
+.dev.vars
 .rasa
 .rasa/
 **/__pycache__/

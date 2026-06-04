@@ -1,44 +1,40 @@
 import { Router } from "express";
-import { isAuthenticated } from "../middlewares/isAuthenticated/isAuthenticated";
-import { authRoute } from "./routesPaths/authRoute";
-import { authRoutes } from "./routesPaths/socialLoginRoute";
-import { adminRouter } from "./routesPaths/adminRoute";
-import { passwordRouter } from "./routesPaths/passwordRoute";
-import { rasaRouter } from "./routesPaths/rasaRoute";
-import { academicInstitutionRouter } from "./routesPaths/academicInstitutionRoute";
-import { academicRoutes } from "./routesPaths/academicRoutes";
-import { logRoutes } from "./routesPaths/logsRoutes";
-import { useAnalysis } from "./routesPaths/userAnalysisRoutes";
-import { healthRoutes } from "./routesPaths/healthRoutes";
-import { logoutRoute } from "./routesPaths/logoutRoute";
-import { updateUserActivity } from "../middlewares/updateUserActivity/updateUserActivity";
-import { quizRouter } from "./routesPaths/quizRoute";
-import { dashboardRoutes } from "./routesPaths/dashboardRoutes";
-import { feedbackRoutes } from "./routesPaths/feedbackRoute";
-import { historyRouter } from "./routesPaths/historyRoutes";
+import { requireApiKey } from "../http/auth";
+import { accountRouter } from "./modules/accountRoutes";
+import { academicRouter } from "./modules/academicRoutes";
+import { adminRouter } from "./modules/adminRoutes";
+import { analyticsRouter } from "./modules/analyticsRoutes";
+import { authRouter } from "./modules/authRoutes";
+import { chatRouter } from "./modules/chatRoutes";
+import { dashboardRouter } from "./modules/dashboardRoutes";
+import { feedbackRouter } from "./modules/feedbackRoutes";
+import { healthRouter } from "./modules/healthRoutes";
+import { logRouter } from "./modules/logRoutes";
+import { quizRouter } from "./modules/quizRoutes";
+import { professorQuizRouter } from "./modules/professorQuizRoutes";
 
 const routes = Router();
 
-routes.use(healthRoutes);
+routes.use("/health", healthRouter);
 
-routes.use("/", authRoute);
-routes.use("/", authRoutes);
+routes.use(requireApiKey);
 
-routes.use("/password", passwordRouter);
-routes.use("/", logoutRoute);
-
-routes.use(isAuthenticated);
-routes.use(updateUserActivity);
-
-routes.use("/admin", adminRouter);
+routes.use("/auth", authRouter);
+routes.use("/account", accountRouter);
 routes.use("/quiz", quizRouter);
-routes.use("/sael", rasaRouter);
-routes.use("/logs", logRoutes);
-routes.use("/history", historyRouter);
-routes.use("/academic-institution", academicInstitutionRouter);
-routes.use("/academicFilters", academicRoutes);
-routes.use("/useranalysis", useAnalysis);
-routes.use("/dashboard", dashboardRoutes);
-routes.use("/feedbacks", feedbackRoutes);
+routes.use("/quiz/professor", professorQuizRouter);
+routes.use("/chat", chatRouter);
+routes.use("/academic", academicRouter);
+routes.use("/admin", adminRouter);
+routes.use("/analytics", analyticsRouter);
+routes.use("/dashboard", dashboardRouter);
+routes.use("/logs", logRouter);
+routes.use("/feedback", feedbackRouter);
+
+routes.use((req, res) =>
+  res
+    .status(404)
+    .json({ success: false, message: "rota nao encontrada", path: req.path }),
+);
 
 export { routes };

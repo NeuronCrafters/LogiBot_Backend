@@ -1,6 +1,6 @@
 declare namespace Express {
   export interface Request {
-    user: {
+    user?: {
       id: string;
       name: string;
       email: string;
@@ -8,6 +8,7 @@ declare namespace Express {
       school: string | null;
       courses?: string[] | string | null;
       classes?: string[] | string | null;
+      disciplines?: string[];
     };
     useragent?: useragent.Details;
   }

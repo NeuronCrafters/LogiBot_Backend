@@ -1,26 +1,29 @@
-FROM node:22-alpine AS builder
+# syntax=docker/dockerfile:1
 
+FROM node:22-alpine AS deps
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
+FROM node:22-alpine AS build
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
 RUN npm run build
 
-
-FROM node:22-alpine
-
+FROM node:22-alpine AS runtime
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --omit=dev
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --from=builder /app/dist ./dist
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/drizzle ./drizzle
 
-COPY --from=builder /app/src/database/quiz/quiz_database.json ./dist/database/quiz/quiz_database.json
+USER node
 
-EXPOSE 3000
+EXPOSE 43187
 
 CMD ["node", "dist/server.js"]

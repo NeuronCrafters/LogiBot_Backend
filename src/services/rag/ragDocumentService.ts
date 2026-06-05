@@ -14,6 +14,7 @@ import {
   normalizeDisplayFileName,
   RAG_MAX_DOCUMENTS_PER_CLASS,
 } from "./ragStorage";
+import { triggerWorkerJob } from "./ragWorkerClient";
 
 type UploadedFile = Express.Multer.File;
 
@@ -129,6 +130,7 @@ export async function createRagDocument(input: {
       jobId: result.job.id,
       classId: input.classId,
     });
+    triggerWorkerJob();
     return result;
   } catch (error) {
     logger.error("RagDocuments", "Failed to create document; rolling back file.", {
@@ -201,5 +203,6 @@ export async function reprocessRagDocument(user: RagUser, documentId: string) {
   });
 
   logger.info("RagDocuments", "Reprocess job created.", { documentId, jobId: result.job.id });
+  triggerWorkerJob();
   return result;
 }

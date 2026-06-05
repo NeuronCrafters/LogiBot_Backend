@@ -131,6 +131,10 @@ export async function generateSelfRagResponse(
   });
 
   if (shouldRetrieve && readyDocuments) {
+    logger.info("SelfRAG", "Routing to context retrieval.", {
+      classId: input.settings.classId,
+      reason: decision?.reason || null,
+    });
     const result = await generateContextRagResponse(input);
     return {
       ...result,
@@ -138,6 +142,12 @@ export async function generateSelfRagResponse(
     };
   }
 
+  const noRetrievalReason = shouldRetrieve && !readyDocuments ? "no_ready_documents" : "not_needed";
+  logger.info("SelfRAG", "Routing to no-retrieval.", {
+    classId: input.settings.classId,
+    reason: noRetrievalReason,
+    decisionReason: decision?.reason || null,
+  });
   const result = await generateNoRagResponse(input);
   return {
     ...result,

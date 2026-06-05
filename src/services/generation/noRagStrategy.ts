@@ -8,7 +8,9 @@ const FALLBACK_TEXT =
 export async function generateNoRagResponse(
   input: GenerationInput,
 ): Promise<GenerationResult> {
-  logger.info("NoRAG", "Generating response without retrieval.");
+  logger.info("NoRAG", "Generating response without retrieval.", {
+    classId: input.settings?.classId ?? null,
+  });
   const agentResponse = await askDigitalOceanAgent(input.history);
 
   return {

@@ -138,6 +138,12 @@ async function revalidateChunks(input: {
 export async function generateContextRagResponse(
   input: GenerationInput & { settings: RuntimeRagSettings },
 ): Promise<GenerationResult> {
+  logger.info("ContextRAG", "Starting retrieval.", {
+    classId: input.settings.classId,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
+
   const candidates = await queryChroma({
     classId: input.settings.classId,
     message: input.message,

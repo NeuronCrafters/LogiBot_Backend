@@ -33,6 +33,7 @@ export async function addChatMessage(input: {
   role: "user" | "assistant";
   content: string;
   topic?: string | null;
+  metadata?: Record<string, unknown>;
 }) {
   const db = getDb();
   const currentSessionId = input.sessionId || randomUUID();
@@ -71,6 +72,7 @@ export async function addChatMessage(input: {
     role: input.role,
     content: input.content,
     detectedTopic: input.topic || null,
+    metadata: input.metadata || {},
   });
 
   return { sessionId: currentSessionId };
@@ -167,6 +169,7 @@ export async function sendChatMessage(input: {
     role: "assistant",
     content: responseText,
     topic: detectedTopic,
+    metadata: retrievedChunks?.length ? { retrievedChunks } : undefined,
   });
   return {
     responses: [{ text: responseText }],

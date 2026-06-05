@@ -43,6 +43,13 @@
       "when": 1749081600000,
       "tag": "0005_rag_minscore_default_40",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1749168000000,
+      "tag": "0006_chat_message_metadata",
+      "breakpoints": true
     }
   ]
 }

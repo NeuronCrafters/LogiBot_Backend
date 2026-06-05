@@ -360,6 +360,7 @@ export const chatMessages = pgTable("chat_messages", {
   role: text("role").notNull(),
   content: text("content").notNull(),
   detectedTopic: text("detected_topic"),
+  metadata: jsonb("metadata").default({}).notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true })
     .notNull()
     .defaultNow(),

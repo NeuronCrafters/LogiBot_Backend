@@ -127,17 +127,22 @@ async function bootstrap() {
     });
   });
 
-  runWorkerLoop().catch(async (error) => {
+  const loopPromise = runWorkerLoop().catch(async (error) => {
     logger.error(SCOPE, "Fatal worker loop failure.", error);
     await closeDatabasePool();
     process.exit(1);
   });
 
   async function gracefulShutdown(signal: string) {
-    logger.info(SCOPE, `${signal} received. Draining worker loop.`);
+    logger.info(SCOPE, `${signal} received. Waiting for current job to finish.`);
     workerState.shuttingDown = true;
+
+    await loopPromise;
+
+    logger.info(SCOPE, "Worker loop drained. Closing server.");
     server.close();
     await closeDatabasePool();
+    logger.info(SCOPE, "Shutdown complete.");
     process.exit(0);
   }
 

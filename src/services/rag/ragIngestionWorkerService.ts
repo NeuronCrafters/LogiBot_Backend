@@ -188,14 +188,29 @@ async function embedInBatches(texts: string[]) {
   let model: string | null = null;
   let dimensions = 0;
 
+  const totalBatches = Math.ceil(texts.length / EMBEDDING_BATCH_SIZE);
+  logger.info(WORKER_SCOPE, "Starting embedding.", { totalTexts: texts.length, totalBatches, batchSize: EMBEDDING_BATCH_SIZE });
+
   for (let index = 0; index < texts.length; index += EMBEDDING_BATCH_SIZE) {
+    const batchNumber = Math.floor(index / EMBEDDING_BATCH_SIZE) + 1;
     const batch = texts.slice(index, index + EMBEDDING_BATCH_SIZE);
+    logger.info(WORKER_SCOPE, `Sending batch ${batchNumber}/${totalBatches}.`, { batchSize: batch.length });
+
+    const startedAt = Date.now();
     const result = await provider.embedTexts(batch);
     model = result.model || model;
     dimensions = result.dimensions || dimensions;
     embeddings.push(...result.embeddings);
+
+    logger.info(WORKER_SCOPE, `Batch ${batchNumber}/${totalBatches} embedded.`, {
+      batchSize: batch.length,
+      dimensions: result.dimensions,
+      model: result.model,
+      elapsedMs: Date.now() - startedAt,
+    });
   }
 
+  logger.info(WORKER_SCOPE, "All batches embedded.", { totalEmbeddings: embeddings.length, model, dimensions });
   return { embeddings, model, dimensions };
 }
 

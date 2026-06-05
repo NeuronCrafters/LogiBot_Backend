@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
-import { requireAuth } from "../../http/auth";
+import { requireAuth, requireRoles } from "../../http/auth";
 import { getDb } from "../../db/client";
 import { accounts, feedbacks } from "../../db/schema";
 
@@ -42,5 +42,26 @@ feedbackRouter.post(
       .set({ lastFeedbackAt: new Date(), updatedAt: new Date() })
       .where(eq(accounts.id, account.id));
     return res.json({ message: "feedback enviado com sucesso!" });
+  }),
+);
+
+feedbackRouter.get(
+  "/",
+  requireRoles(["admin"]),
+  asyncHandler(async (_req, res) => {
+    const rows = await getDb()
+      .select({
+        id: feedbacks.id,
+        type: feedbacks.type,
+        message: feedbacks.message,
+        createdAt: feedbacks.createdAt,
+        authorName: accounts.name,
+        authorEmail: accounts.email,
+      })
+      .from(feedbacks)
+      .leftJoin(accounts, eq(feedbacks.accountId, accounts.id))
+      .orderBy(desc(feedbacks.createdAt));
+
+    return res.json(rows);
   }),
 );

@@ -3,10 +3,8 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { chatMessages, chatSessions, chatTopicCounts } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
-import {
-  askDigitalOceanAgent,
-  AgentMessage,
-} from "../ai/digitalOceanAgentService";
+import { AgentMessage } from "../ai/digitalOceanAgentService";
+import { generateChatResponse } from "../generation/generationService";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 
 const DEFAULT_CHAT_TITLE = "Nova Conversa";
@@ -121,10 +119,6 @@ export async function incrementTopicCount(userId: string, topic: string) {
     });
 }
 
-function buildAgentMessages(history: AgentMessage[]): AgentMessage[] {
-  return history;
-}
-
 export async function sendChatMessage(input: {
   userId: string;
   message: string;
@@ -149,12 +143,14 @@ export async function sendChatMessage(input: {
     input.userId,
     userMessage.sessionId,
   );
-  const agentResponse = await askDigitalOceanAgent(buildAgentMessages(history));
+  const agentResponse = await generateChatResponse({
+    userId: input.userId,
+    message,
+    history,
+  });
 
-  const responseText =
-    agentResponse?.text ??
-    "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
-  const provider = agentResponse?.provider ?? "fallback";
+  const responseText = agentResponse.text;
+  const provider = agentResponse.provider;
 
   await addChatMessage({
     userId: input.userId,

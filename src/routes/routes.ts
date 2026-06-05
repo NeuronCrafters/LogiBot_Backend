@@ -12,6 +12,7 @@ import { healthRouter } from "./modules/healthRoutes";
 import { logRouter } from "./modules/logRoutes";
 import { quizRouter } from "./modules/quizRoutes";
 import { professorQuizRouter } from "./modules/professorQuizRoutes";
+import { ragRouter } from "./modules/ragRoutes";
 
 const routes = Router();
 
@@ -30,6 +31,7 @@ routes.use("/analytics", analyticsRouter);
 routes.use("/dashboard", dashboardRouter);
 routes.use("/logs", logRouter);
 routes.use("/feedback", feedbackRouter);
+routes.use("/rag", ragRouter);
 
 routes.use((req, res) =>
   res

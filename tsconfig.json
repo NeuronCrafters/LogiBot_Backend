@@ -119,6 +119,7 @@
     "src/server.ts",
     "src/routes/routes.ts",
     "src/db/**/*.ts",
+    "src/workers/**/*.ts",
     "src/config/database.ts",
     "src/config/initAdminUser/**/*.ts",
     "src/exceptions/**/*.ts",

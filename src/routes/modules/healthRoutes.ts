@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { checkDatabase } from "../../db/client";
 import { asyncHandler } from "../../http/asyncHandler";
+import { getRagHealth } from "../../services/rag/ragHealthService";
 
 export const healthRouter = Router();
 
@@ -25,6 +26,17 @@ healthRouter.get(
 );
 
 healthRouter.get("/simple", (_req, res) => res.send("OK"));
+healthRouter.get(
+  "/rag",
+  asyncHandler(async (_req, res) => {
+    const health = await getRagHealth();
+    const statusCode =
+      health.chroma === "error" || health.embeddingProviderStatus === "error"
+        ? 503
+        : 200;
+    return res.status(statusCode).json(health);
+  }),
+);
 healthRouter.get(
   "/ready",
   asyncHandler(async (_req, res) => {

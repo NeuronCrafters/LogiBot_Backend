@@ -117,6 +117,7 @@
   "include": [
     "src/index.ts",
     "src/server.ts",
+    "src/workerServer.ts",
     "src/routes/routes.ts",
     "src/db/**/*.ts",
     "src/workers/**/*.ts",

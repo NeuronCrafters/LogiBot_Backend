@@ -1,4 +1,5 @@
 import { ChromaClient } from "chromadb";
+import { logger } from "../../logger";
 
 const DEFAULT_CHROMA_COLLECTION = "logibots_rag_chunks";
 
@@ -59,7 +60,7 @@ export async function getOrCreateRagCollection() {
   const client = getChromaClient();
   if (!client) throw new Error("CHROMA_URL nao configurado");
 
-  return client.getOrCreateCollection({
-    name: getChromaCollectionName(),
-  });
+  const collectionName = getChromaCollectionName();
+  logger.info("Chroma", "Getting/creating collection.", { collection: collectionName, url: process.env.CHROMA_URL?.trim() });
+  return client.getOrCreateCollection({ name: collectionName });
 }

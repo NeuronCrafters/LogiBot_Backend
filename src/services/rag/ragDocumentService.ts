@@ -5,6 +5,7 @@ import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragDocuments, ragIngestionJobs } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
+import { logger } from "../../logger";
 import type { RagUser } from "./ragTypes";
 import { assertCanManageRagClass } from "./ragPermissionService";
 import {
@@ -54,6 +55,7 @@ async function getDocumentForUser(user: RagUser, documentId: string) {
 export async function listRagDocuments(user: RagUser, classId: string) {
   await assertCanManageRagClass(user, classId);
 
+  logger.info("RagDocuments", "Listing documents.", { classId, userId: user.id });
   return getDb()
     .select()
     .from(ragDocuments)
@@ -83,6 +85,14 @@ export async function createRagDocument(input: {
   const filePath = path.join(classDir, storedFileName);
   const originalFileName = normalizeDisplayFileName(file.originalname);
   const title = String(input.title || originalFileName).trim().slice(0, 180);
+
+  logger.info("RagDocuments", "Creating document.", {
+    classId: input.classId,
+    userId: input.user.id,
+    title,
+    sourceType: allowed.sourceType,
+    fileSize: file.size,
+  });
 
   await fs.mkdir(classDir, { recursive: true });
   await fs.writeFile(filePath, file.buffer);
@@ -114,8 +124,18 @@ export async function createRagDocument(input: {
       return { document, job };
     });
 
+    logger.info("RagDocuments", "Document created.", {
+      documentId: result.document.id,
+      jobId: result.job.id,
+      classId: input.classId,
+    });
     return result;
   } catch (error) {
+    logger.error("RagDocuments", "Failed to create document; rolling back file.", {
+      classId: input.classId,
+      filePath,
+      error: error instanceof Error ? error.message : String(error),
+    });
     await fs.unlink(filePath).catch(() => undefined);
     throw error;
   }
@@ -123,6 +143,7 @@ export async function createRagDocument(input: {
 
 export async function deleteRagDocument(user: RagUser, documentId: string) {
   const document = await getDocumentForUser(user, documentId);
+  logger.info("RagDocuments", "Deleting document.", { documentId, classId: document.classId, userId: user.id });
   const now = new Date();
 
   const [updated] = await getDb()
@@ -141,6 +162,7 @@ export async function deleteRagDocument(user: RagUser, documentId: string) {
 
 export async function reprocessRagDocument(user: RagUser, documentId: string) {
   const document = await getDocumentForUser(user, documentId);
+  logger.info("RagDocuments", "Reprocess requested.", { documentId, classId: document.classId, userId: user.id, currentStatus: document.status });
 
   const activeJobs = await getDb()
     .select({ id: ragIngestionJobs.id })
@@ -154,6 +176,7 @@ export async function reprocessRagDocument(user: RagUser, documentId: string) {
     .limit(1);
 
   if (activeJobs.length) {
+    logger.warn("RagDocuments", "Reprocess blocked; ingestion already in progress.", { documentId });
     throw new AppError("documento ja possui ingestao em andamento", 409);
   }
 
@@ -177,5 +200,6 @@ export async function reprocessRagDocument(user: RagUser, documentId: string) {
     return { document: updatedDocument, job };
   });
 
+  logger.info("RagDocuments", "Reprocess job created.", { documentId, jobId: result.job.id });
   return result;
 }

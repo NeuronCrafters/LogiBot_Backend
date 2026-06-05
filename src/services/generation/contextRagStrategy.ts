@@ -41,6 +41,11 @@ Contexto:
 ${context || "(sem contexto recuperado)"}`;
 }
 
+function getEmbeddingQueryTimeoutMs() {
+  const value = Number(process.env.EMBEDDING_QUERY_TIMEOUT_MS || 15_000);
+  return Number.isFinite(value) && value > 0 ? value : 15_000;
+}
+
 async function queryChroma(input: {
   classId: string;
   message: string;
@@ -48,7 +53,7 @@ async function queryChroma(input: {
 }) {
   const provider = createEmbeddingProvider();
   const embeddingResult = await provider.embedTexts([input.message], {
-    timeoutMs: 15_000,
+    timeoutMs: getEmbeddingQueryTimeoutMs(),
   });
 
   const collection = await getOrCreateRagCollection();

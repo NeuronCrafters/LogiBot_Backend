@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { classRagSettings } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
+import { logger } from "../../logger";
 import type { RagMode, RagUser } from "./ragTypes";
 import { assertCanManageRagClass } from "./ragPermissionService";
 
@@ -92,6 +93,7 @@ export async function updateRagSettings(
   },
 ) {
   await assertCanManageRagClass(user, classId);
+  logger.info("RagSettings", "Updating settings.", { classId, userId: user.id, input });
 
   const existing = await getRagSettings(user, classId);
   const update = {
@@ -131,5 +133,6 @@ export async function updateRagSettings(
     })
     .returning();
 
+  logger.info("RagSettings", "Settings updated.", { classId, ragMode: update.ragMode, topK: update.topK, minScore: update.minScore });
   return toResponse(classId, settings);
 }

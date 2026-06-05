@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragIngestionJobs } from "../../db/schema";
+import { logger } from "../../logger";
 import { createEmbeddingProvider } from "../embeddings/digitalOceanDropletEmbeddingProvider";
 import { checkChroma } from "./chromaService";
 
@@ -14,6 +15,7 @@ async function countJobsByStatus(status: "pending" | "running") {
 }
 
 export async function getRagHealth() {
+  logger.info("RagHealth", "Health check started.");
   const embeddingProvider = createEmbeddingProvider();
   const [chromaResult, embeddingResult, pendingJobs, runningJobs] =
     await Promise.allSettled([
@@ -37,7 +39,7 @@ export async function getRagHealth() {
               : "erro ao consultar ChromaDB",
         };
 
-  return {
+  const health = {
     chroma: chroma.status,
     chromaDetails: chroma,
     embeddingProvider: "digitalocean-droplet",
@@ -61,4 +63,12 @@ export async function getRagHealth() {
     runningJobs:
       runningJobs.status === "fulfilled" ? runningJobs.value : null,
   };
+
+  logger.info("RagHealth", "Health check completed.", {
+    chroma: health.chroma,
+    embeddings: health.embeddingProviderStatus,
+    pendingJobs: health.pendingJobs,
+    runningJobs: health.runningJobs,
+  });
+  return health;
 }

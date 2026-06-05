@@ -3,6 +3,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { chatMessages, chatSessions, chatTopicCounts } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
+import { logger } from "../../logger";
 import { AgentMessage } from "../ai/digitalOceanAgentService";
 import { generateChatResponse } from "../generation/generationService";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
@@ -127,6 +128,8 @@ export async function sendChatMessage(input: {
   const message = String(input.message || "").trim();
   if (!message) throw new AppError("message e obrigatorio", 400);
 
+  logger.info("Chat", "Message received.", { userId: input.userId, sessionId: input.sessionId || "(new)" });
+
   const enriched = validateAndEnrichPrompt(message);
   const detectedTopic = enriched?.subject ?? null;
 
@@ -137,7 +140,10 @@ export async function sendChatMessage(input: {
     content: message,
     topic: detectedTopic,
   });
-  if (detectedTopic) await incrementTopicCount(input.userId, detectedTopic);
+  if (detectedTopic) {
+    logger.info("Chat", "Topic detected.", { userId: input.userId, topic: detectedTopic });
+    await incrementTopicCount(input.userId, detectedTopic);
+  }
 
   const history = await getRecentChatMessages(
     input.userId,
@@ -151,6 +157,8 @@ export async function sendChatMessage(input: {
 
   const responseText = agentResponse.text;
   const provider = agentResponse.provider;
+
+  logger.info("Chat", "Response generated.", { userId: input.userId, sessionId: userMessage.sessionId, provider });
 
   await addChatMessage({
     userId: input.userId,

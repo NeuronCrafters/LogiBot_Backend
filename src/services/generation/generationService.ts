@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { classRagSettings, studentProfiles } from "../../db/schema";
+import { logger } from "../../logger";
 import { assertCanManageRagClass } from "../rag/ragPermissionService";
 import type { RagMode, RagUser } from "../rag/ragTypes";
 import { generateContextRagResponse } from "./contextRagStrategy";
@@ -80,6 +81,13 @@ async function generateWithSettings(input: {
   history: AgentMessage[];
   settings: RuntimeRagSettings;
 }): Promise<GenerationResult> {
+  logger.info("Generation", "Generating response.", {
+    classId: input.settings.classId,
+    ragMode: input.settings.ragMode,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
+
   if (input.settings.ragMode === "none") {
     return generateNoRagResponse(input);
   }
@@ -106,6 +114,7 @@ export async function generateChatResponse(input: {
 }) {
   const classId = await getStudentClassId(input.userId);
   if (!classId) {
+    logger.info("Generation", "No class found for student; using no-RAG.", { userId: input.userId });
     return generateNoRagResponse(input);
   }
 

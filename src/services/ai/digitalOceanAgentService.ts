@@ -75,6 +75,11 @@ export async function askDigitalOceanAgent(
       return null;
     }
 
+    logger.info("DigitalOceanAgent", "Agent responded.", {
+      model: response.data?.model,
+      promptTokens: response.data?.usage?.prompt_tokens,
+      completionTokens: response.data?.usage?.completion_tokens,
+    });
     return { text, provider: "digitalocean-agent" };
   } catch (error: any) {
     logger.error("DigitalOceanAgent", "Failed to call DigitalOcean Agent.", {

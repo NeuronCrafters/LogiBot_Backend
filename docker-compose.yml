@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${PORT:-43187}:43187"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      RAG_UPLOAD_DIR: /var/logibots/uploads/rag
+    volumes:
+      - rag_uploads:/var/logibots/uploads/rag
+    depends_on:
+      - worker
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:43187/health/simple"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    ports:
+      - "${RAG_WORKER_PORT:-43188}:43188"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      RAG_UPLOAD_DIR: /var/logibots/uploads/rag
+    volumes:
+      - rag_uploads:/var/logibots/uploads/rag
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:43188/health/simple"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  rag_uploads:

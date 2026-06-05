@@ -22,8 +22,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/drizzle ./drizzle
 
-RUN mkdir -p /tmp/logibots/uploads/rag \
-  && chown -R node:node /tmp/logibots
+RUN mkdir -p /var/logibots/uploads/rag \
+  && chown -R node:node /var/logibots
 
 USER node
 

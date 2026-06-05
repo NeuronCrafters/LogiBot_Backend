@@ -37,7 +37,9 @@ export const ALLOWED_RAG_FILES: Record<string, AllowedRagFile> = {
 export function getRagUploadDir() {
   const configured = process.env.RAG_UPLOAD_DIR?.trim();
   if (configured) return path.resolve(configured);
-  if (process.env.NODE_ENV === "production") return "/var/logibots/uploads/rag";
+  if (process.env.NODE_ENV === "production") {
+    return "/tmp/logibots/uploads/rag";
+  }
   return path.resolve(process.cwd(), "uploads", "rag");
 }
 

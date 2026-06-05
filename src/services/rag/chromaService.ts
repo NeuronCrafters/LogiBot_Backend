@@ -62,5 +62,8 @@ export async function getOrCreateRagCollection() {
 
   const collectionName = getChromaCollectionName();
   logger.info("Chroma", "Getting/creating collection.", { collection: collectionName, url: process.env.CHROMA_URL?.trim() });
-  return client.getOrCreateCollection({ name: collectionName });
+  return client.getOrCreateCollection({
+    name: collectionName,
+    metadata: { "hnsw:space": "cosine" },
+  });
 }

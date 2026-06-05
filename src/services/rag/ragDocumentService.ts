@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { getDb } from "../../db/client";
-import { ragDocuments, ragIngestionJobs } from "../../db/schema";
+import { ragDocumentChunks, ragDocuments, ragIngestionJobs } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 import type { RagUser } from "./ragTypes";
@@ -14,6 +14,7 @@ import {
   normalizeDisplayFileName,
   RAG_MAX_DOCUMENTS_PER_CLASS,
 } from "./ragStorage";
+import { deleteChunksFromChroma } from "./ragChromaStore";
 import { triggerWorkerJob } from "./ragWorkerClient";
 
 type UploadedFile = Express.Multer.File;
@@ -148,6 +149,13 @@ export async function deleteRagDocument(user: RagUser, documentId: string) {
   logger.info("RagDocuments", "Deleting document.", { documentId, classId: document.classId, userId: user.id });
   const now = new Date();
 
+  const chunkRows = await getDb()
+    .select({ chromaId: ragDocumentChunks.chromaId })
+    .from(ragDocumentChunks)
+    .where(eq(ragDocumentChunks.documentId, document.id));
+
+  const chromaIds = chunkRows.map((r) => r.chromaId).filter(Boolean) as string[];
+
   const [updated] = await getDb()
     .update(ragDocuments)
     .set({
@@ -158,6 +166,17 @@ export async function deleteRagDocument(user: RagUser, documentId: string) {
     })
     .where(eq(ragDocuments.id, document.id))
     .returning();
+
+  if (chromaIds.length) {
+    deleteChunksFromChroma(chromaIds).catch((err) =>
+      logger.warn("RagDocuments", "Failed to delete chunks from Chroma; DB already soft-deleted.", {
+        documentId,
+        chromaCount: chromaIds.length,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+    logger.info("RagDocuments", "Queued Chroma chunk deletion.", { documentId, chromaCount: chromaIds.length });
+  }
 
   return updated;
 }

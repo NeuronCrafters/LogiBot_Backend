@@ -383,7 +383,7 @@ export const classRagSettings = pgTable("class_rag_settings", {
     .references(() => classes.id, { onDelete: "cascade" }),
   ragMode: text("rag_mode").notNull().default("none"),
   topK: integer("top_k").notNull().default(4),
-  minScore: integer("min_score").notNull().default(60),
+  minScore: integer("min_score").notNull().default(40),
   systemPrompt: text("system_prompt"),
   llmModel: text("llm_model"),
   embeddingModel: text("embedding_model"),

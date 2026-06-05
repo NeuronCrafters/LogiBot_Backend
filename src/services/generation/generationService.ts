@@ -61,7 +61,7 @@ async function getRuntimeRagSettings(classId: string, override?: RagOverride) {
     classId,
     ragMode: (row?.ragMode as RagMode) || "none",
     topK: row?.topK ?? 4,
-    minScore: row?.minScore ?? 60,
+    minScore: row?.minScore ?? 40,
     systemPrompt: row?.systemPrompt ?? null,
   };
 

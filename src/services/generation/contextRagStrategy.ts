@@ -3,7 +3,7 @@ import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
 import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
-import { createEmbeddingProvider } from "../embeddings/digitalOceanDropletEmbeddingProvider";
+import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { getOrCreateRagCollection } from "../rag/chromaService";
 import type {
   GenerationInput,

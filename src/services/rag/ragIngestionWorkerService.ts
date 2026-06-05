@@ -6,7 +6,7 @@ import {
   ragIngestionJobs,
 } from "../../db/schema";
 import { logger } from "../../logger";
-import { createEmbeddingProvider } from "../embeddings/digitalOceanDropletEmbeddingProvider";
+import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { chunkText } from "./ragChunkingService";
 import {
   buildChromaId,

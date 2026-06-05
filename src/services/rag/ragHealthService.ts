@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragIngestionJobs } from "../../db/schema";
 import { logger } from "../../logger";
-import { createEmbeddingProvider } from "../embeddings/digitalOceanDropletEmbeddingProvider";
+import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { checkChroma } from "./chromaService";
 
 async function countJobsByStatus(status: "pending" | "running") {

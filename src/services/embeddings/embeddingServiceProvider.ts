@@ -11,9 +11,7 @@ function sleep(ms: number) {
 }
 
 function getEndpoint() {
-  const raw =
-    process.env.EMBEDDING_SERVICE_URL?.trim() ||
-    process.env.DIGITALOCEAN_DROPLET_ENDPOINT?.trim();
+  const raw = process.env.EMBEDDING_SERVICE_URL?.trim();
 
   if (!raw) return null;
   const withoutSlash = raw.replace(/\/+$/, "");
@@ -21,11 +19,7 @@ function getEndpoint() {
 }
 
 function getApiKey() {
-  return (
-    process.env.EMBEDDING_SERVICE_API_KEY?.trim() ||
-    process.env.DIGITALOCEAN_DROPLET_KEY?.trim() ||
-    null
-  );
+  return process.env.EMBEDDING_SERVICE_API_KEY?.trim() || null;
 }
 
 function shouldRetry(error: any) {
@@ -61,9 +55,7 @@ function validateEmbeddings(texts: string[], embeddings: unknown): number[][] {
   return embeddings as number[][];
 }
 
-export class DigitalOceanDropletEmbeddingProvider
-  implements EmbeddingProvider
-{
+export class EmbeddingServiceProvider implements EmbeddingProvider {
   async embedTexts(
     texts: string[],
     options?: { timeoutMs?: number },
@@ -113,7 +105,7 @@ export class DigitalOceanDropletEmbeddingProvider
         };
 
         logger.info("Embeddings", "Embeddings generated.", {
-          provider: "digitalocean-droplet",
+          provider: "embedding-service",
           model: result.model,
           dimensions: result.dimensions,
           textCount: normalizedTexts.length,
@@ -147,5 +139,5 @@ export class DigitalOceanDropletEmbeddingProvider
 }
 
 export function createEmbeddingProvider(): EmbeddingProvider {
-  return new DigitalOceanDropletEmbeddingProvider();
+  return new EmbeddingServiceProvider();
 }

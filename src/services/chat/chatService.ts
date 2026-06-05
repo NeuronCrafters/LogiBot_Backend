@@ -157,6 +157,7 @@ export async function sendChatMessage(input: {
 
   const responseText = agentResponse.text;
   const provider = agentResponse.provider;
+  const retrievedChunks = agentResponse.retrievedChunks;
 
   logger.info("Chat", "Response generated.", { userId: input.userId, sessionId: userMessage.sessionId, provider });
 
@@ -172,6 +173,7 @@ export async function sendChatMessage(input: {
     sessionId: userMessage.sessionId,
     detectedTopic,
     provider,
+    retrievedChunks: retrievedChunks?.length ? retrievedChunks : undefined,
   };
 }
 

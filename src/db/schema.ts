@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -359,6 +360,7 @@ export const chatMessages = pgTable("chat_messages", {
   role: text("role").notNull(),
   content: text("content").notNull(),
   detectedTopic: text("detected_topic"),
+  metadata: jsonb("metadata").default({}).notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -374,6 +376,121 @@ export const chatTopicCounts = pgTable(
     count: integer("count").notNull().default(0),
   },
   (table) => ({ pk: primaryKey({ columns: [table.userId, table.topic] }) }),
+);
+
+export const classRagSettings = pgTable("class_rag_settings", {
+  classId: uuid("class_id")
+    .primaryKey()
+    .references(() => classes.id, { onDelete: "cascade" }),
+  ragMode: text("rag_mode").notNull().default("none"),
+  topK: integer("top_k").notNull().default(4),
+  minScore: integer("min_score").notNull().default(40),
+  systemPrompt: text("system_prompt"),
+  llmModel: text("llm_model"),
+  embeddingModel: text("embedding_model"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const ragDocuments = pgTable(
+  "rag_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    classId: uuid("class_id")
+      .notNull()
+      .references(() => classes.id, { onDelete: "cascade" }),
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    originalFileName: text("original_file_name").notNull(),
+    storedFileName: text("stored_file_name").notNull(),
+    filePath: text("file_path").notNull(),
+    extractedTextPath: text("extracted_text_path"),
+    sourceType: text("source_type").notNull(),
+    mimeType: text("mime_type").notNull(),
+    fileSize: integer("file_size").notNull(),
+    status: text("status").notNull().default("uploaded"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => ({
+    classStatusDeletedIdx: index("rag_documents_class_status_deleted_idx").on(
+      table.classId,
+      table.status,
+      table.deletedAt,
+    ),
+    uploadedByCreatedIdx: index("rag_documents_uploaded_by_created_idx").on(
+      table.uploadedBy,
+      table.createdAt,
+    ),
+  }),
+);
+
+export const ragDocumentChunks = pgTable(
+  "rag_document_chunks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => ragDocuments.id, { onDelete: "cascade" }),
+    classId: uuid("class_id")
+      .notNull()
+      .references(() => classes.id, { onDelete: "cascade" }),
+    chunkIndex: integer("chunk_index").notNull(),
+    content: text("content").notNull(),
+    tokenCount: integer("token_count").notNull().default(0),
+    metadata: jsonb("metadata").notNull().default({}),
+    chromaId: text("chroma_id").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    documentChunkIdx: uniqueIndex("rag_document_chunks_document_chunk_idx").on(
+      table.documentId,
+      table.chunkIndex,
+    ),
+    classIdx: index("rag_document_chunks_class_idx").on(table.classId),
+  }),
+);
+
+export const ragIngestionJobs = pgTable(
+  "rag_ingestion_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => ragDocuments.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    errorMessage: text("error_message"),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    statusLockedCreatedIdx: index(
+      "rag_ingestion_jobs_status_locked_created_idx",
+    ).on(table.status, table.lockedAt, table.createdAt),
+    documentIdx: index("rag_ingestion_jobs_document_idx").on(
+      table.documentId,
+    ),
+  }),
 );
 
 export const quizSessions = pgTable("quiz_sessions", {
@@ -492,6 +609,10 @@ export type Account = typeof accounts.$inferSelect;
 export type RoleRow = typeof accountRoles.$inferSelect;
 export type StudentProfile = typeof studentProfiles.$inferSelect;
 export type ProfessorProfile = typeof professorProfiles.$inferSelect;
+export type ClassRagSettings = typeof classRagSettings.$inferSelect;
+export type RagDocument = typeof ragDocuments.$inferSelect;
+export type RagDocumentChunk = typeof ragDocumentChunks.$inferSelect;
+export type RagIngestionJob = typeof ragIngestionJobs.$inferSelect;
 export type ProfessorQuiz = typeof professorQuizzes.$inferSelect;
 export type ProfessorQuizQuestion = typeof professorQuizQuestions.$inferSelect;
 export type ProfessorQuizAttempt = typeof professorQuizAttempts.$inferSelect;

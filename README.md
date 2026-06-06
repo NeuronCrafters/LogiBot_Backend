@@ -26,10 +26,13 @@ Copie `.env.example` para `.env` em desenvolvimento ou configure as variaveis eq
 ```env
 PORT=43187
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
+DB_POOL_MAX=10
+
 JWT_SECRET=change-me
 API_KEY=
-DB_POOL_MAX=10
+
 HTTP_REQUEST_LOGS=true
+
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -37,9 +40,15 @@ SMTP_USER=user@example.com
 SMTP_PASS=change-me
 MAIL_FROM="LogiBot <user@example.com>"
 PASSWORD_RESET_DEBUG_RESPONSE=false
+
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
 DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
+EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
+EMBEDDING_SERVICE_API_KEY=
+RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
+CHROMA_URL=http://logibots-chroma:8000
+CHROMA_COLLECTION=logibots_rag_chunks
 ```
 
 ## Banco
@@ -110,6 +119,11 @@ HTTP_REQUEST_LOGS=true
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
 DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
+EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
+EMBEDDING_SERVICE_API_KEY=
+RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
+CHROMA_URL=http://logibot-chromadb-dwit3i-5b77f2-69-62-93-80.sslip.io:8000
+CHROMA_COLLECTION=logibots_rag_chunks
 ```
 
 Os dominios de frontend e cookie ficam hardcoded no backend: `https://saellogibot.com`, `https://www.saellogibot.com` e localhosts de teste (`5173`, `5174`, `3000`, `3001`). O cookie de producao usa `.saellogibot.com`.
@@ -125,6 +139,7 @@ node dist/server.js
 # executar manualmente em console/job
 npm run db:migrate:prod
 npm run db:seed:prod
+npm run rag:worker
 ```
 
 Rode `db:migrate:prod` antes do primeiro start ou como job de deploy. Rode `db:seed:prod` apenas quando quiser popular/atualizar os dados iniciais.

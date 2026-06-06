@@ -1,0 +1,187 @@
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import { getDb } from "../../db/client";
+import { ragDocumentChunks, ragDocuments } from "../../db/schema";
+import { logger } from "../../logger";
+import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
+import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
+import { getOrCreateRagCollection } from "../rag/chromaService";
+import type {
+  GenerationInput,
+  GenerationResult,
+  RetrievedRagChunk,
+  RuntimeRagSettings,
+} from "./generationTypes";
+
+const EMPTY_CONTEXT_TEXT =
+  "Nao encontrei informacoes suficientes nos materiais enviados para esta turma.";
+
+function distanceToScore(distance: unknown) {
+  if (typeof distance !== "number" || !Number.isFinite(distance)) return 100;
+  return Math.round((1 / (1 + Math.max(0, distance))) * 100);
+}
+
+function buildSystemPrompt(settings: RuntimeRagSettings, chunks: RetrievedRagChunk[]) {
+  const customPrompt = settings.systemPrompt
+    ? `\n\nInstrucao adicional do professor:\n${settings.systemPrompt}`
+    : "";
+
+  const context = chunks
+    .map(
+      (chunk, index) =>
+        `[${index + 1}] ${chunk.documentTitle} - trecho ${chunk.chunkIndex + 1}\n${chunk.content}`,
+    )
+    .join("\n\n");
+
+  return `Voce e um tutor educacional do LogiBots.
+
+Responda usando apenas os materiais da turma quando houver contexto recuperado.
+Se o contexto nao tiver informacao suficiente, diga que nao encontrou essa informacao nos materiais enviados para esta turma.${customPrompt}
+
+Contexto:
+${context || "(sem contexto recuperado)"}`;
+}
+
+function getEmbeddingQueryTimeoutMs() {
+  const value = Number(process.env.EMBEDDING_QUERY_TIMEOUT_MS || 15_000);
+  return Number.isFinite(value) && value > 0 ? value : 15_000;
+}
+
+async function queryChroma(input: {
+  classId: string;
+  message: string;
+  topK: number;
+}) {
+  const provider = createEmbeddingProvider();
+  const embeddingResult = await provider.embedTexts([input.message], {
+    timeoutMs: getEmbeddingQueryTimeoutMs(),
+  });
+
+  const collection = await getOrCreateRagCollection();
+  const result = await collection.query({
+    queryEmbeddings: embeddingResult.embeddings,
+    nResults: Math.max(input.topK * 3, input.topK),
+    where: { classId: input.classId },
+  } as any);
+
+  const ids = (result.ids?.[0] || []).filter(Boolean) as string[];
+  const distances = result.distances?.[0] || [];
+
+  return ids.map((chromaId, index) => ({
+    chromaId,
+    score: distanceToScore(distances[index]),
+  }));
+}
+
+async function revalidateChunks(input: {
+  classId: string;
+  candidates: { chromaId: string; score: number }[];
+  topK: number;
+  minScore: number;
+}) {
+  logger.info("ContextRAG", "Revalidating candidates.", {
+    classId: input.classId,
+    minScore: input.minScore,
+    candidates: input.candidates.map((c) => ({ chromaId: c.chromaId, score: c.score })),
+  });
+
+  const filteredCandidates = input.candidates.filter(
+    (candidate) => candidate.score >= input.minScore,
+  );
+
+  logger.info("ContextRAG", "Score filter applied.", {
+    before: input.candidates.length,
+    after: filteredCandidates.length,
+    dropped: input.candidates.length - filteredCandidates.length,
+  });
+  const chromaIds = filteredCandidates.map((candidate) => candidate.chromaId);
+  if (!chromaIds.length) return [];
+
+  const rows = await getDb()
+    .select({
+      chromaId: ragDocumentChunks.chromaId,
+      documentId: ragDocumentChunks.documentId,
+      chunkIndex: ragDocumentChunks.chunkIndex,
+      content: ragDocumentChunks.content,
+      documentTitle: ragDocuments.title,
+    })
+    .from(ragDocumentChunks)
+    .innerJoin(ragDocuments, eq(ragDocuments.id, ragDocumentChunks.documentId))
+    .where(
+      and(
+        inArray(ragDocumentChunks.chromaId, chromaIds),
+        eq(ragDocumentChunks.classId, input.classId),
+        eq(ragDocuments.classId, input.classId),
+        eq(ragDocuments.status, "ready"),
+        isNull(ragDocuments.deletedAt),
+      ),
+    );
+
+  const byId = new Map(rows.map((row) => [row.chromaId, row]));
+
+  return filteredCandidates
+    .map((candidate) => {
+      const row = byId.get(candidate.chromaId);
+      if (!row) return null;
+      return {
+        chromaId: row.chromaId,
+        documentId: row.documentId,
+        documentTitle: row.documentTitle,
+        chunkIndex: row.chunkIndex,
+        score: candidate.score,
+        content: row.content,
+      } satisfies RetrievedRagChunk;
+    })
+    .filter(Boolean)
+    .slice(0, input.topK) as RetrievedRagChunk[];
+}
+
+export async function generateContextRagResponse(
+  input: GenerationInput & { settings: RuntimeRagSettings },
+): Promise<GenerationResult> {
+  logger.info("ContextRAG", "Starting retrieval.", {
+    classId: input.settings.classId,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
+
+  const candidates = await queryChroma({
+    classId: input.settings.classId,
+    message: input.message,
+    topK: input.settings.topK,
+  });
+
+  const retrievedChunks = await revalidateChunks({
+    classId: input.settings.classId,
+    candidates,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
+
+  logger.info("ContextRAG", "Context retrieved for chat.", {
+    classId: input.settings.classId,
+    candidateCount: candidates.length,
+    retrievedCount: retrievedChunks.length,
+  });
+
+  if (!retrievedChunks.length) {
+    return {
+      text: EMPTY_CONTEXT_TEXT,
+      provider: "rag-context-empty",
+      retrievedChunks: [],
+    };
+  }
+
+  const agentResponse = await askDigitalOceanAgent([
+    { role: "system", content: buildSystemPrompt(input.settings, retrievedChunks) },
+    ...input.history,
+  ]);
+
+  return {
+    text:
+      agentResponse?.text ??
+      "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
+    provider: agentResponse?.provider ?? "fallback",
+    retrievedChunks,
+  };
+}
+

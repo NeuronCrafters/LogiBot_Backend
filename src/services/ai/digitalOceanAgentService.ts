@@ -3,6 +3,29 @@ import { logger } from "../../logger";
 
 type ChatRole = "system" | "user" | "assistant";
 
+function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
+  const systemParts = messages
+    .filter((m) => m.role === "system")
+    .map((m) => m.content);
+  const rest = messages.filter((m) => m.role !== "system");
+
+  if (!systemParts.length) return rest;
+
+  const systemText = systemParts.join("\n\n");
+  const firstUserIdx = rest.findIndex((m) => m.role === "user");
+
+  if (firstUserIdx === -1) {
+    return [{ role: "user", content: systemText }, ...rest];
+  }
+
+  const converted = [...rest];
+  converted[firstUserIdx] = {
+    role: "user",
+    content: `${systemText}\n\n${converted[firstUserIdx].content}`,
+  };
+  return converted;
+}
+
 export type AgentMessage = {
   role: ChatRole;
   content: string;
@@ -56,10 +79,12 @@ export async function askDigitalOceanAgent(
 
   if (!endpoint || !accessKey) return null;
 
+  const sanitizedMessages = convertSystemMessages(messages);
+
   try {
     const response = await axios.post(
       endpoint,
-      { messages },
+      { messages: sanitizedMessages },
       {
         headers: {
           Authorization: `Bearer ${accessKey}`,
@@ -75,6 +100,11 @@ export async function askDigitalOceanAgent(
       return null;
     }
 
+    logger.info("DigitalOceanAgent", "Agent responded.", {
+      model: response.data?.model,
+      promptTokens: response.data?.usage?.prompt_tokens,
+      completionTokens: response.data?.usage?.completion_tokens,
+    });
     return { text, provider: "digitalocean-agent" };
   } catch (error: any) {
     logger.error("DigitalOceanAgent", "Failed to call DigitalOcean Agent.", {

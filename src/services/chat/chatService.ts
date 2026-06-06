@@ -3,10 +3,9 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { chatMessages, chatSessions, chatTopicCounts } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
-import {
-  askDigitalOceanAgent,
-  AgentMessage,
-} from "../ai/digitalOceanAgentService";
+import { logger } from "../../logger";
+import { AgentMessage } from "../ai/digitalOceanAgentService";
+import { generateChatResponse } from "../generation/generationService";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 
 const DEFAULT_CHAT_TITLE = "Nova Conversa";
@@ -34,6 +33,7 @@ export async function addChatMessage(input: {
   role: "user" | "assistant";
   content: string;
   topic?: string | null;
+  metadata?: Record<string, unknown>;
 }) {
   const db = getDb();
   const currentSessionId = input.sessionId || randomUUID();
@@ -72,6 +72,7 @@ export async function addChatMessage(input: {
     role: input.role,
     content: input.content,
     detectedTopic: input.topic || null,
+    metadata: input.metadata || {},
   });
 
   return { sessionId: currentSessionId };
@@ -121,10 +122,6 @@ export async function incrementTopicCount(userId: string, topic: string) {
     });
 }
 
-function buildAgentMessages(history: AgentMessage[]): AgentMessage[] {
-  return history;
-}
-
 export async function sendChatMessage(input: {
   userId: string;
   message: string;
@@ -132,6 +129,8 @@ export async function sendChatMessage(input: {
 }) {
   const message = String(input.message || "").trim();
   if (!message) throw new AppError("message e obrigatorio", 400);
+
+  logger.info("Chat", "Message received.", { userId: input.userId, sessionId: input.sessionId || "(new)" });
 
   const enriched = validateAndEnrichPrompt(message);
   const detectedTopic = enriched?.subject ?? null;
@@ -143,18 +142,26 @@ export async function sendChatMessage(input: {
     content: message,
     topic: detectedTopic,
   });
-  if (detectedTopic) await incrementTopicCount(input.userId, detectedTopic);
+  if (detectedTopic) {
+    logger.info("Chat", "Topic detected.", { userId: input.userId, topic: detectedTopic });
+    await incrementTopicCount(input.userId, detectedTopic);
+  }
 
   const history = await getRecentChatMessages(
     input.userId,
     userMessage.sessionId,
   );
-  const agentResponse = await askDigitalOceanAgent(buildAgentMessages(history));
+  const agentResponse = await generateChatResponse({
+    userId: input.userId,
+    message,
+    history,
+  });
 
-  const responseText =
-    agentResponse?.text ??
-    "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
-  const provider = agentResponse?.provider ?? "fallback";
+  const responseText = agentResponse.text;
+  const provider = agentResponse.provider;
+  const retrievedChunks = agentResponse.retrievedChunks;
+
+  logger.info("Chat", "Response generated.", { userId: input.userId, sessionId: userMessage.sessionId, provider });
 
   await addChatMessage({
     userId: input.userId,
@@ -162,12 +169,14 @@ export async function sendChatMessage(input: {
     role: "assistant",
     content: responseText,
     topic: detectedTopic,
+    metadata: retrievedChunks?.length ? { retrievedChunks } : undefined,
   });
   return {
     responses: [{ text: responseText }],
     sessionId: userMessage.sessionId,
     detectedTopic,
     provider,
+    retrievedChunks: retrievedChunks?.length ? retrievedChunks : undefined,
   };
 }
 

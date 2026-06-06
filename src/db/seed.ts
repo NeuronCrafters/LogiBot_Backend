@@ -25,7 +25,7 @@ const ADMIN_USER_DATA = {
   status: "active",
 };
 
-const STUDENT_USER_DATA = {
+const STUDENT_ALUNO = {
   id: "00000000-0000-4000-8000-000000000205",
   name: "Aluno",
   email: "aluno@logibot.com",
@@ -33,6 +33,29 @@ const STUDENT_USER_DATA = {
   role: "student",
   status: "active",
   level: "iniciante",
+  classId: "00000000-0000-4000-8000-000000000108", // Turma NoRAG
+};
+
+const STUDENT_VITORIA = {
+  id: "00000000-0000-4000-8000-000000000208",
+  name: "Vitoria",
+  email: "vitoria@logibot.com",
+  password: "vitoria@logibot.com",
+  role: "student",
+  status: "active",
+  level: "iniciante",
+  classId: "00000000-0000-4000-8000-000000000109", // Turma SelfRAG
+};
+
+const STUDENT_MARCUS = {
+  id: "00000000-0000-4000-8000-000000000209",
+  name: "Marcus",
+  email: "marcus@logibot.com",
+  password: "marcus@logibot.com",
+  role: "student",
+  status: "active",
+  level: "iniciante",
+  classId: "00000000-0000-4000-8000-000000000103", // Turma ContextRAG
 };
 
 const PROFESSOR_USER_DATA = {
@@ -62,15 +85,27 @@ const ACADEMIC_SEED_DATA = {
     id: "00000000-0000-4000-8000-000000000102",
     name: "Sistemas de Informação",
   },
-  class: {
-    id: "00000000-0000-4000-8000-000000000103",
-    name: "Turma 2026",
-    registrationCode: "LOGI2026",
-  },
   discipline: {
     id: "00000000-0000-4000-8000-000000000104",
     name: "Programação 1",
   },
+  classes: [
+    {
+      id: "00000000-0000-4000-8000-000000000103",
+      name: "Turma ContextRAG",
+      registrationCode: "LOGI2026",
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000108",
+      name: "Turma NoRAG",
+      registrationCode: "NORG2026",
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000109",
+      name: "Turma SelfRAG",
+      registrationCode: "SELF2026",
+    },
+  ],
 };
 
 type SeedUserData = {
@@ -143,13 +178,12 @@ async function seedProfessorLikeUser(
     })
     .onConflictDoNothing();
 
-  await db
-    .insert(professorClasses)
-    .values({
-      professorId: account.id,
-      classId: ACADEMIC_SEED_DATA.class.id,
-    })
-    .onConflictDoNothing();
+  for (const cls of ACADEMIC_SEED_DATA.classes) {
+    await db
+      .insert(professorClasses)
+      .values({ professorId: account.id, classId: cls.id })
+      .onConflictDoNothing();
+  }
 
   await db
     .insert(professorDisciplines)
@@ -158,6 +192,39 @@ async function seedProfessorLikeUser(
       disciplineId: ACADEMIC_SEED_DATA.discipline.id,
     })
     .onConflictDoNothing();
+
+  return account;
+}
+
+async function seedStudent(
+  db: ReturnType<typeof getExpressDb>,
+  user: typeof STUDENT_ALUNO,
+) {
+  const account = await upsertAccount(db, user);
+
+  await db
+    .insert(accountRoles)
+    .values({ accountId: account.id, role: user.role })
+    .onConflictDoNothing();
+
+  await db
+    .insert(studentProfiles)
+    .values({
+      accountId: account.id,
+      schoolId: ACADEMIC_SEED_DATA.university.id,
+      courseId: ACADEMIC_SEED_DATA.course.id,
+      classId: user.classId,
+      level: user.level,
+    })
+    .onConflictDoUpdate({
+      target: studentProfiles.accountId,
+      set: {
+        schoolId: ACADEMIC_SEED_DATA.university.id,
+        courseId: ACADEMIC_SEED_DATA.course.id,
+        classId: user.classId,
+        level: user.level,
+      },
+    });
 
   return account;
 }
@@ -195,21 +262,20 @@ async function seed() {
       },
     });
 
-  await db
-    .insert(classes)
-    .values({
-      ...ACADEMIC_SEED_DATA.class,
-      courseId: ACADEMIC_SEED_DATA.course.id,
-    })
-    .onConflictDoUpdate({
-      target: classes.id,
-      set: {
-        name: ACADEMIC_SEED_DATA.class.name,
-        courseId: ACADEMIC_SEED_DATA.course.id,
-        registrationCode: ACADEMIC_SEED_DATA.class.registrationCode,
-        updatedAt: new Date(),
-      },
-    });
+  for (const cls of ACADEMIC_SEED_DATA.classes) {
+    await db
+      .insert(classes)
+      .values({ ...cls, courseId: ACADEMIC_SEED_DATA.course.id })
+      .onConflictDoUpdate({
+        target: classes.id,
+        set: {
+          name: cls.name,
+          courseId: ACADEMIC_SEED_DATA.course.id,
+          registrationCode: cls.registrationCode,
+          updatedAt: new Date(),
+        },
+      });
+  }
 
   await db
     .insert(disciplines)
@@ -226,42 +292,22 @@ async function seed() {
       },
     });
 
-  await db
-    .insert(classDisciplines)
-    .values({
-      classId: ACADEMIC_SEED_DATA.class.id,
-      disciplineId: ACADEMIC_SEED_DATA.discipline.id,
-    })
-    .onConflictDoNothing();
+  for (const cls of ACADEMIC_SEED_DATA.classes) {
+    await db
+      .insert(classDisciplines)
+      .values({
+        classId: cls.id,
+        disciplineId: ACADEMIC_SEED_DATA.discipline.id,
+      })
+      .onConflictDoNothing();
+  }
 
   await seedProfessorLikeUser(db, PROFESSOR_USER_DATA);
   await seedProfessorLikeUser(db, COORDINATOR_USER_DATA);
 
-  const student = await upsertAccount(db, STUDENT_USER_DATA);
-
-  await db
-    .insert(accountRoles)
-    .values({ accountId: student.id, role: STUDENT_USER_DATA.role })
-    .onConflictDoNothing();
-
-  await db
-    .insert(studentProfiles)
-    .values({
-      accountId: student.id,
-      schoolId: ACADEMIC_SEED_DATA.university.id,
-      courseId: ACADEMIC_SEED_DATA.course.id,
-      classId: ACADEMIC_SEED_DATA.class.id,
-      level: STUDENT_USER_DATA.level,
-    })
-    .onConflictDoUpdate({
-      target: studentProfiles.accountId,
-      set: {
-        schoolId: ACADEMIC_SEED_DATA.university.id,
-        courseId: ACADEMIC_SEED_DATA.course.id,
-        classId: ACADEMIC_SEED_DATA.class.id,
-        level: STUDENT_USER_DATA.level,
-      },
-    });
+  await seedStudent(db, STUDENT_ALUNO);
+  await seedStudent(db, STUDENT_VITORIA);
+  await seedStudent(db, STUDENT_MARCUS);
 }
 
 seed()

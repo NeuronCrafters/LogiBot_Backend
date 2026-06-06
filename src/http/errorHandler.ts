@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../exceptions/AppError";
+import { logger } from "../logger";
 import { getAllowedOrigins } from "./cors";
 
 export function errorHandler(
@@ -24,9 +25,12 @@ export function errorHandler(
     });
   }
 
-  if (err instanceof Error) {
-    return res.status(400).json({ message: err.message });
-  }
+  logger.error("HTTP", "Unhandled error.", {
+    method: req.method,
+    path: req.path,
+    message: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
 
-  return res.status(500).json({ message: "Internal server error" });
+  return res.status(500).json({ message: "Erro interno do servidor." });
 }

@@ -119,7 +119,6 @@ professorQuizRouter.post(
   "/generate-ai",
   asyncHandler(async (req, res) => {
     const {
-      classId,
       disciplineId,
       theme,
       questionCount,
@@ -127,7 +126,6 @@ professorQuizRouter.post(
       title,
       description,
     } = req.body as {
-      classId?: string;
       disciplineId?: string;
       theme?: string;
       questionCount?: number;
@@ -136,7 +134,6 @@ professorQuizRouter.post(
       description?: string;
     };
 
-    if (!classId) throw new AppError("classId é obrigatório", 400);
     if (!disciplineId) throw new AppError("disciplineId é obrigatório", 400);
     if (!theme?.trim()) throw new AppError("theme é obrigatório", 400);
     if (!questionCount) throw new AppError("questionCount é obrigatório", 400);
@@ -145,7 +142,6 @@ professorQuizRouter.post(
 
     const result = await generateAiQuiz({
       user: req.user!,
-      classId,
       disciplineId,
       theme: theme.trim(),
       questionCount: Number(questionCount),

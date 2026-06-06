@@ -1,21 +1,15 @@
-import { and, eq, isNull, inArray } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import {
   professorQuizAiGenerations,
   professorQuizQuestionSources,
   professorQuizQuestions,
   professorQuizzes,
-  ragDocumentChunks,
 } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
 import { retrieveChunksForQuiz } from "./quizAiRetrievalService";
-import {
-  assertCanManageQuizClass,
-  assertDisciplineBelongsToClass,
-  assertProfessorCanManageDiscipline,
-} from "./quizPermissionService";
+import { assertProfessorCanManageDiscipline } from "./quizPermissionService";
 
 function getQuizAiTimeoutMs() {
   const value = Number(process.env.QUIZ_AI_GENERATION_TIMEOUT_MS || 300_000);
@@ -41,7 +35,6 @@ type GeneratedQuiz = {
 
 export type QuizAiGenerationInput = {
   user: AuthUser;
-  classId: string;
   disciplineId: string;
   theme: string;
   questionCount: number;
@@ -198,8 +191,7 @@ function validateQuizJson(
 }
 
 export async function generateAiQuiz(input: QuizAiGenerationInput) {
-  const { user, classId, disciplineId, theme, questionCount, documentIds } =
-    input;
+  const { user, disciplineId, theme, questionCount, documentIds } = input;
 
   if (!theme?.trim())
     throw new AppError("Tema é obrigatório", 400);
@@ -210,13 +202,10 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   if (!documentIds.length)
     throw new AppError("Selecione ao menos um documento", 400);
 
-  await assertCanManageQuizClass(user, classId);
-  await assertDisciplineBelongsToClass(disciplineId, classId);
   await assertProfessorCanManageDiscipline(user, disciplineId);
 
   logger.info("QuizAI", "Starting quiz generation.", {
     professorId: user.id,
-    classId,
     disciplineId,
     questionCount,
     documentCount: documentIds.length,
@@ -226,7 +215,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   const t0 = Date.now();
 
   const { chunks, selectedDocuments } = await retrieveChunksForQuiz({
-    classId,
+    user,
     theme: theme.trim(),
     documentIds,
     questionCount,
@@ -289,7 +278,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
     .values({
       professorId: user.id,
       disciplineId,
-      classId,
+      classId: null,
       generationSource: "ai",
       title: quizTitle,
       topic: truncate(theme.trim(), 180),
@@ -317,7 +306,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   await db.insert(professorQuizAiGenerations).values({
     quizId: quiz.id,
     professorId: user.id,
-    classId,
+    classId: null,
     disciplineId,
     theme: theme.trim(),
     questionCount,

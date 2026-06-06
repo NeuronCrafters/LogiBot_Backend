@@ -618,9 +618,7 @@ export const professorQuizAiGenerations = pgTable(
     professorId: uuid("professor_id")
       .notNull()
       .references(() => accounts.id),
-    classId: uuid("class_id")
-      .notNull()
-      .references(() => classes.id),
+    classId: uuid("class_id").references(() => classes.id),
     disciplineId: uuid("discipline_id")
       .notNull()
       .references(() => disciplines.id),

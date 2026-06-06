@@ -5,11 +5,14 @@ import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { getOrCreateRagCollection } from "../rag/chromaService";
+import { listManageableRagClasses } from "../rag/ragPermissionService";
 
 const MAX_CHUNKS = 16;
 const MIN_CHUNKS = 8;
 const MAX_CHARS_PER_CHUNK = 1200;
 const MAX_CONTEXT_CHARS = 12_000;
+
+type AuthUser = NonNullable<import("express").Request["user"]>;
 
 export type RetrievedQuizChunk = {
   chromaId: string;
@@ -24,6 +27,7 @@ export type SelectedDocument = {
   id: string;
   title: string;
   sourceType: string;
+  classId: string;
 };
 
 export type QuizRetrievalResult = {
@@ -37,12 +41,12 @@ function distanceToScore(distance: unknown): number {
 }
 
 export async function retrieveChunksForQuiz(input: {
-  classId: string;
+  user: AuthUser;
   theme: string;
   documentIds: string[];
   questionCount: number;
 }): Promise<QuizRetrievalResult> {
-  const { classId, theme, documentIds, questionCount } = input;
+  const { user, theme, documentIds, questionCount } = input;
 
   if (!documentIds.length)
     throw new AppError(
@@ -50,19 +54,34 @@ export async function retrieveChunksForQuiz(input: {
       400,
     );
 
+  // Get all classes the professor can manage
+  const manageableClasses = await listManageableRagClasses({
+    id: user.id,
+    role: user.role,
+    courses: user.courses,
+    classes: user.classes,
+    disciplines: user.disciplines,
+  });
+  const manageableClassIds = manageableClasses.map((c) => c.id);
+
+  if (!manageableClassIds.length)
+    throw new AppError("Nenhuma turma gerenciável encontrada", 403);
+
   const db = getDb();
 
+  // Validate documents: must belong to a manageable class, be ready and not deleted
   const validDocs = await db
     .select({
       id: ragDocuments.id,
       title: ragDocuments.title,
       sourceType: ragDocuments.sourceType,
+      classId: ragDocuments.classId,
     })
     .from(ragDocuments)
     .where(
       and(
         inArray(ragDocuments.id, documentIds),
-        eq(ragDocuments.classId, classId),
+        inArray(ragDocuments.classId, manageableClassIds),
         eq(ragDocuments.status, "ready"),
         isNull(ragDocuments.deletedAt),
       ),
@@ -78,12 +97,11 @@ export async function retrieveChunksForQuiz(input: {
   const invalidIds = documentIds.filter((id) => !validDocIds.has(id));
   if (invalidIds.length)
     throw new AppError(
-      `Documentos inválidos ou não prontos: ${invalidIds.join(", ")}`,
+      `Documentos inválidos, sem permissão ou não prontos: ${invalidIds.join(", ")}`,
       400,
     );
 
   logger.info("QuizRetrieval", "Generating theme embedding.", {
-    classId,
     questionCount,
     documentCount: validDocs.length,
     theme,
@@ -97,10 +115,11 @@ export async function retrieveChunksForQuiz(input: {
   const collection = await getOrCreateRagCollection();
   const nResults = Math.max(questionCount * 6, 24);
 
+  // Filter Chroma directly by the selected document IDs
   const chromaResult = await collection.query({
     queryEmbeddings: embeddingResult.embeddings,
     nResults,
-    where: { classId },
+    where: { documentId: { $in: [...validDocIds] } },
   } as any);
 
   const ids = (chromaResult.ids?.[0] || []).filter(Boolean) as string[];
@@ -119,6 +138,7 @@ export async function retrieveChunksForQuiz(input: {
 
   const chromaIds = candidates.map((c) => c.chromaId);
 
+  // Revalidate in Postgres
   const rows = await db
     .select({
       chromaId: ragDocumentChunks.chromaId,
@@ -135,9 +155,8 @@ export async function retrieveChunksForQuiz(input: {
     .where(
       and(
         inArray(ragDocumentChunks.chromaId, chromaIds),
-        eq(ragDocumentChunks.classId, classId),
         inArray(ragDocumentChunks.documentId, [...validDocIds]),
-        eq(ragDocuments.classId, classId),
+        inArray(ragDocuments.classId, manageableClassIds),
         eq(ragDocuments.status, "ready"),
         isNull(ragDocuments.deletedAt),
       ),

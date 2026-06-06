@@ -17,9 +17,10 @@ import {
   assertProfessorCanManageDiscipline,
 } from "./quizPermissionService";
 
-const QUIZ_AI_TIMEOUT_MS = Number(
-  process.env.QUIZ_AI_GENERATION_TIMEOUT_MS || 60_000,
-);
+function getQuizAiTimeoutMs() {
+  const value = Number(process.env.QUIZ_AI_GENERATION_TIMEOUT_MS || 300_000);
+  return Number.isFinite(value) && value > 0 ? value : 300_000;
+}
 
 type AuthUser = NonNullable<import("express").Request["user"]>;
 
@@ -255,6 +256,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   const t1 = Date.now();
   const agentResponse = await askDigitalOceanAgent(
     [{ role: "user", content: prompt }],
+    { timeoutMs: getQuizAiTimeoutMs() },
   );
   logger.info("QuizAI", "Agent responded.", {
     elapsedMs: Date.now() - t1,

@@ -13,6 +13,8 @@ import {
   professorQuizQuestions,
   professorQuizzes,
 } from "../../db/schema";
+import { generateAiQuiz } from "../../services/quiz/quizAiGenerationService";
+import { canManageQuiz } from "../../services/quiz/quizPermissionService";
 
 export const professorQuizRouter = Router();
 
@@ -20,20 +22,6 @@ professorQuizRouter.use(requireAuth);
 professorQuizRouter.use(requireRoles(["professor", "course-coordinator", "admin"]));
 
 type AuthUser = NonNullable<import("express").Request["user"]>;
-
-function canManageQuiz(
-  quiz: { professorId: string; disciplineId: string },
-  user: AuthUser,
-): boolean {
-  if (user.role.includes("admin")) return true;
-  if (quiz.professorId === user.id) return true;
-  if (
-    user.role.includes("course-coordinator") &&
-    (user.disciplines ?? []).includes(quiz.disciplineId)
-  )
-    return true;
-  return false;
-}
 
 // ── List quizzes (professor → own; coordinator → disciplines; admin → all) ────
 professorQuizRouter.get(
@@ -123,6 +111,50 @@ professorQuizRouter.post(
       .returning();
 
     return res.status(201).json(quiz);
+  }),
+);
+
+// ── Generate quiz with AI ─────────────────────────────────────────────────────
+professorQuizRouter.post(
+  "/generate-ai",
+  asyncHandler(async (req, res) => {
+    const {
+      classId,
+      disciplineId,
+      theme,
+      questionCount,
+      documentIds,
+      title,
+      description,
+    } = req.body as {
+      classId?: string;
+      disciplineId?: string;
+      theme?: string;
+      questionCount?: number;
+      documentIds?: string[];
+      title?: string;
+      description?: string;
+    };
+
+    if (!classId) throw new AppError("classId é obrigatório", 400);
+    if (!disciplineId) throw new AppError("disciplineId é obrigatório", 400);
+    if (!theme?.trim()) throw new AppError("theme é obrigatório", 400);
+    if (!questionCount) throw new AppError("questionCount é obrigatório", 400);
+    if (!Array.isArray(documentIds) || !documentIds.length)
+      throw new AppError("documentIds deve ser uma lista não vazia", 400);
+
+    const result = await generateAiQuiz({
+      user: req.user!,
+      classId,
+      disciplineId,
+      theme: theme.trim(),
+      questionCount: Number(questionCount),
+      documentIds,
+      title,
+      description,
+    });
+
+    return res.status(201).json(result);
   }),
 );
 

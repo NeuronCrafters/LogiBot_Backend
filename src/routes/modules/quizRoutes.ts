@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth } from "../../http/auth";
@@ -62,6 +62,10 @@ quizRouter.get(
         and(
           inArray(professorQuizzes.disciplineId, disciplineIds),
           eq(professorQuizzes.status, "published"),
+          or(
+            isNull(professorQuizzes.classId),
+            eq(professorQuizzes.classId, profile.classId),
+          ),
         ),
       )
       .orderBy(desc(professorQuizzes.createdAt));

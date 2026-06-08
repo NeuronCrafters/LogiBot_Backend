@@ -102,43 +102,16 @@ function pushAgentTarget(
   });
 }
 
-function parseEnvList(value?: string) {
-  return String(value || "")
-    .split(/[,;\n]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 function getAgentTargets() {
   const targets: AgentTarget[] = [];
 
-  pushAgentTarget(
-    targets,
-    "default",
-    process.env.DIGITALOCEAN_AGENT_ENDPOINT,
-    process.env.DIGITALOCEAN_AGENT_ACCESS_KEY,
-  );
-
-  const endpointList = parseEnvList(process.env.DIGITALOCEAN_AGENT_ENDPOINTS);
-  const accessKeyList = parseEnvList(process.env.DIGITALOCEAN_AGENT_ACCESS_KEYS);
-  endpointList.slice(0, MAX_AGENT_TARGETS).forEach((endpoint, index) => {
+  for (let index = 1; index <= MAX_AGENT_TARGETS; index += 1) {
     pushAgentTarget(
       targets,
-      `pool-${index + 1}`,
-      endpoint,
-      accessKeyList[index],
+      `agent-${index}`,
+      process.env[`DIGITALOCEAN_AGENT_${index}_ENDPOINT`],
+      process.env[`DIGITALOCEAN_AGENT_${index}_ACCESS_KEY`],
     );
-  });
-
-  for (let index = 1; index <= MAX_AGENT_TARGETS; index += 1) {
-    const endpoint =
-      process.env[`DIGITALOCEAN_AGENT_${index}_ENDPOINT`] ||
-      process.env[`DIGITALOCEAN_AGENT_ENDPOINT_${index}`];
-    const accessKey =
-      process.env[`DIGITALOCEAN_AGENT_${index}_ACCESS_KEY`] ||
-      process.env[`DIGITALOCEAN_AGENT_ACCESS_KEY_${index}`];
-
-    pushAgentTarget(targets, `agent-${index}`, endpoint, accessKey);
   }
 
   return targets;

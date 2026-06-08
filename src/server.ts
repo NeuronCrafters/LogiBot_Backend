@@ -14,8 +14,30 @@ import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
 import {
   httpMetricsMiddleware,
+  isMetricsEnabled,
   metricsHandler,
+  setChatQueueMetrics,
 } from "./observability/metrics";
+import { getChatQueueStats } from "./services/chat/chatService";
+
+const CHAT_QUEUE_METRICS_REFRESH_MS = 15_000;
+
+function startChatQueueMetricsRefresh() {
+  if (!isMetricsEnabled()) return;
+
+  const refresh = () => {
+    getChatQueueStats()
+      .then(setChatQueueMetrics)
+      .catch((error) =>
+        logger.error("Metrics", "Failed to refresh chat queue metrics.", {
+          message: error instanceof Error ? error.message : String(error),
+        }),
+      );
+  };
+
+  refresh();
+  setInterval(refresh, CHAT_QUEUE_METRICS_REFRESH_MS);
+}
 
 export const app = express();
 
@@ -44,6 +66,8 @@ export async function bootstrap() {
 
   await initAdminUser();
   logger.info("Bootstrap", "Admin account verification completed.");
+
+  startChatQueueMetricsRefresh();
 
   const port = getAppPort();
   const server = createServer(app);

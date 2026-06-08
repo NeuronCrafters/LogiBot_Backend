@@ -472,6 +472,22 @@ async function getQueuePosition(job: {
   return count > 0 ? count : null;
 }
 
+export async function getChatQueueStats() {
+  const result = await getDb().execute(sql`
+    select
+      count(*)::int as "depth",
+      coalesce(extract(epoch from (now() - min(created_at))), 0)::float as "oldestAgeSeconds"
+    from chat_generation_jobs
+    where status = 'queued'
+  `);
+
+  const [row] = rowsFromExecute(result);
+  return {
+    depth: Number(row?.depth || 0),
+    oldestAgeSeconds: Number(row?.oldestAgeSeconds || 0),
+  };
+}
+
 export async function getChatGenerationJobStatus(userId: string, jobId: string) {
   const [row] = await getDb()
     .select({

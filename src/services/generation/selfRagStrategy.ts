@@ -134,19 +134,25 @@ export async function generateSelfRagResponse(
   const readyDocuments = await hasReadyDocuments(input.settings.classId);
   let decision: SelfRagDecision | null = null;
 
-  try {
-    decision = await decideSelfRag({
-      message: input.message,
-      history: input.history,
-      hasReadyDocuments: readyDocuments,
-      timings: input.timings,
-    });
-  } catch (error) {
-    logger.warn("SelfRAG", "Decision failed; using safe fallback.", {
-      classId: input.settings.classId,
-      fallback: readyDocuments ? "context" : "none",
-      message: error instanceof Error ? error.message : String(error),
-    });
+  // Without ready documents the routing below always falls through to
+  // no-retrieval regardless of what the decision agent answers (it's even
+  // instructed to return needsRetrieval=false in that case), so the decision
+  // round-trip is pure wasted latency — skip it and go straight to no-RAG.
+  if (readyDocuments) {
+    try {
+      decision = await decideSelfRag({
+        message: input.message,
+        history: input.history,
+        hasReadyDocuments: readyDocuments,
+        timings: input.timings,
+      });
+    } catch (error) {
+      logger.warn("SelfRAG", "Decision failed; using safe fallback.", {
+        classId: input.settings.classId,
+        fallback: "context",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   const shouldRetrieve = decision?.needsRetrieval ?? readyDocuments;

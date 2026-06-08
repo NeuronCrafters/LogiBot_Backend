@@ -94,7 +94,25 @@ export const agentRateLimitReset = new Gauge({
   help: "Latest DigitalOcean Agent ratelimit-reset header value.",
 });
 
-function isMetricsEnabled() {
+export const chatQueueDepth = new Gauge({
+  name: "logibot_chat_queue_depth",
+  help: "Chat generation jobs currently waiting to be picked up by a worker (status='queued').",
+});
+
+export const chatQueueOldestAgeSeconds = new Gauge({
+  name: "logibot_chat_queue_oldest_age_seconds",
+  help: "Age in seconds of the oldest queued chat generation job (0 when the queue is empty).",
+});
+
+export function setChatQueueMetrics(stats: {
+  depth: number;
+  oldestAgeSeconds: number;
+}) {
+  chatQueueDepth.set(stats.depth);
+  chatQueueOldestAgeSeconds.set(stats.oldestAgeSeconds);
+}
+
+export function isMetricsEnabled() {
   return process.env.METRICS_ENABLED === "true";
 }
 

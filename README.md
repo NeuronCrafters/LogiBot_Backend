@@ -45,15 +45,17 @@ PASSWORD_RESET_DEBUG_RESPONSE=false
 
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
-DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
-DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
+DIGITALOCEAN_AGENT_TIMEOUT_MS=180000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
 DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
 DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
-DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
-SELF_RAG_DECISION_TIMEOUT_MS=5000
-SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=2000
-SELF_RAG_FINAL_AGENT_TIMEOUT_MS=40000
-SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=5000
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_DECISION_TIMEOUT_MS=60000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=600000
+CHAT_GENERATION_JOB_TIMEOUT_MS=600000
+CHAT_GENERATION_MAX_ATTEMPTS=1
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
@@ -87,7 +89,9 @@ O seed cria:
 
 ## IA
 
-O endpoint `POST /chat/messages` usa o Agent da DigitalOcean quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Se o Agent falhar ou nao estiver configurado, o backend preserva uma resposta fallback controlada.
+O endpoint `POST /chat/messages` salva a mensagem do aluno, cria um job em `chat_generation_jobs` e retorna `202` com `jobId`. O worker (`npm run worker`) processa RAG + Agent em background, salva a resposta real no historico e o frontend consulta `GET /chat/jobs/:jobId` ate concluir.
+
+O Agent da DigitalOcean e usado quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Como o chat e assincrono, timeouts longos sao usados apenas para recuperar jobs travados, nao como limite da UX HTTP.
 
 Para aumentar concorrencia sem saturar o provedor, o backend tambem aceita um pool de ate 5 Agents da DigitalOcean. A cada chamada, ele aguarda vaga em uma fila local e usa o Agent menos ocupado no processo atual.
 
@@ -117,23 +121,23 @@ Variaveis da fila:
 ```env
 DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
 DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
-DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
-DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
 ```
 
 `DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1` significa que cada Agent recebe uma chamada por vez. As demais requests ficam na fila do backend ate abrir vaga.
-O `DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS` limita o timeout efetivo do Agent para evitar que o frontend/proxy desista antes do backend retornar fallback controlado.
+O `DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS` limita o timeout efetivo do Agent para evitar slots presos indefinidamente.
 
 No modo `self`, o backend faz uma chamada curta ao Agent para decidir se deve recuperar materiais e depois pode fazer uma segunda chamada para responder. Por isso ele tem orcamento proprio:
 
 ```env
-SELF_RAG_DECISION_TIMEOUT_MS=5000
-SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=2000
-SELF_RAG_FINAL_AGENT_TIMEOUT_MS=40000
-SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=5000
+SELF_RAG_DECISION_TIMEOUT_MS=60000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=600000
 ```
 
-Esses defaults evitam que o `self` some duas esperas longas e ultrapasse o timeout de 60s do teste/proxy.
+Esses defaults permitem respostas lentas de modelos remotos. O limite geral do job fica em `CHAT_GENERATION_JOB_TIMEOUT_MS`.
 
 ## Observabilidade
 
@@ -214,15 +218,17 @@ DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
-DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
-DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
+DIGITALOCEAN_AGENT_TIMEOUT_MS=180000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
 DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
 DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
-DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
-SELF_RAG_DECISION_TIMEOUT_MS=5000
-SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=2000
-SELF_RAG_FINAL_AGENT_TIMEOUT_MS=40000
-SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=5000
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_DECISION_TIMEOUT_MS=60000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=600000
+CHAT_GENERATION_JOB_TIMEOUT_MS=600000
+CHAT_GENERATION_MAX_ATTEMPTS=1
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag

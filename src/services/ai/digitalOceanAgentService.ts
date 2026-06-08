@@ -155,8 +155,8 @@ function getMaxQueueSize() {
 }
 
 function getQueueTimeoutMs() {
-  const value = Number(process.env.DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS || 10_000);
-  return Number.isFinite(value) && value > 0 ? value : 10_000;
+  const value = Number(process.env.DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS || 600_000);
+  return Number.isFinite(value) && value > 0 ? value : 600_000;
 }
 
 function getAgentInFlightCount(agentId: string) {
@@ -276,10 +276,10 @@ async function acquireAgentSlot(
 }
 
 function getTimeoutMs() {
-  const value = Number(process.env.DIGITALOCEAN_AGENT_TIMEOUT_MS || 30000);
-  const configured = Number.isFinite(value) && value > 0 ? value : 30000;
-  const cap = Number(process.env.DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS || 45_000);
-  const timeoutCap = Number.isFinite(cap) && cap > 0 ? cap : 45_000;
+  const value = Number(process.env.DIGITALOCEAN_AGENT_TIMEOUT_MS || 180_000);
+  const configured = Number.isFinite(value) && value > 0 ? value : 180_000;
+  const cap = Number(process.env.DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS || 300_000);
+  const timeoutCap = Number.isFinite(cap) && cap > 0 ? cap : 300_000;
   return Math.min(configured, timeoutCap);
 }
 

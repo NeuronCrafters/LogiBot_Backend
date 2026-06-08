@@ -21,23 +21,23 @@ type SelfRagDecision = {
 };
 
 function getSelfDecisionTimeoutMs() {
-  const value = Number(process.env.SELF_RAG_DECISION_TIMEOUT_MS || 5_000);
-  return Number.isFinite(value) && value > 0 ? value : 5_000;
+  const value = Number(process.env.SELF_RAG_DECISION_TIMEOUT_MS || 60_000);
+  return Number.isFinite(value) && value > 0 ? value : 60_000;
 }
 
 function getSelfDecisionQueueTimeoutMs() {
-  const value = Number(process.env.SELF_RAG_DECISION_QUEUE_TIMEOUT_MS || 2_000);
-  return Number.isFinite(value) && value > 0 ? value : 2_000;
+  const value = Number(process.env.SELF_RAG_DECISION_QUEUE_TIMEOUT_MS || 600_000);
+  return Number.isFinite(value) && value > 0 ? value : 600_000;
 }
 
 function getSelfFinalAgentTimeoutMs() {
-  const value = Number(process.env.SELF_RAG_FINAL_AGENT_TIMEOUT_MS || 40_000);
-  return Number.isFinite(value) && value > 0 ? value : 40_000;
+  const value = Number(process.env.SELF_RAG_FINAL_AGENT_TIMEOUT_MS || 180_000);
+  return Number.isFinite(value) && value > 0 ? value : 180_000;
 }
 
 function getSelfFinalQueueTimeoutMs() {
-  const value = Number(process.env.SELF_RAG_FINAL_QUEUE_TIMEOUT_MS || 5_000);
-  return Number.isFinite(value) && value > 0 ? value : 5_000;
+  const value = Number(process.env.SELF_RAG_FINAL_QUEUE_TIMEOUT_MS || 600_000);
+  return Number.isFinite(value) && value > 0 ? value : 600_000;
 }
 
 async function hasReadyDocuments(classId: string) {

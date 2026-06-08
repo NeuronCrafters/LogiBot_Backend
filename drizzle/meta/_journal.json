@@ -64,6 +64,13 @@
       "when": 1780712297510,
       "tag": "0008_typical_shaman",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780938000000,
+      "tag": "0009_chat_generation_jobs",
+      "breakpoints": true
     }
   ]
 }

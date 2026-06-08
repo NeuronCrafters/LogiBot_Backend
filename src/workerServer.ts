@@ -8,6 +8,7 @@ import { asyncHandler } from "./http/asyncHandler";
 import { errorHandler } from "./http/errorHandler";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
+import { processNextChatGenerationJob } from "./services/chat/chatService";
 import { processNextRagJob } from "./services/rag/ragIngestionWorkerService";
 import { getRagHealth } from "./services/rag/ragHealthService";
 import { parsePort } from "./config/env";
@@ -47,7 +48,8 @@ async function runWorkerLoop() {
 
   while (!workerState.shuttingDown) {
     try {
-      const processed = await processNextRagJob();
+      const processed =
+        (await processNextChatGenerationJob()) || (await processNextRagJob());
       if (processed) {
         workerState.jobsProcessed += 1;
         workerState.lastJobAt = new Date();
@@ -100,7 +102,8 @@ app.post(
   "/jobs/process",
   asyncHandler(async (_req, res) => {
     logger.info(SCOPE, "Manual job trigger received via API.");
-    const processed = await processNextRagJob();
+    const processed =
+      (await processNextChatGenerationJob()) || (await processNextRagJob());
     if (processed) {
       workerState.jobsProcessed += 1;
       workerState.lastJobAt = new Date();

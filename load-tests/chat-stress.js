@@ -38,10 +38,14 @@ const minSleepSeconds = Number(__ENV.K6_MIN_SLEEP_SECONDS || sleepSeconds);
 const maxSleepSeconds = Number(__ENV.K6_MAX_SLEEP_SECONDS || sleepSeconds);
 const includeMessageDebug =
   String(__ENV.K6_INCLUDE_MESSAGE_DEBUG || "false").toLowerCase() === "true";
+const chatPollIntervalSeconds = Number(__ENV.K6_CHAT_POLL_SECONDS || "2");
+const chatMaxWaitSeconds = Number(__ENV.K6_CHAT_MAX_WAIT_SECONDS || "600");
 
 export const healthResponseTime = new Trend("health_response_time", true);
 export const authResponseTime = new Trend("auth_response_time", true);
 export const chatResponseTime = new Trend("chat_response_time", true);
+export const chatSubmitResponseTime = new Trend("chat_submit_response_time", true);
+export const chatPollResponseTime = new Trend("chat_poll_response_time", true);
 export const healthFailures = new Rate("health_failures");
 export const authFailures = new Rate("auth_failures");
 export const chatFailures = new Rate("chat_failures");
@@ -143,7 +147,9 @@ export const options = {
     http_req_failed: ["rate<0.05"],
     health_response_time: ["p(95)<1000"],
     auth_response_time: ["p(95)<3000"],
-    chat_response_time: ["p(95)<60000"],
+    chat_submit_response_time: ["p(95)<3000"],
+    chat_poll_response_time: ["p(95)<3000"],
+    chat_response_time: ["p(95)<300000"],
   },
 };
 
@@ -182,6 +188,40 @@ function pickSleepSeconds() {
     : min;
   if (max <= min) return min;
   return min + Math.random() * (max - min);
+}
+
+function pollChatJob(jobId, token, mode) {
+  const startedAt = Date.now();
+  let lastBody = null;
+  let polls = 0;
+
+  while ((Date.now() - startedAt) / 1000 < chatMaxWaitSeconds) {
+    sleep(chatPollIntervalSeconds);
+    polls += 1;
+
+    const response = http.get(`${baseUrl}/chat/jobs/${jobId}`, {
+      headers: headers({ Cookie: `token=${token}` }),
+      tags: { route: "/chat/jobs/:jobId", scenario_group: `chat_${mode}`, rag_mode: mode },
+    });
+    chatPollResponseTime.add(response.timings.duration, { rag_mode: mode });
+
+    lastBody = parseResponseJson(response);
+    if (response.status !== 200) {
+      return { ok: false, response, body: lastBody, polls, reason: "poll_http_error" };
+    }
+
+    if (lastBody?.status === "done" || lastBody?.status === "failed") {
+      return {
+        ok: lastBody.status === "done",
+        response,
+        body: lastBody,
+        polls,
+        reason: lastBody.status,
+      };
+    }
+  }
+
+  return { ok: false, response: null, body: lastBody, polls, reason: "poll_timeout" };
 }
 
 function login(mode) {
@@ -286,6 +326,7 @@ export function chatScenario(data) {
       : message,
   };
 
+  const startedAt = Date.now();
   const response = http.post(
     `${baseUrl}/chat/messages`,
     JSON.stringify(payload),
@@ -298,21 +339,35 @@ export function chatScenario(data) {
     },
   );
 
-  chatResponseTime.add(response.timings.duration, { rag_mode: mode });
+  chatSubmitResponseTime.add(response.timings.duration, { rag_mode: mode });
   const body = parseResponseJson(response);
-  const assistantText = body?.responses?.[0]?.text || "";
-  const provider = body?.provider || "";
+  const submitOk =
+    response.status === 202 &&
+    body?.status === "queued" &&
+    Boolean(body?.jobId) &&
+    body?.sessionId === sessionId;
+  const pollResult = submitOk
+    ? pollChatJob(body.jobId, token, mode)
+    : { ok: false, body: null, polls: 0, reason: "submit_failed" };
+  const finalBody = pollResult.body;
+  const assistantText = finalBody?.responses?.[0]?.text || "";
+  const provider = finalBody?.provider || "";
   const semanticFailure =
-    response.status === 200 &&
+    pollResult.ok &&
     (isFallbackProvider(provider) || isTechnicalFallbackText(assistantText));
+  const totalMs = Date.now() - startedAt;
 
-  chatFailures.add(response.status !== 200 || semanticFailure, { rag_mode: mode });
+  chatResponseTime.add(totalMs, { rag_mode: mode });
+  chatFailures.add(!submitOk || !pollResult.ok || semanticFailure, { rag_mode: mode });
   chatSemanticFailures.add(semanticFailure, { rag_mode: mode });
 
   check(response, {
-    [`${mode} chat status is 200`]: (res) => res.status === 200,
+    [`${mode} chat submit status is 202`]: (res) => res.status === 202,
+    [`${mode} chat submit returned job id`]: () => Boolean(body?.jobId),
+    [`${mode} chat submit returned session id`]: () => body?.sessionId === sessionId,
+    [`${mode} chat job completed`]: () => pollResult.ok,
     [`${mode} chat returned assistant text`]: () => Boolean(assistantText),
-    [`${mode} chat returned session id`]: () => body?.sessionId === sessionId,
+    [`${mode} chat returned session id`]: () => finalBody?.sessionId === sessionId,
     [`${mode} chat provider is not fallback`]: () => !isFallbackProvider(provider),
     [`${mode} chat did not return technical fallback`]: () =>
       !isTechnicalFallbackText(assistantText),

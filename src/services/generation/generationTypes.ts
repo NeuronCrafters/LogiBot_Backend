@@ -34,6 +34,14 @@ export type GenerationResult = {
   text: string;
   provider: string;
   retrievedChunks: RetrievedRagChunk[];
+  usage?: unknown;
+};
+
+export type GenerationStreamCallbacks = {
+  signal?: AbortSignal;
+  onStatus?: (stage: "history" | "rag" | "agent") => void | Promise<void>;
+  onToken?: (text: string) => void | Promise<void>;
+  onRetrieval?: (chunks: RetrievedRagChunk[]) => void | Promise<void>;
 };
 
 function elapsedMs(startedAt: bigint) {

@@ -2,13 +2,17 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
-import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
+import {
+  askDigitalOceanAgent,
+  streamDigitalOceanAgent,
+} from "../ai/digitalOceanAgentService";
 import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { getOrCreateRagCollection } from "../rag/chromaService";
 import {
   measureChatTiming,
   type GenerationInput,
   type GenerationResult,
+  type GenerationStreamCallbacks,
   type RetrievedRagChunk,
   type RuntimeRagSettings,
 } from "./generationTypes";
@@ -182,5 +186,77 @@ export async function generateContextRagResponse(
       "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks,
+  };
+}
+
+export async function streamContextRagResponse(
+  input: GenerationInput & { settings: RuntimeRagSettings },
+  callbacks: GenerationStreamCallbacks = {},
+): Promise<GenerationResult> {
+  await callbacks.onStatus?.("rag");
+
+  const candidates = await queryChroma({
+    classId: input.settings.classId,
+    message: input.message,
+    topK: input.settings.topK,
+    timings: input.timings,
+  });
+
+  const retrievedChunks = await revalidateChunks({
+    classId: input.settings.classId,
+    candidates,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
+
+  logger.info("ContextRAG", "Context retrieved for streaming chat.", {
+    classId: input.settings.classId,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+    candidateCount: candidates.length,
+    retrievedCount: retrievedChunks.length,
+  });
+
+  await callbacks.onRetrieval?.(retrievedChunks);
+
+  if (!retrievedChunks.length) {
+    await callbacks.onToken?.(EMPTY_CONTEXT_TEXT);
+    return {
+      text: EMPTY_CONTEXT_TEXT,
+      provider: "rag-context-empty",
+      retrievedChunks: [],
+    };
+  }
+
+  await callbacks.onStatus?.("agent");
+
+  const agentResponse = await measureChatTiming(
+    input.timings,
+    input.agentTimingStage || "agent",
+    () =>
+      streamDigitalOceanAgent(
+        [
+          {
+            role: "system",
+            content: buildSystemPrompt(input.settings, retrievedChunks),
+          },
+          ...input.history,
+        ],
+        {
+          signal: callbacks.signal,
+          onToken: callbacks.onToken,
+          timeoutMs: input.agentTimeoutMs,
+          queueTimeoutMs: input.agentQueueTimeoutMs,
+        },
+      ),
+  );
+
+  return {
+    text:
+      agentResponse?.text ??
+      "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
+    provider: agentResponse?.provider ?? "fallback",
+    retrievedChunks,
+    usage: agentResponse?.usage,
   };
 }

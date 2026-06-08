@@ -5,11 +5,12 @@ import { logger } from "../../logger";
 import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
 import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { getOrCreateRagCollection } from "../rag/chromaService";
-import type {
-  GenerationInput,
-  GenerationResult,
-  RetrievedRagChunk,
-  RuntimeRagSettings,
+import {
+  measureChatTiming,
+  type GenerationInput,
+  type GenerationResult,
+  type RetrievedRagChunk,
+  type RuntimeRagSettings,
 } from "./generationTypes";
 
 const EMPTY_CONTEXT_TEXT =
@@ -50,18 +51,23 @@ async function queryChroma(input: {
   classId: string;
   message: string;
   topK: number;
+  timings?: GenerationInput["timings"];
 }) {
   const provider = createEmbeddingProvider();
-  const embeddingResult = await provider.embedTexts([input.message], {
-    timeoutMs: getEmbeddingQueryTimeoutMs(),
-  });
+  const embeddingResult = await measureChatTiming(input.timings, "embedding", () =>
+    provider.embedTexts([input.message], {
+      timeoutMs: getEmbeddingQueryTimeoutMs(),
+    }),
+  );
 
-  const collection = await getOrCreateRagCollection();
-  const result = await collection.query({
-    queryEmbeddings: embeddingResult.embeddings,
-    nResults: Math.max(input.topK * 3, input.topK),
-    where: { classId: input.classId },
-  } as any);
+  const result = await measureChatTiming(input.timings, "chroma query", async () => {
+    const collection = await getOrCreateRagCollection();
+    return collection.query({
+      queryEmbeddings: embeddingResult.embeddings,
+      nResults: Math.max(input.topK * 3, input.topK),
+      where: { classId: input.classId },
+    } as any);
+  });
 
   const ids = (result.ids?.[0] || []).filter(Boolean) as string[];
   const distances = result.distances?.[0] || [];
@@ -78,21 +84,10 @@ async function revalidateChunks(input: {
   topK: number;
   minScore: number;
 }) {
-  logger.info("ContextRAG", "Revalidating candidates.", {
-    classId: input.classId,
-    minScore: input.minScore,
-    candidates: input.candidates.map((c) => ({ chromaId: c.chromaId, score: c.score })),
-  });
-
   const filteredCandidates = input.candidates.filter(
     (candidate) => candidate.score >= input.minScore,
   );
 
-  logger.info("ContextRAG", "Score filter applied.", {
-    before: input.candidates.length,
-    after: filteredCandidates.length,
-    dropped: input.candidates.length - filteredCandidates.length,
-  });
   const chromaIds = filteredCandidates.map((candidate) => candidate.chromaId);
   if (!chromaIds.length) return [];
 
@@ -138,16 +133,11 @@ async function revalidateChunks(input: {
 export async function generateContextRagResponse(
   input: GenerationInput & { settings: RuntimeRagSettings },
 ): Promise<GenerationResult> {
-  logger.info("ContextRAG", "Starting retrieval.", {
-    classId: input.settings.classId,
-    topK: input.settings.topK,
-    minScore: input.settings.minScore,
-  });
-
   const candidates = await queryChroma({
     classId: input.settings.classId,
     message: input.message,
     topK: input.settings.topK,
+    timings: input.timings,
   });
 
   const retrievedChunks = await revalidateChunks({
@@ -159,6 +149,8 @@ export async function generateContextRagResponse(
 
   logger.info("ContextRAG", "Context retrieved for chat.", {
     classId: input.settings.classId,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
     candidateCount: candidates.length,
     retrievedCount: retrievedChunks.length,
   });
@@ -171,10 +163,18 @@ export async function generateContextRagResponse(
     };
   }
 
-  const agentResponse = await askDigitalOceanAgent([
-    { role: "system", content: buildSystemPrompt(input.settings, retrievedChunks) },
-    ...input.history,
-  ]);
+  const agentResponse = await measureChatTiming(input.timings, input.agentTimingStage || "agent", () =>
+    askDigitalOceanAgent([
+      {
+        role: "system",
+        content: buildSystemPrompt(input.settings, retrievedChunks),
+      },
+      ...input.history,
+    ], {
+      timeoutMs: input.agentTimeoutMs,
+      queueTimeoutMs: input.agentQueueTimeoutMs,
+    }),
+  );
 
   return {
     text:
@@ -184,4 +184,3 @@ export async function generateContextRagResponse(
     retrievedChunks,
   };
 }
-

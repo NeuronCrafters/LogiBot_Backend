@@ -20,7 +20,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/drizzle ./drizzle
 
 RUN mkdir -p /app/uploads /var/logibots/uploads/rag \
   && chown -R node:node /app/uploads /var/logibots

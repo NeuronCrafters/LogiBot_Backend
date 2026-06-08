@@ -1,6 +1,6 @@
 import path from "path";
 
-const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 const MAX_DOCUMENTS_PER_CLASS = 30;
 
 export const RAG_UPLOAD_FIELD = "file";
@@ -54,4 +54,12 @@ export function getAllowedRagFile(originalName: string, mimeType: string) {
 export function normalizeDisplayFileName(originalName: string) {
   const base = path.basename(originalName || "documento");
   return base.replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").slice(0, 180);
+}
+
+// busboy/multer decodes multipart headers as latin1, so filenames sent as UTF-8
+// (the norm in browsers) arrive mojibake'd (e.g. "LÃ³gica" instead of "Lógica").
+// Re-decoding the raw bytes as UTF-8 restores the original characters.
+export function decodeUploadedFileName(originalName: string) {
+  if (!originalName) return originalName;
+  return Buffer.from(originalName, "latin1").toString("utf8");
 }

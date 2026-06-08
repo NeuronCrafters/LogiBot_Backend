@@ -6,9 +6,11 @@ import { assertCanManageRagClass } from "../rag/ragPermissionService";
 import type { RagMode, RagUser } from "../rag/ragTypes";
 import { generateContextRagResponse } from "./contextRagStrategy";
 import type {
+  ChatTimings,
   GenerationResult,
   RuntimeRagSettings,
 } from "./generationTypes";
+import { measureChatTiming } from "./generationTypes";
 import { generateNoRagResponse } from "./noRagStrategy";
 import { generateSelfRagResponse } from "./selfRagStrategy";
 import type { AgentMessage } from "../ai/digitalOceanAgentService";
@@ -80,6 +82,7 @@ async function generateWithSettings(input: {
   message: string;
   history: AgentMessage[];
   settings: RuntimeRagSettings;
+  timings?: ChatTimings;
 }): Promise<GenerationResult> {
   logger.info("Generation", "Generating response.", {
     classId: input.settings.classId,
@@ -97,6 +100,7 @@ async function generateWithSettings(input: {
       message: input.message,
       history: input.history,
       settings: input.settings,
+      timings: input.timings,
     });
   }
 
@@ -104,6 +108,7 @@ async function generateWithSettings(input: {
     message: input.message,
     history: input.history,
     settings: input.settings,
+    timings: input.timings,
   });
 }
 
@@ -111,14 +116,19 @@ export async function generateChatResponse(input: {
   userId: string;
   message: string;
   history: AgentMessage[];
+  timings?: ChatTimings;
 }) {
-  const classId = await getStudentClassId(input.userId);
+  const classId = await measureChatTiming(input.timings, "rag/settings", () =>
+    getStudentClassId(input.userId),
+  );
   if (!classId) {
     logger.info("Generation", "No class found for student; using no-RAG.", { userId: input.userId });
     return generateNoRagResponse(input);
   }
 
-  const settings = await getRuntimeRagSettings(classId);
+  const settings = await measureChatTiming(input.timings, "rag/settings", () =>
+    getRuntimeRagSettings(classId),
+  );
   return generateWithSettings({ ...input, settings });
 }
 

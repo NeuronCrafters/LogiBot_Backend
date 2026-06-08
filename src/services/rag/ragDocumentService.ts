@@ -9,6 +9,7 @@ import { logger } from "../../logger";
 import type { RagUser } from "./ragTypes";
 import { assertCanManageRagClass } from "./ragPermissionService";
 import {
+  decodeUploadedFileName,
   getAllowedRagFile,
   getRagUploadDir,
   normalizeDisplayFileName,
@@ -75,7 +76,8 @@ export async function createRagDocument(input: {
   await ensureDocumentLimit(input.classId);
 
   const file = ensureFile(input.file);
-  const allowed = getAllowedRagFile(file.originalname, file.mimetype);
+  const originalName = decodeUploadedFileName(file.originalname);
+  const allowed = getAllowedRagFile(originalName, file.mimetype);
   if (!allowed) {
     throw new AppError("arquivo deve ser PDF, TXT ou DOCX valido", 400);
   }
@@ -85,7 +87,7 @@ export async function createRagDocument(input: {
   const uploadDir = getRagUploadDir();
   const classDir = path.join(uploadDir, input.classId);
   const filePath = path.join(classDir, storedFileName);
-  const originalFileName = normalizeDisplayFileName(file.originalname);
+  const originalFileName = normalizeDisplayFileName(originalName);
   const title = String(input.title || originalFileName).trim().slice(0, 180);
 
   logger.info("RagDocuments", "Creating document.", {

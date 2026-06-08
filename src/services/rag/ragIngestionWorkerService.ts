@@ -194,8 +194,6 @@ async function embedInBatches(texts: string[]) {
   for (let index = 0; index < texts.length; index += EMBEDDING_BATCH_SIZE) {
     const batchNumber = Math.floor(index / EMBEDDING_BATCH_SIZE) + 1;
     const batch = texts.slice(index, index + EMBEDDING_BATCH_SIZE);
-    logger.info(WORKER_SCOPE, `Sending batch ${batchNumber}/${totalBatches}.`, { batchSize: batch.length });
-
     const startedAt = Date.now();
     const result = await provider.embedTexts(batch);
     model = result.model || model;

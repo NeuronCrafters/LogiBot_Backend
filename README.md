@@ -43,7 +43,17 @@ PASSWORD_RESET_DEBUG_RESPONSE=false
 
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
-DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
+DIGITALOCEAN_AGENT_TIMEOUT_MS=180000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
+DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
+DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_DECISION_TIMEOUT_MS=60000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=600000
+CHAT_GENERATION_JOB_TIMEOUT_MS=600000
+CHAT_GENERATION_MAX_ATTEMPTS=1
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
@@ -77,7 +87,93 @@ O seed cria:
 
 ## IA
 
-O endpoint `POST /chat/messages` usa o Agent da DigitalOcean quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Se o Agent falhar ou nao estiver configurado, o backend preserva uma resposta fallback controlada.
+O endpoint `POST /chat/messages` salva a mensagem do aluno, cria um job em `chat_generation_jobs` e retorna `202` com `jobId`. O worker (`npm run worker`) processa RAG + Agent em background, salva a resposta real no historico e o frontend consulta `GET /chat/jobs/:jobId` ate concluir.
+
+O Agent da DigitalOcean e usado quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Como o chat e assincrono, timeouts longos sao usados apenas para recuperar jobs travados, nao como limite da UX HTTP.
+
+Para aumentar concorrencia sem saturar o provedor, o backend tambem aceita um pool de ate 5 Agents da DigitalOcean. A cada chamada, ele aguarda vaga em uma fila local e usa o Agent menos ocupado no processo atual.
+
+Formato numerado, recomendado para preencher no painel do deploy:
+
+```env
+DIGITALOCEAN_AGENT_1_ENDPOINT=
+DIGITALOCEAN_AGENT_1_ACCESS_KEY=
+DIGITALOCEAN_AGENT_2_ENDPOINT=
+DIGITALOCEAN_AGENT_2_ACCESS_KEY=
+# ...
+DIGITALOCEAN_AGENT_5_ENDPOINT=
+DIGITALOCEAN_AGENT_5_ACCESS_KEY=
+```
+
+Formato em lista, pareado por posicao:
+
+```env
+DIGITALOCEAN_AGENT_ENDPOINTS=https://agent-1...,https://agent-2...
+DIGITALOCEAN_AGENT_ACCESS_KEYS=key-1,key-2
+```
+
+As variaveis antigas `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` continuam funcionando e entram como o Agent `default`. O limite de 5 e total, entao o `default` tambem conta.
+
+Variaveis da fila:
+
+```env
+DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
+DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
+```
+
+`DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1` significa que cada Agent recebe uma chamada por vez. As demais requests ficam na fila do backend ate abrir vaga.
+O `DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS` limita o timeout efetivo do Agent para evitar slots presos indefinidamente.
+
+No modo `self`, o backend faz uma chamada curta ao Agent para decidir se deve recuperar materiais e depois pode fazer uma segunda chamada para responder. Por isso ele tem orcamento proprio:
+
+```env
+SELF_RAG_DECISION_TIMEOUT_MS=60000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=600000
+```
+
+Esses defaults permitem respostas lentas de modelos remotos. O limite geral do job fica em `CHAT_GENERATION_JOB_TIMEOUT_MS`.
+
+## Observabilidade
+
+Os logs do backend e do worker sao transmitidos em tempo real via Socket.IO (`/admin/logs` no frontend) e
+o teste de carga k6 fica em `load-tests/chat-stress.js`.
+
+## Testes De Carga K6
+
+O script `../k6-chat.ps1` aceita cenarios separados para isolar gargalos:
+
+```powershell
+# backend puro
+.\k6-chat.ps1 -K6Profile smoke -K6Test health
+
+# autenticacao pura
+.\k6-chat.ps1 -K6Profile smoke -K6Test auth
+
+# chat por modo RAG
+.\k6-chat.ps1 -K6Profile smoke -K6Test none
+.\k6-chat.ps1 -K6Profile smoke -K6Test context
+.\k6-chat.ps1 -K6Profile smoke -K6Test self
+
+# todos, dividindo a carga de chat entre none/context/self
+.\k6-stress.cmd
+```
+
+Credenciais configuraveis:
+
+```env
+K6_NONE_EMAIL=
+K6_NONE_PASSWORD=
+K6_CONTEXT_EMAIL=
+K6_CONTEXT_PASSWORD=
+K6_SELF_EMAIL=
+K6_SELF_PASSWORD=
+```
+
+Essas variaveis sao obrigatorias para cenarios de chat/auth. O cenario `health` nao exige credenciais.
 
 ## Emails
 
@@ -118,7 +214,17 @@ DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
-DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
+DIGITALOCEAN_AGENT_TIMEOUT_MS=180000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
+DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
+DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_DECISION_TIMEOUT_MS=60000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=600000
+CHAT_GENERATION_JOB_TIMEOUT_MS=600000
+CHAT_GENERATION_MAX_ATTEMPTS=1
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag

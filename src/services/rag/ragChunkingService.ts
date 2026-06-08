@@ -8,8 +8,24 @@ export type RagChunk = {
   tokenCount: number;
 };
 
+// PostgreSQL's UTF8 text columns reject NUL and most other control
+// characters outright (common artifact of PDF text extraction).
+const CONTROL_CHAR_CODES = [
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+  24, 25, 26, 27, 28, 29, 30, 31, 127,
+];
+const CONTROL_CHARS_PATTERN = new RegExp(
+  `[${CONTROL_CHAR_CODES.map((code) => String.fromCharCode(code)).join("")}]`,
+  "g",
+);
+
 function normalizeText(text: string) {
-  return text.replace(/\r/g, "\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  return text
+    .replace(CONTROL_CHARS_PATTERN, "")
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function estimateTokenCount(text: string) {

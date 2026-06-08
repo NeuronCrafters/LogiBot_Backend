@@ -1,13 +1,5 @@
 import axios from "axios";
 import { logger } from "../../logger";
-import {
-  agentInFlight,
-  agentQueueDepth,
-  agentRateLimitLimit,
-  agentRateLimitRemaining,
-  agentRateLimitReset,
-  observeAgentRequest,
-} from "../../observability/metrics";
 
 type ChatRole = "system" | "user" | "assistant";
 
@@ -176,12 +168,7 @@ function pickAgentTarget(
   return selected;
 }
 
-function updateQueueDepthMetric() {
-  agentQueueDepth.set(agentQueue.length);
-}
-
 function reserveAgentSlot(target: AgentTarget, queuedMs: number): AgentSlot {
-  agentInFlight.inc();
   incrementAgentInFlightCount(target.id);
   return {
     target,
@@ -197,7 +184,6 @@ function dispatchAgentQueue() {
 
     const queued = agentQueue.shift()!;
     clearTimeout(queued.timer);
-    updateQueueDepthMetric();
 
     const queuedMs = Date.now() - queued.enqueuedAt;
     logger.info("DigitalOceanAgent", "Dequeued Agent request.", {
@@ -211,7 +197,6 @@ function dispatchAgentQueue() {
 }
 
 function releaseAgentSlot(agentId: string) {
-  agentInFlight.dec();
   decrementAgentInFlightCount(agentId);
   dispatchAgentQueue();
 }
@@ -232,12 +217,10 @@ async function acquireAgentSlot(
     const timer = setTimeout(() => {
       const index = agentQueue.findIndex((item) => item.timer === timer);
       if (index >= 0) agentQueue.splice(index, 1);
-      updateQueueDepthMetric();
       reject(new Error("tempo maximo na fila de Agents excedido"));
     }, options?.queueTimeoutMs ?? getQueueTimeoutMs());
 
     agentQueue.push({ enqueuedAt, resolve, reject, timer });
-    updateQueueDepthMetric();
 
     logger.info("DigitalOceanAgent", "Queued Agent request.", {
       queuePosition: agentQueue.length,
@@ -271,30 +254,6 @@ function extractResponseText(data: any) {
   return typeof text === "string" ? text.trim() : "";
 }
 
-function getHeaderNumber(headers: any, name: string) {
-  const raw = headers?.[name] ?? headers?.[name.toLowerCase()];
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function updateRateLimitMetrics(headers: any) {
-  const limit = getHeaderNumber(headers, "ratelimit-limit");
-  const remaining = getHeaderNumber(headers, "ratelimit-remaining");
-  const reset = getHeaderNumber(headers, "ratelimit-reset");
-
-  if (limit !== null) agentRateLimitLimit.set(limit);
-  if (remaining !== null) agentRateLimitRemaining.set(remaining);
-  if (reset !== null) agentRateLimitReset.set(reset);
-}
-
-function getErrorResult(status?: number) {
-  if (status === 429) return "rate_limited";
-  if (typeof status === "number" && status >= 500) return "server_error";
-  if (typeof status === "number") return "http_error";
-  return "network_error";
-}
-
 export async function askDigitalOceanAgent(
   messages: AgentMessage[],
   options?: AgentRequestOptions,
@@ -320,7 +279,6 @@ export async function askDigitalOceanAgent(
   }
 
   const target = slot.target;
-  const startedAt = process.hrtime.bigint();
 
   try {
     const response = await axios.post(
@@ -334,16 +292,9 @@ export async function askDigitalOceanAgent(
         timeout,
       },
     );
-    updateRateLimitMetrics(response.headers);
 
     const text = extractResponseText(response.data);
-    const statusCode = String(response.status);
     if (!text) {
-      observeAgentRequest({
-        result: "empty_response",
-        statusCode,
-        startedAt,
-      });
       logger.warn("DigitalOceanAgent", "Agent response did not include text.");
       return null;
     }
@@ -355,16 +306,9 @@ export async function askDigitalOceanAgent(
       promptTokens: response.data?.usage?.prompt_tokens,
       completionTokens: response.data?.usage?.completion_tokens,
     });
-    observeAgentRequest({ result: "success", statusCode, startedAt });
     return { text, provider: "digitalocean-agent" };
   } catch (error: any) {
     const status = error?.response?.status;
-    updateRateLimitMetrics(error?.response?.headers);
-    observeAgentRequest({
-      result: getErrorResult(status),
-      statusCode: status ? String(status) : "network",
-      startedAt,
-    });
     logger.error("DigitalOceanAgent", "Failed to call DigitalOcean Agent.", {
       agentId: target.id,
       queuedMs: slot.queuedMs,

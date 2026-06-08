@@ -12,32 +12,7 @@ import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
-import {
-  httpMetricsMiddleware,
-  isMetricsEnabled,
-  metricsHandler,
-  setChatQueueMetrics,
-} from "./observability/metrics";
-import { getChatQueueStats } from "./services/chat/chatService";
-
-const CHAT_QUEUE_METRICS_REFRESH_MS = 15_000;
-
-function startChatQueueMetricsRefresh() {
-  if (!isMetricsEnabled()) return;
-
-  const refresh = () => {
-    getChatQueueStats()
-      .then(setChatQueueMetrics)
-      .catch((error) =>
-        logger.error("Metrics", "Failed to refresh chat queue metrics.", {
-          message: error instanceof Error ? error.message : String(error),
-        }),
-      );
-  };
-
-  refresh();
-  setInterval(refresh, CHAT_QUEUE_METRICS_REFRESH_MS);
-}
+import { setupLogStreaming } from "./observability/logSocket";
 
 export const app = express();
 
@@ -47,8 +22,6 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(requestLogger);
-app.get("/metrics", metricsHandler);
-app.use(httpMetricsMiddleware);
 app.use(routes);
 app.use(errorHandler);
 
@@ -67,10 +40,9 @@ export async function bootstrap() {
   await initAdminUser();
   logger.info("Bootstrap", "Admin account verification completed.");
 
-  startChatQueueMetricsRefresh();
-
   const port = getAppPort();
   const server = createServer(app);
+  setupLogStreaming(server);
 
   server.listen(port, () => {
     logger.info("Server", "Express server is listening.", {

@@ -32,8 +32,6 @@ JWT_SECRET=change-me
 API_KEY=
 
 HTTP_REQUEST_LOGS=true
-METRICS_ENABLED=false
-METRICS_API_KEY=
 
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
@@ -141,10 +139,8 @@ Esses defaults permitem respostas lentas de modelos remotos. O limite geral do j
 
 ## Observabilidade
 
-O backend expoe `GET /metrics` para Prometheus quando `METRICS_ENABLED=true`.
-Esse endpoint fica fora do `API_KEY` publico e exige `Authorization: Bearer <METRICS_API_KEY>`.
-
-A stack local de Prometheus/Grafana fica em `observability/` e o teste de carga k6 em `load-tests/chat-stress.js`.
+Os logs do backend e do worker sao transmitidos em tempo real via Socket.IO (`/admin/logs` no frontend) e
+o teste de carga k6 fica em `load-tests/chat-stress.js`.
 
 ## Testes De Carga K6
 

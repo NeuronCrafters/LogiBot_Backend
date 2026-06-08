@@ -2,10 +2,6 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
-import {
-  measureRagStage,
-  observeRagStage,
-} from "../../observability/metrics";
 import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
 import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { getOrCreateRagCollection } from "../rag/chromaService";
@@ -58,23 +54,19 @@ async function queryChroma(input: {
   timings?: GenerationInput["timings"];
 }) {
   const provider = createEmbeddingProvider();
-  const embeddingResult = await measureRagStage("embedding", () =>
-    measureChatTiming(input.timings, "embedding", () =>
-      provider.embedTexts([input.message], {
-        timeoutMs: getEmbeddingQueryTimeoutMs(),
-      }),
-    ),
+  const embeddingResult = await measureChatTiming(input.timings, "embedding", () =>
+    provider.embedTexts([input.message], {
+      timeoutMs: getEmbeddingQueryTimeoutMs(),
+    }),
   );
 
-  const result = await measureRagStage("chroma_query", async () => {
-    return measureChatTiming(input.timings, "chroma query", async () => {
-      const collection = await getOrCreateRagCollection();
-      return collection.query({
-        queryEmbeddings: embeddingResult.embeddings,
-        nResults: Math.max(input.topK * 3, input.topK),
-        where: { classId: input.classId },
-      } as any);
-    });
+  const result = await measureChatTiming(input.timings, "chroma query", async () => {
+    const collection = await getOrCreateRagCollection();
+    return collection.query({
+      queryEmbeddings: embeddingResult.embeddings,
+      nResults: Math.max(input.topK * 3, input.topK),
+      where: { classId: input.classId },
+    } as any);
   });
 
   const ids = (result.ids?.[0] || []).filter(Boolean) as string[];
@@ -152,67 +144,58 @@ async function revalidateChunks(input: {
 export async function generateContextRagResponse(
   input: GenerationInput & { settings: RuntimeRagSettings },
 ): Promise<GenerationResult> {
-  const totalStartedAt = process.hrtime.bigint();
-  try {
-    logger.info("ContextRAG", "Starting retrieval.", {
-      classId: input.settings.classId,
-      topK: input.settings.topK,
-      minScore: input.settings.minScore,
-    });
+  logger.info("ContextRAG", "Starting retrieval.", {
+    classId: input.settings.classId,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
 
-    const candidates = await queryChroma({
-      classId: input.settings.classId,
-      message: input.message,
-      topK: input.settings.topK,
-      timings: input.timings,
-    });
+  const candidates = await queryChroma({
+    classId: input.settings.classId,
+    message: input.message,
+    topK: input.settings.topK,
+    timings: input.timings,
+  });
 
-    const retrievedChunks = await measureRagStage("postgres_revalidate", () =>
-      revalidateChunks({
-        classId: input.settings.classId,
-        candidates,
-        topK: input.settings.topK,
-        minScore: input.settings.minScore,
-      }),
-    );
+  const retrievedChunks = await revalidateChunks({
+    classId: input.settings.classId,
+    candidates,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
 
-    logger.info("ContextRAG", "Context retrieved for chat.", {
-      classId: input.settings.classId,
-      candidateCount: candidates.length,
-      retrievedCount: retrievedChunks.length,
-    });
+  logger.info("ContextRAG", "Context retrieved for chat.", {
+    classId: input.settings.classId,
+    candidateCount: candidates.length,
+    retrievedCount: retrievedChunks.length,
+  });
 
-    if (!retrievedChunks.length) {
-      return {
-        text: EMPTY_CONTEXT_TEXT,
-        provider: "rag-context-empty",
-        retrievedChunks: [],
-      };
-    }
-
-    const agentResponse = await measureRagStage("agent_generation", () =>
-      measureChatTiming(input.timings, input.agentTimingStage || "agent", () =>
-        askDigitalOceanAgent([
-          {
-            role: "system",
-            content: buildSystemPrompt(input.settings, retrievedChunks),
-          },
-          ...input.history,
-        ], {
-          timeoutMs: input.agentTimeoutMs,
-          queueTimeoutMs: input.agentQueueTimeoutMs,
-        }),
-      ),
-    );
-
+  if (!retrievedChunks.length) {
     return {
-      text:
-        agentResponse?.text ??
-        "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
-      provider: agentResponse?.provider ?? "fallback",
-      retrievedChunks,
+      text: EMPTY_CONTEXT_TEXT,
+      provider: "rag-context-empty",
+      retrievedChunks: [],
     };
-  } finally {
-    observeRagStage("total", totalStartedAt);
   }
+
+  const agentResponse = await measureChatTiming(input.timings, input.agentTimingStage || "agent", () =>
+    askDigitalOceanAgent([
+      {
+        role: "system",
+        content: buildSystemPrompt(input.settings, retrievedChunks),
+      },
+      ...input.history,
+    ], {
+      timeoutMs: input.agentTimeoutMs,
+      queueTimeoutMs: input.agentQueueTimeoutMs,
+    }),
+  );
+
+  return {
+    text:
+      agentResponse?.text ??
+      "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
+    provider: agentResponse?.provider ?? "fallback",
+    retrievedChunks,
+  };
 }

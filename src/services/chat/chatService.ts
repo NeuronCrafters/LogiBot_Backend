@@ -9,10 +9,6 @@ import {
 } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
-import {
-  measureChatStage,
-  observeChatStage,
-} from "../../observability/metrics";
 import { AgentMessage } from "../ai/digitalOceanAgentService";
 import { generateChatResponse } from "../generation/generationService";
 import {
@@ -159,24 +155,21 @@ export async function sendChatMessage(input: {
   const enriched = validateAndEnrichPrompt(message);
   const detectedTopic = enriched?.subject ?? null;
 
-  const userMessage = await measureChatStage("save_user_message", () =>
-    addChatMessage({
-      userId: input.userId,
-      sessionId: input.sessionId,
-      role: "user",
-      content: message,
-      topic: detectedTopic,
-    }),
-  );
+  const userMessage = await addChatMessage({
+    userId: input.userId,
+    sessionId: input.sessionId,
+    role: "user",
+    content: message,
+    topic: detectedTopic,
+  });
 
-  await measureChatStage("topic_count", async () => {
-    if (!detectedTopic) return;
+  if (detectedTopic) {
     logger.info("Chat", "Topic detected.", {
       userId: input.userId,
       topic: detectedTopic,
     });
     await incrementTopicCount(input.userId, detectedTopic);
-  });
+  }
 
   const [job] = await getDb()
     .insert(chatGenerationJobs)
@@ -373,47 +366,40 @@ export async function processNextChatGenerationJob() {
   try {
     const result = await withTimeout(
       (async () => {
-        const history = await measureChatStage("load_history", () =>
-          measureChatTiming(timingsMs, "db/history", () =>
-            getRecentChatMessages(locked.userId, locked.sessionId),
-          ),
+        const history = await measureChatTiming(timingsMs, "db/history", () =>
+          getRecentChatMessages(locked.userId, locked.sessionId),
         );
 
-        const agentResponse = await measureChatStage("generate_response", () =>
-          generateChatResponse({
-            userId: locked.userId,
-            message: locked.message,
-            history,
-            timings: timingsMs,
-          }),
-        );
+        const agentResponse = await generateChatResponse({
+          userId: locked.userId,
+          message: locked.message,
+          history,
+          timings: timingsMs,
+        });
 
         if (isTechnicalFallback(agentResponse.text, agentResponse.provider)) {
           throw new Error("Agent retornou fallback tecnico");
         }
 
-        const assistantMessage = await measureChatStage("save_assistant_message", () =>
-          addChatMessage({
-            userId: locked.userId,
-            sessionId: locked.sessionId,
-            role: "assistant",
-            content: agentResponse.text,
-            topic: locked.detectedTopic,
-            metadata: {
-              chatGenerationJobId: locked.jobId,
-              provider: agentResponse.provider,
-              timingsMs,
-              retrievedChunks: agentResponse.retrievedChunks,
-            },
-          }),
-        );
+        const assistantMessage = await addChatMessage({
+          userId: locked.userId,
+          sessionId: locked.sessionId,
+          role: "assistant",
+          content: agentResponse.text,
+          topic: locked.detectedTopic,
+          metadata: {
+            chatGenerationJobId: locked.jobId,
+            provider: agentResponse.provider,
+            timingsMs,
+            retrievedChunks: agentResponse.retrievedChunks,
+          },
+        });
 
         return { agentResponse, assistantMessage };
       })(),
       getChatGenerationJobTimeoutMs(),
     );
 
-    observeChatStage("total", totalStartedAt);
     addChatTiming(timingsMs, "total", totalStartedAt);
 
     await markChatJobDone({
@@ -434,7 +420,6 @@ export async function processNextChatGenerationJob() {
 
     return true;
   } catch (error) {
-    observeChatStage("total", totalStartedAt);
     addChatTiming(timingsMs, "total", totalStartedAt);
 
     logger.error("ChatWorker", "Job failed.", {
@@ -470,22 +455,6 @@ async function getQueuePosition(job: {
   const [row] = rowsFromExecute(result);
   const count = Number(row?.count || 0);
   return count > 0 ? count : null;
-}
-
-export async function getChatQueueStats() {
-  const result = await getDb().execute(sql`
-    select
-      count(*)::int as "depth",
-      coalesce(extract(epoch from (now() - min(created_at))), 0)::float as "oldestAgeSeconds"
-    from chat_generation_jobs
-    where status = 'queued'
-  `);
-
-  const [row] = rowsFromExecute(result);
-  return {
-    depth: Number(row?.depth || 0),
-    oldestAgeSeconds: Number(row?.oldestAgeSeconds || 0),
-  };
 }
 
 export async function getChatGenerationJobStatus(userId: string, jobId: string) {

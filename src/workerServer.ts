@@ -8,6 +8,7 @@ import { asyncHandler } from "./http/asyncHandler";
 import { errorHandler } from "./http/errorHandler";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
+import { startLogForwarding } from "./observability/logForwarder";
 import { processNextChatGenerationJob } from "./services/chat/chatService";
 import { processNextRagJob } from "./services/rag/ragIngestionWorkerService";
 import { getRagHealth } from "./services/rag/ragHealthService";
@@ -137,6 +138,7 @@ app.post(
 app.use(errorHandler);
 
 async function bootstrap() {
+  startLogForwarding();
   logger.info(SCOPE, "Starting RAG Worker Server.");
   logger.info("Database", "Connecting to PostgreSQL.");
   await connectDB();

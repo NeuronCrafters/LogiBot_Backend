@@ -1,6 +1,6 @@
 import path from "path";
 
-const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 const MAX_DOCUMENTS_PER_CLASS = 30;
 
 export const RAG_UPLOAD_FIELD = "file";

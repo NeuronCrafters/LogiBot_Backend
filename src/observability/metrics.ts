@@ -74,6 +74,11 @@ export const agentInFlight = new Gauge({
   help: "DigitalOcean Agent requests currently in flight.",
 });
 
+export const agentQueueDepth = new Gauge({
+  name: "logibot_agent_queue_depth",
+  help: "DigitalOcean Agent requests waiting for an available Agent slot.",
+});
+
 export const agentRateLimitLimit = new Gauge({
   name: "logibot_agent_ratelimit_limit",
   help: "Latest DigitalOcean Agent ratelimit-limit header value.",

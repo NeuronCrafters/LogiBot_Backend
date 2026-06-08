@@ -46,6 +46,10 @@ PASSWORD_RESET_DEBUG_RESPONSE=false
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
 DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
+DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
+DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
@@ -80,6 +84,41 @@ O seed cria:
 ## IA
 
 O endpoint `POST /chat/messages` usa o Agent da DigitalOcean quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Se o Agent falhar ou nao estiver configurado, o backend preserva uma resposta fallback controlada.
+
+Para aumentar concorrencia sem saturar o provedor, o backend tambem aceita um pool de ate 5 Agents da DigitalOcean. A cada chamada, ele aguarda vaga em uma fila local e usa o Agent menos ocupado no processo atual.
+
+Formato numerado, recomendado para preencher no painel do deploy:
+
+```env
+DIGITALOCEAN_AGENT_1_ENDPOINT=
+DIGITALOCEAN_AGENT_1_ACCESS_KEY=
+DIGITALOCEAN_AGENT_2_ENDPOINT=
+DIGITALOCEAN_AGENT_2_ACCESS_KEY=
+# ...
+DIGITALOCEAN_AGENT_5_ENDPOINT=
+DIGITALOCEAN_AGENT_5_ACCESS_KEY=
+```
+
+Formato em lista, pareado por posicao:
+
+```env
+DIGITALOCEAN_AGENT_ENDPOINTS=https://agent-1...,https://agent-2...
+DIGITALOCEAN_AGENT_ACCESS_KEYS=key-1,key-2
+```
+
+As variaveis antigas `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` continuam funcionando e entram como o Agent `default`. O limite de 5 e total, entao o `default` tambem conta.
+
+Variaveis da fila:
+
+```env
+DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
+DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
+```
+
+`DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1` significa que cada Agent recebe uma chamada por vez. As demais requests ficam na fila do backend ate abrir vaga.
+O `DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS` limita o timeout efetivo do Agent para evitar que o frontend/proxy desista antes do backend retornar fallback controlado.
 
 ## Observabilidade
 
@@ -161,6 +200,10 @@ HTTP_REQUEST_LOGS=true
 DIGITALOCEAN_AGENT_ENDPOINT=
 DIGITALOCEAN_AGENT_ACCESS_KEY=
 DIGITALOCEAN_AGENT_TIMEOUT_MS=30000
+DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
+DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
+DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
+DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag

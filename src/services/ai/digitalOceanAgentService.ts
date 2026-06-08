@@ -1,5 +1,12 @@
 import axios from "axios";
 import { logger } from "../../logger";
+import {
+  agentInFlight,
+  agentRateLimitLimit,
+  agentRateLimitRemaining,
+  agentRateLimitReset,
+  observeAgentRequest,
+} from "../../observability/metrics";
 
 type ChatRole = "system" | "user" | "assistant";
 
@@ -71,6 +78,30 @@ function extractResponseText(data: any) {
   return typeof text === "string" ? text.trim() : "";
 }
 
+function getHeaderNumber(headers: any, name: string) {
+  const raw = headers?.[name] ?? headers?.[name.toLowerCase()];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function updateRateLimitMetrics(headers: any) {
+  const limit = getHeaderNumber(headers, "ratelimit-limit");
+  const remaining = getHeaderNumber(headers, "ratelimit-remaining");
+  const reset = getHeaderNumber(headers, "ratelimit-reset");
+
+  if (limit !== null) agentRateLimitLimit.set(limit);
+  if (remaining !== null) agentRateLimitRemaining.set(remaining);
+  if (reset !== null) agentRateLimitReset.set(reset);
+}
+
+function getErrorResult(status?: number) {
+  if (status === 429) return "rate_limited";
+  if (typeof status === "number" && status >= 500) return "server_error";
+  if (typeof status === "number") return "http_error";
+  return "network_error";
+}
+
 export async function askDigitalOceanAgent(
   messages: AgentMessage[],
   options?: { timeoutMs?: number },
@@ -82,7 +113,9 @@ export async function askDigitalOceanAgent(
 
   const sanitizedMessages = convertSystemMessages(messages);
   const timeout = options?.timeoutMs ?? getTimeoutMs();
+  const startedAt = process.hrtime.bigint();
 
+  agentInFlight.inc();
   try {
     const response = await axios.post(
       endpoint,
@@ -95,9 +128,16 @@ export async function askDigitalOceanAgent(
         timeout,
       },
     );
+    updateRateLimitMetrics(response.headers);
 
     const text = extractResponseText(response.data);
+    const statusCode = String(response.status);
     if (!text) {
+      observeAgentRequest({
+        result: "empty_response",
+        statusCode,
+        startedAt,
+      });
       logger.warn("DigitalOceanAgent", "Agent response did not include text.");
       return null;
     }
@@ -107,13 +147,23 @@ export async function askDigitalOceanAgent(
       promptTokens: response.data?.usage?.prompt_tokens,
       completionTokens: response.data?.usage?.completion_tokens,
     });
+    observeAgentRequest({ result: "success", statusCode, startedAt });
     return { text, provider: "digitalocean-agent" };
   } catch (error: any) {
+    const status = error?.response?.status;
+    updateRateLimitMetrics(error?.response?.headers);
+    observeAgentRequest({
+      result: getErrorResult(status),
+      statusCode: status ? String(status) : "network",
+      startedAt,
+    });
     logger.error("DigitalOceanAgent", "Failed to call DigitalOcean Agent.", {
-      status: error?.response?.status,
+      status,
       message: error?.response?.data?.message || error?.message,
       responseData: JSON.stringify(error?.response?.data),
     });
     return null;
+  } finally {
+    agentInFlight.dec();
   }
 }

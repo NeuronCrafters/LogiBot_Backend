@@ -4,6 +4,10 @@ import { getDb } from "../../db/client";
 import { chatMessages, chatSessions, chatTopicCounts } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
+import {
+  measureChatStage,
+  observeChatStage,
+} from "../../observability/metrics";
 import { AgentMessage } from "../ai/digitalOceanAgentService";
 import { generateChatResponse } from "../generation/generationService";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
@@ -130,54 +134,78 @@ export async function sendChatMessage(input: {
   const message = String(input.message || "").trim();
   if (!message) throw new AppError("message e obrigatorio", 400);
 
-  logger.info("Chat", "Message received.", { userId: input.userId, sessionId: input.sessionId || "(new)" });
+  const totalStartedAt = process.hrtime.bigint();
+  try {
+    logger.info("Chat", "Message received.", {
+      userId: input.userId,
+      sessionId: input.sessionId || "(new)",
+    });
 
-  const enriched = validateAndEnrichPrompt(message);
-  const detectedTopic = enriched?.subject ?? null;
+    const enriched = validateAndEnrichPrompt(message);
+    const detectedTopic = enriched?.subject ?? null;
 
-  const userMessage = await addChatMessage({
-    userId: input.userId,
-    sessionId: input.sessionId,
-    role: "user",
-    content: message,
-    topic: detectedTopic,
-  });
-  if (detectedTopic) {
-    logger.info("Chat", "Topic detected.", { userId: input.userId, topic: detectedTopic });
-    await incrementTopicCount(input.userId, detectedTopic);
+    const userMessage = await measureChatStage("save_user_message", () =>
+      addChatMessage({
+        userId: input.userId,
+        sessionId: input.sessionId,
+        role: "user",
+        content: message,
+        topic: detectedTopic,
+      }),
+    );
+
+    await measureChatStage("topic_count", async () => {
+      if (!detectedTopic) return;
+      logger.info("Chat", "Topic detected.", {
+        userId: input.userId,
+        topic: detectedTopic,
+      });
+      await incrementTopicCount(input.userId, detectedTopic);
+    });
+
+    const history = await measureChatStage("load_history", () =>
+      getRecentChatMessages(input.userId, userMessage.sessionId),
+    );
+
+    const agentResponse = await measureChatStage("generate_response", () =>
+      generateChatResponse({
+        userId: input.userId,
+        message,
+        history,
+      }),
+    );
+
+    const responseText = agentResponse.text;
+    const provider = agentResponse.provider;
+    const retrievedChunks = agentResponse.retrievedChunks;
+
+    logger.info("Chat", "Response generated.", {
+      userId: input.userId,
+      sessionId: userMessage.sessionId,
+      provider,
+    });
+
+    await measureChatStage("save_assistant_message", () =>
+      addChatMessage({
+        userId: input.userId,
+        sessionId: userMessage.sessionId,
+        role: "assistant",
+        content: responseText,
+        topic: detectedTopic,
+        metadata: retrievedChunks?.length ? { retrievedChunks } : undefined,
+      }),
+    );
+
+    return {
+      responses: [{ text: responseText }],
+      sessionId: userMessage.sessionId,
+      detectedTopic,
+      provider,
+      retrievedChunks: retrievedChunks?.length ? retrievedChunks : undefined,
+    };
+  } finally {
+    observeChatStage("total", totalStartedAt);
   }
-
-  const history = await getRecentChatMessages(
-    input.userId,
-    userMessage.sessionId,
-  );
-  const agentResponse = await generateChatResponse({
-    userId: input.userId,
-    message,
-    history,
-  });
-
-  const responseText = agentResponse.text;
-  const provider = agentResponse.provider;
-  const retrievedChunks = agentResponse.retrievedChunks;
-
-  logger.info("Chat", "Response generated.", { userId: input.userId, sessionId: userMessage.sessionId, provider });
-
-  await addChatMessage({
-    userId: input.userId,
-    sessionId: userMessage.sessionId,
-    role: "assistant",
-    content: responseText,
-    topic: detectedTopic,
-    metadata: retrievedChunks?.length ? { retrievedChunks } : undefined,
-  });
-  return {
-    responses: [{ text: responseText }],
-    sessionId: userMessage.sessionId,
-    detectedTopic,
-    provider,
-    retrievedChunks: retrievedChunks?.length ? retrievedChunks : undefined,
-  };
 }
 
 export async function listChatSessions(userId: string) {

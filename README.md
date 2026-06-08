@@ -32,6 +32,8 @@ JWT_SECRET=change-me
 API_KEY=
 
 HTTP_REQUEST_LOGS=true
+METRICS_ENABLED=false
+METRICS_API_KEY=
 
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
@@ -78,6 +80,13 @@ O seed cria:
 ## IA
 
 O endpoint `POST /chat/messages` usa o Agent da DigitalOcean quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Se o Agent falhar ou nao estiver configurado, o backend preserva uma resposta fallback controlada.
+
+## Observabilidade
+
+O backend expoe `GET /metrics` para Prometheus quando `METRICS_ENABLED=true`.
+Esse endpoint fica fora do `API_KEY` publico e exige `Authorization: Bearer <METRICS_API_KEY>`.
+
+A stack local de Prometheus/Grafana fica em `observability/` e o teste de carga k6 em `load-tests/chat-stress.js`.
 
 ## Emails
 

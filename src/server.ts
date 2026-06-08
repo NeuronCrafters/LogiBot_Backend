@@ -12,6 +12,10 @@ import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
+import {
+  httpMetricsMiddleware,
+  metricsHandler,
+} from "./observability/metrics";
 
 export const app = express();
 
@@ -21,6 +25,8 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(requestLogger);
+app.get("/metrics", metricsHandler);
+app.use(httpMetricsMiddleware);
 app.use(routes);
 app.use(errorHandler);
 

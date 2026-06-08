@@ -7,6 +7,7 @@ import {
   accounts,
   classes,
   classDisciplines,
+  classRagSettings,
   courses,
   disciplines,
   professorClasses,
@@ -94,18 +95,26 @@ const ACADEMIC_SEED_DATA = {
       id: "00000000-0000-4000-8000-000000000103",
       name: "Turma ContextRAG",
       registrationCode: "LOGI2026",
+      ragMode: "context" as const,
     },
     {
       id: "00000000-0000-4000-8000-000000000108",
       name: "Turma NoRAG",
       registrationCode: "NORG2026",
+      ragMode: "none" as const,
     },
     {
       id: "00000000-0000-4000-8000-000000000109",
       name: "Turma SelfRAG",
       registrationCode: "SELF2026",
+      ragMode: "self" as const,
     },
   ],
+};
+
+const RAG_SETTINGS_DEFAULTS = {
+  topK: 4,
+  minScore: 50,
 };
 
 type SeedUserData = {
@@ -300,6 +309,26 @@ async function seed() {
         disciplineId: ACADEMIC_SEED_DATA.discipline.id,
       })
       .onConflictDoNothing();
+  }
+
+  for (const cls of ACADEMIC_SEED_DATA.classes) {
+    await db
+      .insert(classRagSettings)
+      .values({
+        classId: cls.id,
+        ragMode: cls.ragMode,
+        topK: RAG_SETTINGS_DEFAULTS.topK,
+        minScore: RAG_SETTINGS_DEFAULTS.minScore,
+      })
+      .onConflictDoUpdate({
+        target: classRagSettings.classId,
+        set: {
+          ragMode: cls.ragMode,
+          topK: RAG_SETTINGS_DEFAULTS.topK,
+          minScore: RAG_SETTINGS_DEFAULTS.minScore,
+          updatedAt: new Date(),
+        },
+      });
   }
 
   await seedProfessorLikeUser(db, PROFESSOR_USER_DATA);

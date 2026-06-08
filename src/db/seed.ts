@@ -114,7 +114,7 @@ const ACADEMIC_SEED_DATA = {
 
 const RAG_SETTINGS_DEFAULTS = {
   topK: 4,
-  minScore: 50,
+  minScore: 60,
 };
 
 type SeedUserData = {

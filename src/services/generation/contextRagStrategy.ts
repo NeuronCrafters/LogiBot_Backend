@@ -84,21 +84,10 @@ async function revalidateChunks(input: {
   topK: number;
   minScore: number;
 }) {
-  logger.info("ContextRAG", "Revalidating candidates.", {
-    classId: input.classId,
-    minScore: input.minScore,
-    candidates: input.candidates.map((c) => ({ chromaId: c.chromaId, score: c.score })),
-  });
-
   const filteredCandidates = input.candidates.filter(
     (candidate) => candidate.score >= input.minScore,
   );
 
-  logger.info("ContextRAG", "Score filter applied.", {
-    before: input.candidates.length,
-    after: filteredCandidates.length,
-    dropped: input.candidates.length - filteredCandidates.length,
-  });
   const chromaIds = filteredCandidates.map((candidate) => candidate.chromaId);
   if (!chromaIds.length) return [];
 
@@ -144,12 +133,6 @@ async function revalidateChunks(input: {
 export async function generateContextRagResponse(
   input: GenerationInput & { settings: RuntimeRagSettings },
 ): Promise<GenerationResult> {
-  logger.info("ContextRAG", "Starting retrieval.", {
-    classId: input.settings.classId,
-    topK: input.settings.topK,
-    minScore: input.settings.minScore,
-  });
-
   const candidates = await queryChroma({
     classId: input.settings.classId,
     message: input.message,
@@ -166,6 +149,8 @@ export async function generateContextRagResponse(
 
   logger.info("ContextRAG", "Context retrieved for chat.", {
     classId: input.settings.classId,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
     candidateCount: candidates.length,
     retrievedCount: retrievedChunks.length,
   });

@@ -147,11 +147,6 @@ export async function sendChatMessage(input: {
   const message = String(input.message || "").trim();
   if (!message) throw new AppError("message e obrigatorio", 400);
 
-  logger.info("Chat", "Message received.", {
-    userId: input.userId,
-    sessionId: input.sessionId || "(new)",
-  });
-
   const enriched = validateAndEnrichPrompt(message);
   const detectedTopic = enriched?.subject ?? null;
 
@@ -164,10 +159,6 @@ export async function sendChatMessage(input: {
   });
 
   if (detectedTopic) {
-    logger.info("Chat", "Topic detected.", {
-      userId: input.userId,
-      topic: detectedTopic,
-    });
     await incrementTopicCount(input.userId, detectedTopic);
   }
 
@@ -181,10 +172,11 @@ export async function sendChatMessage(input: {
     })
     .returning({ id: chatGenerationJobs.id });
 
-  logger.info("Chat", "Generation job queued.", {
+  logger.info("Chat", "Message received and job queued.", {
     userId: input.userId,
     sessionId: userMessage.sessionId,
     jobId: job.id,
+    topic: detectedTopic || undefined,
   });
 
   return {
@@ -445,10 +437,17 @@ async function getQueuePosition(job: {
 }) {
   if (job.status !== "queued") return null;
 
+  const maxAttempts = getChatGenerationMaxAttempts();
+
+  // Mirrors lockNextChatJob's eligibility filter (status + attempts), so the
+  // count reflects only jobs that can actually be picked up before this one —
+  // jobs that exhausted their retries are about to become "failed" and should
+  // not inflate the position shown to the user.
   const result = await getDb().execute(sql`
     select count(*)::int as "count"
     from chat_generation_jobs
     where status = 'queued'
+      and attempts < ${maxAttempts}
       and created_at <= ${job.createdAt}
   `);
 

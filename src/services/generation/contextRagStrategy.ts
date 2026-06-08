@@ -9,11 +9,12 @@ import {
 import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
 import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { getOrCreateRagCollection } from "../rag/chromaService";
-import type {
-  GenerationInput,
-  GenerationResult,
-  RetrievedRagChunk,
-  RuntimeRagSettings,
+import {
+  measureChatTiming,
+  type GenerationInput,
+  type GenerationResult,
+  type RetrievedRagChunk,
+  type RuntimeRagSettings,
 } from "./generationTypes";
 
 const EMPTY_CONTEXT_TEXT =
@@ -54,21 +55,26 @@ async function queryChroma(input: {
   classId: string;
   message: string;
   topK: number;
+  timings?: GenerationInput["timings"];
 }) {
   const provider = createEmbeddingProvider();
   const embeddingResult = await measureRagStage("embedding", () =>
-    provider.embedTexts([input.message], {
-      timeoutMs: getEmbeddingQueryTimeoutMs(),
-    }),
+    measureChatTiming(input.timings, "embedding", () =>
+      provider.embedTexts([input.message], {
+        timeoutMs: getEmbeddingQueryTimeoutMs(),
+      }),
+    ),
   );
 
   const result = await measureRagStage("chroma_query", async () => {
-    const collection = await getOrCreateRagCollection();
-    return collection.query({
-      queryEmbeddings: embeddingResult.embeddings,
-      nResults: Math.max(input.topK * 3, input.topK),
-      where: { classId: input.classId },
-    } as any);
+    return measureChatTiming(input.timings, "chroma query", async () => {
+      const collection = await getOrCreateRagCollection();
+      return collection.query({
+        queryEmbeddings: embeddingResult.embeddings,
+        nResults: Math.max(input.topK * 3, input.topK),
+        where: { classId: input.classId },
+      } as any);
+    });
   });
 
   const ids = (result.ids?.[0] || []).filter(Boolean) as string[];
@@ -158,6 +164,7 @@ export async function generateContextRagResponse(
       classId: input.settings.classId,
       message: input.message,
       topK: input.settings.topK,
+      timings: input.timings,
     });
 
     const retrievedChunks = await measureRagStage("postgres_revalidate", () =>
@@ -184,13 +191,15 @@ export async function generateContextRagResponse(
     }
 
     const agentResponse = await measureRagStage("agent_generation", () =>
-      askDigitalOceanAgent([
-        {
-          role: "system",
-          content: buildSystemPrompt(input.settings, retrievedChunks),
-        },
-        ...input.history,
-      ]),
+      measureChatTiming(input.timings, "agent", () =>
+        askDigitalOceanAgent([
+          {
+            role: "system",
+            content: buildSystemPrompt(input.settings, retrievedChunks),
+          },
+          ...input.history,
+        ]),
+      ),
     );
 
     return {

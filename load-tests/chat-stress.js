@@ -3,50 +3,145 @@ import { check, fail, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
 const profile = (__ENV.K6_PROFILE || "smoke").toLowerCase();
+const testMode = (__ENV.K6_TEST || "all").toLowerCase();
 const baseUrl = (__ENV.BASE_URL || "http://localhost:43187").replace(
   /\/+$/,
   "",
 );
 const apiKey = __ENV.API_KEY || "";
-const email = __ENV.K6_EMAIL || "";
-const password = __ENV.K6_PASSWORD || "";
-const message =
+
+const users = {
+  none: {
+    email: __ENV.K6_NONE_EMAIL || "",
+    password: __ENV.K6_NONE_PASSWORD || "",
+  },
+  context: {
+    email: __ENV.K6_CONTEXT_EMAIL || "",
+    password: __ENV.K6_CONTEXT_PASSWORD || "",
+  },
+  self: {
+    email: __ENV.K6_SELF_EMAIL || "",
+    password: __ENV.K6_SELF_PASSWORD || "",
+  },
+};
+
+const fallbackMessage =
   __ENV.K6_MESSAGE ||
   "Explique rapidamente o que e uma estrutura condicional em programacao.";
+const messages = (__ENV.K6_MESSAGES || "")
+  .split("|||")
+  .map((item) => item.trim())
+  .filter(Boolean);
+const messagePool = messages.length ? messages : [fallbackMessage];
 const sleepSeconds = Number(__ENV.K6_SLEEP_SECONDS || "1");
+const minSleepSeconds = Number(__ENV.K6_MIN_SLEEP_SECONDS || sleepSeconds);
+const maxSleepSeconds = Number(__ENV.K6_MAX_SLEEP_SECONDS || sleepSeconds);
 
+export const healthResponseTime = new Trend("health_response_time", true);
+export const authResponseTime = new Trend("auth_response_time", true);
 export const chatResponseTime = new Trend("chat_response_time", true);
+export const healthFailures = new Rate("health_failures");
+export const authFailures = new Rate("auth_failures");
 export const chatFailures = new Rate("chat_failures");
 
-const smokeOptions = {
-  vus: 1,
-  iterations: 1,
-  thresholds: {
-    checks: ["rate>0.95"],
-    chat_failures: ["rate<0.01"],
-    chat_response_time: ["p(95)<60000"],
-  },
-};
+function targetForProfile() {
+  if (profile === "stress") return 100;
+  if (profile === "class40") return 40;
+  return 1;
+}
 
-const stressOptions = {
-  stages: [
-    { duration: "1m", target: 20 },
-    { duration: "2m", target: 20 },
-    { duration: "1m", target: 50 },
-    { duration: "2m", target: 50 },
-    { duration: "1m", target: 100 },
-    { duration: "3m", target: 100 },
-    { duration: "1m", target: 0 },
-  ],
+function durationStages(target) {
+  if (profile === "stress") {
+    return [
+      { duration: "1m", target: Math.max(1, Math.floor(target * 0.2)) },
+      { duration: "2m", target: Math.max(1, Math.floor(target * 0.2)) },
+      { duration: "1m", target: Math.max(1, Math.floor(target * 0.5)) },
+      { duration: "2m", target: Math.max(1, Math.floor(target * 0.5)) },
+      { duration: "1m", target },
+      { duration: "3m", target },
+      { duration: "1m", target: 0 },
+    ];
+  }
+
+  if (profile === "class40") {
+    return [
+      { duration: "1m", target },
+      { duration: "5m", target },
+      { duration: "1m", target: 0 },
+    ];
+  }
+
+  return [
+    { duration: "10s", target },
+    { duration: "10s", target: 0 },
+  ];
+}
+
+function scenarioWanted(name) {
+  if (testMode === "all") return true;
+  if (testMode === "chat") return ["none", "context", "self"].includes(name);
+  return testMode === name;
+}
+
+function buildScenarios() {
+  const scenarios = {};
+  const baseTarget = Number(__ENV.K6_TARGET_VUS || targetForProfile());
+  const selectedChatModes = ["none", "context", "self"].filter(scenarioWanted);
+  const perChatTarget = Math.max(
+    1,
+    Math.floor(baseTarget / Math.max(1, selectedChatModes.length)),
+  );
+
+  if (scenarioWanted("health")) {
+    scenarios.health = {
+      executor: profile === "smoke" ? "shared-iterations" : "ramping-vus",
+      exec: "healthScenario",
+      tags: { scenario_group: "backend_pure", route: "/health/simple" },
+      ...(profile === "smoke"
+        ? { vus: 1, iterations: 1 }
+        : { stages: durationStages(Number(__ENV.K6_HEALTH_VUS || baseTarget)) }),
+    };
+  }
+
+  if (scenarioWanted("auth")) {
+    scenarios.auth = {
+      executor: profile === "smoke" ? "shared-iterations" : "ramping-vus",
+      exec: "authScenario",
+      tags: { scenario_group: "auth_pure", route: "/auth/session" },
+      ...(profile === "smoke"
+        ? { vus: 1, iterations: 1 }
+        : { stages: durationStages(Number(__ENV.K6_AUTH_VUS || baseTarget)) }),
+    };
+  }
+
+  for (const mode of selectedChatModes) {
+    scenarios[`chat_${mode}`] = {
+      executor: profile === "smoke" ? "shared-iterations" : "ramping-vus",
+      exec: "chatScenario",
+      env: { K6_CHAT_MODE: mode },
+      tags: { scenario_group: `chat_${mode}`, route: "/chat/messages" },
+      ...(profile === "smoke"
+        ? { vus: 1, iterations: 1 }
+        : { stages: durationStages(Number(__ENV.K6_CHAT_VUS || perChatTarget)) }),
+    };
+  }
+
+  return scenarios;
+}
+
+export const options = {
+  scenarios: buildScenarios(),
   thresholds: {
     checks: ["rate>0.95"],
+    health_failures: ["rate<0.01"],
+    auth_failures: ["rate<0.05"],
     chat_failures: ["rate<0.05"],
     http_req_failed: ["rate<0.05"],
+    health_response_time: ["p(95)<1000"],
+    auth_response_time: ["p(95)<3000"],
     chat_response_time: ["p(95)<60000"],
   },
 };
-
-export const options = profile === "stress" ? stressOptions : smokeOptions;
 
 function headers(extra = {}) {
   const output = { ...extra };
@@ -62,43 +157,116 @@ function parseResponseJson(response) {
   }
 }
 
-export function setup() {
-  if (!email || !password) {
-    fail("K6_EMAIL and K6_PASSWORD are required.");
+function pickMessage() {
+  return messagePool[Math.floor(Math.random() * messagePool.length)];
+}
+
+function pickSleepSeconds() {
+  const min = Number.isFinite(minSleepSeconds) ? Math.max(0, minSleepSeconds) : 1;
+  const max = Number.isFinite(maxSleepSeconds)
+    ? Math.max(0, maxSleepSeconds)
+    : min;
+  if (max <= min) return min;
+  return min + Math.random() * (max - min);
+}
+
+function login(mode) {
+  const user = users[mode];
+  if (!user?.email || !user?.password) {
+    fail(`Credenciais ausentes para modo ${mode}. Configure K6_${mode.toUpperCase()}_EMAIL e K6_${mode.toUpperCase()}_PASSWORD.`);
   }
 
   const loginResponse = http.post(
     `${baseUrl}/auth/session`,
-    JSON.stringify({ email, password }),
+    JSON.stringify({ email: user.email, password: user.password }),
     {
       headers: headers({ "Content-Type": "application/json" }),
-      tags: { route: "/auth/session" },
+      tags: { route: "/auth/session", scenario_group: `login_${mode}` },
     },
   );
 
   const loginOk = check(loginResponse, {
-    "login status is 200": (response) => response.status === 200,
-    "login returned token cookie": (response) =>
+    [`${mode} login status is 200`]: (response) => response.status === 200,
+    [`${mode} login returned token cookie`]: (response) =>
       Boolean(response.cookies?.token?.[0]?.value),
   });
 
   if (!loginOk) {
     fail(
-      `Login failed with status ${loginResponse.status}: ${loginResponse.body}`,
+      `${mode} login failed with status ${loginResponse.status}: ${loginResponse.body}`,
     );
   }
 
+  return loginResponse.cookies.token[0].value;
+}
+
+export function setup() {
+  const chatModes = ["none", "context", "self"].filter(scenarioWanted);
+  const tokens = {};
+
+  for (const mode of chatModes) {
+    tokens[mode] = login(mode);
+  }
+
   return {
-    token: loginResponse.cookies.token[0].value,
+    tokens,
     runId: String(Date.now()),
   };
 }
 
-export default function (data) {
-  const sessionId = `k6-${data.runId}-vu-${__VU}`;
+export function healthScenario() {
+  const response = http.get(`${baseUrl}/health/simple`, {
+    tags: { route: "/health/simple", scenario_group: "backend_pure" },
+  });
+
+  healthResponseTime.add(response.timings.duration);
+  healthFailures.add(response.status !== 200);
+
+  check(response, {
+    "health status is 200": (res) => res.status === 200,
+    "health body is OK": (res) => String(res.body || "").trim() === "OK",
+  });
+
+  sleep(pickSleepSeconds());
+}
+
+export function authScenario() {
+  const mode = ["none", "context", "self"][(__VU - 1) % 3];
+  const user = users[mode];
+  if (!user?.email || !user?.password) {
+    fail(`Credenciais ausentes para auth ${mode}.`);
+  }
+
+  const response = http.post(
+    `${baseUrl}/auth/session`,
+    JSON.stringify({ email: user.email, password: user.password }),
+    {
+      headers: headers({ "Content-Type": "application/json" }),
+      tags: { route: "/auth/session", scenario_group: "auth_pure", rag_mode: mode },
+    },
+  );
+
+  authResponseTime.add(response.timings.duration);
+  authFailures.add(response.status !== 200);
+
+  check(response, {
+    "auth status is 200": (res) => res.status === 200,
+    "auth returned token cookie": (res) =>
+      Boolean(res.cookies?.token?.[0]?.value),
+  });
+
+  sleep(pickSleepSeconds());
+}
+
+export function chatScenario(data) {
+  const mode = __ENV.K6_CHAT_MODE || "none";
+  const token = data.tokens?.[mode];
+  if (!token) fail(`Token ausente para chat mode ${mode}.`);
+
+  const sessionId = `k6-${mode}-${data.runId}-vu-${__VU}`;
   const payload = {
     sessionId,
-    message: `${message} [vu=${__VU} iter=${__ITER}]`,
+    message: `${pickMessage()} [mode=${mode} vu=${__VU} iter=${__ITER}]`,
   };
 
   const response = http.post(
@@ -107,26 +275,26 @@ export default function (data) {
     {
       headers: headers({
         "Content-Type": "application/json",
-        Cookie: `token=${data.token}`,
+        Cookie: `token=${token}`,
       }),
-      tags: { route: "/chat/messages" },
+      tags: { route: "/chat/messages", scenario_group: `chat_${mode}`, rag_mode: mode },
     },
   );
 
-  chatResponseTime.add(response.timings.duration);
-  chatFailures.add(response.status !== 200);
+  chatResponseTime.add(response.timings.duration, { rag_mode: mode });
+  chatFailures.add(response.status !== 200, { rag_mode: mode });
 
   check(response, {
-    "chat status is 200": (res) => res.status === 200,
-    "chat returned assistant text": (res) => {
+    [`${mode} chat status is 200`]: (res) => res.status === 200,
+    [`${mode} chat returned assistant text`]: (res) => {
       const body = parseResponseJson(res);
       return Boolean(body?.responses?.[0]?.text);
     },
-    "chat returned session id": (res) => {
+    [`${mode} chat returned session id`]: (res) => {
       const body = parseResponseJson(res);
       return body?.sessionId === sessionId;
     },
   });
 
-  sleep(Number.isFinite(sleepSeconds) && sleepSeconds >= 0 ? sleepSeconds : 1);
+  sleep(pickSleepSeconds());
 }

@@ -10,6 +10,11 @@ import {
 } from "../../observability/metrics";
 import { AgentMessage } from "../ai/digitalOceanAgentService";
 import { generateChatResponse } from "../generation/generationService";
+import {
+  addChatTiming,
+  type ChatTimings,
+  measureChatTiming,
+} from "../generation/generationTypes";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 
 const DEFAULT_CHAT_TITLE = "Nova Conversa";
@@ -135,6 +140,8 @@ export async function sendChatMessage(input: {
   if (!message) throw new AppError("message e obrigatorio", 400);
 
   const totalStartedAt = process.hrtime.bigint();
+  const timingsMs: ChatTimings = {};
+  let currentSessionId = input.sessionId;
   try {
     logger.info("Chat", "Message received.", {
       userId: input.userId,
@@ -163,8 +170,12 @@ export async function sendChatMessage(input: {
       await incrementTopicCount(input.userId, detectedTopic);
     });
 
+    currentSessionId = userMessage.sessionId;
+
     const history = await measureChatStage("load_history", () =>
-      getRecentChatMessages(input.userId, userMessage.sessionId),
+      measureChatTiming(timingsMs, "db/history", () =>
+        getRecentChatMessages(input.userId, userMessage.sessionId),
+      ),
     );
 
     const agentResponse = await measureChatStage("generate_response", () =>
@@ -172,6 +183,7 @@ export async function sendChatMessage(input: {
         userId: input.userId,
         message,
         history,
+        timings: timingsMs,
       }),
     );
 
@@ -205,6 +217,12 @@ export async function sendChatMessage(input: {
     };
   } finally {
     observeChatStage("total", totalStartedAt);
+    addChatTiming(timingsMs, "total", totalStartedAt);
+    logger.info("Chat", "Timing summary.", {
+      userId: input.userId,
+      sessionId: currentSessionId || null,
+      timingsMs,
+    });
   }
 }
 

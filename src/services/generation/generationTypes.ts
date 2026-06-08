@@ -1,6 +1,8 @@
 import type { AgentMessage } from "../ai/digitalOceanAgentService";
 import type { RagMode } from "../rag/ragTypes";
 
+export type ChatTimings = Record<string, number>;
+
 export type RuntimeRagSettings = {
   classId: string;
   ragMode: RagMode;
@@ -22,6 +24,7 @@ export type GenerationInput = {
   message: string;
   history: AgentMessage[];
   settings?: RuntimeRagSettings | null;
+  timings?: ChatTimings;
 };
 
 export type GenerationResult = {
@@ -30,3 +33,28 @@ export type GenerationResult = {
   retrievedChunks: RetrievedRagChunk[];
 };
 
+function elapsedMs(startedAt: bigint) {
+  return Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+}
+
+export function addChatTiming(
+  timings: ChatTimings | undefined,
+  stage: string,
+  startedAt: bigint,
+) {
+  if (!timings) return;
+  timings[stage] = Number(((timings[stage] || 0) + elapsedMs(startedAt)).toFixed(2));
+}
+
+export async function measureChatTiming<T>(
+  timings: ChatTimings | undefined,
+  stage: string,
+  fn: () => Promise<T>,
+) {
+  const startedAt = process.hrtime.bigint();
+  try {
+    return await fn();
+  } finally {
+    addChatTiming(timings, stage, startedAt);
+  }
+}

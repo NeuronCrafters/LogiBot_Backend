@@ -12,6 +12,7 @@ import type {
   GenerationResult,
   RuntimeRagSettings,
 } from "./generationTypes";
+import { measureChatTiming } from "./generationTypes";
 import { generateNoRagResponse } from "./noRagStrategy";
 
 type SelfRagDecision = {
@@ -70,11 +71,13 @@ async function decideSelfRag(input: {
   message: string;
   history: AgentMessage[];
   hasReadyDocuments: boolean;
+  timings?: GenerationInput["timings"];
 }) {
-  const response = await askDigitalOceanAgent([
-    {
-      role: "system",
-      content: `Voce decide se um chat educacional deve buscar materiais da turma antes de responder.
+  const response = await measureChatTiming(input.timings, "agent", () =>
+    askDigitalOceanAgent([
+      {
+        role: "system",
+        content: `Voce decide se um chat educacional deve buscar materiais da turma antes de responder.
 
 Responda somente JSON valido, sem markdown, no formato:
 {"needsRetrieval":true,"reason":"motivo curto"}
@@ -82,20 +85,21 @@ Responda somente JSON valido, sem markdown, no formato:
 Use needsRetrieval=true quando a pergunta depender de conteudo de aula, documentos da turma, material enviado, definicoes especificas, exercicios, exemplos ou explicacoes do curso.
 Use needsRetrieval=false quando for saudacao, conversa casual, pedido administrativo, ou pergunta geral que nao depende dos materiais da turma.
 Se nao houver documentos prontos, use needsRetrieval=false.`,
-    },
-    {
-      role: "user",
-      content: `Documentos prontos na turma: ${
-        input.hasReadyDocuments ? "sim" : "nao"
-      }
+      },
+      {
+        role: "user",
+        content: `Documentos prontos na turma: ${
+          input.hasReadyDocuments ? "sim" : "nao"
+        }
 
 Historico recente:
 ${compactHistory(input.history) || "(sem historico)"}
 
 Pergunta atual:
 ${input.message}`,
-    },
-  ]);
+      },
+    ]),
+  );
 
   if (!response?.text) throw new Error("Agent nao retornou decisao self rag");
   return parseDecision(response.text);
@@ -112,6 +116,7 @@ export async function generateSelfRagResponse(
       message: input.message,
       history: input.history,
       hasReadyDocuments: readyDocuments,
+      timings: input.timings,
     });
   } catch (error) {
     logger.warn("SelfRAG", "Decision failed; using safe fallback.", {

@@ -88,6 +88,39 @@ Esse endpoint fica fora do `API_KEY` publico e exige `Authorization: Bearer <MET
 
 A stack local de Prometheus/Grafana fica em `observability/` e o teste de carga k6 em `load-tests/chat-stress.js`.
 
+## Testes De Carga K6
+
+O script `../k6-chat.ps1` aceita cenarios separados para isolar gargalos:
+
+```powershell
+# backend puro
+.\k6-chat.ps1 -K6Profile smoke -K6Test health
+
+# autenticacao pura
+.\k6-chat.ps1 -K6Profile smoke -K6Test auth
+
+# chat por modo RAG
+.\k6-chat.ps1 -K6Profile smoke -K6Test none
+.\k6-chat.ps1 -K6Profile smoke -K6Test context
+.\k6-chat.ps1 -K6Profile smoke -K6Test self
+
+# todos, dividindo a carga de chat entre none/context/self
+.\k6-stress.cmd
+```
+
+Credenciais configuraveis:
+
+```env
+K6_NONE_EMAIL=
+K6_NONE_PASSWORD=
+K6_CONTEXT_EMAIL=
+K6_CONTEXT_PASSWORD=
+K6_SELF_EMAIL=
+K6_SELF_PASSWORD=
+```
+
+Essas variaveis sao obrigatorias para cenarios de chat/auth. O cenario `health` nao exige credenciais.
+
 ## Emails
 
 O fluxo `POST /auth/password-reset-requests` envia email via SMTP usando Nodemailer. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM` no Dokploy.

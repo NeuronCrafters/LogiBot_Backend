@@ -366,6 +366,54 @@ export const chatMessages = pgTable("chat_messages", {
     .defaultNow(),
 });
 
+export const chatGenerationJobs = pgTable(
+  "chat_generation_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    chatSessionId: uuid("chat_session_id")
+      .notNull()
+      .references(() => chatSessions.id, { onDelete: "cascade" }),
+    userMessageId: uuid("user_message_id")
+      .notNull()
+      .references(() => chatMessages.id, { onDelete: "cascade" }),
+    assistantMessageId: uuid("assistant_message_id").references(
+      () => chatMessages.id,
+      { onDelete: "set null" },
+    ),
+    status: text("status").notNull().default("queued"),
+    attempts: integer("attempts").notNull().default(0),
+    provider: text("provider"),
+    retrievedChunks: jsonb("retrieved_chunks").notNull().default([]),
+    timingsMs: jsonb("timings_ms").notNull().default({}),
+    errorMessage: text("error_message"),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    statusLockedCreatedIdx: index(
+      "chat_generation_jobs_status_locked_created_idx",
+    ).on(table.status, table.lockedAt, table.createdAt),
+    userStatusIdx: index("chat_generation_jobs_user_status_idx").on(
+      table.userId,
+      table.status,
+    ),
+    sessionStatusIdx: index("chat_generation_jobs_session_status_idx").on(
+      table.chatSessionId,
+      table.status,
+    ),
+  }),
+);
+
 export const chatTopicCounts = pgTable(
   "chat_topic_counts",
   {
@@ -688,6 +736,7 @@ export type ClassRagSettings = typeof classRagSettings.$inferSelect;
 export type RagDocument = typeof ragDocuments.$inferSelect;
 export type RagDocumentChunk = typeof ragDocumentChunks.$inferSelect;
 export type RagIngestionJob = typeof ragIngestionJobs.$inferSelect;
+export type ChatGenerationJob = typeof chatGenerationJobs.$inferSelect;
 export type ProfessorQuiz = typeof professorQuizzes.$inferSelect;
 export type ProfessorQuizQuestion = typeof professorQuizQuestions.$inferSelect;
 export type ProfessorQuizAttempt = typeof professorQuizAttempts.$inferSelect;

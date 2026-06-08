@@ -65,5 +65,6 @@ export async function getOrCreateRagCollection() {
   return client.getOrCreateCollection({
     name: collectionName,
     metadata: { "hnsw:space": "cosine" },
+    embeddingFunction: null,
   });
 }

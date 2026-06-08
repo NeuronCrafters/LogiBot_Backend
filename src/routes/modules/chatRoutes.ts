@@ -2,8 +2,10 @@ import { Router } from "express";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth } from "../../http/auth";
 import {
+  getChatGenerationJobStatus,
   listChatSessionMessages,
   listChatSessions,
+  listOpenChatGenerationJobs,
   sendChatMessage,
 } from "../../services/chat/chatService";
 
@@ -18,8 +20,17 @@ chatRouter.post(
     const sessionId = req.body.sessionId
       ? String(req.body.sessionId)
       : undefined;
+    return res
+      .status(202)
+      .json(await sendChatMessage({ userId: req.user!.id, message, sessionId }));
+  }),
+);
+
+chatRouter.get(
+  "/jobs/:jobId",
+  asyncHandler(async (req, res) => {
     return res.json(
-      await sendChatMessage({ userId: req.user!.id, message, sessionId }),
+      await getChatGenerationJobStatus(req.user!.id, req.params.jobId),
     );
   }),
 );
@@ -28,6 +39,15 @@ chatRouter.get(
   "/sessions/:userId",
   asyncHandler(async (req, res) => {
     return res.json(await listChatSessions(req.params.userId));
+  }),
+);
+
+chatRouter.get(
+  "/sessions/:userId/:sessionId/jobs/open",
+  asyncHandler(async (req, res) => {
+    return res.json(
+      await listOpenChatGenerationJobs(req.user!.id, req.params.sessionId),
+    );
   }),
 );
 

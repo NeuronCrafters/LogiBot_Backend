@@ -6,19 +6,17 @@ function writeLog(
   message: string,
   details?: unknown,
 ) {
-  const line = `${new Date().toISOString()} ${level} [${scope}] ${message}`;
+  const timestamp = new Date().toISOString();
+  const line = `${timestamp} ${level} [${scope}] ${message}`;
 
   if (level === "ERROR") {
     details === undefined ? console.error(line) : console.error(line, details);
-    return;
-  }
-
-  if (level === "WARN") {
+  } else if (level === "WARN") {
     details === undefined ? console.warn(line) : console.warn(line, details);
-    return;
+  } else {
+    details === undefined ? console.log(line) : console.log(line, details);
   }
 
-  details === undefined ? console.log(line) : console.log(line, details);
 }
 
 export const logger = {

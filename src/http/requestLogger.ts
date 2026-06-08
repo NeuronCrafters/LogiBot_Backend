@@ -6,6 +6,7 @@ const SKIPPED_PATHS = new Set([
   "/health/simple",
   "/health/ready",
   "/health/ping",
+  "/metrics",
 ]);
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {

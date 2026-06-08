@@ -1,7 +1,11 @@
 import { logger } from "../../logger";
 import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
 import type { AgentMessage } from "../ai/digitalOceanAgentService";
-import type { GenerationInput, GenerationResult } from "./generationTypes";
+import {
+  measureChatTiming,
+  type GenerationInput,
+  type GenerationResult,
+} from "./generationTypes";
 
 const FALLBACK_TEXT =
   "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
@@ -23,7 +27,15 @@ export async function generateNoRagResponse(
     { role: "system", content: systemPrompt },
     ...input.history,
   ];
-  const agentResponse = await askDigitalOceanAgent(messages);
+  const agentResponse = await measureChatTiming(
+    input.timings,
+    input.agentTimingStage || "agent",
+    () =>
+      askDigitalOceanAgent(messages, {
+        timeoutMs: input.agentTimeoutMs,
+        queueTimeoutMs: input.agentQueueTimeoutMs,
+      }),
+  );
 
   return {
     text: agentResponse?.text ?? FALLBACK_TEXT,
@@ -31,4 +43,3 @@ export async function generateNoRagResponse(
     retrievedChunks: [],
   };
 }
-

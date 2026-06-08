@@ -534,25 +534,40 @@ export const quizSubjectCounts = pgTable(
   (table) => ({ pk: primaryKey({ columns: [table.userId, table.subject] }) }),
 );
 
-export const professorQuizzes = pgTable("professor_quizzes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  professorId: uuid("professor_id")
-    .notNull()
-    .references(() => accounts.id, { onDelete: "cascade" }),
-  disciplineId: uuid("discipline_id")
-    .notNull()
-    .references(() => disciplines.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  topic: text("topic").notNull(),
-  description: text("description"),
-  status: text("status").notNull().default("draft"), // "draft" | "published"
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const professorQuizzes = pgTable(
+  "professor_quizzes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    professorId: uuid("professor_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    disciplineId: uuid("discipline_id")
+      .notNull()
+      .references(() => disciplines.id, { onDelete: "cascade" }),
+    classId: uuid("class_id").references(() => classes.id, {
+      onDelete: "set null",
+    }),
+    generationSource: text("generation_source").notNull().default("manual"),
+    title: text("title").notNull(),
+    topic: text("topic").notNull(),
+    description: text("description"),
+    status: text("status").notNull().default("draft"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    idxDisciplineStatusClass: index("idx_pq_discipline_status_class").on(
+      table.disciplineId,
+      table.status,
+      table.classId,
+    ),
+    idxClassId: index("idx_pq_class_id").on(table.classId),
+  }),
+);
 
 export const professorQuizQuestions = pgTable("professor_quiz_questions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -593,6 +608,66 @@ export const professorQuizAnswers = pgTable("professor_quiz_answers", {
   isCorrect: boolean("is_correct").notNull(),
 });
 
+export const professorQuizAiGenerations = pgTable(
+  "professor_quiz_ai_generations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    quizId: uuid("quiz_id")
+      .notNull()
+      .references(() => professorQuizzes.id, { onDelete: "cascade" }),
+    professorId: uuid("professor_id")
+      .notNull()
+      .references(() => accounts.id),
+    classId: uuid("class_id").references(() => classes.id),
+    disciplineId: uuid("discipline_id")
+      .notNull()
+      .references(() => disciplines.id),
+    theme: text("theme").notNull(),
+    questionCount: integer("question_count").notNull(),
+    selectedDocumentIds: jsonb("selected_document_ids")
+      .notNull()
+      .default([])
+      .$type<string[]>(),
+    retrievedChunkRefs: jsonb("retrieved_chunk_refs")
+      .notNull()
+      .default([])
+      .$type<string[]>(),
+    provider: text("provider"),
+    model: text("model"),
+    status: text("status").notNull().default("done"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    idxQuizId: index("idx_pqag_quiz_id").on(table.quizId),
+  }),
+);
+
+export const professorQuizQuestionSources = pgTable(
+  "professor_quiz_question_sources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    questionId: uuid("question_id")
+      .notNull()
+      .references(() => professorQuizQuestions.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => ragDocuments.id),
+    chromaId: text("chroma_id"),
+    chunkIndex: integer("chunk_index"),
+    score: integer("score"),
+    contentExcerpt: text("content_excerpt"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    idxQuestionId: index("idx_pqqs_question_id").on(table.questionId),
+  }),
+);
+
 export const feedbacks = pgTable("feedbacks", {
   id: uuid("id").primaryKey().defaultRandom(),
   accountId: uuid("account_id")
@@ -616,3 +691,7 @@ export type RagIngestionJob = typeof ragIngestionJobs.$inferSelect;
 export type ProfessorQuiz = typeof professorQuizzes.$inferSelect;
 export type ProfessorQuizQuestion = typeof professorQuizQuestions.$inferSelect;
 export type ProfessorQuizAttempt = typeof professorQuizAttempts.$inferSelect;
+export type ProfessorQuizAiGeneration =
+  typeof professorQuizAiGenerations.$inferSelect;
+export type ProfessorQuizQuestionSource =
+  typeof professorQuizQuestionSources.$inferSelect;

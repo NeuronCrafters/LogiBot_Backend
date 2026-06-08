@@ -50,6 +50,20 @@
       "when": 1749168000000,
       "tag": "0006_chat_message_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780710424991,
+      "tag": "0007_little_sleepwalker",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780712297510,
+      "tag": "0008_typical_shaman",
+      "breakpoints": true
     }
   ]
 }

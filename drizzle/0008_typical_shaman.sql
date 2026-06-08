@@ -1,0 +1,1 @@
+ALTER TABLE "professor_quiz_ai_generations" ALTER COLUMN "class_id" DROP NOT NULL;

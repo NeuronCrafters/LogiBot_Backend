@@ -73,6 +73,7 @@ function extractResponseText(data: any) {
 
 export async function askDigitalOceanAgent(
   messages: AgentMessage[],
+  options?: { timeoutMs?: number },
 ): Promise<AgentResponse | null> {
   const endpoint = getAgentEndpoint();
   const accessKey = getAgentAccessKey();
@@ -80,6 +81,7 @@ export async function askDigitalOceanAgent(
   if (!endpoint || !accessKey) return null;
 
   const sanitizedMessages = convertSystemMessages(messages);
+  const timeout = options?.timeoutMs ?? getTimeoutMs();
 
   try {
     const response = await axios.post(
@@ -90,7 +92,7 @@ export async function askDigitalOceanAgent(
           Authorization: `Bearer ${accessKey}`,
           "Content-Type": "application/json",
         },
-        timeout: getTimeoutMs(),
+        timeout,
       },
     );
 

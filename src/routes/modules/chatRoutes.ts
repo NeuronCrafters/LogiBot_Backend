@@ -39,6 +39,7 @@ chatRouter.get(
 function writeSse(res: import("express").Response, event: string, data: unknown) {
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
+  (res as any).flush?.();
 }
 
 chatRouter.post(
@@ -61,7 +62,10 @@ chatRouter.post(
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
+    res.socket?.setNoDelay(true);
     res.flushHeaders?.();
+    res.write(": connected\n\n");
+    (res as any).flush?.();
 
     try {
       const result = await streamChatMessage(

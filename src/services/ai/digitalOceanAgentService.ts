@@ -391,6 +391,8 @@ export async function streamDigitalOceanAgent(
   let text = "";
   let usage: unknown;
   let buffer = "";
+  let tokenCount = 0;
+  const providerStartedAt = Date.now();
 
   try {
     const response = await axios.post(
@@ -433,6 +435,14 @@ export async function streamDigitalOceanAgent(
         if (!delta) continue;
 
         text += delta;
+        tokenCount += 1;
+        if (tokenCount === 1) {
+          logger.info("DigitalOceanAgent", "Streaming Agent first token received.", {
+            agentId: target.id,
+            queuedMs: slot.queuedMs,
+            elapsedMs: Date.now() - providerStartedAt,
+          });
+        }
         await options.onToken?.(delta);
       }
     }
@@ -449,6 +459,7 @@ export async function streamDigitalOceanAgent(
     logger.info("DigitalOceanAgent", "Streaming Agent responded.", {
       agentId: target.id,
       queuedMs: slot.queuedMs,
+      tokenCount,
       usage,
     });
 

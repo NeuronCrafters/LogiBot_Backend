@@ -25,6 +25,9 @@ export type GenerationInput = {
   history: AgentMessage[];
   settings?: RuntimeRagSettings | null;
   timings?: ChatTimings;
+  agentTimeoutMs?: number;
+  agentQueueTimeoutMs?: number;
+  agentTimingStage?: string;
 };
 
 export type GenerationResult = {

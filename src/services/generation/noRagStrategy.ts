@@ -27,8 +27,14 @@ export async function generateNoRagResponse(
     { role: "system", content: systemPrompt },
     ...input.history,
   ];
-  const agentResponse = await measureChatTiming(input.timings, "agent", () =>
-    askDigitalOceanAgent(messages),
+  const agentResponse = await measureChatTiming(
+    input.timings,
+    input.agentTimingStage || "agent",
+    () =>
+      askDigitalOceanAgent(messages, {
+        timeoutMs: input.agentTimeoutMs,
+        queueTimeoutMs: input.agentQueueTimeoutMs,
+      }),
   );
 
   return {

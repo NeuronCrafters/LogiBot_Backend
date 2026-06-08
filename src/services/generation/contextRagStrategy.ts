@@ -191,14 +191,17 @@ export async function generateContextRagResponse(
     }
 
     const agentResponse = await measureRagStage("agent_generation", () =>
-      measureChatTiming(input.timings, "agent", () =>
+      measureChatTiming(input.timings, input.agentTimingStage || "agent", () =>
         askDigitalOceanAgent([
           {
             role: "system",
             content: buildSystemPrompt(input.settings, retrievedChunks),
           },
           ...input.history,
-        ]),
+        ], {
+          timeoutMs: input.agentTimeoutMs,
+          queueTimeoutMs: input.agentQueueTimeoutMs,
+        }),
       ),
     );
 

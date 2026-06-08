@@ -50,6 +50,10 @@ DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
 DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
 DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
 DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
+SELF_RAG_DECISION_TIMEOUT_MS=5000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=2000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=30000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=5000
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
@@ -119,6 +123,17 @@ DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
 
 `DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1` significa que cada Agent recebe uma chamada por vez. As demais requests ficam na fila do backend ate abrir vaga.
 O `DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS` limita o timeout efetivo do Agent para evitar que o frontend/proxy desista antes do backend retornar fallback controlado.
+
+No modo `self`, o backend faz uma chamada curta ao Agent para decidir se deve recuperar materiais e depois pode fazer uma segunda chamada para responder. Por isso ele tem orcamento proprio:
+
+```env
+SELF_RAG_DECISION_TIMEOUT_MS=5000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=2000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=30000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=5000
+```
+
+Esses defaults evitam que o `self` some duas esperas longas e ultrapasse o timeout de 60s do teste/proxy.
 
 ## Observabilidade
 
@@ -204,6 +219,10 @@ DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=45000
 DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
 DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
 DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=10000
+SELF_RAG_DECISION_TIMEOUT_MS=5000
+SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=2000
+SELF_RAG_FINAL_AGENT_TIMEOUT_MS=30000
+SELF_RAG_FINAL_QUEUE_TIMEOUT_MS=5000
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag

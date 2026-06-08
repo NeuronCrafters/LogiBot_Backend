@@ -20,6 +20,26 @@ type SelfRagDecision = {
   reason: string;
 };
 
+function getSelfDecisionTimeoutMs() {
+  const value = Number(process.env.SELF_RAG_DECISION_TIMEOUT_MS || 5_000);
+  return Number.isFinite(value) && value > 0 ? value : 5_000;
+}
+
+function getSelfDecisionQueueTimeoutMs() {
+  const value = Number(process.env.SELF_RAG_DECISION_QUEUE_TIMEOUT_MS || 2_000);
+  return Number.isFinite(value) && value > 0 ? value : 2_000;
+}
+
+function getSelfFinalAgentTimeoutMs() {
+  const value = Number(process.env.SELF_RAG_FINAL_AGENT_TIMEOUT_MS || 30_000);
+  return Number.isFinite(value) && value > 0 ? value : 30_000;
+}
+
+function getSelfFinalQueueTimeoutMs() {
+  const value = Number(process.env.SELF_RAG_FINAL_QUEUE_TIMEOUT_MS || 5_000);
+  return Number.isFinite(value) && value > 0 ? value : 5_000;
+}
+
 async function hasReadyDocuments(classId: string) {
   const [row] = await getDb()
     .select({ count: sql<number>`count(*)` })
@@ -73,7 +93,7 @@ async function decideSelfRag(input: {
   hasReadyDocuments: boolean;
   timings?: GenerationInput["timings"];
 }) {
-  const response = await measureChatTiming(input.timings, "agent", () =>
+  const response = await measureChatTiming(input.timings, "agent/self decision", () =>
     askDigitalOceanAgent([
       {
         role: "system",
@@ -98,7 +118,10 @@ ${compactHistory(input.history) || "(sem historico)"}
 Pergunta atual:
 ${input.message}`,
       },
-    ]),
+    ], {
+      timeoutMs: getSelfDecisionTimeoutMs(),
+      queueTimeoutMs: getSelfDecisionQueueTimeoutMs(),
+    }),
   );
 
   if (!response?.text) throw new Error("Agent nao retornou decisao self rag");
@@ -140,7 +163,12 @@ export async function generateSelfRagResponse(
       classId: input.settings.classId,
       reason: decision?.reason || null,
     });
-    const result = await generateContextRagResponse(input);
+    const result = await generateContextRagResponse({
+      ...input,
+      agentTimeoutMs: getSelfFinalAgentTimeoutMs(),
+      agentQueueTimeoutMs: getSelfFinalQueueTimeoutMs(),
+      agentTimingStage: "agent/self final",
+    });
     return {
       ...result,
       provider: result.provider === "rag-context-empty" ? result.provider : `self-rag:${result.provider}`,
@@ -153,7 +181,12 @@ export async function generateSelfRagResponse(
     reason: noRetrievalReason,
     decisionReason: decision?.reason || null,
   });
-  const result = await generateNoRagResponse(input);
+  const result = await generateNoRagResponse({
+    ...input,
+    agentTimeoutMs: getSelfFinalAgentTimeoutMs(),
+    agentQueueTimeoutMs: getSelfFinalQueueTimeoutMs(),
+    agentTimingStage: "agent/self final",
+  });
   return {
     ...result,
     provider: `self-rag:${result.provider}`,

@@ -63,6 +63,11 @@ type QueuedAgentRequest = {
   timer: NodeJS.Timeout;
 };
 
+type AgentRequestOptions = {
+  timeoutMs?: number;
+  queueTimeoutMs?: number;
+};
+
 const MAX_AGENT_TARGETS = 5;
 const agentInFlightById = new Map<string, number>();
 const agentQueue: QueuedAgentRequest[] = [];
@@ -238,7 +243,10 @@ function releaseAgentSlot(agentId: string) {
   dispatchAgentQueue();
 }
 
-async function acquireAgentSlot(targets: AgentTarget[]): Promise<AgentSlot> {
+async function acquireAgentSlot(
+  targets: AgentTarget[],
+  options?: { queueTimeoutMs?: number },
+): Promise<AgentSlot> {
   const target = pickAgentTarget(targets, { requireCapacity: true });
   if (target) return reserveAgentSlot(target, 0);
 
@@ -253,7 +261,7 @@ async function acquireAgentSlot(targets: AgentTarget[]): Promise<AgentSlot> {
       if (index >= 0) agentQueue.splice(index, 1);
       updateQueueDepthMetric();
       reject(new Error("tempo maximo na fila de Agents excedido"));
-    }, getQueueTimeoutMs());
+    }, options?.queueTimeoutMs ?? getQueueTimeoutMs());
 
     agentQueue.push({ enqueuedAt, resolve, reject, timer });
     updateQueueDepthMetric();
@@ -316,7 +324,7 @@ function getErrorResult(status?: number) {
 
 export async function askDigitalOceanAgent(
   messages: AgentMessage[],
-  options?: { timeoutMs?: number },
+  options?: AgentRequestOptions,
 ): Promise<AgentResponse | null> {
   const targets = getAgentTargets();
 
@@ -326,7 +334,9 @@ export async function askDigitalOceanAgent(
   const timeout = Math.min(options?.timeoutMs ?? getTimeoutMs(), getTimeoutMs());
   let slot: AgentSlot;
   try {
-    slot = await acquireAgentSlot(targets);
+    slot = await acquireAgentSlot(targets, {
+      queueTimeoutMs: options?.queueTimeoutMs,
+    });
   } catch (error) {
     logger.warn("DigitalOceanAgent", "Agent request rejected before provider call.", {
       message: error instanceof Error ? error.message : String(error),

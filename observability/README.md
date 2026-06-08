@@ -34,10 +34,12 @@ Grafana:
 - Usuario: `admin`
 - Senha: `admin`
 - Dashboard: `LogiBot / LogiBot Chat Bottlenecks`
+- Porta interna do container: `43190`
 
 Prometheus:
 
 - URL: `http://localhost:43189`
+- Porta interna do container: `43189`
 - Use a tela `Status > Target health` para confirmar se o backend esta sendo coletado.
 - A analise principal deve ser feita no Grafana; o Prometheus tem uma UI mais basica para consultas.
 

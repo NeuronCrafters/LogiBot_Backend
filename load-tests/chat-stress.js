@@ -233,7 +233,7 @@ function buildScenarios() {
       executor: profile === "smoke" ? "shared-iterations" : "ramping-vus",
       exec: "chatScenario",
       env: { K6_CHAT_MODE: mode },
-      tags: { scenario_group: `chat_${mode}`, route: "/chat/messages" },
+      tags: { scenario_group: `chat_${mode}`, route: "/chat/messages/stream" },
       ...(profile === "smoke"
         ? { vus: 1, iterations: 1 }
         : { stages: durationStages(Number(__ENV.K6_CHAT_VUS || perChatTarget)) }),
@@ -271,6 +271,54 @@ function parseResponseJson(response) {
     return response.json();
   } catch {
     return null;
+  }
+}
+
+function parseSseEvents(body) {
+  const events = [];
+  let event = "message";
+  let data = [];
+
+  function flush() {
+    if (!data.length) {
+      event = "message";
+      return;
+    }
+
+    events.push({ event, data: data.join("\n") });
+    event = "message";
+    data = [];
+  }
+
+  String(body || "")
+    .split(/\r?\n/)
+    .forEach((line) => {
+      if (!line) {
+        flush();
+        return;
+      }
+
+      if (line.startsWith(":")) return;
+
+      if (line.startsWith("event:")) {
+        event = line.slice(6).trim();
+        return;
+      }
+
+      if (line.startsWith("data:")) {
+        data.push(line.slice(5).trimStart());
+      }
+    });
+
+  flush();
+  return events;
+}
+
+function parseEventJson(event) {
+  try {
+    return JSON.parse(event?.data || "{}");
+  } catch {
+    return {};
   }
 }
 
@@ -435,46 +483,53 @@ export function chatScenario(data) {
 
   const startedAt = Date.now();
   const response = http.post(
-    `${baseUrl}/chat/messages`,
+    `${baseUrl}/chat/messages/stream`,
     JSON.stringify(payload),
     {
       headers: headers({
         "Content-Type": "application/json",
         Cookie: `token=${token}`,
       }),
-      tags: { route: "/chat/messages", scenario_group: `chat_${mode}`, rag_mode: mode },
+      timeout: "10m",
+      tags: { route: "/chat/messages/stream", scenario_group: `chat_${mode}`, rag_mode: mode },
     },
   );
 
   chatSubmitResponseTime.add(response.timings.duration, { rag_mode: mode });
-  const body = parseResponseJson(response);
-  const submitOk =
-    response.status === 202 &&
-    body?.status === "queued" &&
-    Boolean(body?.jobId) &&
-    body?.sessionId === sessionId;
-  const pollResult = submitOk
-    ? pollChatJob(body.jobId, token, mode)
-    : { ok: false, body: null, polls: 0, reason: "submit_failed" };
-  const finalBody = pollResult.body;
-  const assistantText = finalBody?.responses?.[0]?.text || "";
-  const provider = finalBody?.provider || "";
+  const events = parseSseEvents(response.body);
+  const sessionEvent = events.find((item) => item.event === "session");
+  const doneEvent = events.find((item) => item.event === "done");
+  const errorEvent = events.find((item) => item.event === "error");
+  const sessionBody = parseEventJson(sessionEvent);
+  const doneBody = parseEventJson(doneEvent);
+  const assistantText = events
+    .filter((item) => item.event === "token")
+    .map((item) => parseEventJson(item).text || "")
+    .join("");
+  const provider = doneBody?.provider || "";
+  const streamOk =
+    response.status === 200 &&
+    Boolean(sessionEvent) &&
+    sessionBody?.sessionId === sessionId &&
+    Boolean(doneEvent) &&
+    !errorEvent &&
+    Boolean(assistantText);
   const semanticFailure =
-    pollResult.ok &&
+    streamOk &&
     (isFallbackProvider(provider) || isTechnicalFallbackText(assistantText));
   const totalMs = Date.now() - startedAt;
 
   chatResponseTime.add(totalMs, { rag_mode: mode });
-  chatFailures.add(!submitOk || !pollResult.ok || semanticFailure, { rag_mode: mode });
+  chatFailures.add(!streamOk || semanticFailure, { rag_mode: mode });
   chatSemanticFailures.add(semanticFailure, { rag_mode: mode });
 
   check(response, {
-    [`${mode} chat submit status is 202`]: (res) => res.status === 202,
-    [`${mode} chat submit returned job id`]: () => Boolean(body?.jobId),
-    [`${mode} chat submit returned session id`]: () => body?.sessionId === sessionId,
-    [`${mode} chat job completed`]: () => pollResult.ok,
-    [`${mode} chat returned assistant text`]: () => Boolean(assistantText),
-    [`${mode} chat returned session id`]: () => finalBody?.sessionId === sessionId,
+    [`${mode} chat stream status is 200`]: (res) => res.status === 200,
+    [`${mode} chat stream returned session event`]: () => Boolean(sessionEvent),
+    [`${mode} chat stream returned done event`]: () => Boolean(doneEvent),
+    [`${mode} chat stream returned no error event`]: () => !errorEvent,
+    [`${mode} chat stream returned assistant text`]: () => Boolean(assistantText),
+    [`${mode} chat stream returned session id`]: () => sessionBody?.sessionId === sessionId,
     [`${mode} chat provider is not fallback`]: () => !isFallbackProvider(provider),
     [`${mode} chat did not return technical fallback`]: () =>
       !isTechnicalFallbackText(assistantText),

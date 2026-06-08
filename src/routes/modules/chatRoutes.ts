@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth } from "../../http/auth";
+import { logger } from "../../logger";
 import {
   getChatGenerationJobStatus,
   listChatSessionMessages,
@@ -37,9 +38,11 @@ chatRouter.get(
 );
 
 function writeSse(res: import("express").Response, event: string, data: unknown) {
+  if (res.destroyed || res.writableEnded) return false;
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
   (res as any).flush?.();
+  return true;
 }
 
 chatRouter.post(
@@ -52,10 +55,15 @@ chatRouter.post(
 
     const abortController = new AbortController();
     let completed = false;
+    let tokenCount = 0;
+    const streamStartedAt = Date.now();
 
-    req.on("close", () => {
+    const abortIfOpen = () => {
       if (!completed) abortController.abort();
-    });
+    };
+
+    req.on("close", abortIfOpen);
+    res.on("close", abortIfOpen);
 
     res.status(200);
     res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -72,11 +80,26 @@ chatRouter.post(
         { userId: req.user!.id, message, sessionId },
         {
           signal: abortController.signal,
-          onSession: (payload) => writeSse(res, "session", payload),
-          onStatus: (stage) => writeSse(res, "status", { stage }),
-          onRetrieval: (retrievedChunks) =>
-            writeSse(res, "retrieval", { retrievedChunks }),
-          onToken: (text) => writeSse(res, "token", { text }),
+          onSession: (payload) => {
+            writeSse(res, "session", payload);
+          },
+          onStatus: (stage) => {
+            writeSse(res, "status", { stage });
+          },
+          onRetrieval: (retrievedChunks) => {
+            writeSse(res, "retrieval", { retrievedChunks });
+          },
+          onToken: (text) => {
+            tokenCount += 1;
+            if (tokenCount === 1) {
+              logger.info("Chat", "First SSE token flushed.", {
+                userId: req.user!.id,
+                sessionId: sessionId || "(new)",
+                elapsedMs: Date.now() - streamStartedAt,
+              });
+            }
+            writeSse(res, "token", { text });
+          },
         },
       );
 

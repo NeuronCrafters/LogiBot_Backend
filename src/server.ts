@@ -12,7 +12,6 @@ import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
-import { setupLogStreaming } from "./observability/logSocket";
 
 export const app = express();
 
@@ -42,7 +41,6 @@ export async function bootstrap() {
 
   const port = getAppPort();
   const server = createServer(app);
-  setupLogStreaming(server);
 
   server.listen(port, () => {
     logger.info("Server", "Express server is listening.", {

@@ -1,15 +1,4 @@
-import {
-  recordLogEntry,
-  type LogStreamSource,
-} from "./observability/logStream";
-
 type LogLevel = "INFO" | "WARN" | "ERROR";
-
-let logSource: LogStreamSource = "backend";
-
-export function setLoggerSource(source: LogStreamSource) {
-  logSource = source;
-}
 
 function writeLog(
   level: LogLevel,
@@ -28,7 +17,6 @@ function writeLog(
     details === undefined ? console.log(line) : console.log(line, details);
   }
 
-  recordLogEntry({ timestamp, source: logSource, level, scope, message, details });
 }
 
 export const logger = {

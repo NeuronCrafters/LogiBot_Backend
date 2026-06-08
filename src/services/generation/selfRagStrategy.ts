@@ -31,8 +31,8 @@ function getSelfDecisionQueueTimeoutMs() {
 }
 
 function getSelfFinalAgentTimeoutMs() {
-  const value = Number(process.env.SELF_RAG_FINAL_AGENT_TIMEOUT_MS || 30_000);
-  return Number.isFinite(value) && value > 0 ? value : 30_000;
+  const value = Number(process.env.SELF_RAG_FINAL_AGENT_TIMEOUT_MS || 40_000);
+  return Number.isFinite(value) && value > 0 ? value : 40_000;
 }
 
 function getSelfFinalQueueTimeoutMs() {

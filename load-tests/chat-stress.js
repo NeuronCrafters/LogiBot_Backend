@@ -36,6 +36,8 @@ const messagePool = messages.length ? messages : [fallbackMessage];
 const sleepSeconds = Number(__ENV.K6_SLEEP_SECONDS || "1");
 const minSleepSeconds = Number(__ENV.K6_MIN_SLEEP_SECONDS || sleepSeconds);
 const maxSleepSeconds = Number(__ENV.K6_MAX_SLEEP_SECONDS || sleepSeconds);
+const includeMessageDebug =
+  String(__ENV.K6_INCLUDE_MESSAGE_DEBUG || "false").toLowerCase() === "true";
 
 export const healthResponseTime = new Trend("health_response_time", true);
 export const authResponseTime = new Trend("auth_response_time", true);
@@ -43,6 +45,7 @@ export const chatResponseTime = new Trend("chat_response_time", true);
 export const healthFailures = new Rate("health_failures");
 export const authFailures = new Rate("auth_failures");
 export const chatFailures = new Rate("chat_failures");
+export const chatSemanticFailures = new Rate("chat_semantic_failures");
 
 function targetForProfile() {
   if (profile === "stress") return 100;
@@ -136,6 +139,7 @@ export const options = {
     health_failures: ["rate<0.01"],
     auth_failures: ["rate<0.05"],
     chat_failures: ["rate<0.05"],
+    chat_semantic_failures: ["rate<0.05"],
     http_req_failed: ["rate<0.05"],
     health_response_time: ["p(95)<1000"],
     auth_response_time: ["p(95)<3000"],
@@ -155,6 +159,16 @@ function parseResponseJson(response) {
   } catch {
     return null;
   }
+}
+
+function isFallbackProvider(provider) {
+  return String(provider || "").toLowerCase().includes("fallback");
+}
+
+function isTechnicalFallbackText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .includes("tive um problema tecnico");
 }
 
 function pickMessage() {
@@ -264,9 +278,12 @@ export function chatScenario(data) {
   if (!token) fail(`Token ausente para chat mode ${mode}.`);
 
   const sessionId = `k6-${mode}-${data.runId}-vu-${__VU}`;
+  const message = pickMessage();
   const payload = {
     sessionId,
-    message: `${pickMessage()} [mode=${mode} vu=${__VU} iter=${__ITER}]`,
+    message: includeMessageDebug
+      ? `${message} [mode=${mode} vu=${__VU} iter=${__ITER}]`
+      : message,
   };
 
   const response = http.post(
@@ -282,18 +299,23 @@ export function chatScenario(data) {
   );
 
   chatResponseTime.add(response.timings.duration, { rag_mode: mode });
-  chatFailures.add(response.status !== 200, { rag_mode: mode });
+  const body = parseResponseJson(response);
+  const assistantText = body?.responses?.[0]?.text || "";
+  const provider = body?.provider || "";
+  const semanticFailure =
+    response.status === 200 &&
+    (isFallbackProvider(provider) || isTechnicalFallbackText(assistantText));
+
+  chatFailures.add(response.status !== 200 || semanticFailure, { rag_mode: mode });
+  chatSemanticFailures.add(semanticFailure, { rag_mode: mode });
 
   check(response, {
     [`${mode} chat status is 200`]: (res) => res.status === 200,
-    [`${mode} chat returned assistant text`]: (res) => {
-      const body = parseResponseJson(res);
-      return Boolean(body?.responses?.[0]?.text);
-    },
-    [`${mode} chat returned session id`]: (res) => {
-      const body = parseResponseJson(res);
-      return body?.sessionId === sessionId;
-    },
+    [`${mode} chat returned assistant text`]: () => Boolean(assistantText),
+    [`${mode} chat returned session id`]: () => body?.sessionId === sessionId,
+    [`${mode} chat provider is not fallback`]: () => !isFallbackProvider(provider),
+    [`${mode} chat did not return technical fallback`]: () =>
+      !isTechnicalFallbackText(assistantText),
   });
 
   sleep(pickSleepSeconds());

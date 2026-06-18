@@ -1,9 +1,6 @@
 import { createHash } from "crypto";
 import { AppError } from "../../exceptions/AppError";
-import {
-  getDashboardInsightsModel,
-  askDashboardInsightsAgent,
-} from "../ai/dashboardInsightsAgentService";
+import { askDashboardInsightsAgent } from "../ai/dashboardInsightsAgentService";
 import { getSummary, type Filters } from "../analytics/analyticsService";
 import {
   getEffortMatrix,
@@ -31,7 +28,6 @@ type InsightResponse = {
   insight: string;
   generatedAt: string;
   cached: boolean;
-  model: string;
   chart?: DashboardInsightChart;
 };
 
@@ -273,6 +269,12 @@ Responda em Markdown, com no máximo 350 palavras, usando exatamente:
 ## Pontos de atenção
 ## Ações recomendadas
 
+Regras de formatação:
+- Em "Evidências nos dados", use uma tabela Markdown com as colunas: Indicador | Resultado | Interpretação. Inclua de 2 a 5 linhas e não invente indicadores ausentes.
+- Em "Pontos de atenção", use uma lista curta.
+- Em "Ações recomendadas", use uma tabela Markdown com as colunas: Prioridade | Ação | Como acompanhar. Inclua até 4 ações.
+- Use negrito apenas para destacar números ou conclusões realmente importantes.
+
 Faça recomendações concretas, proporcionais às evidências e úteis para planejamento pedagógico.`;
 }
 
@@ -302,7 +304,14 @@ Responda em Markdown, com no máximo 700 palavras, usando exatamente:
 ## Plano de ação
 ## Cuidados na interpretação
 
-No plano de ação, forneça de 3 a 5 ações priorizadas, mensuráveis e compatíveis com os dados.`;
+Regras de formatação:
+- Em "Evidências combinadas", use uma tabela Markdown com as colunas: Dimensão | Evidência | Leitura pedagógica.
+- Em "Prioridades pedagógicas", use uma lista numerada curta.
+- Em "Plano de ação", use uma tabela Markdown com as colunas: Prioridade | Ação | Prazo sugerido | Indicador de acompanhamento. Forneça de 3 a 5 ações.
+- Em "Cuidados na interpretação", use uma lista curta.
+- Use negrito apenas para destacar números ou conclusões realmente importantes.
+
+As ações devem ser priorizadas, mensuráveis e compatíveis com os dados.`;
 }
 
 async function generateCached(
@@ -340,10 +349,9 @@ export async function generateChartInsight(input: {
   const data = await chartData(input.chart, input.filters);
   if (!containsUsefulData(data))
     throw new AppError("Não há dados suficientes para gerar este insight.", 422);
-  const model = getDashboardInsightsModel();
 
   return generateCached(
-    { type: "chart", chart: input.chart, filters: input.filters, model, data },
+    { type: "chart", chart: input.chart, filters: input.filters, data },
     Boolean(input.force),
     async () => {
       const response = await askDashboardInsightsAgent(
@@ -352,7 +360,6 @@ export async function generateChartInsight(input: {
       return {
         insight: response.text,
         generatedAt: new Date().toISOString(),
-        model: response.model,
         chart: input.chart,
       };
     },
@@ -385,10 +392,9 @@ export async function generateOverviewInsight(input: {
       "Não há dados suficientes para gerar a análise geral.",
       422,
     );
-  const model = getDashboardInsightsModel();
 
   return generateCached(
-    { type: "overview", filters: input.filters, model, datasets },
+    { type: "overview", filters: input.filters, datasets },
     Boolean(input.force),
     async () => {
       const response = await askDashboardInsightsAgent(
@@ -397,7 +403,6 @@ export async function generateOverviewInsight(input: {
       return {
         insight: response.text,
         generatedAt: new Date().toISOString(),
-        model: response.model,
       };
     },
   );

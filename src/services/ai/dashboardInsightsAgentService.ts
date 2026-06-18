@@ -2,13 +2,9 @@ import axios from "axios";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 
-const DEFAULT_MODEL = "openai-gpt-oss-20b";
-
 function getConfig() {
   const endpoint = process.env.DASHBOARD_INSIGHTS_AGENT_ENDPOINT?.trim();
   const accessKey = process.env.DASHBOARD_INSIGHTS_AGENT_ACCESS_KEY?.trim();
-  const model =
-    process.env.DASHBOARD_INSIGHTS_MODEL?.trim() || DEFAULT_MODEL;
   const timeoutValue = Number(
     process.env.DASHBOARD_INSIGHTS_TIMEOUT_MS || 90_000,
   );
@@ -34,7 +30,6 @@ function getConfig() {
         ? normalizedEndpoint
         : `${normalizedEndpoint}/api/v1/chat/completions`,
     accessKey,
-    model,
     timeoutMs,
   };
 }
@@ -47,10 +42,6 @@ function extractText(data: any) {
     data?.answer ||
     data?.response;
   return typeof value === "string" ? value.trim() : "";
-}
-
-export function getDashboardInsightsModel() {
-  return process.env.DASHBOARD_INSIGHTS_MODEL?.trim() || DEFAULT_MODEL;
 }
 
 export async function askDashboardInsightsAgent(prompt: string) {
@@ -77,19 +68,17 @@ export async function askDashboardInsightsAgent(prompt: string) {
       typeof response.data?.model === "string" ? response.data.model : null;
     if (providerModel && !providerModel.includes("gpt-oss-20b")) {
       logger.warn("DashboardInsights", "Agent respondeu com modelo inesperado.", {
-        configuredModel: config.model,
         providerModel,
       });
     }
 
     logger.info("DashboardInsights", "Insight gerado pelo Agent dedicado.", {
-      model: config.model,
       providerModel,
       promptTokens: response.data?.usage?.prompt_tokens,
       completionTokens: response.data?.usage?.completion_tokens,
     });
 
-    return { text, model: config.model };
+    return { text };
   } catch (error: any) {
     if (error instanceof AppError) throw error;
     logger.error("DashboardInsights", "Falha ao consultar Agent dedicado.", {

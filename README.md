@@ -134,12 +134,11 @@ chat. Configure o Agent com GPT-OSS 20B no painel da DigitalOcean:
 ```env
 DASHBOARD_INSIGHTS_AGENT_ENDPOINT=
 DASHBOARD_INSIGHTS_AGENT_ACCESS_KEY=
-DASHBOARD_INSIGHTS_MODEL=openai-gpt-oss-20b
 DASHBOARD_INSIGHTS_TIMEOUT_MS=90000
 ```
 
-O nome do modelo é usado para identificação, validação e logs. No contrato de
-Agent, a seleção efetiva do modelo é feita no painel da DigitalOcean.
+A seleção do modelo é feita no painel da DigitalOcean. Quando informado pelo
+Agent, o nome do modelo é registrado apenas nos logs técnicos.
 
 No modo `self`, o backend faz uma chamada curta ao Agent para decidir se deve recuperar materiais e depois pode fazer uma segunda chamada para responder. Por isso ele tem orcamento proprio:
 

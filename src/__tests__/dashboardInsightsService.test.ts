@@ -9,7 +9,6 @@ const getTopicPerformance = jest.fn();
 jest.mock("../services/ai/dashboardInsightsAgentService", () => ({
   askDashboardInsightsAgent: (...args: unknown[]) =>
     askDashboardInsightsAgent(...args),
-  getDashboardInsightsModel: () => "openai-gpt-oss-20b",
 }));
 
 jest.mock("../services/analytics/analyticsService", () => ({
@@ -41,7 +40,6 @@ describe("dashboardInsightsService", () => {
     __resetDashboardInsightsCacheForTests();
     askDashboardInsightsAgent.mockResolvedValue({
       text: "## Leitura principal\nInsight",
-      model: "openai-gpt-oss-20b",
     });
     getSummary.mockResolvedValue({
       totalCorrectAnswers: 8,
@@ -106,7 +104,7 @@ describe("dashboardInsightsService", () => {
   });
 
   it("deduplica requisições simultâneas idênticas", async () => {
-    let resolveAgent!: (value: { text: string; model: string }) => void;
+    let resolveAgent!: (value: { text: string }) => void;
     askDashboardInsightsAgent.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -121,7 +119,6 @@ describe("dashboardInsightsService", () => {
     }
     resolveAgent({
       text: "## Leitura principal\nInsight",
-      model: "openai-gpt-oss-20b",
     });
 
     await Promise.all([first, second]);

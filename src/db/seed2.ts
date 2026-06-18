@@ -102,7 +102,7 @@ function addMinutes(date: Date, minutes: number) {
 const TOPICS: TopicDefinition[] = [
   {
     key: "variaveis",
-    disciplineName: "[Demo] Variáveis e Tipos",
+    disciplineName: "Variáveis e Tipos",
     quizTitles: ["Fundamentos de Variáveis", "Variáveis na Prática"],
     questions: [
       {
@@ -169,7 +169,7 @@ const TOPICS: TopicDefinition[] = [
   },
   {
     key: "listas",
-    disciplineName: "[Demo] Listas e Coleções",
+    disciplineName: "Listas e Coleções",
     quizTitles: ["Introdução a Listas", "Operações com Listas"],
     questions: [
       {
@@ -229,7 +229,7 @@ const TOPICS: TopicDefinition[] = [
   },
   {
     key: "condicionais",
-    disciplineName: "[Demo] Estruturas Condicionais",
+    disciplineName: "Estruturas Condicionais",
     quizTitles: ["Decisões com Condicionais", "Condições Compostas"],
     questions: [
       {
@@ -288,7 +288,7 @@ const TOPICS: TopicDefinition[] = [
   },
   {
     key: "funcoes",
-    disciplineName: "[Demo] Funções e Modularização",
+    disciplineName: "Funções e Modularização",
     quizTitles: ["Fundamentos de Funções", "Parâmetros e Retorno"],
     questions: [
       {
@@ -360,7 +360,7 @@ const TOPICS: TopicDefinition[] = [
   },
   {
     key: "operadores_logicos",
-    disciplineName: "[Demo] Lógica Booleana",
+    disciplineName: "Lógica Booleana",
     quizTitles: ["Operadores Lógicos", "Expressões Booleanas"],
     questions: [
       {
@@ -689,9 +689,9 @@ async function seedDemoData() {
           disciplineId: disciplineIds[topicIndex],
           classId: null,
           generationSource: variant === 0 ? "manual" : "ai",
-          title: `[Demo] ${topic.quizTitles[variant]}`,
+          title: topic.quizTitles[variant],
           topic: topic.key,
-          description: `Quiz demonstrativo sobre ${topic.disciplineName.replace("[Demo] ", "").toLowerCase()}.`,
+          description: `Quiz demonstrativo sobre ${topic.disciplineName.toLowerCase()}.`,
           status: isDraft ? "draft" : "published",
           createdAt: dateDaysAgo(baseDate, 96 - quizIndex * 6, 11),
           updatedAt: dateDaysAgo(baseDate, Math.max(1, 90 - quizIndex * 6), 16),

@@ -129,8 +129,7 @@
     "src/utils/normalizeSubject.ts",
     "src/utils/subjectExtractor.ts",
     "src/types/Role.ts",
-    "src/@types/**/*.d.ts",
-    "src/database/quiz/**/*.json"
+    "src/@types/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }

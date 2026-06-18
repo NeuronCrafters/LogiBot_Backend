@@ -3,7 +3,7 @@ import { logger } from "../../logger";
 
 type ChatRole = "system" | "user" | "assistant";
 
-function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
+export function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
   const systemParts = messages
     .filter((m) => m.role === "system")
     .map((m) => m.content);
@@ -12,16 +12,34 @@ function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
   if (!systemParts.length) return rest;
 
   const systemText = systemParts.join("\n\n");
-  const firstUserIdx = rest.findIndex((m) => m.role === "user");
+  let latestUserIdx = -1;
+  for (let index = rest.length - 1; index >= 0; index -= 1) {
+    if (rest[index].role === "user") {
+      latestUserIdx = index;
+      break;
+    }
+  }
 
-  if (firstUserIdx === -1) {
-    return [{ role: "user", content: systemText }, ...rest];
+  if (latestUserIdx === -1) {
+    return [
+      {
+        role: "user",
+        content: `<instrucoes_da_aplicacao>\n${systemText}\n</instrucoes_da_aplicacao>`,
+      },
+      ...rest,
+    ];
   }
 
   const converted = [...rest];
-  converted[firstUserIdx] = {
+  converted[latestUserIdx] = {
     role: "user",
-    content: `${systemText}\n\n${converted[firstUserIdx].content}`,
+    content: `<instrucoes_da_aplicacao>
+${systemText}
+</instrucoes_da_aplicacao>
+
+<pergunta_atual>
+${converted[latestUserIdx].content}
+</pergunta_atual>`,
   };
   return converted;
 }

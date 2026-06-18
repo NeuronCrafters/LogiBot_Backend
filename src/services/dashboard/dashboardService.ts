@@ -3,12 +3,15 @@ import { getDb } from "../../db/client";
 import {
   analysisSessions,
   answerAttempts,
+  professorQuizAttempts,
+  professorQuizzes,
+  studentProfiles,
   userAnalyses,
 } from "../../db/schema";
 import {
   aggregateByCategory,
-  analysisWhere,
   queryQuestions,
+  resolveAnalysisWhere,
   type Filters,
 } from "../analytics/analyticsService";
 
@@ -43,19 +46,38 @@ export async function getProficiencyRadar(filters: Filters) {
 }
 
 export async function getEffortMatrix(filters: Filters) {
-  const where = analysisWhere(filters);
+  const where = await resolveAnalysisWhere(filters);
   const rows = where
     ? await getDb().select().from(userAnalyses).where(where)
     : await getDb().select().from(userAnalyses);
   if (!rows.length)
     return { points: [], averages: { avgPerformance: 0, avgEffort: 0 } };
 
+  const questions = await queryQuestions(filters);
+  const performanceByUser = new Map<
+    string,
+    { correct: number; wrong: number }
+  >();
+  for (const question of questions) {
+    const current = performanceByUser.get(question.userId) ?? {
+      correct: 0,
+      wrong: 0,
+    };
+    if (question.isCorrect) current.correct += 1;
+    else current.wrong += 1;
+    performanceByUser.set(question.userId, current);
+  }
+
   const points = rows.map((row) => {
-    const total = row.totalCorrectAnswers + row.totalWrongAnswers;
+    const performance = performanceByUser.get(row.userId) ?? {
+      correct: 0,
+      wrong: 0,
+    };
+    const total = performance.correct + performance.wrong;
     return {
       name: row.name,
       performance: total
-        ? Number(((row.totalCorrectAnswers / total) * 100).toFixed(1))
+        ? Number(((performance.correct / total) * 100).toFixed(1))
         : 0,
       effort: Number(((row.totalUsageTime || 0) / 60).toFixed(1)),
     };
@@ -80,6 +102,57 @@ export async function getEffortMatrix(filters: Filters) {
 }
 
 export async function getLearningJourney(filters: Filters) {
+  if (filters.disciplineId) {
+    const conditions = [
+      eq(professorQuizzes.disciplineId, filters.disciplineId),
+    ];
+    if (filters.studentId)
+      conditions.push(eq(professorQuizAttempts.studentId, filters.studentId));
+
+    const rows = await getDb()
+      .select({
+        userId: professorQuizAttempts.studentId,
+        createdAt: professorQuizAttempts.completedAt,
+        totalCorrectAnswers: professorQuizAttempts.score,
+        totalQuestions: professorQuizAttempts.totalQuestions,
+        classId: studentProfiles.classId,
+        courseId: studentProfiles.courseId,
+        universityId: studentProfiles.schoolId,
+      })
+      .from(professorQuizAttempts)
+      .innerJoin(
+        professorQuizzes,
+        eq(professorQuizzes.id, professorQuizAttempts.quizId),
+      )
+      .innerJoin(
+        studentProfiles,
+        eq(studentProfiles.accountId, professorQuizAttempts.studentId),
+      )
+      .where(and(...conditions))
+      .orderBy(
+        asc(professorQuizAttempts.studentId),
+        asc(professorQuizAttempts.completedAt),
+      );
+
+    const scopedRows = rows.filter(
+      (row) =>
+        (!filters.universityId || row.universityId === filters.universityId) &&
+        (!filters.courseId || row.courseId === filters.courseId) &&
+        (!filters.classId || row.classId === filters.classId),
+    );
+    return aggregateJourney(
+      scopedRows.map((row) => ({
+        userId: row.userId,
+        createdAt: row.createdAt,
+        totalCorrectAnswers: row.totalCorrectAnswers,
+        totalWrongAnswers: Math.max(
+          0,
+          row.totalQuestions - row.totalCorrectAnswers,
+        ),
+      })),
+    );
+  }
+
   const rows = await getDb()
     .select({
       userId: userAnalyses.userId,
@@ -93,9 +166,20 @@ export async function getLearningJourney(filters: Filters) {
       eq(analysisSessions.id, answerAttempts.sessionId),
     )
     .innerJoin(userAnalyses, eq(userAnalyses.id, analysisSessions.analysisId))
-    .where(analysisWhere(filters))
+    .where(await resolveAnalysisWhere(filters))
     .orderBy(asc(userAnalyses.userId), asc(answerAttempts.createdAt));
 
+  return aggregateJourney(rows);
+}
+
+function aggregateJourney(
+  rows: Array<{
+    userId: string;
+    createdAt: Date;
+    totalCorrectAnswers: number;
+    totalWrongAnswers: number;
+  }>,
+) {
   if (!rows.length) return { labels: [], data: [] };
 
   const attemptsByStudent = new Map<string, typeof rows>();
@@ -135,7 +219,7 @@ export async function getSessionDetails(
   const analyses = await getDb()
     .select({ id: userAnalyses.id })
     .from(userAnalyses)
-    .where(analysisWhere(filters));
+    .where(await resolveAnalysisWhere(filters));
   if (!analyses.length) return [];
 
   const conditions = [
@@ -167,7 +251,7 @@ export async function getAccessPattern(filters: Filters) {
   const analyses = await getDb()
     .select({ id: userAnalyses.id })
     .from(userAnalyses)
-    .where(analysisWhere(filters));
+    .where(await resolveAnalysisWhere(filters));
   if (!analyses.length) return [];
 
   const sessions = await getDb()

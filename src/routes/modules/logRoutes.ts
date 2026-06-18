@@ -85,7 +85,11 @@ logRouter.get(
 
 logRouter.get(
   "/disciplines/:disciplineId/summary",
-  asyncHandler(async (_req, res) => res.json(getEmptySummary())),
+  asyncHandler(async (req, res) => {
+    return res.json(
+      await summaryByEntity("discipline", req.params.disciplineId),
+    );
+  }),
 );
 
 logRouter.get(
@@ -156,6 +160,10 @@ logRouter.get(
             courseId: analysis.courseId,
             classId: analysis.classId,
             studentId: req.params.studentId,
+            disciplineId:
+              typeof req.query.disciplineId === "string"
+                ? req.query.disciplineId
+                : undefined,
           })
         : getEmptySummary(),
     );

@@ -1,10 +1,14 @@
 import { logger } from "../../logger";
-import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
+import {
+  askDigitalOceanAgent,
+  streamDigitalOceanAgent,
+} from "../ai/digitalOceanAgentService";
 import type { AgentMessage } from "../ai/digitalOceanAgentService";
 import {
   measureChatTiming,
   type GenerationInput,
   type GenerationResult,
+  type GenerationStreamCallbacks,
 } from "./generationTypes";
 
 const FALLBACK_TEXT =
@@ -41,5 +45,41 @@ export async function generateNoRagResponse(
     text: agentResponse?.text ?? FALLBACK_TEXT,
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks: [],
+  };
+}
+
+export async function streamNoRagResponse(
+  input: GenerationInput,
+  callbacks: GenerationStreamCallbacks = {},
+): Promise<GenerationResult> {
+  logger.info("NoRAG", "Streaming response without retrieval.", {
+    classId: input.settings?.classId ?? null,
+  });
+
+  await callbacks.onStatus?.("agent");
+
+  const systemPrompt = input.settings?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+  const messages: AgentMessage[] = [
+    { role: "system", content: systemPrompt },
+    ...input.history,
+  ];
+
+  const agentResponse = await measureChatTiming(
+    input.timings,
+    input.agentTimingStage || "agent",
+    () =>
+      streamDigitalOceanAgent(messages, {
+        signal: callbacks.signal,
+        onToken: callbacks.onToken,
+        timeoutMs: input.agentTimeoutMs,
+        queueTimeoutMs: input.agentQueueTimeoutMs,
+      }),
+  );
+
+  return {
+    text: agentResponse?.text ?? FALLBACK_TEXT,
+    provider: agentResponse?.provider ?? "fallback",
+    retrievedChunks: [],
+    usage: agentResponse?.usage,
   };
 }

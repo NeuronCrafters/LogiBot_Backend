@@ -4,15 +4,19 @@ import { classRagSettings, studentProfiles } from "../../db/schema";
 import { logger } from "../../logger";
 import { assertCanManageRagClass } from "../rag/ragPermissionService";
 import type { RagMode, RagUser } from "../rag/ragTypes";
-import { generateContextRagResponse } from "./contextRagStrategy";
+import {
+  generateContextRagResponse,
+  streamContextRagResponse,
+} from "./contextRagStrategy";
 import type {
   ChatTimings,
+  GenerationStreamCallbacks,
   GenerationResult,
   RuntimeRagSettings,
 } from "./generationTypes";
 import { measureChatTiming } from "./generationTypes";
-import { generateNoRagResponse } from "./noRagStrategy";
-import { generateSelfRagResponse } from "./selfRagStrategy";
+import { generateNoRagResponse, streamNoRagResponse } from "./noRagStrategy";
+import { generateSelfRagResponse, streamSelfRagResponse } from "./selfRagStrategy";
 import type { AgentMessage } from "../ai/digitalOceanAgentService";
 
 type RagOverride = {
@@ -112,6 +116,33 @@ async function generateWithSettings(input: {
   });
 }
 
+async function streamWithSettings(
+  input: {
+    message: string;
+    history: AgentMessage[];
+    settings: RuntimeRagSettings;
+    timings?: ChatTimings;
+  },
+  callbacks: GenerationStreamCallbacks = {},
+): Promise<GenerationResult> {
+  logger.info("Generation", "Streaming response.", {
+    classId: input.settings.classId,
+    ragMode: input.settings.ragMode,
+    topK: input.settings.topK,
+    minScore: input.settings.minScore,
+  });
+
+  if (input.settings.ragMode === "none") {
+    return streamNoRagResponse(input, callbacks);
+  }
+
+  if (input.settings.ragMode === "self") {
+    return streamSelfRagResponse(input, callbacks);
+  }
+
+  return streamContextRagResponse(input, callbacks);
+}
+
 export async function generateChatResponse(input: {
   userId: string;
   message: string;
@@ -130,6 +161,31 @@ export async function generateChatResponse(input: {
     getRuntimeRagSettings(classId),
   );
   return generateWithSettings({ ...input, settings });
+}
+
+export async function streamChatResponse(
+  input: {
+    userId: string;
+    message: string;
+    history: AgentMessage[];
+    timings?: ChatTimings;
+  },
+  callbacks: GenerationStreamCallbacks = {},
+) {
+  const classId = await measureChatTiming(input.timings, "rag/settings", () =>
+    getStudentClassId(input.userId),
+  );
+  if (!classId) {
+    logger.info("Generation", "No class found for student; streaming no-RAG.", {
+      userId: input.userId,
+    });
+    return streamNoRagResponse(input, callbacks);
+  }
+
+  const settings = await measureChatTiming(input.timings, "rag/settings", () =>
+    getRuntimeRagSettings(classId),
+  );
+  return streamWithSettings({ ...input, settings }, callbacks);
 }
 
 export async function generateRagTestResponse(input: {

@@ -4,6 +4,13 @@ import {
   analysisSessions,
   answerAttempts,
   answerQuestions,
+  classDisciplines,
+  classes,
+  courses,
+  professorQuizAnswers,
+  professorQuizAttempts,
+  professorQuizzes,
+  studentProfiles,
   userAnalyses,
 } from "../../db/schema";
 import { normalizeSubjectFromMessage } from "../../utils/normalizeSubject";
@@ -13,6 +20,9 @@ export type Filters = {
   courseId?: string;
   classId?: string;
   studentId?: string;
+  disciplineId?: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 export function formatSeconds(seconds: number) {
@@ -64,9 +74,70 @@ export function analysisWhere(filters: Filters) {
   return conditions.length ? and(...conditions) : undefined;
 }
 
+export async function resolveAnalysisWhere(filters: Filters) {
+  const conditions = [];
+  if (filters.universityId)
+    conditions.push(eq(userAnalyses.schoolId, filters.universityId));
+  if (filters.courseId)
+    conditions.push(eq(userAnalyses.courseId, filters.courseId));
+  if (filters.classId)
+    conditions.push(eq(userAnalyses.classId, filters.classId));
+  if (filters.studentId)
+    conditions.push(eq(userAnalyses.userId, filters.studentId));
+
+  if (filters.disciplineId) {
+    const classRows = await getDb()
+      .select({ classId: classDisciplines.classId })
+      .from(classDisciplines)
+      .where(eq(classDisciplines.disciplineId, filters.disciplineId));
+    const classIds = [...new Set(classRows.map((row) => row.classId))];
+    if (!classIds.length) return eq(userAnalyses.classId, "");
+    conditions.push(inArray(userAnalyses.classId, classIds));
+  }
+
+  return conditions.length ? and(...conditions) : undefined;
+}
+
 export async function queryQuestions(filters: Filters) {
+  if (filters.disciplineId) {
+    const conditions = [
+      eq(professorQuizzes.disciplineId, filters.disciplineId),
+    ];
+    if (filters.universityId)
+      conditions.push(eq(studentProfiles.schoolId, filters.universityId));
+    if (filters.courseId)
+      conditions.push(eq(studentProfiles.courseId, filters.courseId));
+    if (filters.classId)
+      conditions.push(eq(studentProfiles.classId, filters.classId));
+    if (filters.studentId)
+      conditions.push(eq(professorQuizAttempts.studentId, filters.studentId));
+
+    return getDb()
+      .select({
+        userId: professorQuizAttempts.studentId,
+        subject: professorQuizzes.topic,
+        isCorrect: professorQuizAnswers.isCorrect,
+        timestamp: professorQuizAttempts.completedAt,
+      })
+      .from(professorQuizAnswers)
+      .innerJoin(
+        professorQuizAttempts,
+        eq(professorQuizAttempts.id, professorQuizAnswers.attemptId),
+      )
+      .innerJoin(
+        professorQuizzes,
+        eq(professorQuizzes.id, professorQuizAttempts.quizId),
+      )
+      .innerJoin(
+        studentProfiles,
+        eq(studentProfiles.accountId, professorQuizAttempts.studentId),
+      )
+      .where(and(...conditions));
+  }
+
   return getDb()
     .select({
+      userId: userAnalyses.userId,
       subject: answerQuestions.subject,
       isCorrect: answerQuestions.isCorrect,
       timestamp: answerQuestions.timestamp,
@@ -78,7 +149,7 @@ export async function queryQuestions(filters: Filters) {
       eq(analysisSessions.id, answerAttempts.sessionId),
     )
     .innerJoin(userAnalyses, eq(userAnalyses.id, analysisSessions.analysisId))
-    .where(analysisWhere(filters));
+    .where(await resolveAnalysisWhere(filters));
 }
 
 export function aggregateByCategory(
@@ -99,20 +170,13 @@ export async function getSummary(filters: {
   courseId?: string;
   classId?: string;
   studentId?: string;
+  disciplineId?: string;
 }) {
   const db = getDb();
-  const conditions = [eq(userAnalyses.schoolId, filters.universityId)];
-  if (filters.courseId)
-    conditions.push(eq(userAnalyses.courseId, filters.courseId));
-  if (filters.classId)
-    conditions.push(eq(userAnalyses.classId, filters.classId));
-  if (filters.studentId)
-    conditions.push(eq(userAnalyses.userId, filters.studentId));
-
   const analyses = await db
     .select()
     .from(userAnalyses)
-    .where(and(...conditions));
+    .where(await resolveAnalysisWhere(filters));
   if (!analyses.length) return getEmptySummary();
 
   const analysisIds = analyses.map((analysis) => analysis.id);
@@ -143,9 +207,17 @@ export async function getSummary(filters: {
     formatted: string;
   }> = [];
 
+  if (filters.disciplineId) {
+    const questions = await queryQuestions(filters);
+    totalCorrectAnswers = questions.filter((item) => item.isCorrect).length;
+    totalWrongAnswers = questions.length - totalCorrectAnswers;
+  }
+
   for (const analysis of analyses) {
-    totalCorrectAnswers += analysis.totalCorrectAnswers;
-    totalWrongAnswers += analysis.totalWrongAnswers;
+    if (!filters.disciplineId) {
+      totalCorrectAnswers += analysis.totalCorrectAnswers;
+      totalWrongAnswers += analysis.totalWrongAnswers;
+    }
     totalUsageTime += analysis.totalUsageTime || 0;
   }
 
@@ -249,6 +321,25 @@ export async function summaryByEntity(entity: string, id: string) {
           universityId: analysis.schoolId,
           courseId: analysis.courseId,
           classId: id,
+        })
+      : getEmptySummary();
+  }
+  if (entity === "discipline" || entity === "disciplines") {
+    const [discipline] = await getDb()
+      .select({
+        courseId: courses.id,
+        universityId: courses.universityId,
+      })
+      .from(classDisciplines)
+      .innerJoin(classes, eq(classes.id, classDisciplines.classId))
+      .innerJoin(courses, eq(courses.id, classes.courseId))
+      .where(eq(classDisciplines.disciplineId, id))
+      .limit(1);
+    return discipline
+      ? getSummary({
+          universityId: discipline.universityId,
+          courseId: discipline.courseId,
+          disciplineId: id,
         })
       : getEmptySummary();
   }

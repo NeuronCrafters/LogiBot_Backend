@@ -9,7 +9,8 @@
     "worker": "node dist/workerServer.js",
     "worker:dev": "tsx src/workerServer.ts",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/server.ts",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "db:seed2": "tsx src/db/seed2.ts"
   },
   "keywords": [],
   "author": "",

@@ -126,6 +126,20 @@ DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
 `DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1` significa que cada Agent recebe uma chamada por vez. As demais requests ficam na fila do backend ate abrir vaga.
 O `DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS` limita o timeout efetivo do Agent para evitar slots presos indefinidamente.
 
+### Insights de IA no dashboard
+
+Os insights pedagógicos usam um Agent dedicado e não compartilham a fila do
+chat. Configure o Agent com GPT-OSS 20B no painel da DigitalOcean:
+
+```env
+DASHBOARD_INSIGHTS_AGENT_ENDPOINT=
+DASHBOARD_INSIGHTS_AGENT_ACCESS_KEY=
+DASHBOARD_INSIGHTS_TIMEOUT_MS=90000
+```
+
+A seleção do modelo é feita no painel da DigitalOcean. Quando informado pelo
+Agent, o nome do modelo é registrado apenas nos logs técnicos.
+
 No modo `self`, o backend faz uma chamada curta ao Agent para decidir se deve recuperar materiais e depois pode fazer uma segunda chamada para responder. Por isso ele tem orcamento proprio:
 
 ```env

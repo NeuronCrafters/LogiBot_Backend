@@ -1,9 +1,10 @@
 import axios from "axios";
 import { logger } from "../../logger";
+import { isRetryableAgentError, withAgentRetry } from "../../utils/agentRetry";
 
 type ChatRole = "system" | "user" | "assistant";
 
-function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
+export function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
   const systemParts = messages
     .filter((m) => m.role === "system")
     .map((m) => m.content);
@@ -12,16 +13,34 @@ function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
   if (!systemParts.length) return rest;
 
   const systemText = systemParts.join("\n\n");
-  const firstUserIdx = rest.findIndex((m) => m.role === "user");
+  let latestUserIdx = -1;
+  for (let index = rest.length - 1; index >= 0; index -= 1) {
+    if (rest[index].role === "user") {
+      latestUserIdx = index;
+      break;
+    }
+  }
 
-  if (firstUserIdx === -1) {
-    return [{ role: "user", content: systemText }, ...rest];
+  if (latestUserIdx === -1) {
+    return [
+      {
+        role: "user",
+        content: `<instrucoes_da_aplicacao>\n${systemText}\n</instrucoes_da_aplicacao>`,
+      },
+      ...rest,
+    ];
   }
 
   const converted = [...rest];
-  converted[firstUserIdx] = {
+  converted[latestUserIdx] = {
     role: "user",
-    content: `${systemText}\n\n${converted[firstUserIdx].content}`,
+    content: `<instrucoes_da_aplicacao>
+${systemText}
+</instrucoes_da_aplicacao>
+
+<pergunta_atual>
+${converted[latestUserIdx].content}
+</pergunta_atual>`,
   };
   return converted;
 }
@@ -34,6 +53,7 @@ export type AgentMessage = {
 type AgentResponse = {
   text: string;
   provider: "digitalocean-agent";
+  usage?: unknown;
 };
 
 type AgentTarget = {
@@ -58,6 +78,11 @@ type QueuedAgentRequest = {
 type AgentRequestOptions = {
   timeoutMs?: number;
   queueTimeoutMs?: number;
+};
+
+type StreamAgentOptions = AgentRequestOptions & {
+  signal?: AbortSignal;
+  onToken?: (text: string) => void | Promise<void>;
 };
 
 const MAX_AGENT_TARGETS = 5;
@@ -254,6 +279,41 @@ function extractResponseText(data: any) {
   return typeof text === "string" ? text.trim() : "";
 }
 
+function extractStreamDelta(data: any) {
+  const delta =
+    data?.choices?.[0]?.delta?.content ??
+    data?.choices?.[0]?.text ??
+    data?.delta?.content ??
+    data?.message?.content;
+
+  return typeof delta === "string" ? delta : "";
+}
+
+function parseSsePayloads(buffer: string) {
+  const payloads: string[] = [];
+  let remaining = buffer;
+
+  for (;;) {
+    const separatorIndex = remaining.search(/\r?\n\r?\n/);
+    if (separatorIndex < 0) break;
+
+    const rawEvent = remaining.slice(0, separatorIndex);
+    const match = remaining.slice(separatorIndex).match(/^\r?\n\r?\n/);
+    remaining = remaining.slice(separatorIndex + (match?.[0].length || 2));
+
+    const data = rawEvent
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trimStart())
+      .join("\n")
+      .trim();
+
+    if (data) payloads.push(data);
+  }
+
+  return { payloads, remaining };
+}
+
 export async function askDigitalOceanAgent(
   messages: AgentMessage[],
   options?: AgentRequestOptions,
@@ -281,15 +341,30 @@ export async function askDigitalOceanAgent(
   const target = slot.target;
 
   try {
-    const response = await axios.post(
-      target.endpoint,
-      { messages: sanitizedMessages },
+    // Retenta a requisição dentro do mesmo slot (sem re-enfileirar) para
+    // absorver o cold start do agente "dormindo": timeout/conexão/401/5xx.
+    const response = await withAgentRetry(
+      () =>
+        axios.post(
+          target.endpoint,
+          { messages: sanitizedMessages },
+          {
+            headers: {
+              Authorization: `Bearer ${target.accessKey}`,
+              "Content-Type": "application/json",
+            },
+            timeout,
+          },
+        ),
       {
-        headers: {
-          Authorization: `Bearer ${target.accessKey}`,
-          "Content-Type": "application/json",
+        onRetry: ({ attempt, error }) => {
+          logger.warn("DigitalOceanAgent", "Tentativa falhou, retentando...", {
+            agentId: target.id,
+            attempt,
+            status: error?.response?.status,
+            message: error?.response?.data?.message || error?.message,
+          });
         },
-        timeout,
       },
     );
 
@@ -310,6 +385,154 @@ export async function askDigitalOceanAgent(
   } catch (error: any) {
     const status = error?.response?.status;
     logger.error("DigitalOceanAgent", "Failed to call DigitalOcean Agent.", {
+      agentId: target.id,
+      queuedMs: slot.queuedMs,
+      status,
+      message: error?.response?.data?.message || error?.message,
+      responseData: JSON.stringify(error?.response?.data),
+    });
+    return null;
+  } finally {
+    slot.release();
+  }
+}
+
+export async function streamDigitalOceanAgent(
+  messages: AgentMessage[],
+  options: StreamAgentOptions = {},
+): Promise<AgentResponse | null> {
+  const targets = getAgentTargets();
+
+  if (!targets.length) return null;
+
+  const sanitizedMessages = convertSystemMessages(messages);
+  const timeout = Math.min(options.timeoutMs ?? getTimeoutMs(), getTimeoutMs());
+  let slot: AgentSlot;
+  try {
+    slot = await acquireAgentSlot(targets, {
+      queueTimeoutMs: options.queueTimeoutMs,
+    });
+  } catch (error) {
+    logger.warn("DigitalOceanAgent", "Streaming Agent request rejected before provider call.", {
+      message: error instanceof Error ? error.message : String(error),
+      queueDepth: agentQueue.length,
+      configuredAgents: targets.length,
+    });
+    return null;
+  }
+
+  const target = slot.target;
+  // Uma vez que tokens já foram enviados ao cliente não dá para reiniciar o
+  // stream; o retry só é permitido antes do primeiro token (que é justamente
+  // onde o cold start do agente "dormindo" falha).
+  let emittedTokens = false;
+
+  try {
+    return await withAgentRetry(
+      async () => {
+        let text = "";
+        let usage: unknown;
+        let buffer = "";
+        let tokenCount = 0;
+        const providerStartedAt = Date.now();
+
+        const response = await axios.post(
+          target.endpoint,
+          {
+            messages: sanitizedMessages,
+            stream: true,
+            stream_options: { include_usage: true },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${target.accessKey}`,
+              Accept: "text/event-stream",
+              "Content-Type": "application/json",
+            },
+            responseType: "stream",
+            timeout,
+            signal: options.signal,
+          },
+        );
+
+        for await (const chunk of response.data as AsyncIterable<Buffer | string>) {
+          buffer += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : chunk;
+          const parsed = parseSsePayloads(buffer);
+          buffer = parsed.remaining;
+
+          for (const payload of parsed.payloads) {
+            if (payload === "[DONE]") continue;
+
+            let data: any;
+            try {
+              data = JSON.parse(payload);
+            } catch {
+              continue;
+            }
+
+            if (data?.usage) usage = data.usage;
+
+            const delta = extractStreamDelta(data);
+            if (!delta) continue;
+
+            text += delta;
+            tokenCount += 1;
+            if (tokenCount === 1) {
+              emittedTokens = true;
+              logger.info("DigitalOceanAgent", "Streaming Agent first token received.", {
+                agentId: target.id,
+                queuedMs: slot.queuedMs,
+                elapsedMs: Date.now() - providerStartedAt,
+              });
+            }
+            await options.onToken?.(delta);
+          }
+        }
+
+        const finalText = text.trim();
+        if (!finalText) {
+          logger.warn("DigitalOceanAgent", "Streaming Agent response did not include text.", {
+            agentId: target.id,
+            queuedMs: slot.queuedMs,
+          });
+          return null;
+        }
+
+        logger.info("DigitalOceanAgent", "Streaming Agent responded.", {
+          agentId: target.id,
+          queuedMs: slot.queuedMs,
+          tokenCount,
+          usage,
+        });
+
+        return { text: finalText, provider: "digitalocean-agent", usage };
+      },
+      {
+        isRetryable: (error) =>
+          !emittedTokens &&
+          !options.signal?.aborted &&
+          isRetryableAgentError(error),
+        onRetry: ({ attempt, error }) => {
+          logger.warn("DigitalOceanAgent", "Streaming: tentativa falhou, retentando...", {
+            agentId: target.id,
+            attempt,
+            status: error?.response?.status,
+            message: error?.response?.data?.message || error?.message,
+          });
+        },
+      },
+    );
+  } catch (error: any) {
+    if (options.signal?.aborted || error?.name === "CanceledError" || error?.code === "ERR_CANCELED") {
+      logger.warn("DigitalOceanAgent", "Streaming Agent request aborted.", {
+        agentId: target.id,
+        queuedMs: slot.queuedMs,
+      });
+      throw error;
+    }
+
+    const status = error?.response?.status;
+    logger.error("DigitalOceanAgent", "Failed to stream DigitalOcean Agent.", {
       agentId: target.id,
       queuedMs: slot.queuedMs,
       status,

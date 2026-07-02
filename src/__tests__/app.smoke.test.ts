@@ -26,6 +26,14 @@ describe("Node Express app", () => {
   it("rejects protected routes without a session", async () => {
     await request(app).get("/quiz/levels").expect(401);
     await request(app).get("/dashboard/topic-performance").expect(401);
+    await request(app)
+      .post("/dashboard/insights/chart")
+      .send({ chart: "accuracy", filters: {} })
+      .expect(401);
+    await request(app)
+      .post("/dashboard/insights/overview")
+      .send({ filters: {} })
+      .expect(401);
   });
 
   it("mounts major routers on the new English paths", async () => {

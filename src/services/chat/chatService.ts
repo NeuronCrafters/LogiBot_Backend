@@ -10,11 +10,15 @@ import {
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 import { AgentMessage } from "../ai/digitalOceanAgentService";
-import { generateChatResponse } from "../generation/generationService";
+import {
+  generateChatResponse,
+  streamChatResponse,
+} from "../generation/generationService";
 import {
   addChatTiming,
   type ChatTimings,
   measureChatTiming,
+  type RetrievedRagChunk,
 } from "../generation/generationTypes";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 
@@ -220,6 +224,131 @@ function isTechnicalFallback(text: string, provider: string) {
     provider.toLowerCase().includes("fallback") ||
     text.toLowerCase().includes("tive um problema tecnico")
   );
+}
+
+type StreamChatCallbacks = {
+  signal?: AbortSignal;
+  onSession?: (payload: {
+    sessionId: string;
+    userMessageId: string;
+  }) => void | Promise<void>;
+  onStatus?: (stage: "queued" | "history" | "rag" | "agent") => void | Promise<void>;
+  onRetrieval?: (chunks: RetrievedRagChunk[]) => void | Promise<void>;
+  onToken?: (text: string) => void | Promise<void>;
+};
+
+export async function streamChatMessage(
+  input: {
+    userId: string;
+    message: string;
+    sessionId?: string;
+  },
+  callbacks: StreamChatCallbacks = {},
+) {
+  const message = String(input.message || "").trim();
+  if (!message) throw new AppError("message e obrigatorio", 400);
+
+  const totalStartedAt = process.hrtime.bigint();
+  const timingsMs: ChatTimings = {};
+
+  logger.info("Chat", "Streaming message received.", {
+    userId: input.userId,
+    sessionId: input.sessionId || "(new)",
+  });
+
+  await callbacks.onStatus?.("queued");
+
+  const enriched = validateAndEnrichPrompt(message);
+  const detectedTopic = enriched?.subject ?? null;
+
+  const userMessage = await addChatMessage({
+    userId: input.userId,
+    sessionId: input.sessionId,
+    role: "user",
+    content: message,
+    topic: detectedTopic,
+  });
+
+  await callbacks.onSession?.({
+    sessionId: userMessage.sessionId,
+    userMessageId: userMessage.messageId,
+  });
+
+  if (detectedTopic) {
+    await incrementTopicCount(input.userId, detectedTopic);
+  }
+
+  await callbacks.onStatus?.("history");
+
+  const history = await measureChatTiming(timingsMs, "db/history", () =>
+    getRecentChatMessages(input.userId, userMessage.sessionId),
+  );
+
+  const agentResponse = await streamChatResponse(
+    {
+      userId: input.userId,
+      message,
+      history,
+      timings: timingsMs,
+    },
+    {
+      signal: callbacks.signal,
+      onStatus: (stage) => callbacks.onStatus?.(stage),
+      onRetrieval: callbacks.onRetrieval,
+      onToken: callbacks.onToken,
+    },
+  );
+
+  if (callbacks.signal?.aborted) {
+    logger.warn("Chat", "Streaming message aborted before persistence.", {
+      userId: input.userId,
+      sessionId: userMessage.sessionId,
+    });
+    return {
+      aborted: true as const,
+      sessionId: userMessage.sessionId,
+      userMessageId: userMessage.messageId,
+      timingsMs,
+    };
+  }
+
+  if (isTechnicalFallback(agentResponse.text, agentResponse.provider)) {
+    throw new Error("Agent retornou fallback tecnico");
+  }
+
+  addChatTiming(timingsMs, "total", totalStartedAt);
+
+  const assistantMessage = await addChatMessage({
+    userId: input.userId,
+    sessionId: userMessage.sessionId,
+    role: "assistant",
+    content: agentResponse.text,
+    topic: detectedTopic,
+    metadata: {
+      provider: agentResponse.provider,
+      usage: agentResponse.usage,
+      timingsMs,
+      retrievedChunks: agentResponse.retrievedChunks,
+    },
+  });
+
+  logger.info("Chat", "Streaming response generated.", {
+    userId: input.userId,
+    sessionId: userMessage.sessionId,
+    provider: agentResponse.provider,
+    timingsMs,
+  });
+
+  return {
+    aborted: false as const,
+    sessionId: userMessage.sessionId,
+    userMessageId: userMessage.messageId,
+    assistantMessageId: assistantMessage.messageId,
+    provider: agentResponse.provider,
+    retrievedChunks: agentResponse.retrievedChunks,
+    usage: agentResponse.usage,
+    timingsMs,
+  };
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {

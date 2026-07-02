@@ -6,14 +6,18 @@ import {
   askDigitalOceanAgent,
   type AgentMessage,
 } from "../ai/digitalOceanAgentService";
-import { generateContextRagResponse } from "./contextRagStrategy";
+import {
+  generateContextRagResponse,
+  streamContextRagResponse,
+} from "./contextRagStrategy";
 import type {
   GenerationInput,
   GenerationResult,
+  GenerationStreamCallbacks,
   RuntimeRagSettings,
 } from "./generationTypes";
 import { measureChatTiming } from "./generationTypes";
-import { generateNoRagResponse } from "./noRagStrategy";
+import { generateNoRagResponse, streamNoRagResponse } from "./noRagStrategy";
 
 type SelfRagDecision = {
   needsRetrieval: boolean;
@@ -193,6 +197,73 @@ export async function generateSelfRagResponse(
     agentQueueTimeoutMs: getSelfFinalQueueTimeoutMs(),
     agentTimingStage: "agent/self final",
   });
+  return {
+    ...result,
+    provider: `self-rag:${result.provider}`,
+  };
+}
+
+export async function streamSelfRagResponse(
+  input: GenerationInput & { settings: RuntimeRagSettings },
+  callbacks: GenerationStreamCallbacks = {},
+): Promise<GenerationResult> {
+  const readyDocuments = await hasReadyDocuments(input.settings.classId);
+  let decision: SelfRagDecision | null = null;
+
+  if (readyDocuments) {
+    try {
+      decision = await decideSelfRag({
+        message: input.message,
+        history: input.history,
+        hasReadyDocuments: readyDocuments,
+        timings: input.timings,
+      });
+    } catch (error) {
+      logger.warn("SelfRAG", "Decision failed; using safe streaming fallback.", {
+        classId: input.settings.classId,
+        fallback: "context",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  const shouldRetrieve = decision?.needsRetrieval ?? readyDocuments;
+
+  logger.info("SelfRAG", "Streaming decision completed.", {
+    classId: input.settings.classId,
+    needsRetrieval: shouldRetrieve,
+    hasReadyDocuments: readyDocuments,
+    reason: decision?.reason || null,
+  });
+
+  if (shouldRetrieve && readyDocuments) {
+    const result = await streamContextRagResponse(
+      {
+        ...input,
+        agentTimeoutMs: getSelfFinalAgentTimeoutMs(),
+        agentQueueTimeoutMs: getSelfFinalQueueTimeoutMs(),
+        agentTimingStage: "agent/self final",
+      },
+      callbacks,
+    );
+    return {
+      ...result,
+      provider:
+        result.provider === "rag-context-empty"
+          ? result.provider
+          : `self-rag:${result.provider}`,
+    };
+  }
+
+  const result = await streamNoRagResponse(
+    {
+      ...input,
+      agentTimeoutMs: getSelfFinalAgentTimeoutMs(),
+      agentQueueTimeoutMs: getSelfFinalQueueTimeoutMs(),
+      agentTimingStage: "agent/self final",
+    },
+    callbacks,
+  );
   return {
     ...result,
     provider: `self-rag:${result.provider}`,

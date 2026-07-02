@@ -1,7 +1,12 @@
+import axios from "axios";
 import {
+  askDigitalOceanAgent,
   convertSystemMessages,
   type AgentMessage,
 } from "../services/ai/digitalOceanAgentService";
+
+jest.mock("axios");
+const mockedPost = axios.post as jest.Mock;
 
 describe("convertSystemMessages", () => {
   it("anexa as instrucoes a pergunta mais recente, sem alterar a primeira pergunta", () => {
@@ -53,5 +58,54 @@ describe("convertSystemMessages", () => {
     ];
 
     expect(convertSystemMessages(messages)).toEqual(messages);
+  });
+});
+
+describe("askDigitalOceanAgent retry", () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.DIGITALOCEAN_AGENT_1_ENDPOINT = "https://agent.example.com";
+    process.env.DIGITALOCEAN_AGENT_1_ACCESS_KEY = "key";
+    process.env.AGENT_RETRY_DELAY_MS = "1";
+    process.env.AGENT_MAX_ATTEMPTS = "3";
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  const messages: AgentMessage[] = [{ role: "user", content: "oi" }];
+
+  it("reexecuta o POST em cold start (5xx) e retorna o texto no sucesso", async () => {
+    mockedPost
+      .mockRejectedValueOnce({ response: { status: 503 } })
+      .mockResolvedValueOnce({
+        data: { choices: [{ message: { content: "resposta" } }] },
+      });
+
+    const result = await askDigitalOceanAgent(messages);
+
+    expect(result).toEqual({ text: "resposta", provider: "digitalocean-agent" });
+    expect(mockedPost).toHaveBeenCalledTimes(2);
+  });
+
+  it("retorna null apos esgotar as tentativas (preserva fallback do chat)", async () => {
+    mockedPost.mockRejectedValue({ response: { status: 500 } });
+
+    const result = await askDigitalOceanAgent(messages);
+
+    expect(result).toBeNull();
+    expect(mockedPost).toHaveBeenCalledTimes(3);
+  });
+
+  it("nao retenta em erro nao-transitorio (4xx)", async () => {
+    mockedPost.mockRejectedValue({ response: { status: 400 } });
+
+    const result = await askDigitalOceanAgent(messages);
+
+    expect(result).toBeNull();
+    expect(mockedPost).toHaveBeenCalledTimes(1);
   });
 });

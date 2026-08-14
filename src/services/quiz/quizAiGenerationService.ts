@@ -7,14 +7,9 @@ import {
 } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
-import { askDigitalOceanAgent } from "../ai/digitalOceanAgentService";
+import { askQuizAiAgent } from "../ai/quizAiAgentService";
 import { retrieveChunksForQuiz } from "./quizAiRetrievalService";
 import { assertProfessorCanManageDiscipline } from "./quizPermissionService";
-
-function getQuizAiTimeoutMs() {
-  const value = Number(process.env.QUIZ_AI_GENERATION_TIMEOUT_MS || 300_000);
-  return Number.isFinite(value) && value > 0 ? value : 300_000;
-}
 
 type AuthUser = NonNullable<import("express").Request["user"]>;
 
@@ -48,39 +43,17 @@ function truncate(value: string | undefined | null, max: number): string {
   return value.trim().slice(0, max);
 }
 
+// A identidade, as regras de qualidade e o contrato de saída (JSON) do
+// gerador de quiz vivem no system prompt configurado no próprio Agent
+// dedicado da DigitalOcean (ver PROMPT_QUIZ.md). Aqui só enviamos o que é
+// dinâmico por request: tema, quantidade e o contexto recuperado.
 function buildPrompt(input: {
   theme: string;
   questionCount: number;
   context: string;
 }): string {
-  return `Você é um gerador de quizzes educacionais do LogiBots.
-
-Gere exatamente ${input.questionCount} perguntas de múltipla escolha sobre o tema: "${input.theme}".
-
-Regras obrigatórias:
-- Use SOMENTE as informações do contexto abaixo.
-- Se o contexto não sustentar uma pergunta, retorne questions: [] e um campo "error".
-- Cada pergunta deve ter exatamente 4 alternativas plausíveis.
-- Apenas uma alternativa correta (A, B, C ou D).
-- Explicação obrigatória, clara e concisa (máx. 3 frases).
-- Nível adequado para alunos do LogiBots.
-- Responda em português do Brasil.
-- Retorne SOMENTE JSON válido, sem markdown, sem código, sem texto fora do JSON.
-
-Formato de resposta:
-{
-  "title": "título curto do quiz",
-  "description": "descrição curta",
-  "questions": [
-    {
-      "question": "enunciado da pergunta",
-      "options": ["opção A", "opção B", "opção C", "opção D"],
-      "correctOption": "A",
-      "explanation": "explicação da resposta correta",
-      "sourceChunkIds": ["documentId:chunkIndex"]
-    }
-  ]
-}
+  return `Tema: "${input.theme}"
+Quantidade de perguntas: ${input.questionCount}
 
 Contexto dos materiais da turma:
 ${input.context}`;
@@ -243,21 +216,10 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   const prompt = buildPrompt({ theme: theme.trim(), questionCount, context });
 
   const t1 = Date.now();
-  const agentResponse = await askDigitalOceanAgent(
-    [{ role: "user", content: prompt }],
-    { timeoutMs: getQuizAiTimeoutMs() },
-  );
+  const agentResponse = await askQuizAiAgent(prompt);
   logger.info("QuizAI", "Agent responded.", {
     elapsedMs: Date.now() - t1,
-    hasText: Boolean(agentResponse?.text),
   });
-
-  if (!agentResponse?.text) {
-    throw new AppError(
-      "Agente de IA não retornou resposta utilizável",
-      502,
-    );
-  }
 
   const rawJson = extractJson(agentResponse.text);
   const questions = validateQuizJson(rawJson, questionCount);

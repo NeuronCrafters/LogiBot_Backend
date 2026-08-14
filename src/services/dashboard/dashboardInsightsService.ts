@@ -245,17 +245,18 @@ async function getSummaryForFilters(filters: Filters) {
   });
 }
 
+// A identidade, as regras de fundamentação/privacidade e o estilo geral do
+// assistente de insights vivem no system prompt configurado no próprio Agent
+// dedicado da DigitalOcean (ver PROMPT_DASHBOARD_INSIGHTS.md). Aqui só
+// enviamos o que muda por request: qual gráfico/escopo, os dados, e a
+// estrutura exata de seções/tabelas esperada para este tipo de análise.
 function chartPrompt(
   chart: DashboardInsightChart,
   filters: Filters,
   data: unknown,
 ) {
   const context = CHART_CONTEXT[chart];
-  return `Você é um assistente de análise pedagógica para professores.
-
-Analise exclusivamente os dados fornecidos, em português do Brasil, sem inventar fatos, sem diagnosticar alunos e sem afirmar causalidade. Quando a amostra for pequena ou ambígua, declare a limitação. Não solicite nem suponha nomes, e-mails ou outras informações pessoais.
-
-Gráfico: ${context.title}
+  return `Gráfico: ${context.title}
 Escopo: ${scopeLabel(filters)}
 Significado: ${context.description}
 ${disciplineNote(filters) ? `Observação de escopo: ${disciplineNote(filters)}` : ""}
@@ -263,19 +264,16 @@ ${disciplineNote(filters) ? `Observação de escopo: ${disciplineNote(filters)}`
 Dados:
 ${JSON.stringify(anonymize(data))}
 
-Responda em Markdown, com no máximo 350 palavras, usando exatamente:
+Responda em Markdown, com no máximo 350 palavras, usando exatamente estes títulos de seção:
 ## Leitura principal
 ## Evidências nos dados
 ## Pontos de atenção
 ## Ações recomendadas
 
-Regras de formatação:
-- Em "Evidências nos dados", use uma tabela Markdown com as colunas: Indicador | Resultado | Interpretação. Inclua de 2 a 5 linhas e não invente indicadores ausentes.
-- Em "Pontos de atenção", use uma lista curta.
-- Em "Ações recomendadas", use uma tabela Markdown com as colunas: Prioridade | Ação | Como acompanhar. Inclua até 4 ações.
-- Use negrito apenas para destacar números ou conclusões realmente importantes.
-
-Faça recomendações concretas, proporcionais às evidências e úteis para planejamento pedagógico.`;
+Formato de cada seção:
+- Em "Evidências nos dados", tabela Markdown com as colunas: Indicador | Resultado | Interpretação (2 a 5 linhas, sem indicadores inventados).
+- Em "Pontos de atenção", lista curta.
+- Em "Ações recomendadas", tabela Markdown com as colunas: Prioridade | Ação | Como acompanhar (até 4 ações).`;
 }
 
 function overviewPrompt(
@@ -287,31 +285,24 @@ function overviewPrompt(
     data: unknown;
   }>,
 ) {
-  return `Você é um assistente de análise pedagógica para professores.
-
-Produza uma visão integrada exclusivamente a partir dos dados abaixo. Não invente fatos, não diagnostique alunos, não exponha indivíduos e não confunda associação com causalidade. Aponte limitações e possíveis contradições entre métricas.
-
-Escopo: ${scopeLabel(filters)}
+  return `Escopo: ${scopeLabel(filters)}
 ${disciplineNote(filters) ? `Observação de escopo: ${disciplineNote(filters)}` : ""}
 
 Gráficos:
 ${JSON.stringify(anonymize(datasets))}
 
-Responda em Markdown, com no máximo 700 palavras, usando exatamente:
+Responda em Markdown, com no máximo 700 palavras, usando exatamente estes títulos de seção:
 ## Resumo executivo
 ## Evidências combinadas
 ## Prioridades pedagógicas
 ## Plano de ação
 ## Cuidados na interpretação
 
-Regras de formatação:
-- Em "Evidências combinadas", use uma tabela Markdown com as colunas: Dimensão | Evidência | Leitura pedagógica.
-- Em "Prioridades pedagógicas", use uma lista numerada curta.
-- Em "Plano de ação", use uma tabela Markdown com as colunas: Prioridade | Ação | Prazo sugerido | Indicador de acompanhamento. Forneça de 3 a 5 ações.
-- Em "Cuidados na interpretação", use uma lista curta.
-- Use negrito apenas para destacar números ou conclusões realmente importantes.
-
-As ações devem ser priorizadas, mensuráveis e compatíveis com os dados.`;
+Formato de cada seção:
+- Em "Evidências combinadas", tabela Markdown com as colunas: Dimensão | Evidência | Leitura pedagógica.
+- Em "Prioridades pedagógicas", lista numerada curta.
+- Em "Plano de ação", tabela Markdown com as colunas: Prioridade | Ação | Prazo sugerido | Indicador de acompanhamento (3 a 5 ações).
+- Em "Cuidados na interpretação", lista curta.`;
 }
 
 async function generateCached(

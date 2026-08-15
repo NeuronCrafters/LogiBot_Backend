@@ -18,7 +18,7 @@ import {
 } from "./generationTypes";
 import { buildRagRetrievalQuery } from "./ragRetrievalQuery";
 
-const EMPTY_CONTEXT_TEXT =
+export const EMPTY_CONTEXT_TEXT =
   "Não encontrei informações suficientes nos materiais desta turma para responder com segurança. Você poderia descrever melhor a sua dúvida? Se possível, informe o tema, a linguagem de programação ou mostre um exemplo do que está tentando fazer.";
 
 function distanceToScore(distance: unknown) {
@@ -31,7 +31,7 @@ function distanceToScore(distance: unknown) {
 // system prompt configurado no proprio Agent da DigitalOcean (ver
 // PROMPT_CHAT.md). Aqui so montamos o que e dinamico por request: a
 // instrucao extra do professor (se houver) e os trechos recuperados.
-function buildSystemPrompt(settings: RuntimeRagSettings, chunks: RetrievedRagChunk[]) {
+export function buildSystemPrompt(settings: RuntimeRagSettings, chunks: RetrievedRagChunk[]) {
   const customPrompt = settings.systemPrompt
     ? `Instrucao adicional do professor para esta turma:\n${settings.systemPrompt}\n\n`
     : "";
@@ -53,7 +53,7 @@ function getEmbeddingQueryTimeoutMs() {
   return Number.isFinite(value) && value > 0 ? value : 15_000;
 }
 
-async function queryChroma(input: {
+export async function queryChroma(input: {
   classId: string;
   message: string;
   topK: number;
@@ -84,7 +84,7 @@ async function queryChroma(input: {
   }));
 }
 
-async function revalidateChunks(input: {
+export async function revalidateChunks(input: {
   classId: string;
   candidates: { chromaId: string; score: number }[];
   topK: number;

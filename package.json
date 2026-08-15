@@ -9,8 +9,12 @@
     "worker": "node dist/workerServer.js",
     "worker:dev": "tsx src/workerServer.ts",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/server.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:migrate:prod": "node dist/db/migrate.js",
     "db:seed": "tsx src/db/seed.ts",
-    "db:seed2": "tsx src/db/seed2.ts"
+    "db:seed2": "tsx src/db/seed2.ts",
+    "db:seed:experiment": "tsx src/db/seedRagExperiment.ts"
   },
   "keywords": [],
   "author": "",

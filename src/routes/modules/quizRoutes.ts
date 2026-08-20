@@ -11,6 +11,7 @@ import {
   disciplines,
   professorQuizAnswers,
   professorQuizAttempts,
+  professorQuizDisciplines,
   professorQuizQuestions,
   professorQuizzes,
   studentProfiles,
@@ -46,6 +47,16 @@ quizRouter.get(
 
     if (!disciplineIds.length) return res.json([]);
 
+    // Um quiz pode estar vinculado a varias disciplinas (professor_quiz_disciplines)
+    // — visivel se QUALQUER uma delas for uma das disciplinas da turma do aluno.
+    const linkedQuizRows = await db
+      .select({ quizId: professorQuizDisciplines.quizId })
+      .from(professorQuizDisciplines)
+      .where(inArray(professorQuizDisciplines.disciplineId, disciplineIds));
+
+    const visibleQuizIds = [...new Set(linkedQuizRows.map((row) => row.quizId))];
+    if (!visibleQuizIds.length) return res.json([]);
+
     const quizzes = await db
       .select({
         id: professorQuizzes.id,
@@ -60,7 +71,7 @@ quizRouter.get(
       .innerJoin(disciplines, eq(professorQuizzes.disciplineId, disciplines.id))
       .where(
         and(
-          inArray(professorQuizzes.disciplineId, disciplineIds),
+          inArray(professorQuizzes.id, visibleQuizIds),
           eq(professorQuizzes.status, "published"),
         ),
       )

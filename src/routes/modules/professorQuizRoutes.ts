@@ -10,11 +10,20 @@ import {
   professorDisciplines,
   professorQuizAnswers,
   professorQuizAttempts,
+  professorQuizDisciplines,
   professorQuizQuestions,
   professorQuizzes,
 } from "../../db/schema";
 import { generateAiQuiz } from "../../services/quiz/quizAiGenerationService";
-import { canManageQuiz } from "../../services/quiz/quizPermissionService";
+import {
+  linkQuizToDisciplines,
+  listLinkedDisciplines,
+  unlinkQuizFromDiscipline,
+} from "../../services/quiz/quizDisciplineService";
+import {
+  assertProfessorCanManageDiscipline,
+  canManageQuiz,
+} from "../../services/quiz/quizPermissionService";
 
 export const professorQuizRouter = Router();
 
@@ -33,28 +42,43 @@ professorQuizRouter.get(
     const isAdmin = user.role.includes("admin");
     const isCoordinator = user.role.includes("course-coordinator");
 
-    // Build the ownership/access filter
-    let baseFilter;
-    if (isAdmin) {
-      baseFilter = disciplineId
-        ? eq(professorQuizzes.disciplineId, String(disciplineId))
-        : undefined;
-    } else if (isCoordinator) {
+    // Um quiz pode estar vinculado a varias disciplinas agora, entao a
+    // restricao por disciplina (coordenador, ou ?disciplineId= explicito) e
+    // resolvida primeiro contra professor_quiz_disciplines, virando uma
+    // lista de quiz ids — evita duplicar linhas no join principal abaixo
+    // (que continua exibindo so a disciplina "dona" pra cada quiz).
+    let allowedQuizIds: string[] | null = null;
+
+    if (isCoordinator) {
       const coordDisciplines = user.disciplines ?? [];
-      const allowedDisciplines = disciplineId
+      const targetDisciplines = disciplineId
         ? [String(disciplineId)].filter((d) => coordDisciplines.includes(d))
         : coordDisciplines;
-      if (!allowedDisciplines.length) return res.json([]);
-      baseFilter = inArray(professorQuizzes.disciplineId, allowedDisciplines);
-    } else {
-      // Professor — own quizzes only
-      baseFilter = disciplineId
-        ? and(
-            eq(professorQuizzes.professorId, user.id),
-            eq(professorQuizzes.disciplineId, String(disciplineId)),
-          )
-        : eq(professorQuizzes.professorId, user.id);
+      if (!targetDisciplines.length) return res.json([]);
+
+      const linkRows = await db
+        .select({ quizId: professorQuizDisciplines.quizId })
+        .from(professorQuizDisciplines)
+        .where(inArray(professorQuizDisciplines.disciplineId, targetDisciplines));
+      allowedQuizIds = [...new Set(linkRows.map((row) => row.quizId))];
+      if (!allowedQuizIds.length) return res.json([]);
+    } else if (disciplineId) {
+      const linkRows = await db
+        .select({ quizId: professorQuizDisciplines.quizId })
+        .from(professorQuizDisciplines)
+        .where(eq(professorQuizDisciplines.disciplineId, String(disciplineId)));
+      allowedQuizIds = [...new Set(linkRows.map((row) => row.quizId))];
+      if (!allowedQuizIds.length) return res.json([]);
     }
+
+    const conditions = [];
+    if (!isAdmin && !isCoordinator) {
+      conditions.push(eq(professorQuizzes.professorId, user.id));
+    }
+    if (allowedQuizIds) {
+      conditions.push(inArray(professorQuizzes.id, allowedQuizIds));
+    }
+    const baseFilter = conditions.length ? and(...conditions) : undefined;
 
     const rows = await db
       .select({
@@ -97,18 +121,28 @@ professorQuizRouter.post(
     if (!disciplineId) throw new AppError("disciplineId é obrigatório", 400);
     if (!topic?.trim()) throw new AppError("topic é obrigatório", 400);
 
+    await assertProfessorCanManageDiscipline(req.user!, disciplineId);
+
     const db = getDb();
 
-    const [quiz] = await db
-      .insert(professorQuizzes)
-      .values({
-        professorId: req.user!.id,
-        disciplineId,
-        title: title.trim(),
-        topic: topic.trim(),
-        description: description?.trim() ?? null,
-      })
-      .returning();
+    const quiz = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(professorQuizzes)
+        .values({
+          professorId: req.user!.id,
+          disciplineId,
+          title: title.trim(),
+          topic: topic.trim(),
+          description: description?.trim() ?? null,
+        })
+        .returning();
+
+      await tx
+        .insert(professorQuizDisciplines)
+        .values({ quizId: created.id, disciplineId });
+
+      return created;
+    });
 
     return res.status(201).json(quiz);
   }),
@@ -166,13 +200,13 @@ professorQuizRouter.put(
       .limit(1);
 
     if (!existing) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(existing, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(existing, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
-    const { title, topic, description, disciplineId } = req.body as {
+    const { title, topic, description } = req.body as {
       title?: string;
       topic?: string;
       description?: string;
-      disciplineId?: string;
     };
 
     const [updated] = await db
@@ -181,7 +215,6 @@ professorQuizRouter.put(
         title: title?.trim() ?? existing.title,
         topic: topic?.trim() ?? existing.topic,
         description: description !== undefined ? (description?.trim() ?? null) : existing.description,
-        disciplineId: disciplineId ?? existing.disciplineId,
         updatedAt: new Date(),
       })
       .where(eq(professorQuizzes.id, req.params.id))
@@ -203,11 +236,47 @@ professorQuizRouter.delete(
       .limit(1);
 
     if (!existing) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(existing, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(existing, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     await db.delete(professorQuizzes).where(eq(professorQuizzes.id, req.params.id));
 
     return res.json({ success: true });
+  }),
+);
+
+// ── Disciplinas vinculadas ao quiz (compartilhar sem duplicar) ─────────────────
+professorQuizRouter.get(
+  "/:id/disciplines",
+  asyncHandler(async (req, res) => {
+    return res.json({
+      disciplineIds: await listLinkedDisciplines(req.user!, req.params.id),
+    });
+  }),
+);
+
+professorQuizRouter.post(
+  "/:id/disciplines",
+  asyncHandler(async (req, res) => {
+    const disciplineIds = Array.isArray(req.body.disciplineIds)
+      ? req.body.disciplineIds
+      : [];
+    return res.status(201).json(
+      await linkQuizToDisciplines(req.user!, req.params.id, disciplineIds),
+    );
+  }),
+);
+
+professorQuizRouter.delete(
+  "/:id/disciplines/:disciplineId",
+  asyncHandler(async (req, res) => {
+    return res.json(
+      await unlinkQuizFromDiscipline(
+        req.user!,
+        req.params.id,
+        req.params.disciplineId,
+      ),
+    );
   }),
 );
 
@@ -223,7 +292,8 @@ professorQuizRouter.get(
       .limit(1);
 
     if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(quiz, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     const questions = await db
       .select()
@@ -247,7 +317,8 @@ professorQuizRouter.post(
       .limit(1);
 
     if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(quiz, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     const { question, options, correctOption, explanation, orderIndex } =
       req.body as {
@@ -303,12 +374,13 @@ professorQuizRouter.put(
     if (!existing) throw new AppError("Pergunta não encontrada", 404);
 
     const [quiz] = await db
-      .select({ professorId: professorQuizzes.professorId, disciplineId: professorQuizzes.disciplineId })
+      .select({ id: professorQuizzes.id, professorId: professorQuizzes.professorId, disciplineId: professorQuizzes.disciplineId })
       .from(professorQuizzes)
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz || !canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz || !(await canManageQuiz(quiz, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     const { question, options, correctOption, explanation, orderIndex } =
       req.body as {
@@ -341,13 +413,14 @@ professorQuizRouter.delete(
   asyncHandler(async (req, res) => {
     const db = getDb();
     const [quiz] = await db
-      .select({ professorId: professorQuizzes.professorId, disciplineId: professorQuizzes.disciplineId })
+      .select({ id: professorQuizzes.id, professorId: professorQuizzes.professorId, disciplineId: professorQuizzes.disciplineId })
       .from(professorQuizzes)
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
     if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(quiz, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     await db
       .delete(professorQuizQuestions)
@@ -374,7 +447,8 @@ professorQuizRouter.post(
       .limit(1);
 
     if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(quiz, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     const [questionCount] = await db
       .select({ count: count(professorQuizQuestions.id) })
@@ -405,7 +479,8 @@ professorQuizRouter.post(
       .limit(1);
 
     if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(quiz, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     const [updated] = await db
       .update(professorQuizzes)
@@ -429,7 +504,8 @@ professorQuizRouter.get(
       .limit(1);
 
     if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!(await canManageQuiz(quiz, req.user!)))
+      throw new AppError("Acesso negado", 403);
 
     const attempts = await db
       .select({

@@ -645,6 +645,32 @@ export const professorQuizzes = pgTable(
   }),
 );
 
+// Vinculo entre um quiz e uma disciplina que pode usa-lo, alem da disciplina
+// "dona" (professor_quizzes.discipline_id, onde o quiz foi originalmente
+// criado). Permite reaproveitar o mesmo quiz em varias materias sem duplicar
+// perguntas/respostas. Sem toggle de enabled (ao contrario de rag_document_classes)
+// — aqui nao ha custo de reprocessamento, entao e so vinculo/desvinculo direto.
+export const professorQuizDisciplines = pgTable(
+  "professor_quiz_disciplines",
+  {
+    quizId: uuid("quiz_id")
+      .notNull()
+      .references(() => professorQuizzes.id, { onDelete: "cascade" }),
+    disciplineId: uuid("discipline_id")
+      .notNull()
+      .references(() => disciplines.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.quizId, table.disciplineId] }),
+    disciplineIdx: index("professor_quiz_disciplines_discipline_idx").on(
+      table.disciplineId,
+    ),
+  }),
+);
+
 export const professorQuizQuestions = pgTable("professor_quiz_questions", {
   id: uuid("id").primaryKey().defaultRandom(),
   quizId: uuid("quiz_id")

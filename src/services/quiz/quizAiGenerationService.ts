@@ -1,6 +1,7 @@
 import { getDb } from "../../db/client";
 import {
   professorQuizAiGenerations,
+  professorQuizDisciplines,
   professorQuizQuestionSources,
   professorQuizQuestions,
   professorQuizzes,
@@ -248,6 +249,10 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
       status: "draft",
     })
     .returning();
+
+  await db
+    .insert(professorQuizDisciplines)
+    .values({ quizId: quiz.id, disciplineId });
 
   const insertedQuestions = await db
     .insert(professorQuizQuestions)

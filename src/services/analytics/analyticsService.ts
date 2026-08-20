@@ -52,12 +52,10 @@ export function formatSeconds(seconds: number) {
 export function emptySubjectCounts() {
   return {
     variaveis: 0,
-    listas: 0,
-    condicionais: 0,
-    verificacoes: 0,
-    operadores_logicos: 0,
+    tipos: 0,
     funcoes: 0,
-    repeticao: 0,
+    loops: 0,
+    verificacoes: 0,
   };
 }
 

@@ -51,13 +51,20 @@ const keywordsMap: Record<string, keyof SubjectCounts> = {
   condicao: "verificacoes",
 };
 
+const normalizedKeywordsMap: Record<string, keyof SubjectCounts> = Object.fromEntries(
+  Object.entries(keywordsMap).map(([termo, categoria]) => [
+    normalizeText(termo),
+    categoria,
+  ]),
+);
+
 export function normalizeSubjectFromMessage(
   text: string,
 ): keyof SubjectCounts | null {
   const norm = normalizeText(text);
-  for (const termo in keywordsMap) {
+  for (const termo in normalizedKeywordsMap) {
     if (norm.includes(termo)) {
-      return keywordsMap[termo];
+      return normalizedKeywordsMap[termo];
     }
   }
   return null;

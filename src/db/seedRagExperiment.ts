@@ -28,17 +28,17 @@ const EXPERIMENT_PASSWORD = "12345678";
 
 const UNIVERSITY = {
   id: "00000000-0000-4000-9000-000000000001",
-  name: "Universidade LogiBot",
+  name: "Gaspar Viana",
 };
 
 const COURSE = {
   id: "00000000-0000-4000-9000-000000000002",
-  name: "Sistemas de Informação",
+  name: "Segundo Ano Técnico",
 };
 
 const DISCIPLINE = {
   id: "00000000-0000-4000-9000-000000000003",
-  name: "Programação 1",
+  name: "Prog G1",
 };
 
 const PROFESSOR = {

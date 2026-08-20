@@ -13,3 +13,4 @@ dotenv
 dist/
 dist
 /dist
+.DS_Store

@@ -4,6 +4,7 @@ import {
   analysisSessions,
   answerAttempts,
   professorQuizAttempts,
+  professorQuizDisciplines,
   professorQuizzes,
   studentProfiles,
   userAnalyses,
@@ -103,8 +104,10 @@ export async function getEffortMatrix(filters: Filters) {
 
 export async function getLearningJourney(filters: Filters) {
   if (filters.disciplineId) {
+    // Mesma ressalva de queryQuestions: filtra por qualquer disciplina
+    // vinculada ao quiz, nao so a "dona".
     const conditions = [
-      eq(professorQuizzes.disciplineId, filters.disciplineId),
+      eq(professorQuizDisciplines.disciplineId, filters.disciplineId),
     ];
     if (filters.studentId)
       conditions.push(eq(professorQuizAttempts.studentId, filters.studentId));
@@ -123,6 +126,10 @@ export async function getLearningJourney(filters: Filters) {
       .innerJoin(
         professorQuizzes,
         eq(professorQuizzes.id, professorQuizAttempts.quizId),
+      )
+      .innerJoin(
+        professorQuizDisciplines,
+        eq(professorQuizDisciplines.quizId, professorQuizzes.id),
       )
       .innerJoin(
         studentProfiles,

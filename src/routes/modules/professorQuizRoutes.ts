@@ -102,7 +102,42 @@ professorQuizRouter.get(
       .groupBy(professorQuizzes.id, disciplines.name)
       .orderBy(desc(professorQuizzes.createdAt));
 
-    return res.json(rows);
+    // Um quiz pode estar vinculado a varias disciplinas — busca todas de
+    // uma vez (nao só a "dona" acima) pra exibir na lista.
+    const quizIds = rows.map((row) => row.id);
+    const disciplineLinks = quizIds.length
+      ? await db
+          .select({
+            quizId: professorQuizDisciplines.quizId,
+            disciplineId: disciplines.id,
+            disciplineName: disciplines.name,
+          })
+          .from(professorQuizDisciplines)
+          .innerJoin(
+            disciplines,
+            eq(disciplines.id, professorQuizDisciplines.disciplineId),
+          )
+          .where(inArray(professorQuizDisciplines.quizId, quizIds))
+      : [];
+
+    const disciplinesByQuiz = new Map<
+      string,
+      { id: string; name: string }[]
+    >();
+    for (const link of disciplineLinks) {
+      const list = disciplinesByQuiz.get(link.quizId) ?? [];
+      list.push({ id: link.disciplineId, name: link.disciplineName });
+      disciplinesByQuiz.set(link.quizId, list);
+    }
+
+    const result = rows.map((row) => ({
+      ...row,
+      disciplines: disciplinesByQuiz.get(row.id) ?? [
+        { id: row.disciplineId, name: row.disciplineName },
+      ],
+    }));
+
+    return res.json(result);
   }),
 );
 

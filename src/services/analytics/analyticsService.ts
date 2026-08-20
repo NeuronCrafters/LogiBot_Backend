@@ -9,6 +9,7 @@ import {
   courses,
   professorQuizAnswers,
   professorQuizAttempts,
+  professorQuizDisciplines,
   professorQuizzes,
   studentProfiles,
   userAnalyses,
@@ -98,8 +99,11 @@ export async function resolveAnalysisWhere(filters: Filters) {
 
 export async function queryQuestions(filters: Filters) {
   if (filters.disciplineId) {
+    // Um quiz pode estar vinculado a varias disciplinas
+    // (professor_quiz_disciplines) — filtra por QUALQUER vinculo com essa
+    // disciplina, nao so a "dona" (professorQuizzes.disciplineId).
     const conditions = [
-      eq(professorQuizzes.disciplineId, filters.disciplineId),
+      eq(professorQuizDisciplines.disciplineId, filters.disciplineId),
     ];
     if (filters.universityId)
       conditions.push(eq(studentProfiles.schoolId, filters.universityId));
@@ -125,6 +129,10 @@ export async function queryQuestions(filters: Filters) {
       .innerJoin(
         professorQuizzes,
         eq(professorQuizzes.id, professorQuizAttempts.quizId),
+      )
+      .innerJoin(
+        professorQuizDisciplines,
+        eq(professorQuizDisciplines.quizId, professorQuizzes.id),
       )
       .innerJoin(
         studentProfiles,

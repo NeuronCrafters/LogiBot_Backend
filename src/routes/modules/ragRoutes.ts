@@ -11,6 +11,7 @@ import {
   createRagDocument,
   deleteRagDocument,
   linkRagDocumentToClasses,
+  listLinkedClasses,
   listRagDocuments,
   reprocessRagDocument,
   setRagDocumentEnabled,
@@ -105,6 +106,15 @@ ragRouter.patch(
         Boolean(req.body.enabled),
       ),
     );
+  }),
+);
+
+ragRouter.get(
+  "/documents/:documentId/classes",
+  asyncHandler(async (req, res) => {
+    return res.json({
+      classIds: await listLinkedClasses(req.user!, req.params.documentId),
+    });
   }),
 );
 

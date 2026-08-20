@@ -187,6 +187,20 @@ export async function createRagDocument(input: {
   }
 }
 
+// Turmas que ja tem esse documento vinculado (independente de enabled) —
+// usado pra pre-marcar/travar essas opcoes no modal de vincular.
+export async function listLinkedClasses(user: RagUser, documentId: string) {
+  await getDocumentOrThrow(documentId);
+  await assertCanManageRagDocument(user, documentId);
+
+  const rows = await getDb()
+    .select({ classId: ragDocumentClasses.classId })
+    .from(ragDocumentClasses)
+    .where(eq(ragDocumentClasses.documentId, documentId));
+
+  return rows.map((row) => row.classId);
+}
+
 // Vincula um documento ja pronto (sem reprocessar) a outras turmas que o
 // usuario gerencia. Nao restringe por curso — qualquer turma gerenciavel.
 export async function linkRagDocumentToClasses(

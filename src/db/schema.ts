@@ -485,6 +485,30 @@ export const ragDocuments = pgTable(
   }),
 );
 
+// Vinculo entre um documento ja processado e uma turma que pode usa-lo na
+// recuperacao do chat, independente da turma "dona" (rag_documents.class_id,
+// onde o arquivo foi originalmente enviado). Permite reaproveitar o mesmo
+// documento (ja extraido/chunkeado/embeddado) em varias turmas sem reprocessar.
+export const ragDocumentClasses = pgTable(
+  "rag_document_classes",
+  {
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => ragDocuments.id, { onDelete: "cascade" }),
+    classId: uuid("class_id")
+      .notNull()
+      .references(() => classes.id, { onDelete: "cascade" }),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.documentId, table.classId] }),
+    classIdx: index("rag_document_classes_class_idx").on(table.classId),
+  }),
+);
+
 // Indice GIN funcional de full-text search (to_tsvector('portuguese', content))
 // vive na migration drizzle/0001_rag_chunks_fts.sql, nao aqui — indice
 // funcional e uma area fragil pro diffing do drizzle-kit, entao nao e

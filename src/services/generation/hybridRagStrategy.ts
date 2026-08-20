@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
@@ -9,6 +9,7 @@ import {
 import {
   buildSystemPrompt,
   EMPTY_CONTEXT_TEXT,
+  getEligibleDocumentIds,
   queryChroma,
   revalidateChunks,
 } from "./contextRagStrategy";
@@ -33,13 +34,13 @@ function compactMessage(content: string) {
 // extra da contextualizacao como palavras a serem exigidas via AND, o que
 // zeraria os hits lexicais em quase toda pergunta de continuacao.
 async function queryLexical(input: {
-  classId: string;
+  documentIds: string[];
   message: string;
   topK: number;
   timings?: GenerationInput["timings"];
 }) {
   const searchText = compactMessage(input.message);
-  if (!searchText) return [];
+  if (!searchText || !input.documentIds.length) return [];
 
   const limit = Math.max(input.topK * 3, input.topK);
   const tsVector = sql`to_tsvector('portuguese', ${ragDocumentChunks.content})`;
@@ -56,8 +57,7 @@ async function queryLexical(input: {
       .innerJoin(ragDocuments, eq(ragDocuments.id, ragDocumentChunks.documentId))
       .where(
         and(
-          eq(ragDocumentChunks.classId, input.classId),
-          eq(ragDocuments.classId, input.classId),
+          inArray(ragDocumentChunks.documentId, input.documentIds),
           eq(ragDocuments.status, "ready"),
           isNull(ragDocuments.deletedAt),
           sql`${tsVector} @@ ${tsQuery}`,
@@ -125,15 +125,19 @@ async function retrieveHybridChunks(input: GenerationInput & { settings: Runtime
     history: input.history,
   });
 
+  const documentIds = await measureChatTiming(input.timings, "eligible documents", () =>
+    getEligibleDocumentIds(input.settings.classId),
+  );
+
   const [vectorCandidates, lexicalCandidates] = await Promise.all([
     queryChroma({
-      classId: input.settings.classId,
+      documentIds,
       message: retrievalQuery.query,
       topK: input.settings.topK,
       timings: input.timings,
     }),
     queryLexical({
-      classId: input.settings.classId,
+      documentIds,
       message: input.message,
       topK: input.settings.topK,
       timings: input.timings,
@@ -143,7 +147,7 @@ async function retrieveHybridChunks(input: GenerationInput & { settings: Runtime
   const fusedCandidates = fuseCandidates(vectorCandidates, lexicalCandidates);
 
   const retrievedChunks = await revalidateChunks({
-    classId: input.settings.classId,
+    documentIds,
     candidates: fusedCandidates,
     topK: input.settings.topK,
     minScore: input.settings.minScore,

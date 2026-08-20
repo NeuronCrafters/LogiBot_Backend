@@ -7,6 +7,7 @@ import {
   professorClasses,
   professorCourses,
   professorDisciplines,
+  ragDocumentClasses,
 } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import type { RagUser } from "./ragTypes";
@@ -172,4 +173,31 @@ export async function listManageableRagClasses(
     .innerJoin(courses, eq(courses.id, classes.courseId))
     .where(inArray(classes.id, [...classIds]))
     .orderBy(asc(courses.name), asc(classes.name));
+}
+
+// Um documento pode estar vinculado a varias turmas (rag_document_classes) —
+// o usuario pode gerenciar o documento se gerenciar ao menos uma delas.
+export async function assertCanManageRagDocument(
+  user: RagUser,
+  documentId: string,
+) {
+  if (isAdmin(user)) return;
+
+  const linkedClassIds = await getDb()
+    .select({ classId: ragDocumentClasses.classId })
+    .from(ragDocumentClasses)
+    .where(eq(ragDocumentClasses.documentId, documentId));
+
+  if (!linkedClassIds.length)
+    throw new AppError("documento nao encontrado", 404);
+
+  const manageableClassIds = new Set(
+    (await listManageableRagClasses(user)).map((c) => c.id),
+  );
+
+  const hasAccess = linkedClassIds.some((row) =>
+    manageableClassIds.has(row.classId),
+  );
+
+  if (!hasAccess) throw new AppError("acesso negado para este documento", 403);
 }

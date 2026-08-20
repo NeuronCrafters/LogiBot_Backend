@@ -3,11 +3,19 @@ import { promises as fs } from "fs";
 import path from "path";
 import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { getDb } from "../../db/client";
-import { ragDocumentChunks, ragDocuments, ragIngestionJobs } from "../../db/schema";
+import {
+  ragDocumentChunks,
+  ragDocumentClasses,
+  ragDocuments,
+  ragIngestionJobs,
+} from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 import type { RagUser } from "./ragTypes";
-import { assertCanManageRagClass } from "./ragPermissionService";
+import {
+  assertCanManageRagClass,
+  assertCanManageRagDocument,
+} from "./ragPermissionService";
 import {
   decodeUploadedFileName,
   getAllowedRagFile,
@@ -26,11 +34,16 @@ function ensureFile(file?: UploadedFile) {
   return file;
 }
 
+// Conta documentos vinculados (proprios ou compartilhados de outra turma) —
+// um documento so compartilhado ainda ocupa uma vaga no limite da turma.
 async function ensureDocumentLimit(classId: string) {
   const rows = await getDb()
-    .select({ id: ragDocuments.id })
-    .from(ragDocuments)
-    .where(and(eq(ragDocuments.classId, classId), isNull(ragDocuments.deletedAt)))
+    .select({ documentId: ragDocumentClasses.documentId })
+    .from(ragDocumentClasses)
+    .innerJoin(ragDocuments, eq(ragDocuments.id, ragDocumentClasses.documentId))
+    .where(
+      and(eq(ragDocumentClasses.classId, classId), isNull(ragDocuments.deletedAt)),
+    )
     .limit(RAG_MAX_DOCUMENTS_PER_CLASS);
 
   if (rows.length >= RAG_MAX_DOCUMENTS_PER_CLASS) {
@@ -41,7 +54,7 @@ async function ensureDocumentLimit(classId: string) {
   }
 }
 
-async function getDocumentForUser(user: RagUser, documentId: string) {
+async function getDocumentOrThrow(documentId: string) {
   const [document] = await getDb()
     .select()
     .from(ragDocuments)
@@ -51,7 +64,6 @@ async function getDocumentForUser(user: RagUser, documentId: string) {
   if (!document || document.deletedAt)
     throw new AppError("documento nao encontrado", 404);
 
-  await assertCanManageRagClass(user, document.classId);
   return document;
 }
 
@@ -59,11 +71,34 @@ export async function listRagDocuments(user: RagUser, classId: string) {
   await assertCanManageRagClass(user, classId);
 
   logger.info("RagDocuments", "Listing documents.", { classId, userId: user.id });
-  return getDb()
-    .select()
-    .from(ragDocuments)
-    .where(and(eq(ragDocuments.classId, classId), isNull(ragDocuments.deletedAt)))
+  const rows = await getDb()
+    .select({
+      id: ragDocuments.id,
+      classId: ragDocuments.classId,
+      uploadedBy: ragDocuments.uploadedBy,
+      title: ragDocuments.title,
+      originalFileName: ragDocuments.originalFileName,
+      storedFileName: ragDocuments.storedFileName,
+      filePath: ragDocuments.filePath,
+      extractedTextPath: ragDocuments.extractedTextPath,
+      sourceType: ragDocuments.sourceType,
+      mimeType: ragDocuments.mimeType,
+      fileSize: ragDocuments.fileSize,
+      status: ragDocuments.status,
+      errorMessage: ragDocuments.errorMessage,
+      createdAt: ragDocuments.createdAt,
+      updatedAt: ragDocuments.updatedAt,
+      deletedAt: ragDocuments.deletedAt,
+      enabled: ragDocumentClasses.enabled,
+    })
+    .from(ragDocumentClasses)
+    .innerJoin(ragDocuments, eq(ragDocuments.id, ragDocumentClasses.documentId))
+    .where(
+      and(eq(ragDocumentClasses.classId, classId), isNull(ragDocuments.deletedAt)),
+    )
     .orderBy(desc(ragDocuments.createdAt));
+
+  return rows.map((row) => ({ ...row, isOwner: row.classId === classId }));
 }
 
 export async function createRagDocument(input: {
@@ -120,6 +155,12 @@ export async function createRagDocument(input: {
         })
         .returning();
 
+      await tx.insert(ragDocumentClasses).values({
+        documentId: document.id,
+        classId: input.classId,
+        enabled: true,
+      });
+
       const [job] = await tx
         .insert(ragIngestionJobs)
         .values({ documentId: document.id, status: "pending" })
@@ -146,11 +187,125 @@ export async function createRagDocument(input: {
   }
 }
 
-export async function deleteRagDocument(user: RagUser, documentId: string) {
-  const document = await getDocumentForUser(user, documentId);
-  logger.info("RagDocuments", "Deleting document.", { documentId, classId: document.classId, userId: user.id });
-  const now = new Date();
+// Vincula um documento ja pronto (sem reprocessar) a outras turmas que o
+// usuario gerencia. Nao restringe por curso — qualquer turma gerenciavel.
+export async function linkRagDocumentToClasses(
+  user: RagUser,
+  documentId: string,
+  classIds: string[],
+) {
+  const document = await getDocumentOrThrow(documentId);
+  await assertCanManageRagDocument(user, documentId);
 
+  const uniqueClassIds = [...new Set(classIds)].filter(Boolean);
+  if (!uniqueClassIds.length)
+    throw new AppError("selecione ao menos uma turma", 400);
+
+  const linkedClassIds: string[] = [];
+  for (const classId of uniqueClassIds) {
+    await assertCanManageRagClass(user, classId);
+    await ensureDocumentLimit(classId);
+
+    const [row] = await getDb()
+      .insert(ragDocumentClasses)
+      .values({ documentId, classId, enabled: true })
+      .onConflictDoNothing()
+      .returning();
+
+    if (row) linkedClassIds.push(classId);
+  }
+
+  logger.info("RagDocuments", "Linked document to classes.", {
+    documentId,
+    classIds: linkedClassIds,
+    userId: user.id,
+  });
+
+  return { document, linkedClassIds };
+}
+
+export async function setRagDocumentEnabled(
+  user: RagUser,
+  classId: string,
+  documentId: string,
+  enabled: boolean,
+) {
+  await assertCanManageRagClass(user, classId);
+
+  const [updated] = await getDb()
+    .update(ragDocumentClasses)
+    .set({ enabled })
+    .where(
+      and(
+        eq(ragDocumentClasses.documentId, documentId),
+        eq(ragDocumentClasses.classId, classId),
+      ),
+    )
+    .returning();
+
+  if (!updated)
+    throw new AppError("documento nao esta vinculado a esta turma", 404);
+
+  logger.info("RagDocuments", "Toggled document enabled state.", {
+    documentId,
+    classId,
+    enabled,
+    userId: user.id,
+  });
+
+  return updated;
+}
+
+// Remove o vinculo do documento com essa turma. So quando esse era o ultimo
+// vinculo restante e que o conteudo e de fato apagado (Postgres + Chroma) —
+// generaliza o comportamento antigo, onde toda turma era a unica dona.
+export async function deleteRagDocument(
+  user: RagUser,
+  classId: string,
+  documentId: string,
+) {
+  await assertCanManageRagClass(user, classId);
+  const document = await getDocumentOrThrow(documentId);
+
+  const [link] = await getDb()
+    .select()
+    .from(ragDocumentClasses)
+    .where(
+      and(
+        eq(ragDocumentClasses.documentId, documentId),
+        eq(ragDocumentClasses.classId, classId),
+      ),
+    )
+    .limit(1);
+
+  if (!link) throw new AppError("documento nao esta vinculado a esta turma", 404);
+
+  await getDb()
+    .delete(ragDocumentClasses)
+    .where(
+      and(
+        eq(ragDocumentClasses.documentId, documentId),
+        eq(ragDocumentClasses.classId, classId),
+      ),
+    );
+
+  logger.info("RagDocuments", "Unlinked document from class.", {
+    documentId,
+    classId,
+    userId: user.id,
+  });
+
+  const [remainingLink] = await getDb()
+    .select({ classId: ragDocumentClasses.classId })
+    .from(ragDocumentClasses)
+    .where(eq(ragDocumentClasses.documentId, documentId))
+    .limit(1);
+
+  if (remainingLink) {
+    return { document, fullyDeleted: false };
+  }
+
+  const now = new Date();
   const chunkRows = await getDb()
     .select({ chromaId: ragDocumentChunks.chromaId })
     .from(ragDocumentChunks)
@@ -180,12 +335,13 @@ export async function deleteRagDocument(user: RagUser, documentId: string) {
     logger.info("RagDocuments", "Queued Chroma chunk deletion.", { documentId, chromaCount: chromaIds.length });
   }
 
-  return updated;
+  return { document: updated, fullyDeleted: true };
 }
 
 export async function reprocessRagDocument(user: RagUser, documentId: string) {
-  const document = await getDocumentForUser(user, documentId);
-  logger.info("RagDocuments", "Reprocess requested.", { documentId, classId: document.classId, userId: user.id, currentStatus: document.status });
+  const document = await getDocumentOrThrow(documentId);
+  await assertCanManageRagDocument(user, documentId);
+  logger.info("RagDocuments", "Reprocess requested.", { documentId, userId: user.id, currentStatus: document.status });
 
   const activeJobs = await getDb()
     .select({ id: ragIngestionJobs.id })

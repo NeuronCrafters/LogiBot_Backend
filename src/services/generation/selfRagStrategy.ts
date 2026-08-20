@@ -1,6 +1,3 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
-import { getDb } from "../../db/client";
-import { ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
 import {
   askDigitalOceanAgent,
@@ -8,6 +5,7 @@ import {
 } from "../ai/digitalOceanAgentService";
 import {
   generateContextRagResponse,
+  getEligibleDocumentIds,
   streamContextRagResponse,
 } from "./contextRagStrategy";
 import type {
@@ -45,18 +43,8 @@ function getSelfFinalQueueTimeoutMs() {
 }
 
 async function hasReadyDocuments(classId: string) {
-  const [row] = await getDb()
-    .select({ count: sql<number>`count(*)` })
-    .from(ragDocuments)
-    .where(
-      and(
-        eq(ragDocuments.classId, classId),
-        eq(ragDocuments.status, "ready"),
-        isNull(ragDocuments.deletedAt),
-      ),
-    );
-
-  return Number(row?.count || 0) > 0;
+  const documentIds = await getEligibleDocumentIds(classId);
+  return documentIds.length > 0;
 }
 
 function extractJsonObject(text: string) {

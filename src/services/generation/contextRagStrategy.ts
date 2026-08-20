@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "../../db/client";
-import { ragDocumentChunks, ragDocuments } from "../../db/schema";
+import { ragDocumentChunks, ragDocumentClasses, ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
 import {
   askDigitalOceanAgent,
@@ -53,12 +53,35 @@ function getEmbeddingQueryTimeoutMs() {
   return Number.isFinite(value) && value > 0 ? value : 15_000;
 }
 
+// Documentos elegiveis pra essa turma: vinculados (proprios ou compartilhados
+// de outra turma), habilitados e prontos. E essa lista, nao mais classId, que
+// escopa a busca no Chroma e no Postgres — o mesmo padrao ja usado em
+// quizAiRetrievalService.ts (where: { documentId: { $in: [...] } }).
+export async function getEligibleDocumentIds(classId: string) {
+  const rows = await getDb()
+    .select({ documentId: ragDocumentClasses.documentId })
+    .from(ragDocumentClasses)
+    .innerJoin(ragDocuments, eq(ragDocuments.id, ragDocumentClasses.documentId))
+    .where(
+      and(
+        eq(ragDocumentClasses.classId, classId),
+        eq(ragDocumentClasses.enabled, true),
+        eq(ragDocuments.status, "ready"),
+        isNull(ragDocuments.deletedAt),
+      ),
+    );
+
+  return rows.map((row) => row.documentId);
+}
+
 export async function queryChroma(input: {
-  classId: string;
+  documentIds: string[];
   message: string;
   topK: number;
   timings?: GenerationInput["timings"];
 }) {
+  if (!input.documentIds.length) return [];
+
   const provider = createEmbeddingProvider();
   const embeddingResult = await measureChatTiming(input.timings, "embedding", () =>
     provider.embedTexts([input.message], {
@@ -71,7 +94,7 @@ export async function queryChroma(input: {
     return collection.query({
       queryEmbeddings: embeddingResult.embeddings,
       nResults: Math.max(input.topK * 3, input.topK),
-      where: { classId: input.classId },
+      where: { documentId: { $in: input.documentIds } },
     } as any);
   });
 
@@ -85,7 +108,7 @@ export async function queryChroma(input: {
 }
 
 export async function revalidateChunks(input: {
-  classId: string;
+  documentIds: string[];
   candidates: { chromaId: string; score: number }[];
   topK: number;
   minScore: number;
@@ -110,8 +133,7 @@ export async function revalidateChunks(input: {
     .where(
       and(
         inArray(ragDocumentChunks.chromaId, chromaIds),
-        eq(ragDocumentChunks.classId, input.classId),
-        eq(ragDocuments.classId, input.classId),
+        inArray(ragDocumentChunks.documentId, input.documentIds),
         eq(ragDocuments.status, "ready"),
         isNull(ragDocuments.deletedAt),
       ),
@@ -144,15 +166,19 @@ export async function generateContextRagResponse(
     history: input.history,
   });
 
+  const documentIds = await measureChatTiming(input.timings, "eligible documents", () =>
+    getEligibleDocumentIds(input.settings.classId),
+  );
+
   const candidates = await queryChroma({
-    classId: input.settings.classId,
+    documentIds,
     message: retrievalQuery.query,
     topK: input.settings.topK,
     timings: input.timings,
   });
 
   const retrievedChunks = await revalidateChunks({
-    classId: input.settings.classId,
+    documentIds,
     candidates,
     topK: input.settings.topK,
     minScore: input.settings.minScore,
@@ -209,15 +235,19 @@ export async function streamContextRagResponse(
     history: input.history,
   });
 
+  const documentIds = await measureChatTiming(input.timings, "eligible documents", () =>
+    getEligibleDocumentIds(input.settings.classId),
+  );
+
   const candidates = await queryChroma({
-    classId: input.settings.classId,
+    documentIds,
     message: retrievalQuery.query,
     topK: input.settings.topK,
     timings: input.timings,
   });
 
   const retrievedChunks = await revalidateChunks({
-    classId: input.settings.classId,
+    documentIds,
     candidates,
     topK: input.settings.topK,
     minScore: input.settings.minScore,

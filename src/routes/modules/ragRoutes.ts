@@ -10,8 +10,10 @@ import {
 import {
   createRagDocument,
   deleteRagDocument,
+  linkRagDocumentToClasses,
   listRagDocuments,
   reprocessRagDocument,
+  setRagDocumentEnabled,
 } from "../../services/rag/ragDocumentService";
 import {
   RAG_MAX_FILE_SIZE_BYTES,
@@ -84,11 +86,35 @@ ragRouter.post(
 );
 
 ragRouter.delete(
-  "/documents/:documentId",
+  "/classes/:classId/documents/:documentId",
   asyncHandler(async (req, res) => {
-    return res.json({
-      document: await deleteRagDocument(req.user!, req.params.documentId),
-    });
+    return res.json(
+      await deleteRagDocument(req.user!, req.params.classId, req.params.documentId),
+    );
+  }),
+);
+
+ragRouter.patch(
+  "/classes/:classId/documents/:documentId",
+  asyncHandler(async (req, res) => {
+    return res.json(
+      await setRagDocumentEnabled(
+        req.user!,
+        req.params.classId,
+        req.params.documentId,
+        Boolean(req.body.enabled),
+      ),
+    );
+  }),
+);
+
+ragRouter.post(
+  "/documents/:documentId/classes",
+  asyncHandler(async (req, res) => {
+    const classIds = Array.isArray(req.body.classIds) ? req.body.classIds : [];
+    return res.status(201).json(
+      await linkRagDocumentToClasses(req.user!, req.params.documentId, classIds),
+    );
   }),
 );
 

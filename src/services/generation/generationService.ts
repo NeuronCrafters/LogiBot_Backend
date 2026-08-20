@@ -15,6 +15,10 @@ import type {
   RuntimeRagSettings,
 } from "./generationTypes";
 import { measureChatTiming } from "./generationTypes";
+import {
+  generateHybridRagResponse,
+  streamHybridRagResponse,
+} from "./hybridRagStrategy";
 import { generateNoRagResponse, streamNoRagResponse } from "./noRagStrategy";
 import { generateSelfRagResponse, streamSelfRagResponse } from "./selfRagStrategy";
 import type { AgentMessage } from "../ai/digitalOceanAgentService";
@@ -26,7 +30,7 @@ type RagOverride = {
   systemPrompt?: unknown;
 };
 
-const ALLOWED_RAG_MODES = new Set<RagMode>(["none", "context", "self"]);
+const ALLOWED_RAG_MODES = new Set<RagMode>(["none", "context", "self", "hybrid"]);
 
 function normalizeMode(value: unknown, fallback: RagMode): RagMode {
   const mode = String(value || "").trim() as RagMode;
@@ -108,6 +112,15 @@ async function generateWithSettings(input: {
     });
   }
 
+  if (input.settings.ragMode === "hybrid") {
+    return generateHybridRagResponse({
+      message: input.message,
+      history: input.history,
+      settings: input.settings,
+      timings: input.timings,
+    });
+  }
+
   return generateContextRagResponse({
     message: input.message,
     history: input.history,
@@ -138,6 +151,10 @@ async function streamWithSettings(
 
   if (input.settings.ragMode === "self") {
     return streamSelfRagResponse(input, callbacks);
+  }
+
+  if (input.settings.ragMode === "hybrid") {
+    return streamHybridRagResponse(input, callbacks);
   }
 
   return streamContextRagResponse(input, callbacks);

@@ -3,8 +3,8 @@
 // Os agentes entram em repouso/cold start quando ficam ociosos: a primeira
 // requisição depois de ocioso costuma falhar por timeout, conexão recusada ou
 // 401/5xx enquanto o agente "acorda". Este helper centraliza a lógica de
-// retentar algumas vezes antes de desistir, usada tanto pelo pool de agentes
-// (chatbot + quiz) quanto pelo agente dedicado de insights.
+// retentar algumas vezes antes de desistir, usada pelo pool de agentes do
+// chatbot e pelos agentes dedicados de quiz e de insights.
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

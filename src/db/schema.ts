@@ -485,6 +485,10 @@ export const ragDocuments = pgTable(
   }),
 );
 
+// Indice GIN funcional de full-text search (to_tsvector('portuguese', content))
+// vive na migration drizzle/0001_rag_chunks_fts.sql, nao aqui — indice
+// funcional e uma area fragil pro diffing do drizzle-kit, entao nao e
+// declarado no schema.
 export const ragDocumentChunks = pgTable(
   "rag_document_chunks",
   {

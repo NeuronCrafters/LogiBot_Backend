@@ -14,10 +14,14 @@ import {
 const FALLBACK_TEXT =
   "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
 
-const DEFAULT_SYSTEM_PROMPT =
-  "Voce e o LogiBot, um tutor educacional especializado em logica de programacao, algoritmos e tecnologia, respondendo sempre em portugues do Brasil. " +
-  "Mantenha o foco em: logica de programacao, algoritmos, estruturas de dados, linguagens de programacao, desenvolvimento web/backend/frontend, banco de dados, sistemas operacionais, redes e ferramentas de desenvolvimento. " +
-  "Se a pergunta estiver fora desses temas, nao responda o assunto diretamente. Redirecione gentilmente dizendo que seu foco e programacao e tecnologia.";
+// A identidade/regras fixas do LogiBot vivem no system prompt configurado no
+// próprio Agent da DigitalOcean (ver PROMPT_CHAT.md). Aqui só enviamos, quando
+// existir, a instrução extra que o professor configurou para a turma.
+function buildMessages(input: GenerationInput): AgentMessage[] {
+  const professorInstruction = input.settings?.systemPrompt;
+  if (!professorInstruction) return input.history;
+  return [{ role: "system", content: professorInstruction }, ...input.history];
+}
 
 export async function generateNoRagResponse(
   input: GenerationInput,
@@ -26,16 +30,11 @@ export async function generateNoRagResponse(
     classId: input.settings?.classId ?? null,
   });
 
-  const systemPrompt = input.settings?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-  const messages: AgentMessage[] = [
-    { role: "system", content: systemPrompt },
-    ...input.history,
-  ];
   const agentResponse = await measureChatTiming(
     input.timings,
     input.agentTimingStage || "agent",
     () =>
-      askDigitalOceanAgent(messages, {
+      askDigitalOceanAgent(buildMessages(input), {
         timeoutMs: input.agentTimeoutMs,
         queueTimeoutMs: input.agentQueueTimeoutMs,
       }),
@@ -58,17 +57,11 @@ export async function streamNoRagResponse(
 
   await callbacks.onStatus?.("agent");
 
-  const systemPrompt = input.settings?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-  const messages: AgentMessage[] = [
-    { role: "system", content: systemPrompt },
-    ...input.history,
-  ];
-
   const agentResponse = await measureChatTiming(
     input.timings,
     input.agentTimingStage || "agent",
     () =>
-      streamDigitalOceanAgent(messages, {
+      streamDigitalOceanAgent(buildMessages(input), {
         signal: callbacks.signal,
         onToken: callbacks.onToken,
         timeoutMs: input.agentTimeoutMs,

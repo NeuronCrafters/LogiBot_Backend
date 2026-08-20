@@ -6,7 +6,7 @@ import { logger } from "../../logger";
 import type { RagMode, RagUser } from "./ragTypes";
 import { assertCanManageRagClass } from "./ragPermissionService";
 
-const ALLOWED_RAG_MODES = new Set<RagMode>(["none", "context", "self"]);
+const ALLOWED_RAG_MODES = new Set<RagMode>(["none", "context", "self", "hybrid"]);
 
 export type RagSettingsResponse = {
   classId: string;
@@ -23,7 +23,7 @@ export type RagSettingsResponse = {
 function normalizeRagMode(value: unknown): RagMode {
   const mode = String(value || "").trim() as RagMode;
   if (!ALLOWED_RAG_MODES.has(mode)) {
-    throw new AppError("ragMode deve ser none, context ou self", 400);
+    throw new AppError("ragMode deve ser none, context, self ou hybrid", 400);
   }
   return mode;
 }

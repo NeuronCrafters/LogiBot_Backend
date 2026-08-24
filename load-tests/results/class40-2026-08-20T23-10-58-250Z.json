@@ -1,0 +1,468 @@
+{
+    "metrics": {
+        "http_req_connecting": {
+            "p(95)": 0,
+            "avg": 2.4868507425742576,
+            "min": 0,
+            "med": 0,
+            "max": 1714.769,
+            "p(90)": 0
+        },
+        "chat_poll_response_time": {
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "thresholds": {
+                "p(95)<3000": false
+            }
+        },
+        "chat_response_time": {
+            "med": 50658,
+            "max": 104971,
+            "p(90)": 87829.8,
+            "p(95)": 92726.04999999999,
+            "avg": 50791.4197080292,
+            "min": 5904,
+            "thresholds": {
+                "p(95)<300000": false
+            }
+        },
+        "vus_max": {
+            "max": 119,
+            "value": 119,
+            "min": 119
+        },
+        "http_req_waiting": {
+            "min": 68.945,
+            "med": 972.679,
+            "max": 7937.949,
+            "p(90)": 2927.1088,
+            "p(95)": 3271.9348999999984,
+            "avg": 1437.4841051980152
+        },
+        "health_response_time": {
+            "min": 69.19,
+            "med": 823.953,
+            "max": 6372.023,
+            "p(90)": 1263.3666,
+            "p(95)": 1429.7907,
+            "avg": 842.2843936183815,
+            "thresholds": {
+                "p(95)<1000": true
+            }
+        },
+        "http_req_sending": {
+            "p(95)": 0.319,
+            "avg": 0.15152120462046195,
+            "min": 0.015,
+            "med": 0.126,
+            "max": 9.182,
+            "p(90)": 0.275
+        },
+        "health_failures": {
+            "passes": 1,
+            "fails": 7834,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0.00012763241863433312
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 2553.805929839043,
+            "min": 69.19,
+            "med": 976.708,
+            "max": 104959.675,
+            "p(90)": 3023.91,
+            "p(95)": 3921.187499999998
+        },
+        "http_req_blocked": {
+            "max": 4840.296,
+            "p(90)": 0.002,
+            "p(95)": 0.002,
+            "avg": 5.571281270627984,
+            "min": 0,
+            "med": 0.001
+        },
+        "http_req_tls_handshaking": {
+            "max": 4152.368,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 3.0236215346534645,
+            "min": 0,
+            "med": 0
+        },
+        "chat_failures": {
+            "passes": 1,
+            "fails": 273,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0.0036496350364963502
+        },
+        "chat_submit_response_time": {
+            "p(95)": 92709.58535,
+            "avg": 50715.6440109489,
+            "min": 5633.16,
+            "med": 50645.4255,
+            "max": 104959.675,
+            "p(90)": 87819.4678,
+            "thresholds": {
+                "p(95)<3000": true
+            }
+        },
+        "auth_response_time": {
+            "avg": 2608.20552295409,
+            "min": 202.576,
+            "med": 2693.3990000000003,
+            "max": 7939.744,
+            "p(90)": 3678.3481,
+            "p(95)": 4228.048199999999,
+            "thresholds": {
+                "p(95)<3000": true
+            }
+        },
+        "checks": {
+            "passes": 25873,
+            "fails": 11,
+            "thresholds": {
+                "rate>0.95": false
+            },
+            "value": 0.9995750270437336
+        },
+        "data_received": {
+            "rate": 37037.690573713924,
+            "count": 16651280
+        },
+        "vus": {
+            "min": 0,
+            "max": 119,
+            "value": 1
+        },
+        "http_req_receiving": {
+            "min": 0.009,
+            "med": 0.069,
+            "max": 103737.346,
+            "p(90)": 1.6641000000000001,
+            "p(95)": 3.0153999999999956,
+            "avg": 1116.1615485973548
+        },
+        "iteration_duration": {
+            "max": 105976.407209,
+            "p(90)": 4025.5406082,
+            "p(95)": 4953.064399599997,
+            "avg": 3560.9060726286184,
+            "min": 1070.707542,
+            "med": 1978.788792
+        },
+        "auth_failures": {
+            "passes": 3,
+            "fails": 4005,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0.0007485029940119761
+        },
+        "http_req_duration": {
+            "p(90)": 3023.9230000000002,
+            "p(95)": 3923.619999999998,
+            "avg": 2553.797175,
+            "min": 69.19,
+            "med": 976.6700000000001,
+            "max": 104959.675
+        },
+        "data_sent": {
+            "count": 1148919,
+            "rate": 2555.5576758219686
+        },
+        "chat_semantic_failures": {
+            "passes": 0,
+            "fails": 274,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0
+        },
+        "iterations": {
+            "count": 12117,
+            "rate": 26.95202390937463
+        },
+        "http_req_failed": {
+            "passes": 5,
+            "fails": 12115,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0.00041254125412541255
+        },
+        "http_reqs": {
+            "count": 12120,
+            "rate": 26.95869685414051
+        }
+    },
+    "setup_data": {
+        "runId": "1787267462586",
+        "tokens": {
+            "context": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC1hMDAwLTAwMDAwMDAwMDEwMiIsIm5hbWUiOiJLNiBMb2FkIFRlc3QgKGNvbnRleHQpIiwiZW1haWwiOiJrNi1jb250ZXh0QGxvZ2lib3QuY29tIiwicm9sZSI6WyJzdHVkZW50Il0sInNjaG9vbCI6IjAwMDAwMDAwLTAwMDAtNDAwMC1hMDAwLTAwMDAwMDAwMDAwMSIsImlhdCI6MTc4NzI2NzQ2MSwiZXhwIjoxNzg3Mjc0NjYxLCJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtYTAwMC0wMDAwMDAwMDAxMDIifQ.V3MeMJMebGNxXq8qvyGxgzbTxmt8CuJHeF-pY9-7Oec",
+            "none": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC1hMDAwLTAwMDAwMDAwMDEwMSIsIm5hbWUiOiJLNiBMb2FkIFRlc3QgKG5vbmUpIiwiZW1haWwiOiJrNi1ub25lQGxvZ2lib3QuY29tIiwicm9sZSI6WyJzdHVkZW50Il0sInNjaG9vbCI6IjAwMDAwMDAwLTAwMDAtNDAwMC1hMDAwLTAwMDAwMDAwMDAwMSIsImlhdCI6MTc4NzI2NzQ2MCwiZXhwIjoxNzg3Mjc0NjYwLCJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtYTAwMC0wMDAwMDAwMDAxMDEifQ.axkZYrTR0v38cBJ6Ja7XeutRSe2tvveL0tXch4eWucM",
+            "self": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC1hMDAwLTAwMDAwMDAwMDEwMyIsIm5hbWUiOiJLNiBMb2FkIFRlc3QgKHNlbGYpIiwiZW1haWwiOiJrNi1zZWxmQGxvZ2lib3QuY29tIiwicm9sZSI6WyJzdHVkZW50Il0sInNjaG9vbCI6IjAwMDAwMDAwLTAwMDAtNDAwMC1hMDAwLTAwMDAwMDAwMDAwMSIsImlhdCI6MTc4NzI2NzQ2MiwiZXhwIjoxNzg3Mjc0NjYyLCJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtYTAwMC0wMDAwMDAwMDAxMDMifQ.ZS1qc75AmHP6nXg2FuVOhZwWV_x7HXk3qBayjKcQToI"
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {},
+                "checks": {
+                        "none login status is 200": {
+                            "path": "::setup::none login status is 200",
+                            "id": "ce99c586b5bbafc13ae8a15b87759fc1",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "none login status is 200"
+                        },
+                        "none login returned token cookie": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "none login returned token cookie",
+                            "path": "::setup::none login returned token cookie",
+                            "id": "37c6316c7ac63f1c4608669a5c8514b7"
+                        },
+                        "context login status is 200": {
+                            "path": "::setup::context login status is 200",
+                            "id": "cb72779cc1e1a5a0907d77417bfdfd7d",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "context login status is 200"
+                        },
+                        "context login returned token cookie": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "context login returned token cookie",
+                            "path": "::setup::context login returned token cookie",
+                            "id": "5b789ff09a4b19764af6a911cbb5d845"
+                        },
+                        "self login status is 200": {
+                            "fails": 0,
+                            "name": "self login status is 200",
+                            "path": "::setup::self login status is 200",
+                            "id": "76c7281633d53cd4ad1147677d0affbf",
+                            "passes": 1
+                        },
+                        "self login returned token cookie": {
+                            "fails": 0,
+                            "name": "self login returned token cookie",
+                            "path": "::setup::self login returned token cookie",
+                            "id": "f5ff1a9278c64b8453d55aae3d76be92",
+                            "passes": 1
+                        }
+                    },
+                "name": "setup",
+                "path": "::setup"
+            }
+        },
+        "checks": {
+            "health status is 200": {
+                "id": "ab698ad652ee317628077e42e47eda00",
+                "passes": 7834,
+                "fails": 1,
+                "name": "health status is 200",
+                "path": "::health status is 200"
+            },
+            "health body is OK": {
+                "name": "health body is OK",
+                "path": "::health body is OK",
+                "id": "af4ee2448add5e150272305efc75787d",
+                "passes": 7834,
+                "fails": 1
+            },
+            "auth status is 200": {
+                "fails": 3,
+                "name": "auth status is 200",
+                "path": "::auth status is 200",
+                "id": "5e85dc41b14b53ce6dd5192eb86a5dfe",
+                "passes": 4005
+            },
+            "auth returned token cookie": {
+                "fails": 3,
+                "name": "auth returned token cookie",
+                "path": "::auth returned token cookie",
+                "id": "2531dac6af0111c5a4da66f622d4e21a",
+                "passes": 4005
+            },
+            "none chat stream status is 200": {
+                "id": "9f9105d82eb72e0ce238be3152cd3735",
+                "passes": 109,
+                "fails": 1,
+                "name": "none chat stream status is 200",
+                "path": "::none chat stream status is 200"
+            },
+            "none chat stream returned session event": {
+                "fails": 0,
+                "name": "none chat stream returned session event",
+                "path": "::none chat stream returned session event",
+                "id": "bd965f03a92743ea3a0bae0f87ed94e8",
+                "passes": 110
+            },
+            "none chat stream returned done event": {
+                "fails": 1,
+                "name": "none chat stream returned done event",
+                "path": "::none chat stream returned done event",
+                "id": "446ad2752147fa49aa2a48880e9617cb",
+                "passes": 109
+            },
+            "none chat stream returned no error event": {
+                "name": "none chat stream returned no error event",
+                "path": "::none chat stream returned no error event",
+                "id": "9bdb781c7a02516c70ff702675ca276d",
+                "passes": 110,
+                "fails": 0
+            },
+            "none chat stream returned assistant text": {
+                "path": "::none chat stream returned assistant text",
+                "id": "0e7c097fee247423cf4d8ed62f6600ee",
+                "passes": 109,
+                "fails": 1,
+                "name": "none chat stream returned assistant text"
+            },
+            "none chat stream returned session id": {
+                "passes": 110,
+                "fails": 0,
+                "name": "none chat stream returned session id",
+                "path": "::none chat stream returned session id",
+                "id": "72d2594a80591f0b4741f8e6011abee6"
+            },
+            "none chat provider is not fallback": {
+                "name": "none chat provider is not fallback",
+                "path": "::none chat provider is not fallback",
+                "id": "f93d51362940198cd877fa756150c5a3",
+                "passes": 110,
+                "fails": 0
+            },
+            "none chat did not return technical fallback": {
+                "name": "none chat did not return technical fallback",
+                "path": "::none chat did not return technical fallback",
+                "id": "adffec9150b2b16a5fe6159c7c17948d",
+                "passes": 110,
+                "fails": 0
+            },
+            "context chat stream status is 200": {
+                "passes": 106,
+                "fails": 0,
+                "name": "context chat stream status is 200",
+                "path": "::context chat stream status is 200",
+                "id": "51f2b0c062997500cacde526ed3cd424"
+            },
+            "context chat stream returned session event": {
+                "id": "d9271834c215650c8abe94e09ad267e1",
+                "passes": 106,
+                "fails": 0,
+                "name": "context chat stream returned session event",
+                "path": "::context chat stream returned session event"
+            },
+            "context chat stream returned done event": {
+                "name": "context chat stream returned done event",
+                "path": "::context chat stream returned done event",
+                "id": "c54b29d9c3190e199ad8a52f2a21d7d0",
+                "passes": 106,
+                "fails": 0
+            },
+            "context chat stream returned no error event": {
+                "passes": 106,
+                "fails": 0,
+                "name": "context chat stream returned no error event",
+                "path": "::context chat stream returned no error event",
+                "id": "b88158eb4b7ef4fdefe5d498fcb23171"
+            },
+            "context chat stream returned assistant text": {
+                "id": "5690b1ec6dec4e64ec9fac796e920039",
+                "passes": 106,
+                "fails": 0,
+                "name": "context chat stream returned assistant text",
+                "path": "::context chat stream returned assistant text"
+            },
+            "context chat stream returned session id": {
+                "name": "context chat stream returned session id",
+                "path": "::context chat stream returned session id",
+                "id": "dc2118e8c5a84a55f38c4e490bbd4698",
+                "passes": 106,
+                "fails": 0
+            },
+            "context chat provider is not fallback": {
+                "fails": 0,
+                "name": "context chat provider is not fallback",
+                "path": "::context chat provider is not fallback",
+                "id": "d9accc530030e3d4f26b836aa72237bb",
+                "passes": 106
+            },
+            "context chat did not return technical fallback": {
+                "passes": 106,
+                "fails": 0,
+                "name": "context chat did not return technical fallback",
+                "path": "::context chat did not return technical fallback",
+                "id": "70c84383d71e279dc1371e139178874c"
+            },
+            "self chat stream status is 200": {
+                "passes": 58,
+                "fails": 0,
+                "name": "self chat stream status is 200",
+                "path": "::self chat stream status is 200",
+                "id": "63fbc52efb27a5d56d9a3eaab09165ac"
+            },
+            "self chat stream returned session event": {
+                "name": "self chat stream returned session event",
+                "path": "::self chat stream returned session event",
+                "id": "0a70c69c8bebfbffebeea380aca82f19",
+                "passes": 58,
+                "fails": 0
+            },
+            "self chat stream returned done event": {
+                "name": "self chat stream returned done event",
+                "path": "::self chat stream returned done event",
+                "id": "dc75b9470d292e447e1b6a0d1d983a84",
+                "passes": 58,
+                "fails": 0
+            },
+            "self chat stream returned no error event": {
+                "name": "self chat stream returned no error event",
+                "path": "::self chat stream returned no error event",
+                "id": "32a4b1b605167772d5f5021a4e0d480f",
+                "passes": 58,
+                "fails": 0
+            },
+            "self chat stream returned assistant text": {
+                "path": "::self chat stream returned assistant text",
+                "id": "4a73e39f7ff6c29e83b6fe9782120168",
+                "passes": 58,
+                "fails": 0,
+                "name": "self chat stream returned assistant text"
+            },
+            "self chat stream returned session id": {
+                "name": "self chat stream returned session id",
+                "path": "::self chat stream returned session id",
+                "id": "a03432f727c877dca2d4721627d7f6c7",
+                "passes": 58,
+                "fails": 0
+            },
+            "self chat provider is not fallback": {
+                "fails": 0,
+                "name": "self chat provider is not fallback",
+                "path": "::self chat provider is not fallback",
+                "id": "838792a38e941713561752099f6d4b04",
+                "passes": 58
+            },
+            "self chat did not return technical fallback": {
+                "path": "::self chat did not return technical fallback",
+                "id": "bd346f45388a38a4a20b556d31290b55",
+                "passes": 58,
+                "fails": 0,
+                "name": "self chat did not return technical fallback"
+            }
+        }
+    }
+}

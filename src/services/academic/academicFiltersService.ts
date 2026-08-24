@@ -33,14 +33,35 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
       : [];
   const schoolId = user.school || undefined;
 
-  const universityRows = isAdmin
-    ? await db.select().from(universities)
-    : schoolId
+  // Pra professor/coordenador, deriva as universidades a partir dos cursos
+  // que ele realmente tem vinculo (professor_courses) — nao so da
+  // instituicao "principal" (professorProfiles.schoolId). Um professor pode
+  // dar aula em mais de uma instituicao (ex.: mesma conta gerenciando turmas
+  // em duas escolas diferentes); schoolId continua incluido como fallback
+  // pra nao esconder a instituicao principal quando ainda nao ha curso
+  // vinculado.
+  let universityRows;
+  if (isAdmin) {
+    universityRows = await db.select().from(universities);
+  } else {
+    const universityIdsFromCourses = userCourseIds.length
+      ? await db
+          .select({ universityId: courses.universityId })
+          .from(courses)
+          .where(inArray(courses.id, userCourseIds))
+      : [];
+    const universityIdSet = new Set(
+      universityIdsFromCourses.map((row) => row.universityId),
+    );
+    if (schoolId) universityIdSet.add(schoolId);
+
+    universityRows = universityIdSet.size
       ? await db
           .select()
           .from(universities)
-          .where(eq(universities.id, schoolId))
+          .where(inArray(universities.id, [...universityIdSet]))
       : [];
+  }
   const universityIds = universityRows.map((item) => item.id);
   const allCourseRows = universityIds.length
     ? await db

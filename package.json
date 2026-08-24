@@ -15,7 +15,9 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:seed2": "tsx src/db/seed2.ts",
     "db:seed:experiment": "tsx src/db/seedRagExperiment.ts",
-    "db:seed:experiment2": "tsx src/db/seedRagExperimentRound2.ts"
+    "db:seed:experiment2": "tsx src/db/seedRagExperimentRound2.ts",
+    "db:seed:loadtest": "tsx src/db/seedLoadTest.ts",
+    "db:seed:ifpa": "tsx src/db/seedIfpa.ts"
   },
   "keywords": [],
   "author": "",

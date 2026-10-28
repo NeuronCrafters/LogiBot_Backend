@@ -29,7 +29,7 @@ logRouter.post(
   "/students/summary",
   asyncHandler(async (req, res) => {
     if (!req.body.universityId)
-      throw new AppError("universityId e obrigatorio", 400);
+      throw new AppError("analytics.universityRequired", 400);
     return res.json(await getSummary(req.body));
   }),
 );

@@ -1,3 +1,6 @@
+import { getEmailLanguage } from "../../i18n";
+import { accountLanguage } from "../../i18n/middleware";
+import { t } from "../../i18n";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -38,22 +41,21 @@ authRouter.post(
     const code = String(req.body.code || "").trim();
 
     if (!name || !email || !password || !code)
-      throw new AppError(
-        "Os campos name, email, password e code sao obrigatorios.",
+      throw new AppError("registration.fieldsRequired",
         400,
       );
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      throw new AppError("formato de e-mail invalido!", 400);
+      throw new AppError("registration.emailInvalid", 400);
     if (password.length < 12)
-      throw new AppError("a senha deve ter pelo menos 12 caracteres!", 400);
+      throw new AppError("registration.passwordTooShort", 400);
 
     const db = getDb();
     const existingUser = await getAccountByEmail(db, email);
     if (existingUser)
-      throw new AppError("usuario ja existe com este email!", 409);
+      throw new AppError("registration.emailExists", 409);
 
     const entities = await findEntitiesByClassCode(db, code);
-    if (!entities) throw new AppError("codigo de turma invalido!", 404);
+    if (!entities) throw new AppError("registration.classCodeInvalid", 404);
     const {
       university,
       course,
@@ -69,10 +71,10 @@ authRouter.post(
       courseId: course.id,
       classId: selectedClass.id,
     });
-    if (!user) throw new AppError("falha ao criar usuario.", 500);
+    if (!user) throw new AppError("registration.creationFailed", 500);
 
     return res.status(201).json({
-      message: "Usuario criado com sucesso!",
+      message: t("registration.created"),
       user: {
         user: {
           _id: user.id,
@@ -120,15 +122,15 @@ authRouter.post(
     const db = getDb();
     const user = await getAccountByEmail(db, email);
     if (!user || !password || !user.passwordHash)
-      throw new AppError("credenciais invalidas.", 401);
+      throw new AppError("auth.credentialsInvalid", 401);
     if (user.status !== "active")
-      throw new AppError(
-        "sua conta esta inativa. entre em contato com o administrador.",
+      throw new AppError("auth.inactiveContactAdmin",
         403,
       );
     if (!(await bcrypt.compare(password, user.passwordHash)))
-      throw new AppError("credenciais invalidas.", 401);
+      throw new AppError("auth.credentialsInvalid", 401);
 
+    accountLanguage(req, res, user.preferredLanguage);
     const roles = prioritizeRoles(user.roles || []);
     if (roles.includes("student")) await startStudentSession(db, user);
     const token = signSession({
@@ -145,6 +147,7 @@ authRouter.post(
       user: {
         id: user.id,
         _id: user.id,
+        preferredLanguage: user.preferredLanguage,
         name: user.name,
         email: user.email,
         role: roles,
@@ -171,7 +174,7 @@ authRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const account = await getAccountById(getDb(), req.user!.id);
-    if (!account) throw new AppError("usuario nao encontrado", 404);
+    if (!account) throw new AppError("auth.userNotFound", 404);
     return res.json(await getPublicMe(getDb(), account));
   }),
 );
@@ -183,7 +186,7 @@ authRouter.post(
     if (req.user?.role.includes("student"))
       await closeOpenStudentSession(req.user.id);
     clearAuthCookie(req, res);
-    return res.json({ message: "logout realizado com sucesso" });
+    return res.json({ message: t("auth.loggedOut") });
   }),
 );
 
@@ -196,7 +199,7 @@ authRouter.post(
     const account = await getAccountByEmail(getDb(), email);
     if (!account)
       return res.json({
-        message: "se o email existir, a recuperacao sera iniciada",
+        message: t("auth.resetRequested"),
       });
     const token = jwt.sign({ email }, requireEnv("JWT_SECRET"), {
       expiresIn: "30m",
@@ -217,12 +220,13 @@ authRouter.post(
       to: account.email,
       name: account.name,
       resetLink,
+      language: getEmailLanguage(account.preferredLanguage),
     });
     const includeDebugResetData =
       process.env.PASSWORD_RESET_DEBUG_RESPONSE === "true";
 
     return res.json({
-      message: "se o email existir, a recuperacao sera iniciada",
+      message: t("auth.resetRequested"),
       resetToken: includeDebugResetData ? token : undefined,
       resetLink: includeDebugResetData ? resetLink : undefined,
     });
@@ -235,7 +239,7 @@ authRouter.patch(
     const token = String(req.body.token || "");
     const newPassword = String(req.body.newPassword || "");
     if (!token || !newPassword)
-      throw new AppError("token e newPassword sao obrigatorios", 400);
+      throw new AppError("auth.resetFieldsRequired", 400);
     const decoded = jwt.verify(token, requireEnv("JWT_SECRET")) as {
       email?: string;
     };
@@ -250,7 +254,7 @@ authRouter.patch(
       !account.resetPasswordExpires ||
       new Date() > account.resetPasswordExpires
     ) {
-      throw new AppError("token invalido ou expirado.", 400);
+      throw new AppError("auth.resetTokenInvalid", 400);
     }
     const hash = await bcrypt.hash(newPassword, 10);
     await getDb()
@@ -265,6 +269,6 @@ authRouter.patch(
         updatedAt: new Date(),
       })
       .where(eq(accounts.id, account.id));
-    return res.json({ message: "senha redefinida com sucesso" });
+    return res.json({ message: t("auth.passwordReset") });
   }),
 );

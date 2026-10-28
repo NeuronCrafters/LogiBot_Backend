@@ -1,3 +1,4 @@
+import { t, withLanguage, getLanguage, type Language } from "../../i18n";
 import nodemailer from "nodemailer";
 
 type MailInput = {
@@ -51,28 +52,29 @@ export async function sendPasswordResetEmail(input: {
   to: string;
   name: string;
   resetLink: string;
+  language?: Language;
 }) {
-  await sendMail({
+  return withLanguage(input.language || getLanguage(), async () => sendMail({
     to: input.to,
-    subject: "Redefinicao de senha - LogiBot",
+    subject: t("email.resetSubject"),
     text: [
-      `Ola, ${input.name}.`,
-      "Recebemos uma solicitacao para redefinir sua senha no LogiBot.",
-      `Acesse o link para criar uma nova senha: ${input.resetLink}`,
-      "Se voce nao solicitou isso, ignore este email.",
+      t("email.greeting", { name: input.name }),
+      t("email.resetReceived"),
+      t("email.resetLink", { link: input.resetLink }),
+      t("email.resetIgnore"),
     ].join("\n\n"),
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1f2937;">
-        <h2>Redefinicao de senha</h2>
-        <p>Ola, ${input.name}.</p>
-        <p>Recebemos uma solicitacao para redefinir sua senha no LogiBot.</p>
+        <h2>${t("email.resetTitle")}</h2>
+        <p>${t("email.greeting", { name: input.name })}</p>
+        <p>${t("email.resetReceived")}</p>
         <p>
           <a href="${input.resetLink}" style="display: inline-block; padding: 10px 16px; background: #ea580c; color: #ffffff; text-decoration: none; border-radius: 6px;">
-            Redefinir senha
+            ${t("email.resetButton")}
           </a>
         </p>
-        <p>Se voce nao solicitou isso, ignore este email.</p>
+        <p>${t("email.resetIgnore")}</p>
       </div>
     `,
-  });
+  }));
 }

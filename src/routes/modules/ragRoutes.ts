@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Router } from "express";
 import multer from "multer";
 import { asyncHandler } from "../../http/asyncHandler";
@@ -106,7 +107,7 @@ ragRouter.post(
   asyncHandler(async (req, res) => {
     const message = String(req.body.message || "").trim();
     if (!message) {
-      return res.status(400).json({ message: "message e obrigatorio" });
+      return res.status(400).json({ message: t("chat.messageRequired") });
     }
 
     const result = await generateRagTestResponse({

@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { and, asc, eq, inArray } from "drizzle-orm";
@@ -49,15 +50,14 @@ adminRouter.post(
       ? (req.body.disciplines as string[])
       : [];
     if (!name || !email || !password || !schoolId)
-      throw new AppError("campos obrigatorios ausentes", 400);
+      throw new AppError("validation.requiredFields", 400);
     if (!isAdmin) {
       if (!courseIds.length)
-        throw new AppError("selecione pelo menos um curso", 400);
+        throw new AppError("academic.courseRequired", 400);
       if (
         courseIds.some((courseId) => !coordinatorCourseIds.includes(courseId))
       )
-        throw new AppError(
-          "coordenador so pode criar professor nos seus cursos",
+        throw new AppError("admin.coordinatorCreateScope",
           403,
         );
 
@@ -72,8 +72,7 @@ adminRouter.post(
             (item) => !coordinatorCourseIds.includes(item.courseId),
           )
         ) {
-          throw new AppError(
-            "uma ou mais turmas nao pertencem aos cursos do coordenador",
+          throw new AppError("admin.classesOutsideCoordinator",
             403,
           );
         }
@@ -90,8 +89,7 @@ adminRouter.post(
             (item) => !coordinatorCourseIds.includes(item.courseId),
           )
         ) {
-          throw new AppError(
-            "uma ou mais disciplinas nao pertencem aos cursos do coordenador",
+          throw new AppError("admin.disciplinesOutsideCoordinator",
             403,
           );
         }
@@ -137,7 +135,7 @@ adminRouter.post(
     return res
       .status(201)
       .json({
-        message: "professor criado com sucesso",
+        message: t("admin.professorCreated"),
         professor: { ...account, _id: account.id },
       });
   }),
@@ -150,7 +148,7 @@ adminRouter.delete(
     await getDb()
       .delete(accounts)
       .where(eq(accounts.id, req.params.professorId));
-    return res.json({ message: "professor removido com sucesso" });
+    return res.json({ message: t("admin.professorRemoved") });
   }),
 );
 
@@ -175,13 +173,12 @@ adminRouter.patch(
       : [];
 
     if (!name || !email || !schoolId || !courseIds.length)
-      throw new AppError("campos obrigatorios ausentes", 400);
+      throw new AppError("validation.requiredFields", 400);
     if (
       !isAdmin &&
       courseIds.some((courseId) => !coordinatorCourseIds.includes(courseId))
     ) {
-      throw new AppError(
-        "coordenador so pode editar professor nos seus cursos",
+      throw new AppError("admin.coordinatorEditScope",
         403,
       );
     }
@@ -191,13 +188,12 @@ adminRouter.patch(
       .from(courses)
       .where(inArray(courses.id, courseIds));
     if (courseRows.length !== courseIds.length)
-      throw new AppError("um ou mais cursos nao foram encontrados", 400);
+      throw new AppError("academic.coursesNotFound", 400);
     if (
       isAdmin &&
       courseRows.some((course) => course.universityId !== schoolId)
     ) {
-      throw new AppError(
-        "um ou mais cursos nao pertencem a universidade selecionada",
+      throw new AppError("academic.coursesOutsideUniversity",
         400,
       );
     }
@@ -215,7 +211,7 @@ adminRouter.patch(
       .set(accountUpdates)
       .where(eq(accounts.id, req.params.professorId))
       .returning();
-    if (!account) throw new AppError("professor nao encontrado", 404);
+    if (!account) throw new AppError("academic.professorNotFound", 404);
 
     await getDb()
       .update(professorProfiles)
@@ -283,7 +279,7 @@ adminRouter.patch(
     }
 
     return res.json({
-      message: "professor atualizado com sucesso",
+      message: t("admin.professorUpdated"),
       professor: { ...account, _id: account.id },
     });
   }),
@@ -372,8 +368,8 @@ adminRouter.patch(
             eq(accountRoles.role, "course-coordinator"),
           ),
         );
-    else throw new AppError("action deve ser add ou remove", 400);
-    return res.json({ message: "papel atualizado com sucesso" });
+    else throw new AppError("admin.actionInvalid", 400);
+    return res.json({ message: t("admin.roleUpdated") });
   }),
 );
 
@@ -404,7 +400,7 @@ adminRouter.delete(
   requireRoles(["admin"]),
   asyncHandler(async (req, res) => {
     await getDb().delete(accounts).where(eq(accounts.id, req.params.studentId));
-    return res.json({ message: "aluno removido com sucesso" });
+    return res.json({ message: t("admin.studentRemoved") });
   }),
 );
 

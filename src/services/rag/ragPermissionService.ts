@@ -39,7 +39,7 @@ async function getClassOrThrow(classId: string) {
     .where(eq(classes.id, classId))
     .limit(1);
 
-  if (!classItem) throw new AppError("turma nao encontrada", 404);
+  if (!classItem) throw new AppError("academic.classNotFound", 404);
   return classItem;
 }
 
@@ -101,7 +101,7 @@ export async function assertCanManageRagClass(
     if (disciplineClassLink) return classItem;
   }
 
-  throw new AppError("acesso negado para esta turma", 403);
+  throw new AppError("rag.classAccessDenied", 403);
 }
 
 export async function listManageableRagClasses(

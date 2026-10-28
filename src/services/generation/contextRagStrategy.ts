@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
@@ -18,8 +19,9 @@ import {
 } from "./generationTypes";
 import { buildRagRetrievalQuery } from "./ragRetrievalQuery";
 
-export const EMPTY_CONTEXT_TEXT =
-  "Não encontrei informações suficientes nos materiais desta turma para responder com segurança. Você poderia descrever melhor a sua dúvida? Se possível, informe o tema, a linguagem de programação ou mostre um exemplo do que está tentando fazer.";
+export function getEmptyContextText() {
+  return t("rag.emptyContext");
+}
 
 function distanceToScore(distance: unknown) {
   if (typeof distance !== "number" || !Number.isFinite(distance)) return 100;
@@ -28,13 +30,13 @@ function distanceToScore(distance: unknown) {
 
 export function buildSystemPrompt(settings: RuntimeRagSettings, chunks: RetrievedRagChunk[]) {
   const customPrompt = settings.systemPrompt
-    ? `Instrucao adicional do professor para esta turma:\n${settings.systemPrompt}\n\n`
+    ? t("rag.professorInstruction", { instruction: settings.systemPrompt })
     : "";
 
   const context = chunks
     .map(
       (chunk, index) =>
-        `[${index + 1}] ${chunk.documentTitle} - trecho ${chunk.chunkIndex + 1}\n${chunk.content}`,
+        `[${index + 1}] ${chunk.documentTitle} - ${t("common.chunk", { number: chunk.chunkIndex + 1 })}\n${chunk.content}`,
     )
     .join("\n\n");
 
@@ -165,7 +167,7 @@ export async function generateContextRagResponse(
 
   if (!retrievedChunks.length) {
     return {
-      text: EMPTY_CONTEXT_TEXT,
+      text: getEmptyContextText(),
       provider: "rag-context-empty",
       retrievedChunks: [],
     };
@@ -187,7 +189,7 @@ export async function generateContextRagResponse(
   return {
     text:
       agentResponse?.text ??
-      "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
+      t("chat.fallback"),
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks,
   };
@@ -231,9 +233,9 @@ export async function streamContextRagResponse(
   await callbacks.onRetrieval?.(retrievedChunks);
 
   if (!retrievedChunks.length) {
-    await callbacks.onToken?.(EMPTY_CONTEXT_TEXT);
+    await callbacks.onToken?.(getEmptyContextText());
     return {
-      text: EMPTY_CONTEXT_TEXT,
+      text: getEmptyContextText(),
       provider: "rag-context-empty",
       retrievedChunks: [],
     };
@@ -265,7 +267,7 @@ export async function streamContextRagResponse(
   return {
     text:
       agentResponse?.text ??
-      "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
+      t("chat.fallback"),
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks,
     usage: agentResponse?.usage,

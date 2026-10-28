@@ -1,0 +1,696 @@
+{
+  "api.routeNotFound": {
+    "original": "rota nao encontrada",
+    "expressions": []
+  },
+  "config.missingEnvironment": {
+    "original": "${name} nao configurado",
+    "expressions": [
+      "name"
+    ]
+  },
+  "auth.apiKeyInvalid": {
+    "original": "api key invalida",
+    "expressions": []
+  },
+  "auth.tokenMissing": {
+    "original": "nao autenticado: token ausente",
+    "expressions": []
+  },
+  "auth.tokenInvalid": {
+    "original": "token invalido",
+    "expressions": []
+  },
+  "auth.userNotFound": {
+    "original": "usuario nao encontrado",
+    "expressions": []
+  },
+  "auth.accountInactive": {
+    "original": "acesso negado. sua conta esta inativa.",
+    "expressions": []
+  },
+  "auth.accessDenied": {
+    "original": "acesso negado",
+    "expressions": []
+  },
+  "common.internalError": {
+    "original": "Erro interno do servidor.",
+    "expressions": []
+  },
+  "rag.modeInvalid": {
+    "original": "ragMode deve ser none, context, self ou hybrid",
+    "expressions": []
+  },
+  "validation.range": {
+    "original": "${field} deve estar entre ${min} e ${max}",
+    "expressions": [
+      "field",
+      "min",
+      "max"
+    ]
+  },
+  "validation.textLength": {
+    "original": "texto deve ter no maximo ${maxLength} caracteres",
+    "expressions": [
+      "maxLength"
+    ]
+  },
+  "rag.fileRequired": {
+    "original": "arquivo e obrigatorio",
+    "expressions": []
+  },
+  "rag.fileEmpty": {
+    "original": "arquivo vazio",
+    "expressions": []
+  },
+  "rag.documentLimit": {
+    "original": "limite de ${RAG_MAX_DOCUMENTS_PER_CLASS} documentos por turma atingido",
+    "expressions": [
+      "RAG_MAX_DOCUMENTS_PER_CLASS"
+    ]
+  },
+  "rag.documentNotFound": {
+    "original": "documento nao encontrado",
+    "expressions": []
+  },
+  "rag.fileTypeInvalid": {
+    "original": "arquivo deve ser PDF, TXT ou DOCX valido",
+    "expressions": []
+  },
+  "rag.ingestionInProgress": {
+    "original": "documento ja possui ingestao em andamento",
+    "expressions": []
+  },
+  "academic.classNotFound": {
+    "original": "turma nao encontrada",
+    "expressions": []
+  },
+  "rag.classAccessDenied": {
+    "original": "acesso negado para esta turma",
+    "expressions": []
+  },
+  "quiz.aiNotConfigured": {
+    "original": "O serviço de geração de quiz por IA não está configurado. Defina OPENROUTER_API_KEY e OPENROUTER_MODEL.",
+    "expressions": []
+  },
+  "quiz.aiUnavailable": {
+    "original": "Não foi possível gerar o quiz com IA agora. Tente novamente.",
+    "expressions": []
+  },
+  "insights.aiNotConfigured": {
+    "original": "O serviço de insights de IA não está configurado. Defina OPENROUTER_API_KEY e OPENROUTER_MODEL.",
+    "expressions": []
+  },
+  "insights.aiUnavailable": {
+    "original": "Não foi possível gerar o insight de IA agora. Tente novamente.",
+    "expressions": []
+  },
+  "quiz.selectSourceDocument": {
+    "original": "Selecione ao menos um documento para gerar o quiz",
+    "expressions": []
+  },
+  "rag.noManageableClasses": {
+    "original": "Nenhuma turma gerenciável encontrada",
+    "expressions": []
+  },
+  "quiz.documentsNotReady": {
+    "original": "Nenhum documento selecionado está pronto para uso",
+    "expressions": []
+  },
+  "quiz.documentsInvalid": {
+    "original": "Documentos inválidos, sem permissão ou não prontos: ${invalidIds.join(\", \")}",
+    "expressions": [
+      "invalidIds.join(\", \")"
+    ]
+  },
+  "quiz.disciplineOutsideClass": {
+    "original": "Disciplina não pertence à turma selecionada",
+    "expressions": []
+  },
+  "quiz.coordinatorAccessDenied": {
+    "original": "Coordenador não tem acesso a esta disciplina",
+    "expressions": []
+  },
+  "quiz.professorAccessDenied": {
+    "original": "Professor não tem acesso a esta disciplina",
+    "expressions": []
+  },
+  "auth.accessDeniedCapital": {
+    "original": "Acesso negado",
+    "expressions": []
+  },
+  "quiz.jsonMissing": {
+    "original": "IA não retornou JSON válido",
+    "expressions": []
+  },
+  "quiz.jsonMalformed": {
+    "original": "IA retornou JSON malformado",
+    "expressions": []
+  },
+  "quiz.contextInsufficient": {
+    "original": "IA indicou contexto insuficiente: ${raw.error}",
+    "expressions": [
+      "raw.error"
+    ]
+  },
+  "quiz.questionsMissing": {
+    "original": "IA retornou estrutura inválida (sem questions)",
+    "expressions": []
+  },
+  "quiz.noQuestionsGenerated": {
+    "original": "IA não conseguiu gerar perguntas com o contexto fornecido",
+    "expressions": []
+  },
+  "quiz.questionCountMismatch": {
+    "original": "IA gerou ${raw.questions.length} pergunta(s) mas ${expectedCount} foram solicitadas",
+    "expressions": [
+      "raw.questions.length",
+      "expectedCount"
+    ]
+  },
+  "quiz.questionEmpty": {
+    "original": "Pergunta ${i + 1} tem enunciado vazio",
+    "expressions": [
+      "i + 1"
+    ]
+  },
+  "quiz.fourOptionsRequired": {
+    "original": "Pergunta ${i + 1} deve ter exatamente 4 alternativas",
+    "expressions": [
+      "i + 1"
+    ]
+  },
+  "quiz.optionEmpty": {
+    "original": "Pergunta ${i + 1} tem alternativa vazia",
+    "expressions": [
+      "i + 1"
+    ]
+  },
+  "quiz.optionsDuplicate": {
+    "original": "Pergunta ${i + 1} tem alternativas duplicadas",
+    "expressions": [
+      "i + 1"
+    ]
+  },
+  "quiz.correctOptionInvalid": {
+    "original": "Pergunta ${i + 1} tem correctOption inválido: \"${q.correctOption}\"",
+    "expressions": [
+      "i + 1",
+      "q.correctOption"
+    ]
+  },
+  "quiz.explanationEmpty": {
+    "original": "Pergunta ${i + 1} tem explicação vazia",
+    "expressions": [
+      "i + 1"
+    ]
+  },
+  "quiz.themeRequired": {
+    "original": "Tema é obrigatório",
+    "expressions": []
+  },
+  "quiz.themeTooLong": {
+    "original": "Tema deve ter no máximo 180 caracteres",
+    "expressions": []
+  },
+  "quiz.questionCountRange": {
+    "original": "questionCount deve ser entre 3 e 10",
+    "expressions": []
+  },
+  "quiz.documentRequired": {
+    "original": "Selecione ao menos um documento",
+    "expressions": []
+  },
+  "quiz.noRelevantContent": {
+    "original": "Nenhum conteúdo relevante encontrado nos documentos para o tema informado",
+    "expressions": []
+  },
+  "chat.messageRequired": {
+    "original": "message e obrigatorio",
+    "expressions": []
+  },
+  "chat.jobNotFound": {
+    "original": "job de chat nao encontrado",
+    "expressions": []
+  },
+  "insights.chartInvalid": {
+    "original": "Gráfico de insight inválido.",
+    "expressions": []
+  },
+  "insights.universityRequired": {
+    "original": "universityId é obrigatório.",
+    "expressions": []
+  },
+  "insights.dataInsufficient": {
+    "original": "Não há dados suficientes para gerar este insight.",
+    "expressions": []
+  },
+  "insights.overviewDataInsufficient": {
+    "original": "Não há dados suficientes para gerar a análise geral.",
+    "expressions": []
+  },
+  "dashboard.universityDenied": {
+    "original": "acesso negado para esta universidade",
+    "expressions": []
+  },
+  "dashboard.scopeRequired": {
+    "original": "selecione um curso, turma, disciplina ou aluno do seu escopo",
+    "expressions": []
+  },
+  "dashboard.courseDenied": {
+    "original": "acesso negado para este curso",
+    "expressions": []
+  },
+  "dashboard.disciplineDenied": {
+    "original": "acesso negado para esta disciplina",
+    "expressions": []
+  },
+  "dashboard.studentDenied": {
+    "original": "acesso negado para este aluno",
+    "expressions": []
+  },
+  "validation.requiredFields": {
+    "original": "campos obrigatorios ausentes",
+    "expressions": []
+  },
+  "academic.courseRequired": {
+    "original": "selecione pelo menos um curso",
+    "expressions": []
+  },
+  "admin.coordinatorCreateScope": {
+    "original": "coordenador so pode criar professor nos seus cursos",
+    "expressions": []
+  },
+  "admin.classesOutsideCoordinator": {
+    "original": "uma ou mais turmas nao pertencem aos cursos do coordenador",
+    "expressions": []
+  },
+  "admin.disciplinesOutsideCoordinator": {
+    "original": "uma ou mais disciplinas nao pertencem aos cursos do coordenador",
+    "expressions": []
+  },
+  "admin.professorCreated": {
+    "original": "professor criado com sucesso",
+    "expressions": []
+  },
+  "admin.professorRemoved": {
+    "original": "professor removido com sucesso",
+    "expressions": []
+  },
+  "admin.coordinatorEditScope": {
+    "original": "coordenador so pode editar professor nos seus cursos",
+    "expressions": []
+  },
+  "academic.coursesNotFound": {
+    "original": "um ou mais cursos nao foram encontrados",
+    "expressions": []
+  },
+  "academic.coursesOutsideUniversity": {
+    "original": "um ou mais cursos nao pertencem a universidade selecionada",
+    "expressions": []
+  },
+  "academic.professorNotFound": {
+    "original": "professor nao encontrado",
+    "expressions": []
+  },
+  "admin.professorUpdated": {
+    "original": "professor atualizado com sucesso",
+    "expressions": []
+  },
+  "admin.actionInvalid": {
+    "original": "action deve ser add ou remove",
+    "expressions": []
+  },
+  "admin.roleUpdated": {
+    "original": "papel atualizado com sucesso",
+    "expressions": []
+  },
+  "admin.studentRemoved": {
+    "original": "aluno removido com sucesso",
+    "expressions": []
+  },
+  "account.passwordsRequired": {
+    "original": "senha atual e nova senha sao obrigatorias",
+    "expressions": []
+  },
+  "account.passwordTooShort": {
+    "original": "a nova senha deve ter no minimo 6 caracteres",
+    "expressions": []
+  },
+  "account.currentPasswordInvalid": {
+    "original": "senha atual invalida",
+    "expressions": []
+  },
+  "account.passwordUpdated": {
+    "original": "senha atualizada com sucesso",
+    "expressions": []
+  },
+  "account.nameRequired": {
+    "original": "nome obrigatorio",
+    "expressions": []
+  },
+  "account.nameUpdated": {
+    "original": "nome atualizado com sucesso",
+    "expressions": []
+  },
+  "account.emailInvalid": {
+    "original": "email invalido",
+    "expressions": []
+  },
+  "account.emailInUse": {
+    "original": "email ja esta em uso",
+    "expressions": []
+  },
+  "account.emailUpdated": {
+    "original": "email atualizado com sucesso",
+    "expressions": []
+  },
+  "feedback.messageRequired": {
+    "original": "a mensagem e obrigatoria.",
+    "expressions": []
+  },
+  "feedback.userNotFound": {
+    "original": "usuario nao encontrado.",
+    "expressions": []
+  },
+  "feedback.wait": {
+    "original": "aguarde ${Math.ceil(2 - diffMinutes)} minuto(s) para enviar novamente.",
+    "expressions": [
+      "Math.ceil(2 - diffMinutes)"
+    ]
+  },
+  "feedback.sent": {
+    "original": "feedback enviado com sucesso!",
+    "expressions": []
+  },
+  "quiz.titleRequired": {
+    "original": "title é obrigatório",
+    "expressions": []
+  },
+  "quiz.disciplineRequired": {
+    "original": "disciplineId é obrigatório",
+    "expressions": []
+  },
+  "quiz.topicRequired": {
+    "original": "topic é obrigatório",
+    "expressions": []
+  },
+  "quiz.themeFieldRequired": {
+    "original": "theme é obrigatório",
+    "expressions": []
+  },
+  "quiz.questionCountRequired": {
+    "original": "questionCount é obrigatório",
+    "expressions": []
+  },
+  "quiz.documentIdsRequired": {
+    "original": "documentIds deve ser uma lista não vazia",
+    "expressions": []
+  },
+  "quiz.notFound": {
+    "original": "Quiz não encontrado",
+    "expressions": []
+  },
+  "quiz.questionRequired": {
+    "original": "question é obrigatório",
+    "expressions": []
+  },
+  "quiz.minimumOptions": {
+    "original": "options deve ter ao menos 2 alternativas",
+    "expressions": []
+  },
+  "quiz.correctOptionRequired": {
+    "original": "correctOption é obrigatório",
+    "expressions": []
+  },
+  "quiz.questionNotFound": {
+    "original": "Pergunta não encontrada",
+    "expressions": []
+  },
+  "quiz.addQuestionsBeforePublish": {
+    "original": "Adicione ao menos uma pergunta antes de publicar",
+    "expressions": []
+  },
+  "registration.fieldsRequired": {
+    "original": "Os campos name, email, password e code sao obrigatorios.",
+    "expressions": []
+  },
+  "registration.emailInvalid": {
+    "original": "formato de e-mail invalido!",
+    "expressions": []
+  },
+  "registration.passwordTooShort": {
+    "original": "a senha deve ter pelo menos 12 caracteres!",
+    "expressions": []
+  },
+  "registration.emailExists": {
+    "original": "usuario ja existe com este email!",
+    "expressions": []
+  },
+  "registration.classCodeInvalid": {
+    "original": "codigo de turma invalido!",
+    "expressions": []
+  },
+  "registration.creationFailed": {
+    "original": "falha ao criar usuario.",
+    "expressions": []
+  },
+  "registration.created": {
+    "original": "Usuario criado com sucesso!",
+    "expressions": []
+  },
+  "auth.credentialsInvalid": {
+    "original": "credenciais invalidas.",
+    "expressions": []
+  },
+  "auth.inactiveContactAdmin": {
+    "original": "sua conta esta inativa. entre em contato com o administrador.",
+    "expressions": []
+  },
+  "auth.loggedOut": {
+    "original": "logout realizado com sucesso",
+    "expressions": []
+  },
+  "auth.resetRequested": {
+    "original": "se o email existir, a recuperacao sera iniciada",
+    "expressions": []
+  },
+  "auth.resetFieldsRequired": {
+    "original": "token e newPassword sao obrigatorios",
+    "expressions": []
+  },
+  "auth.resetTokenInvalid": {
+    "original": "token invalido ou expirado.",
+    "expressions": []
+  },
+  "auth.passwordReset": {
+    "original": "senha redefinida com sucesso",
+    "expressions": []
+  },
+  "academic.universityCreated": {
+    "original": "universidade criada com sucesso",
+    "expressions": []
+  },
+  "academic.universityRemoved": {
+    "original": "universidade removida com sucesso",
+    "expressions": []
+  },
+  "academic.universityNotFound": {
+    "original": "universidade nao encontrada",
+    "expressions": []
+  },
+  "academic.universityUpdated": {
+    "original": "universidade atualizada com sucesso",
+    "expressions": []
+  },
+  "academic.courseCreated": {
+    "original": "curso criado com sucesso",
+    "expressions": []
+  },
+  "academic.courseRemoved": {
+    "original": "curso removido com sucesso",
+    "expressions": []
+  },
+  "academic.nameUniversityRequired": {
+    "original": "nome e universidade sao obrigatorios",
+    "expressions": []
+  },
+  "academic.courseNotFound": {
+    "original": "curso nao encontrado",
+    "expressions": []
+  },
+  "academic.courseUpdated": {
+    "original": "curso atualizado com sucesso",
+    "expressions": []
+  },
+  "academic.disciplineOutsideCourse": {
+    "original": "disciplina invalida para este curso",
+    "expressions": []
+  },
+  "academic.classCreated": {
+    "original": "turma criada com sucesso",
+    "expressions": []
+  },
+  "academic.nameCourseRequired": {
+    "original": "nome e curso sao obrigatorios",
+    "expressions": []
+  },
+  "academic.disciplinesOutsideCourse": {
+    "original": "uma ou mais disciplinas nao pertencem ao curso selecionado",
+    "expressions": []
+  },
+  "academic.classUpdated": {
+    "original": "turma atualizada com sucesso",
+    "expressions": []
+  },
+  "academic.classCodeRegenerated": {
+    "original": "codigo da turma regenerado com sucesso",
+    "expressions": []
+  },
+  "academic.classRemoved": {
+    "original": "turma removida com sucesso",
+    "expressions": []
+  },
+  "academic.classesOutsideCourse": {
+    "original": "uma ou mais turmas nao pertencem ao curso selecionado",
+    "expressions": []
+  },
+  "academic.professorsOutsideCourse": {
+    "original": "um ou mais professores nao pertencem ao curso selecionado",
+    "expressions": []
+  },
+  "academic.disciplineCreated": {
+    "original": "disciplina criada com sucesso",
+    "expressions": []
+  },
+  "academic.disciplineNotFound": {
+    "original": "disciplina nao encontrada",
+    "expressions": []
+  },
+  "academic.disciplineUpdated": {
+    "original": "disciplina atualizada com sucesso",
+    "expressions": []
+  },
+  "academic.professorIdRequired": {
+    "original": "professorId e obrigatorio",
+    "expressions": []
+  },
+  "academic.professorOutsideCourse": {
+    "original": "professor nao pertence ao curso da disciplina",
+    "expressions": []
+  },
+  "academic.professorLinked": {
+    "original": "professor vinculado a disciplina com sucesso",
+    "expressions": []
+  },
+  "academic.disciplineIdRequired": {
+    "original": "disciplineId e obrigatorio",
+    "expressions": []
+  },
+  "academic.classDisciplineCourseMismatch": {
+    "original": "turma e disciplina devem pertencer ao mesmo curso",
+    "expressions": []
+  },
+  "academic.disciplineLinked": {
+    "original": "disciplina vinculada a turma com sucesso",
+    "expressions": []
+  },
+  "academic.disciplineUnlinked": {
+    "original": "disciplina desvinculada da turma com sucesso",
+    "expressions": []
+  },
+  "academic.professorUnlinked": {
+    "original": "professor desvinculado da disciplina com sucesso",
+    "expressions": []
+  },
+  "academic.disciplineRemoved": {
+    "original": "disciplina removida com sucesso",
+    "expressions": []
+  },
+  "academic.professorNotLinked": {
+    "original": "professor nao vinculado a esta disciplina",
+    "expressions": []
+  },
+  "academic.studentIdRequired": {
+    "original": "studentId e obrigatorio",
+    "expressions": []
+  },
+  "academic.studentNotFound": {
+    "original": "aluno nao encontrado",
+    "expressions": []
+  },
+  "academic.studentOutsideClassCourse": {
+    "original": "aluno nao pertence ao curso desta turma",
+    "expressions": []
+  },
+  "academic.studentAdded": {
+    "original": "aluno adicionado a turma com sucesso",
+    "expressions": []
+  },
+  "academic.studentNeedsClass": {
+    "original": "aluno deve pertencer a uma turma; transfira-o para outra turma",
+    "expressions": []
+  },
+  "academic.studentOutsideDisciplineCourse": {
+    "original": "aluno nao pertence ao curso desta disciplina",
+    "expressions": []
+  },
+  "academic.studentClassManaged": {
+    "original": "alunos sao gerenciados pela turma; vincule a disciplina a turma do aluno",
+    "expressions": []
+  },
+  "academic.studentRemovalClassManaged": {
+    "original": "alunos sao gerenciados pela turma; remova a disciplina da grade da turma",
+    "expressions": []
+  },
+  "quiz.hubStudentsOnly": {
+    "original": "Apenas alunos podem acessar o hub",
+    "expressions": []
+  },
+  "quiz.studentProfileNotFound": {
+    "original": "Perfil de aluno não encontrado",
+    "expressions": []
+  },
+  "quiz.studentsOnly": {
+    "original": "Apenas alunos podem acessar quizzes",
+    "expressions": []
+  },
+  "quiz.answersStudentsOnly": {
+    "original": "Apenas alunos podem responder quizzes",
+    "expressions": []
+  },
+  "quiz.answersObjectRequired": {
+    "original": "answers deve ser um objeto { questionId: opcaoSelecionada }",
+    "expressions": []
+  },
+  "quiz.noPublishedQuestions": {
+    "original": "Este quiz ainda não possui perguntas",
+    "expressions": []
+  },
+  "analytics.universityRequired": {
+    "original": "universityId e obrigatorio",
+    "expressions": []
+  },
+  "analytics.clicksCounted": {
+    "original": "Cliques de categoria contabilizados com sucesso.",
+    "expressions": []
+  },
+  "insights.filtersObjectRequired": {
+    "original": "filters deve ser um objeto",
+    "expressions": []
+  },
+  "validation.fieldInvalid": {
+    "original": "${key} inválido",
+    "expressions": [
+      "key"
+    ]
+  },
+  "insights.universityFieldRequired": {
+    "original": "universityId é obrigatório",
+    "expressions": []
+  },
+  "insights.chartFieldInvalid": {
+    "original": "chart inválido",
+    "expressions": []
+  }
+}

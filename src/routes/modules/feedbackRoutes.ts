@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Router } from "express";
 import { desc, eq } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
@@ -15,13 +16,13 @@ feedbackRouter.post(
   asyncHandler(async (req, res) => {
     const message = String(req.body.message || "").trim();
     const type = String(req.body.type || "general");
-    if (!message) throw new AppError("a mensagem e obrigatoria.", 400);
+    if (!message) throw new AppError("feedback.messageRequired", 400);
     const [account] = await getDb()
       .select()
       .from(accounts)
       .where(eq(accounts.id, req.user!.id))
       .limit(1);
-    if (!account) throw new AppError("usuario nao encontrado.", 404);
+    if (!account) throw new AppError("feedback.userNotFound", 404);
     const isVip =
       req.user!.role.includes("admin") ||
       req.user!.role.includes("course-coordinator");
@@ -29,8 +30,7 @@ feedbackRouter.post(
       const diffMinutes =
         (Date.now() - new Date(account.lastFeedbackAt).getTime()) / (1000 * 60);
       if (diffMinutes < 2)
-        throw new AppError(
-          `aguarde ${Math.ceil(2 - diffMinutes)} minuto(s) para enviar novamente.`,
+        throw new AppError({ key: "feedback.wait", params: { value0: Math.ceil(2 - diffMinutes) } },
           429,
         );
     }
@@ -41,7 +41,7 @@ feedbackRouter.post(
       .update(accounts)
       .set({ lastFeedbackAt: new Date(), updatedAt: new Date() })
       .where(eq(accounts.id, account.id));
-    return res.json({ message: "feedback enviado com sucesso!" });
+    return res.json({ message: t("feedback.sent") });
   }),
 );
 

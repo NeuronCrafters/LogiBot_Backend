@@ -1,3 +1,4 @@
+import { getLanguage, normalizeLanguage, withLanguage, t, type Language } from "../../i18n";
 import { getDb } from "../../db/client";
 import {
   professorQuizAiGenerations,
@@ -36,6 +37,7 @@ export type QuizAiGenerationInput = {
   documentIds: string[];
   title?: string;
   description?: string;
+  language?: Language;
 };
 
 function truncate(value: string | undefined | null, max: number): string {
@@ -48,11 +50,7 @@ function buildPrompt(input: {
   questionCount: number;
   context: string;
 }): string {
-  return `Tema: "${input.theme}"
-Quantidade de perguntas: ${input.questionCount}
-
-Contexto dos materiais da turma:
-${input.context}`;
+  return t("quiz.generationPrompt", { theme: input.theme, count: input.questionCount, context: input.context });
 }
 
 function extractJson(text: string): GeneratedQuiz {
@@ -63,13 +61,13 @@ function extractJson(text: string): GeneratedQuiz {
 
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (!jsonMatch)
-    throw new AppError("IA não retornou JSON válido", 502);
+    throw new AppError("quiz.jsonMissing", 502);
 
   let parsed: any;
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch {
-    throw new AppError("IA retornou JSON malformado", 502);
+    throw new AppError("quiz.jsonMalformed", 502);
   }
 
   return parsed;
@@ -80,26 +78,23 @@ function validateQuizJson(
   expectedCount: number,
 ): GeneratedQuestion[] {
   if (raw.error) {
-    throw new AppError(
-      `IA indicou contexto insuficiente: ${raw.error}`,
+    throw new AppError({ key: "quiz.contextInsufficient", params: { value0: raw.error } },
       400,
     );
   }
 
   if (!Array.isArray(raw.questions)) {
-    throw new AppError("IA retornou estrutura inválida (sem questions)", 502);
+    throw new AppError("quiz.questionsMissing", 502);
   }
 
   if (raw.questions.length === 0) {
-    throw new AppError(
-      "IA não conseguiu gerar perguntas com o contexto fornecido",
+    throw new AppError("quiz.noQuestionsGenerated",
       400,
     );
   }
 
   if (raw.questions.length !== expectedCount) {
-    throw new AppError(
-      `IA gerou ${raw.questions.length} pergunta(s) mas ${expectedCount} foram solicitadas`,
+    throw new AppError({ key: "quiz.questionCountMismatch", params: { value0: raw.questions.length, value1: expectedCount } },
       502,
     );
   }
@@ -111,34 +106,31 @@ function validateQuizJson(
     const q = raw.questions[i];
 
     if (!q.question?.trim())
-      throw new AppError(`Pergunta ${i + 1} tem enunciado vazio`, 502);
+      throw new AppError({ key: "quiz.questionEmpty", params: { value0: i + 1 } }, 502);
 
     if (!Array.isArray(q.options) || q.options.length !== 4)
-      throw new AppError(
-        `Pergunta ${i + 1} deve ter exatamente 4 alternativas`,
+      throw new AppError({ key: "quiz.fourOptionsRequired", params: { value0: i + 1 } },
         502,
       );
 
     const optTexts = q.options.map((o: string) => o?.trim() ?? "");
     if (optTexts.some((o: string) => !o))
-      throw new AppError(`Pergunta ${i + 1} tem alternativa vazia`, 502);
+      throw new AppError({ key: "quiz.optionEmpty", params: { value0: i + 1 } }, 502);
 
     const unique = new Set(optTexts.map((o: string) => o.toLowerCase()));
     if (unique.size !== 4)
-      throw new AppError(
-        `Pergunta ${i + 1} tem alternativas duplicadas`,
+      throw new AppError({ key: "quiz.optionsDuplicate", params: { value0: i + 1 } },
         502,
       );
 
     const correct = String(q.correctOption || "").trim().toUpperCase();
     if (!VALID_OPTIONS.has(correct))
-      throw new AppError(
-        `Pergunta ${i + 1} tem correctOption inválido: "${q.correctOption}"`,
+      throw new AppError({ key: "quiz.correctOptionInvalid", params: { value0: i + 1, value1: q.correctOption } },
         502,
       );
 
     if (!q.explanation?.trim())
-      throw new AppError(`Pergunta ${i + 1} tem explicação vazia`, 502);
+      throw new AppError({ key: "quiz.explanationEmpty", params: { value0: i + 1 } }, 502);
 
     valid.push({
       question: truncate(q.question, 1000),
@@ -161,15 +153,16 @@ function validateQuizJson(
 
 export async function generateAiQuiz(input: QuizAiGenerationInput) {
   const { user, disciplineId, theme, questionCount, documentIds } = input;
+  const language = input.language || getLanguage();
 
   if (!theme?.trim())
-    throw new AppError("Tema é obrigatório", 400);
+    throw new AppError("quiz.themeRequired", 400);
   if (theme.trim().length > 180)
-    throw new AppError("Tema deve ter no máximo 180 caracteres", 400);
+    throw new AppError("quiz.themeTooLong", 400);
   if (!Number.isInteger(questionCount) || questionCount < 3 || questionCount > 10)
-    throw new AppError("questionCount deve ser entre 3 e 10", 400);
+    throw new AppError("quiz.questionCountRange", 400);
   if (!documentIds.length)
-    throw new AppError("Selecione ao menos um documento", 400);
+    throw new AppError("quiz.documentRequired", 400);
 
   await assertProfessorCanManageDiscipline(user, disciplineId);
 
@@ -196,8 +189,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   });
 
   if (!chunks.length) {
-    throw new AppError(
-      "Nenhum conteúdo relevante encontrado nos documentos para o tema informado",
+    throw new AppError("quiz.noRelevantContent",
       400,
     );
   }
@@ -205,14 +197,14 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   const context = chunks
     .map(
       (c, i) =>
-        `[${i + 1}] ${c.documentTitle} (trecho ${c.chunkIndex + 1})\n${c.content}`,
+        `[${i + 1}] ${c.documentTitle} (${t("common.chunk", { number: c.chunkIndex + 1 }, language)})\n${c.content}`,
     )
     .join("\n\n");
 
-  const prompt = buildPrompt({ theme: theme.trim(), questionCount, context });
+  const prompt = withLanguage(language, () => buildPrompt({ theme: theme.trim(), questionCount, context }));
 
   const t1 = Date.now();
-  const agentResponse = await askQuizAiAgent(prompt);
+  const agentResponse = await withLanguage(language, () => askQuizAiAgent(prompt));
   logger.info("QuizAI", "Agent responded.", {
     elapsedMs: Date.now() - t1,
   });
@@ -223,7 +215,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
   const db = getDb();
 
   const quizTitle = truncate(
-    input.title || rawJson.title || `Quiz: ${theme.trim()}`,
+    input.title || rawJson.title || t("quiz.defaultTitle", { theme: theme.trim() }, language),
     120,
   );
   const quizDescription = truncate(
@@ -238,6 +230,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
       disciplineId,
       classId: null,
       generationSource: "ai",
+      language,
       title: quizTitle,
       topic: truncate(theme.trim(), 180),
       description: quizDescription || null,
@@ -272,6 +265,7 @@ export async function generateAiQuiz(input: QuizAiGenerationInput) {
     retrievedChunkRefs: chunkRefs,
     provider: agentResponse.provider,
     model: null,
+    language,
     status: "done",
   });
 

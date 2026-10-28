@@ -146,3 +146,35 @@ describe("dashboardInsightsService", () => {
     ).rejects.toMatchObject({ statusCode: 422 });
   });
 });
+
+import { withLanguage, getLanguage } from "../i18n";
+
+describe("cache de insights por idioma", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    __resetDashboardInsightsCacheForTests();
+    getSummary.mockResolvedValue({ totalCorrectAnswers:8,totalWrongAnswers:2,usageTimeInSeconds:3600,dailyUsage:[{date:'2026-06-18',usage:60}],subjectCounts:{variaveis:4} });
+    askDashboardInsightsAgent.mockImplementation(async () => {
+      const language=getLanguage();
+      await Promise.resolve();
+      return {text:language};
+    });
+  });
+  it("separa resultados e deduplicação PT/EN/ES simultâneos", async () => {
+    const languages=['pt-BR','en-US','es-ES'] as const;
+    const results=await Promise.all(languages.map(language=>withLanguage(language,()=>generateChartInsight({chart:'accuracy',filters}))));
+    expect(results.map(result=>result.insight)).toEqual([...languages]);
+    expect(askDashboardInsightsAgent).toHaveBeenCalledTimes(3);
+    for(const language of languages) {
+      const cached=await withLanguage(language,()=>generateChartInsight({chart:'accuracy',filters}));
+      expect(cached.cached).toBe(true);
+      expect(cached.insight).toBe(language);
+      expect(cached.language).toBe(language);
+    }
+    expect(askDashboardInsightsAgent).toHaveBeenCalledTimes(3);
+    const prompts=askDashboardInsightsAgent.mock.calls.map(call=>call[0]);
+    expect(prompts[0]).toContain('## Leitura principal');
+    expect(prompts[1]).toContain('## Main findings');
+    expect(prompts[2]).toContain('## Lectura principal');
+  });
+});

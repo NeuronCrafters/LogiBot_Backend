@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
@@ -8,7 +9,7 @@ import {
 } from "../ai/openRouterService";
 import {
   buildSystemPrompt,
-  EMPTY_CONTEXT_TEXT,
+  getEmptyContextText,
   queryChroma,
   revalidateChunks,
 } from "./contextRagStrategy";
@@ -171,7 +172,7 @@ export async function generateHybridRagResponse(
 
   if (!retrievedChunks.length) {
     return {
-      text: EMPTY_CONTEXT_TEXT,
+      text: getEmptyContextText(),
       provider: "rag-hybrid-empty",
       retrievedChunks: [],
     };
@@ -193,7 +194,7 @@ export async function generateHybridRagResponse(
   return {
     text:
       agentResponse?.text ??
-      "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
+      t("chat.fallback"),
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks,
   };
@@ -222,9 +223,9 @@ export async function streamHybridRagResponse(
   await callbacks.onRetrieval?.(retrievedChunks);
 
   if (!retrievedChunks.length) {
-    await callbacks.onToken?.(EMPTY_CONTEXT_TEXT);
+    await callbacks.onToken?.(getEmptyContextText());
     return {
-      text: EMPTY_CONTEXT_TEXT,
+      text: getEmptyContextText(),
       provider: "rag-hybrid-empty",
       retrievedChunks: [],
     };
@@ -256,7 +257,7 @@ export async function streamHybridRagResponse(
   return {
     text:
       agentResponse?.text ??
-      "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?",
+      t("chat.fallback"),
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks,
     usage: agentResponse?.usage,

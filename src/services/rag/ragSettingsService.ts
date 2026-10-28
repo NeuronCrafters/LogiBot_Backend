@@ -23,7 +23,7 @@ export type RagSettingsResponse = {
 function normalizeRagMode(value: unknown): RagMode {
   const mode = String(value || "").trim() as RagMode;
   if (!ALLOWED_RAG_MODES.has(mode)) {
-    throw new AppError("ragMode deve ser none, context, self ou hybrid", 400);
+    throw new AppError("rag.modeInvalid", 400);
   }
   return mode;
 }
@@ -36,7 +36,7 @@ function normalizeIntegerInRange(
 ) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
-    throw new AppError(`${field} deve estar entre ${min} e ${max}`, 400);
+    throw new AppError({ key: "validation.range", params: { value0: field, value1: min, value2: max } }, 400);
   }
   return parsed;
 }
@@ -47,7 +47,7 @@ function normalizeOptionalText(value: unknown, maxLength: number) {
   const text = String(value).trim();
   if (!text) return null;
   if (text.length > maxLength)
-    throw new AppError(`texto deve ter no maximo ${maxLength} caracteres`, 400);
+    throw new AppError({ key: "validation.textLength", params: { value0: maxLength } }, 400);
   return text;
 }
 

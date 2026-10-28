@@ -25,7 +25,7 @@ quizRouter.get(
   "/student/hub",
   asyncHandler(async (req, res) => {
     if (!req.user!.role.includes("student"))
-      throw new AppError("Apenas alunos podem acessar o hub", 403);
+      throw new AppError("quiz.hubStudentsOnly", 403);
 
     const db = getDb();
 
@@ -35,7 +35,7 @@ quizRouter.get(
       .where(eq(studentProfiles.accountId, req.user!.id))
       .limit(1);
 
-    if (!profile) throw new AppError("Perfil de aluno não encontrado", 404);
+    if (!profile) throw new AppError("quiz.studentProfileNotFound", 404);
 
     const disciplineRows = await db
       .select({ disciplineId: classDisciplines.disciplineId })
@@ -50,6 +50,7 @@ quizRouter.get(
       .select({
         id: professorQuizzes.id,
         title: professorQuizzes.title,
+        language: professorQuizzes.language,
         topic: professorQuizzes.topic,
         description: professorQuizzes.description,
         disciplineId: professorQuizzes.disciplineId,
@@ -121,7 +122,7 @@ quizRouter.get(
   "/student/:id",
   asyncHandler(async (req, res) => {
     if (!req.user!.role.includes("student"))
-      throw new AppError("Apenas alunos podem acessar quizzes", 403);
+      throw new AppError("quiz.studentsOnly", 403);
 
     const db = getDb();
 
@@ -129,6 +130,7 @@ quizRouter.get(
       .select({
         id: professorQuizzes.id,
         title: professorQuizzes.title,
+        language: professorQuizzes.language,
         topic: professorQuizzes.topic,
         description: professorQuizzes.description,
         disciplineId: professorQuizzes.disciplineId,
@@ -139,7 +141,7 @@ quizRouter.get(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
 
     const questions = await db
       .select({
@@ -161,11 +163,11 @@ quizRouter.post(
   "/student/:id/attempt",
   asyncHandler(async (req, res) => {
     if (!req.user!.role.includes("student"))
-      throw new AppError("Apenas alunos podem responder quizzes", 403);
+      throw new AppError("quiz.answersStudentsOnly", 403);
 
     const answers = req.body.answers as Record<string, string> | undefined;
     if (!answers || typeof answers !== "object" || Array.isArray(answers))
-      throw new AppError("answers deve ser um objeto { questionId: opcaoSelecionada }", 400);
+      throw new AppError("quiz.answersObjectRequired", 400);
 
     const db = getDb();
 
@@ -173,13 +175,14 @@ quizRouter.post(
       .select({
         id: professorQuizzes.id,
         title: professorQuizzes.title,
+        language: professorQuizzes.language,
         topic: professorQuizzes.topic,
       })
       .from(professorQuizzes)
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
 
     const questions = await db
       .select()
@@ -188,7 +191,7 @@ quizRouter.post(
       .orderBy(asc(professorQuizQuestions.orderIndex));
 
     if (!questions.length)
-      throw new AppError("Este quiz ainda não possui perguntas", 400);
+      throw new AppError("quiz.noPublishedQuestions", 400);
 
     const result = checkAnswers(questions, answers);
 
@@ -251,7 +254,7 @@ quizRouter.get(
       !req.user!.role.includes("professor") &&
       !req.user!.role.includes("course-coordinator")
     ) {
-      throw new AppError("Acesso negado", 403);
+      throw new AppError("auth.accessDeniedCapital", 403);
     }
 
     const db = getDb();
@@ -261,6 +264,7 @@ quizRouter.get(
         attemptId: professorQuizAttempts.id,
         quizId: professorQuizAttempts.quizId,
         quizTitle: professorQuizzes.title,
+        language: professorQuizzes.language,
         topic: professorQuizzes.topic,
         disciplineName: disciplines.name,
         score: professorQuizAttempts.score,

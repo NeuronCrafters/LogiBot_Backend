@@ -1,3 +1,4 @@
+import { getLanguage, normalizeLanguage } from "../../i18n";
 import { Router } from "express";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
@@ -60,6 +61,7 @@ professorQuizRouter.get(
       .select({
         id: professorQuizzes.id,
         title: professorQuizzes.title,
+        language: professorQuizzes.language,
         topic: professorQuizzes.topic,
         description: professorQuizzes.description,
         disciplineId: professorQuizzes.disciplineId,
@@ -93,16 +95,19 @@ professorQuizRouter.post(
       description?: string;
     };
 
-    if (!title?.trim()) throw new AppError("title é obrigatório", 400);
-    if (!disciplineId) throw new AppError("disciplineId é obrigatório", 400);
-    if (!topic?.trim()) throw new AppError("topic é obrigatório", 400);
+    if (!title?.trim()) throw new AppError("quiz.titleRequired", 400);
+    if (!disciplineId) throw new AppError("quiz.disciplineRequired", 400);
+    if (!topic?.trim()) throw new AppError("quiz.topicRequired", 400);
 
+    const language = req.body.language === undefined ? getLanguage() : normalizeLanguage(req.body.language);
+    if (!language) throw new AppError("language.invalid", 400);
     const db = getDb();
 
     const [quiz] = await db
       .insert(professorQuizzes)
       .values({
         professorId: req.user!.id,
+        language,
         disciplineId,
         title: title.trim(),
         topic: topic.trim(),
@@ -134,13 +139,16 @@ professorQuizRouter.post(
       description?: string;
     };
 
-    if (!disciplineId) throw new AppError("disciplineId é obrigatório", 400);
-    if (!theme?.trim()) throw new AppError("theme é obrigatório", 400);
-    if (!questionCount) throw new AppError("questionCount é obrigatório", 400);
+    if (!disciplineId) throw new AppError("quiz.disciplineRequired", 400);
+    if (!theme?.trim()) throw new AppError("quiz.themeFieldRequired", 400);
+    if (!questionCount) throw new AppError("quiz.questionCountRequired", 400);
     if (!Array.isArray(documentIds) || !documentIds.length)
-      throw new AppError("documentIds deve ser uma lista não vazia", 400);
+      throw new AppError("quiz.documentIdsRequired", 400);
 
+    const language = req.body.language === undefined ? getLanguage() : normalizeLanguage(req.body.language);
+    if (!language) throw new AppError("language.invalid", 400);
     const result = await generateAiQuiz({
+      language,
       user: req.user!,
       disciplineId,
       theme: theme.trim(),
@@ -165,8 +173,8 @@ professorQuizRouter.put(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!existing) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(existing, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!existing) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(existing, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     const { title, topic, description, disciplineId } = req.body as {
       title?: string;
@@ -202,8 +210,8 @@ professorQuizRouter.delete(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!existing) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(existing, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!existing) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(existing, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     await db.delete(professorQuizzes).where(eq(professorQuizzes.id, req.params.id));
 
@@ -222,8 +230,8 @@ professorQuizRouter.get(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(quiz, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     const questions = await db
       .select()
@@ -246,8 +254,8 @@ professorQuizRouter.post(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(quiz, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     const { question, options, correctOption, explanation, orderIndex } =
       req.body as {
@@ -258,10 +266,10 @@ professorQuizRouter.post(
         orderIndex?: number;
       };
 
-    if (!question?.trim()) throw new AppError("question é obrigatório", 400);
+    if (!question?.trim()) throw new AppError("quiz.questionRequired", 400);
     if (!Array.isArray(options) || options.length < 2)
-      throw new AppError("options deve ter ao menos 2 alternativas", 400);
-    if (!correctOption?.trim()) throw new AppError("correctOption é obrigatório", 400);
+      throw new AppError("quiz.minimumOptions", 400);
+    if (!correctOption?.trim()) throw new AppError("quiz.correctOptionRequired", 400);
 
     const [currentMax] = await db
       .select({ max: sql<number>`coalesce(max(${professorQuizQuestions.orderIndex}), -1)` })
@@ -300,7 +308,7 @@ professorQuizRouter.put(
       )
       .limit(1);
 
-    if (!existing) throw new AppError("Pergunta não encontrada", 404);
+    if (!existing) throw new AppError("quiz.questionNotFound", 404);
 
     const [quiz] = await db
       .select({ professorId: professorQuizzes.professorId, disciplineId: professorQuizzes.disciplineId })
@@ -308,7 +316,7 @@ professorQuizRouter.put(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz || !canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz || !canManageQuiz(quiz, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     const { question, options, correctOption, explanation, orderIndex } =
       req.body as {
@@ -346,8 +354,8 @@ professorQuizRouter.delete(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(quiz, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     await db
       .delete(professorQuizQuestions)
@@ -373,8 +381,8 @@ professorQuizRouter.post(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(quiz, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     const [questionCount] = await db
       .select({ count: count(professorQuizQuestions.id) })
@@ -382,7 +390,7 @@ professorQuizRouter.post(
       .where(eq(professorQuizQuestions.quizId, req.params.id));
 
     if (!questionCount?.count || Number(questionCount.count) === 0)
-      throw new AppError("Adicione ao menos uma pergunta antes de publicar", 400);
+      throw new AppError("quiz.addQuestionsBeforePublish", 400);
 
     const [updated] = await db
       .update(professorQuizzes)
@@ -404,8 +412,8 @@ professorQuizRouter.post(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(quiz, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     const [updated] = await db
       .update(professorQuizzes)
@@ -428,8 +436,8 @@ professorQuizRouter.get(
       .where(eq(professorQuizzes.id, req.params.id))
       .limit(1);
 
-    if (!quiz) throw new AppError("Quiz não encontrado", 404);
-    if (!canManageQuiz(quiz, req.user!)) throw new AppError("Acesso negado", 403);
+    if (!quiz) throw new AppError("quiz.notFound", 404);
+    if (!canManageQuiz(quiz, req.user!)) throw new AppError("auth.accessDeniedCapital", 403);
 
     const attempts = await db
       .select({

@@ -49,8 +49,7 @@ export async function retrieveChunksForQuiz(input: {
   const { user, theme, documentIds, questionCount } = input;
 
   if (!documentIds.length)
-    throw new AppError(
-      "Selecione ao menos um documento para gerar o quiz",
+    throw new AppError("quiz.selectSourceDocument",
       400,
     );
 
@@ -65,7 +64,7 @@ export async function retrieveChunksForQuiz(input: {
   const manageableClassIds = manageableClasses.map((c) => c.id);
 
   if (!manageableClassIds.length)
-    throw new AppError("Nenhuma turma gerenciável encontrada", 403);
+    throw new AppError("rag.noManageableClasses", 403);
 
   const db = getDb();
 
@@ -88,16 +87,14 @@ export async function retrieveChunksForQuiz(input: {
     );
 
   if (!validDocs.length)
-    throw new AppError(
-      "Nenhum documento selecionado está pronto para uso",
+    throw new AppError("quiz.documentsNotReady",
       400,
     );
 
   const validDocIds = new Set(validDocs.map((d) => d.id));
   const invalidIds = documentIds.filter((id) => !validDocIds.has(id));
   if (invalidIds.length)
-    throw new AppError(
-      `Documentos inválidos, sem permissão ou não prontos: ${invalidIds.join(", ")}`,
+    throw new AppError({ key: "quiz.documentsInvalid", params: { value0: invalidIds.join(", ") } },
       400,
     );
 

@@ -21,6 +21,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/PROMPT_CHAT.md /app/PROMPT_QUIZ.md /app/PROMPT_DASHBOARD_INSIGHTS.md ./
+COPY --from=build /app/prompts ./prompts
 
 RUN mkdir -p /var/logibots/uploads/rag \
   && chown -R node:node /var/logibots

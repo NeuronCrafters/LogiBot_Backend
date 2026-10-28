@@ -1,3 +1,5 @@
+import { AppError } from "../../exceptions/AppError";
+import { getLanguage, t } from "../../i18n";
 import { Router } from "express";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth } from "../../http/auth";
@@ -118,9 +120,9 @@ chatRouter.post(
       if (!res.writableEnded) {
         writeSse(res, "error", {
           message:
-            error instanceof Error
+            error instanceof Error && (error instanceof AppError || getLanguage() === "pt-BR")
               ? error.message
-              : "Erro ao processar mensagem.",
+              : t("chat.streamError"),
         });
       }
     } finally {

@@ -6,7 +6,7 @@ import { withAgentRetry } from "../../utils/agentRetry";
 
 function getConfig() {
   const config = getOpenRouterConfig();
-  if (!config) throw new AppError("O serviço de insights de IA não está configurado. Defina OPENROUTER_API_KEY e OPENROUTER_MODEL.", 503);
+  if (!config) throw new AppError("insights.aiNotConfigured", 503);
   const timeoutValue = Number(process.env.DASHBOARD_INSIGHTS_TIMEOUT_MS || 90000);
   const timeoutMs = Number.isFinite(timeoutValue) && timeoutValue > 0
     ? Math.min(timeoutValue, 180000)
@@ -77,8 +77,7 @@ export async function askDashboardInsightsAgent(prompt: string) {
       status: error?.response?.status,
       message: error?.response?.data?.message || error?.message,
     });
-    throw new AppError(
-      "Não foi possível gerar o insight de IA agora. Tente novamente.",
+    throw new AppError("insights.aiUnavailable",
       503,
     );
   }

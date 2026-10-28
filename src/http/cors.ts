@@ -30,8 +30,10 @@ export const corsOptions: CorsOptions = {
     "X-Requested-With",
     "x-api-key",
     "X-API-Key",
+    "Accept-Language",
+    "X-Language",
   ],
-  exposedHeaders: ["Set-Cookie"],
+  exposedHeaders: ["Set-Cookie", "Content-Language"],
   maxAge: 86400,
 };
 

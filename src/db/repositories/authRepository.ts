@@ -181,6 +181,7 @@ export async function getPublicMe(db: AnyDbClient, account: AccountWithAuth) {
   ]);
 
   return {
+    preferredLanguage: account.preferredLanguage,
     _id: account.id,
     id: account.id,
     name: account.name,

@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -18,6 +20,7 @@ export const accounts = pgTable("accounts", {
   passwordHash: text("password_hash"),
   status: text("status").notNull().default("active"),
   photo: text("photo"),
+  preferredLanguage: text("preferred_language"),
   resetPasswordToken: text("reset_password_token"),
   resetPasswordExpires: timestamp("reset_password_expires", {
     withTimezone: true,
@@ -29,7 +32,9 @@ export const accounts = pgTable("accounts", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  languageCheck: check("accounts_preferred_language_check", sql`${table.preferredLanguage} IS NULL OR ${table.preferredLanguage} IN ('pt-BR', 'en-US', 'es-ES')`),
+}));
 
 export const accountRoles = pgTable(
   "account_roles",
@@ -386,6 +391,9 @@ export const chatGenerationJobs = pgTable(
     status: text("status").notNull().default("queued"),
     attempts: integer("attempts").notNull().default(0),
     provider: text("provider"),
+    outputLanguage: text("output_language").notNull().default("pt-BR"),
+    errorCode: text("error_code"),
+    errorParams: jsonb("error_params").notNull().default({}),
     retrievedChunks: jsonb("retrieved_chunks").notNull().default([]),
     timingsMs: jsonb("timings_ms").notNull().default({}),
     errorMessage: text("error_message"),
@@ -400,6 +408,7 @@ export const chatGenerationJobs = pgTable(
       .defaultNow(),
   },
   (table) => ({
+    languageCheck: check("chat_jobs_output_language_check", sql`${table.outputLanguage} IN ('pt-BR', 'en-US', 'es-ES')`),
     statusLockedCreatedIdx: index(
       "chat_generation_jobs_status_locked_created_idx",
     ).on(table.status, table.lockedAt, table.createdAt),
@@ -600,6 +609,7 @@ export const professorQuizzes = pgTable(
       onDelete: "set null",
     }),
     generationSource: text("generation_source").notNull().default("manual"),
+    language: text("language"),
     title: text("title").notNull(),
     topic: text("topic").notNull(),
     description: text("description"),
@@ -612,6 +622,7 @@ export const professorQuizzes = pgTable(
       .defaultNow(),
   },
   (table) => ({
+    languageCheck: check("professor_quizzes_language_check", sql`${table.language} IS NULL OR ${table.language} IN ('pt-BR', 'en-US', 'es-ES')`),
     idxDisciplineStatusClass: index("idx_pq_discipline_status_class").on(
       table.disciplineId,
       table.status,
@@ -686,6 +697,7 @@ export const professorQuizAiGenerations = pgTable(
       .$type<string[]>(),
     provider: text("provider"),
     model: text("model"),
+    language: text("language"),
     status: text("status").notNull().default("done"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -693,6 +705,7 @@ export const professorQuizAiGenerations = pgTable(
       .defaultNow(),
   },
   (table) => ({
+    languageCheck: check("quiz_generations_language_check", sql`${table.language} IS NULL OR ${table.language} IN ('pt-BR', 'en-US', 'es-ES')`),
     idxQuizId: index("idx_pqag_quiz_id").on(table.quizId),
   }),
 );

@@ -1,3 +1,4 @@
+import { getLanguage, isMessageKey, normalizeLanguage, withLanguage, t, type Language, type MessageParams } from "../../i18n";
 import { randomUUID } from "crypto";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
@@ -22,11 +23,10 @@ import {
 } from "../generation/generationTypes";
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 
-const DEFAULT_CHAT_TITLE = "Nova Conversa";
 const MAX_CHAT_TITLE_LENGTH = 56;
 
 export function isDefaultChatTitle(title?: string | null) {
-  return !title || title.trim() === DEFAULT_CHAT_TITLE;
+  return !title || ["Nova Conversa", "New Conversation", "Nueva conversación"].includes(title.trim());
 }
 
 export function buildChatSessionTitle(message: string) {
@@ -35,7 +35,7 @@ export function buildChatSessionTitle(message: string) {
     .replace(/[`*_#>[\](){}]/g, "")
     .trim();
 
-  if (!normalized) return DEFAULT_CHAT_TITLE;
+  if (!normalized) return t("chat.defaultTitle");
   if (normalized.length <= MAX_CHAT_TITLE_LENGTH) return normalized;
 
   return `${normalized.slice(0, MAX_CHAT_TITLE_LENGTH - 1).trimEnd()}...`;
@@ -54,7 +54,7 @@ export async function addChatMessage(input: {
   const title =
     input.role === "user"
       ? buildChatSessionTitle(input.content)
-      : DEFAULT_CHAT_TITLE;
+      : t("chat.defaultTitle");
 
   await db
     .insert(chatSessions)
@@ -88,7 +88,7 @@ export async function addChatMessage(input: {
       role: input.role,
       content: input.content,
       detectedTopic: input.topic || null,
-      metadata: input.metadata || {},
+      metadata: { ...input.metadata, ...(input.role === "assistant" ? { outputLanguage: getLanguage() } : { requestLanguage: getLanguage() }) },
     })
     .returning({ id: chatMessages.id });
 
@@ -149,7 +149,7 @@ export async function sendChatMessage(input: {
   sessionId?: string;
 }) {
   const message = String(input.message || "").trim();
-  if (!message) throw new AppError("message e obrigatorio", 400);
+  if (!message) throw new AppError("chat.messageRequired", 400);
 
   const enriched = validateAndEnrichPrompt(message);
   const detectedTopic = enriched?.subject ?? null;
@@ -173,6 +173,7 @@ export async function sendChatMessage(input: {
       chatSessionId: userMessage.chatSessionId,
       userMessageId: userMessage.messageId,
       status: "queued",
+      outputLanguage: getLanguage(),
     })
     .returning({ id: chatGenerationJobs.id });
 
@@ -185,6 +186,7 @@ export async function sendChatMessage(input: {
 
   return {
     status: "queued" as const,
+    outputLanguage: getLanguage(),
     jobId: job.id,
     sessionId: userMessage.sessionId,
     userMessageId: userMessage.messageId,
@@ -201,6 +203,7 @@ type LockedChatJob = {
   message: string;
   detectedTopic: string | null;
   attemptNumber: number;
+  outputLanguage: Language;
 };
 
 function rowsFromExecute(result: any): any[] {
@@ -219,11 +222,8 @@ function getChatGenerationJobTimeoutMs() {
   return Number.isFinite(value) && value > 0 ? value : 600_000;
 }
 
-function isTechnicalFallback(text: string, provider: string) {
-  return (
-    provider.toLowerCase().includes("fallback") ||
-    text.toLowerCase().includes("tive um problema tecnico")
-  );
+function isTechnicalFallback(provider: string) {
+  return provider.toLowerCase().includes("fallback");
 }
 
 type StreamChatCallbacks = {
@@ -246,7 +246,7 @@ export async function streamChatMessage(
   callbacks: StreamChatCallbacks = {},
 ) {
   const message = String(input.message || "").trim();
-  if (!message) throw new AppError("message e obrigatorio", 400);
+  if (!message) throw new AppError("chat.messageRequired", 400);
 
   const totalStartedAt = process.hrtime.bigint();
   const timingsMs: ChatTimings = {};
@@ -312,8 +312,8 @@ export async function streamChatMessage(
     };
   }
 
-  if (isTechnicalFallback(agentResponse.text, agentResponse.provider)) {
-    throw new Error("Agent retornou fallback tecnico");
+  if (isTechnicalFallback(agentResponse.provider)) {
+    throw new AppError("chat.technicalFallback", 503);
   }
 
   addChatTiming(timingsMs, "total", totalStartedAt);
@@ -358,7 +358,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
       promise,
       new Promise<T>((_resolve, reject) => {
         timer = setTimeout(
-          () => reject(new Error("tempo maximo do job de chat excedido")),
+          () => reject(new AppError("chat.jobTimedOut", 504)),
           timeoutMs,
         );
       }),
@@ -380,6 +380,7 @@ async function lockNextChatJob(): Promise<LockedChatJob | null> {
         j.chat_session_id as "chatSessionId",
         j.user_message_id as "userMessageId",
         j.attempts as "attempts",
+        j.output_language as "outputLanguage",
         s.session_id as "sessionId",
         m.content as "message",
         m.detected_topic as "detectedTopic"
@@ -418,6 +419,7 @@ async function lockNextChatJob(): Promise<LockedChatJob | null> {
       message: row.message,
       detectedTopic: row.detectedTopic,
       attemptNumber: Number(row.attempts || 0) + 1,
+      outputLanguage: normalizeLanguage(row.outputLanguage) || "pt-BR",
     };
   });
 }
@@ -439,6 +441,8 @@ async function markChatJobFailed(input: {
     .set({
       status: shouldRetry ? "queued" : "failed",
       errorMessage: message,
+      errorCode: input.error instanceof AppError ? input.error.code || null : null,
+      errorParams: input.error instanceof AppError ? input.error.params : {},
       lockedAt: null,
       updatedAt: now,
       completedAt: shouldRetry ? null : now,
@@ -474,89 +478,93 @@ export async function processNextChatGenerationJob() {
   const locked = await lockNextChatJob();
   if (!locked) return false;
 
-  const totalStartedAt = process.hrtime.bigint();
-  const timingsMs: ChatTimings = {};
+  return withLanguage(locked.outputLanguage, async () => {
+    const totalStartedAt = process.hrtime.bigint();
+    const timingsMs: ChatTimings = {};
 
-  logger.info("ChatWorker", "Job started.", {
-    jobId: locked.jobId,
-    userId: locked.userId,
-    sessionId: locked.sessionId,
-    attemptNumber: locked.attemptNumber,
-  });
-
-  try {
-    const result = await withTimeout(
-      (async () => {
-        const history = await measureChatTiming(timingsMs, "db/history", () =>
-          getRecentChatMessages(locked.userId, locked.sessionId),
-        );
-
-        const agentResponse = await generateChatResponse({
-          userId: locked.userId,
-          message: locked.message,
-          history,
-          timings: timingsMs,
-        });
-
-        if (isTechnicalFallback(agentResponse.text, agentResponse.provider)) {
-          throw new Error("Agent retornou fallback tecnico");
-        }
-
-        const assistantMessage = await addChatMessage({
-          userId: locked.userId,
-          sessionId: locked.sessionId,
-          role: "assistant",
-          content: agentResponse.text,
-          topic: locked.detectedTopic,
-          metadata: {
-            chatGenerationJobId: locked.jobId,
-            provider: agentResponse.provider,
-            timingsMs,
-            retrievedChunks: agentResponse.retrievedChunks,
-          },
-        });
-
-        return { agentResponse, assistantMessage };
-      })(),
-      getChatGenerationJobTimeoutMs(),
-    );
-
-    addChatTiming(timingsMs, "total", totalStartedAt);
-
-    await markChatJobDone({
-      jobId: locked.jobId,
-      assistantMessageId: result.assistantMessage.messageId,
-      provider: result.agentResponse.provider,
-      retrievedChunks: result.agentResponse.retrievedChunks,
-      timingsMs,
-    });
-
-    logger.info("ChatWorker", "Job completed.", {
+    logger.info("ChatWorker", "Job started.", {
       jobId: locked.jobId,
       userId: locked.userId,
       sessionId: locked.sessionId,
-      provider: result.agentResponse.provider,
-      timingsMs,
-    });
-
-    return true;
-  } catch (error) {
-    addChatTiming(timingsMs, "total", totalStartedAt);
-
-    logger.error("ChatWorker", "Job failed.", {
-      jobId: locked.jobId,
-      userId: locked.userId,
-      sessionId: locked.sessionId,
-      message: error instanceof Error ? error.message : String(error),
-      timingsMs,
-    });
-    await markChatJobFailed({
-      jobId: locked.jobId,
       attemptNumber: locked.attemptNumber,
-      error,
+      outputLanguage: getLanguage(),
     });
-    return true;
-  }
+
+    try {
+      const result = await withTimeout(
+        (async () => {
+          const history = await measureChatTiming(timingsMs, "db/history", () =>
+            getRecentChatMessages(locked.userId, locked.sessionId),
+          );
+
+          const agentResponse = await generateChatResponse({
+            userId: locked.userId,
+            message: locked.message,
+            history,
+            timings: timingsMs,
+          });
+
+          if (isTechnicalFallback(agentResponse.provider)) {
+            throw new AppError("chat.technicalFallback", 503);
+          }
+
+          const assistantMessage = await addChatMessage({
+            userId: locked.userId,
+            sessionId: locked.sessionId,
+            role: "assistant",
+            content: agentResponse.text,
+            topic: locked.detectedTopic,
+            metadata: {
+              chatGenerationJobId: locked.jobId,
+              provider: agentResponse.provider,
+              timingsMs,
+              retrievedChunks: agentResponse.retrievedChunks,
+            },
+          });
+
+          return { agentResponse, assistantMessage };
+        })(),
+        getChatGenerationJobTimeoutMs(),
+      );
+
+      addChatTiming(timingsMs, "total", totalStartedAt);
+
+      await markChatJobDone({
+        jobId: locked.jobId,
+        assistantMessageId: result.assistantMessage.messageId,
+        provider: result.agentResponse.provider,
+        retrievedChunks: result.agentResponse.retrievedChunks,
+        timingsMs,
+      });
+
+      logger.info("ChatWorker", "Job completed.", {
+        jobId: locked.jobId,
+        userId: locked.userId,
+        sessionId: locked.sessionId,
+        provider: result.agentResponse.provider,
+        outputLanguage: getLanguage(),
+        timingsMs,
+      });
+
+      return true;
+    } catch (error) {
+      addChatTiming(timingsMs, "total", totalStartedAt);
+
+      logger.error("ChatWorker", "Job failed.", {
+        jobId: locked.jobId,
+        userId: locked.userId,
+        sessionId: locked.sessionId,
+        message: error instanceof Error ? error.message : String(error),
+        timingsMs,
+      });
+      await markChatJobFailed({
+        jobId: locked.jobId,
+        attemptNumber: locked.attemptNumber,
+        error,
+      });
+      return true;
+    }
+  });
 }
 
 async function getQueuePosition(job: {
@@ -594,6 +602,9 @@ export async function getChatGenerationJobStatus(userId: string, jobId: string) 
       retrievedChunks: chatGenerationJobs.retrievedChunks,
       timingsMs: chatGenerationJobs.timingsMs,
       errorMessage: chatGenerationJobs.errorMessage,
+      errorCode: chatGenerationJobs.errorCode,
+      errorParams: chatGenerationJobs.errorParams,
+      outputLanguage: chatGenerationJobs.outputLanguage,
       userMessageId: chatGenerationJobs.userMessageId,
       assistantMessageId: chatGenerationJobs.assistantMessageId,
       createdAt: chatGenerationJobs.createdAt,
@@ -613,11 +624,12 @@ export async function getChatGenerationJobStatus(userId: string, jobId: string) 
     )
     .limit(1);
 
-  if (!row) throw new AppError("job de chat nao encontrado", 404);
+  if (!row) throw new AppError("chat.jobNotFound", 404);
 
   const base = {
     status: row.status,
     jobId: row.id,
+    outputLanguage: row.outputLanguage,
     sessionId: row.sessionId,
     userMessageId: row.userMessageId,
     timingsMs: row.timingsMs || {},
@@ -637,9 +649,9 @@ export async function getChatGenerationJobStatus(userId: string, jobId: string) 
   if (row.status === "failed") {
     return {
       ...base,
-      errorMessage:
-        row.errorMessage ||
-        "Nao consegui concluir sua resposta agora. Tente novamente.",
+      errorMessage: row.errorCode && isMessageKey(row.errorCode)
+        ? new AppError({ key: row.errorCode as import("../../i18n").MessageKey, params: row.errorParams as MessageParams }).message
+        : getLanguage() === "pt-BR" && row.errorMessage ? row.errorMessage : t("chat.jobFailed"),
     };
   }
 

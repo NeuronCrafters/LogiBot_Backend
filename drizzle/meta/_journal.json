@@ -15,6 +15,13 @@
       "when": 1786808806945,
       "tag": "0001_rag_chunks_fts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793239200000,
+      "tag": "0002_api_languages",
+      "breakpoints": true
     }
   ]
 }

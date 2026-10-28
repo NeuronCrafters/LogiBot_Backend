@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 export type QuizCheckResult = {
   correct: number;
   wrong: number;
@@ -22,7 +23,7 @@ type QuestionForCheck = {
 
 function optionText(letter: string, options: string[]): string {
   const index = letter.toUpperCase().charCodeAt(0) - 65;
-  return options[index] ?? "Opção não encontrada";
+  return options[index] ?? t("quiz.optionNotFound");
 }
 
 export function checkAnswers(

@@ -6,7 +6,7 @@ import { withAgentRetry } from "../../utils/agentRetry";
 
 function getConfig() {
   const config = getOpenRouterConfig();
-  if (!config) throw new AppError("O serviço de geração de quiz por IA não está configurado. Defina OPENROUTER_API_KEY e OPENROUTER_MODEL.", 503);
+  if (!config) throw new AppError("quiz.aiNotConfigured", 503);
   const timeoutValue = Number(process.env.QUIZ_AI_GENERATION_TIMEOUT_MS || 300000);
   const timeoutMs = Number.isFinite(timeoutValue) && timeoutValue > 0
     ? Math.min(timeoutValue, 300000)
@@ -75,8 +75,7 @@ export async function askQuizAiAgent(prompt: string) {
       status: error?.response?.status,
       message: error?.response?.data?.message || error?.message,
     });
-    throw new AppError(
-      "Não foi possível gerar o quiz com IA agora. Tente novamente.",
+    throw new AppError("quiz.aiUnavailable",
       503,
     );
   }

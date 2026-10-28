@@ -13,6 +13,8 @@ import { processNextRagJob } from "./services/rag/ragIngestionWorkerService";
 import { getRagHealth } from "./services/rag/ragHealthService";
 import { parsePort } from "./config/env";
 
+import { languageMiddleware } from "./i18n/middleware";
+
 const SCOPE = "RagWorkerServer";
 const DEFAULT_WORKER_PORT = 43188;
 
@@ -93,6 +95,7 @@ async function runWorkerLoop() {
 
 const app = express();
 
+app.use(languageMiddleware);
 app.use(express.json());
 app.use(requestLogger);
 

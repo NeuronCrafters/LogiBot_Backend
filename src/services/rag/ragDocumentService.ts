@@ -21,8 +21,8 @@ import { triggerWorkerJob } from "./ragWorkerClient";
 type UploadedFile = Express.Multer.File;
 
 function ensureFile(file?: UploadedFile) {
-  if (!file) throw new AppError("arquivo e obrigatorio", 400);
-  if (!file.buffer?.length) throw new AppError("arquivo vazio", 400);
+  if (!file) throw new AppError("rag.fileRequired", 400);
+  if (!file.buffer?.length) throw new AppError("rag.fileEmpty", 400);
   return file;
 }
 
@@ -34,8 +34,7 @@ async function ensureDocumentLimit(classId: string) {
     .limit(RAG_MAX_DOCUMENTS_PER_CLASS);
 
   if (rows.length >= RAG_MAX_DOCUMENTS_PER_CLASS) {
-    throw new AppError(
-      `limite de ${RAG_MAX_DOCUMENTS_PER_CLASS} documentos por turma atingido`,
+    throw new AppError({ key: "rag.documentLimit", params: { value0: RAG_MAX_DOCUMENTS_PER_CLASS } },
       400,
     );
   }
@@ -49,7 +48,7 @@ async function getDocumentForUser(user: RagUser, documentId: string) {
     .limit(1);
 
   if (!document || document.deletedAt)
-    throw new AppError("documento nao encontrado", 404);
+    throw new AppError("rag.documentNotFound", 404);
 
   await assertCanManageRagClass(user, document.classId);
   return document;
@@ -79,7 +78,7 @@ export async function createRagDocument(input: {
   const originalName = decodeUploadedFileName(file.originalname);
   const allowed = getAllowedRagFile(originalName, file.mimetype);
   if (!allowed) {
-    throw new AppError("arquivo deve ser PDF, TXT ou DOCX valido", 400);
+    throw new AppError("rag.fileTypeInvalid", 400);
   }
 
   const documentId = randomUUID();
@@ -200,7 +199,7 @@ export async function reprocessRagDocument(user: RagUser, documentId: string) {
 
   if (activeJobs.length) {
     logger.warn("RagDocuments", "Reprocess blocked; ingestion already in progress.", { documentId });
-    throw new AppError("documento ja possui ingestao em andamento", 409);
+    throw new AppError("rag.ingestionInProgress", 409);
   }
 
   const result = await getDb().transaction(async (tx) => {

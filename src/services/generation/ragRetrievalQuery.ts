@@ -1,15 +1,16 @@
+import { t } from "../../i18n";
 import type { AgentMessage } from "../ai/openRouterService";
 
 const MAX_PREVIOUS_USER_MESSAGES = 2;
 const MAX_MESSAGE_LENGTH = 500;
 
 const CONTINUATION_START_PATTERN =
-  /^(e|mas|entao|então|agora|tambem|também|sobre|quanto a|ja|já)\b/i;
+  /^(e|mas|entao|então|agora|and|but|then|now|also|what about|how about|y|pero|entonces|ahora|también|tambem|também|sobre|quanto a|ja|já)\b/i;
 const REFERENTIAL_PATTERN =
   /\b(isso|isto|esse|essa|esses|essas|ele|ela|eles|elas|anterior|mesmo|mesma|outro|outra|tambem|também)\b/i;
-const ELLIPTICAL_START_PATTERN = /^(um|uma|outro|outra)\b/i;
+const ELLIPTICAL_START_PATTERN = /^(um|uma|outro|outra|this|that|these|those|it|them|previous|same|another|eso|esto|ese|esa|estos|esas|anterior|mismo|misma|otro|otra)\b/i;
 const COMPARISON_PATTERN =
-  /^(qual|quais)\b.*\b(diferenca|diferença|melhor|pior|exemplo)\b/i;
+  /^(qual|quais|what|which|cuál|cuáles)\b.*\b(diferenca|diferença|melhor|pior|exemplo|difference|better|worse|example|diferencia|mejor|peor|ejemplo)\b/i;
 
 function compactMessage(content: string) {
   return content.replace(/\s+/g, " ").trim().slice(0, MAX_MESSAGE_LENGTH);
@@ -20,7 +21,7 @@ function comparableMessage(content: string) {
 }
 
 function isLikelyFollowUp(message: string) {
-  const compact = compactMessage(message);
+  const compact = compactMessage(message).replace(/^[¿¡]/, "");
   if (!compact) return false;
 
   const wordCount = compact.split(/\s+/).length;
@@ -87,12 +88,7 @@ export function buildRagRetrievalQuery(input: {
     .join("\n");
 
   return {
-    query: `Pergunta atual: ${currentMessage}
-
-A pergunta atual continua a conversa. Use as perguntas anteriores apenas para resolver referencias, assunto, linguagem de programacao e tecnologia mencionada.
-
-Perguntas anteriores do aluno, da mais recente para a mais antiga:
-${recentContext}`,
+    query: t("rag.retrievalQuery", { message: currentMessage, history: recentContext }),
     contextualized: true,
     previousUserMessageCount: previousUserMessages.length,
   };

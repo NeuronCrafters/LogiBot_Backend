@@ -1,3 +1,5 @@
+import { accountLanguage } from "../i18n/middleware";
+import { t } from "../i18n";
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { getAccountById } from "../db/repositories/authRepository";
@@ -8,7 +10,7 @@ import { clearAuthCookie } from "./cookies";
 
 export function requireEnv(name: string) {
   const value = process.env[name];
-  if (!value) throw new AppError(`${name} nao configurado`, 500);
+  if (!value) throw new AppError({ key: "config.missingEnvironment", params: { value0: name } }, 500);
   return value;
 }
 
@@ -46,7 +48,7 @@ export function requireApiKey(req: Request, res: Response, next: NextFunction) {
   if (providedKey !== process.env.API_KEY) {
     return res
       .status(401)
-      .json({ success: false, message: "api key invalida" });
+      .json({ success: false, message: t("auth.apiKeyInvalid") });
   }
 
   return next();
@@ -58,7 +60,7 @@ export async function requireAuth(
   next: NextFunction,
 ) {
   const token = req.cookies?.token;
-  if (!token) return next(new AppError("nao autenticado: token ausente", 401));
+  if (!token) return next(new AppError("auth.tokenMissing", 401));
 
   try {
     const decoded = jwt.verify(
@@ -70,12 +72,13 @@ export async function requireAuth(
     };
 
     const id = String(decoded.id || decoded.sub || "");
-    if (!id) throw new AppError("token invalido", 401);
+    if (!id) throw new AppError("auth.tokenInvalid", 401);
 
     const account = await getAccountById(getDb(), id);
-    if (!account) throw new AppError("usuario nao encontrado", 401);
+    if (!account) throw new AppError("auth.userNotFound", 401);
+    accountLanguage(req, res, account.preferredLanguage);
     if (account.status !== "active")
-      throw new AppError("acesso negado. sua conta esta inativa.", 403);
+      throw new AppError("auth.accountInactive", 403);
 
     req.user = {
       id: account.id,
@@ -83,6 +86,7 @@ export async function requireAuth(
       email: account.email,
       role: normalizeRoles(account.roles),
       school: account.schoolId || null,
+      preferredLanguage: account.preferredLanguage,
       courses: account.courses?.length
         ? account.courses
         : account.courseId || null,
@@ -96,7 +100,7 @@ export async function requireAuth(
   } catch (error) {
     clearAuthCookie(req, res);
     if (error instanceof jwt.JsonWebTokenError)
-      return next(new AppError("token invalido", 401));
+      return next(new AppError("auth.tokenInvalid", 401));
     return next(error);
   }
 }
@@ -105,7 +109,7 @@ export function requireRoles(allowedRoles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction) => {
     const roles = normalizeRoles(req.user?.role);
     if (!roles.some((role) => allowedRoles.includes(role))) {
-      return next(new AppError("acesso negado", 403));
+      return next(new AppError("auth.accessDenied", 403));
     }
     return next();
   };

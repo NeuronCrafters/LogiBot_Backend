@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Router } from "express";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { asyncHandler } from "../../http/asyncHandler";
@@ -51,7 +52,7 @@ analyticsRouter.post(
     const clicks = req.body.clicks as Record<string, number> | undefined;
     if (!clicks || typeof clicks !== "object")
       return res.json({
-        message: "Cliques de categoria contabilizados com sucesso.",
+        message: t("analytics.clicksCounted"),
       });
     const [analysis] = await getDb()
       .select()
@@ -60,7 +61,7 @@ analyticsRouter.post(
       .limit(1);
     if (!analysis)
       return res.json({
-        message: "Cliques de categoria contabilizados com sucesso.",
+        message: t("analytics.clicksCounted"),
       });
     const current = {
       ...((analysis.subjectCountsQuiz as Record<string, number>) || {}),
@@ -74,7 +75,7 @@ analyticsRouter.post(
       .set({ subjectCountsQuiz: current })
       .where(eq(userAnalyses.id, analysis.id));
     return res.json({
-      message: "Cliques de categoria contabilizados com sucesso.",
+      message: t("analytics.clicksCounted"),
     });
   }),
 );

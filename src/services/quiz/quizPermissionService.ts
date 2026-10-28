@@ -43,8 +43,7 @@ export async function assertDisciplineBelongsToClass(
     .limit(1);
 
   if (!link)
-    throw new AppError(
-      "Disciplina não pertence à turma selecionada",
+    throw new AppError("quiz.disciplineOutsideClass",
       400,
     );
 }
@@ -71,8 +70,7 @@ export async function assertProfessorCanManageDiscipline(
       .limit(1);
     if (link) return;
 
-    throw new AppError(
-      "Coordenador não tem acesso a esta disciplina",
+    throw new AppError("quiz.coordinatorAccessDenied",
       403,
     );
   }
@@ -90,13 +88,12 @@ export async function assertProfessorCanManageDiscipline(
       .limit(1);
     if (link) return;
 
-    throw new AppError(
-      "Professor não tem acesso a esta disciplina",
+    throw new AppError("quiz.professorAccessDenied",
       403,
     );
   }
 
-  throw new AppError("Acesso negado", 403);
+  throw new AppError("auth.accessDeniedCapital", 403);
 }
 
 export function canManageQuiz(

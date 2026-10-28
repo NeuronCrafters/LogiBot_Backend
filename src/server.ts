@@ -13,7 +13,11 @@ import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
 
+import { languageMiddleware } from "./i18n/middleware";
+
 export const app = express();
+
+app.use(languageMiddleware);
 
 app.use(cors(corsOptions));
 app.use(corsAccessLogger);

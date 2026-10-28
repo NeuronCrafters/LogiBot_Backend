@@ -1,3 +1,4 @@
+import { getLanguage, t } from "../../i18n";
 import { readFileSync } from "fs";
 import path from "path";
 
@@ -13,7 +14,7 @@ const PROMPT_FILES: Record<OpenRouterPurpose, string> = {
   quiz: "PROMPT_QUIZ.md",
   insights: "PROMPT_DASHBOARD_INSIGHTS.md",
 };
-const promptCache = new Map<OpenRouterPurpose, string>();
+const promptCache = new Map<string, string>();
 
 export function getOpenRouterConfig() {
   const accessKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -33,14 +34,20 @@ export function prepareOpenRouterMessages(
   purpose: OpenRouterPurpose,
   messages: AgentMessage[],
 ): AgentMessage[] {
-  let prompt = promptCache.get(purpose);
+  const language = getLanguage();
+  const cacheKey = `${language}:${purpose}`;
+  let prompt = promptCache.get(cacheKey);
   if (!prompt) {
-    prompt = readFileSync(path.resolve(__dirname, "../../..", PROMPT_FILES[purpose]), "utf8").trim();
+    prompt = readFileSync(path.resolve(__dirname, "../../..", ...(language === "pt-BR" ? [] : ["prompts", language]), PROMPT_FILES[purpose]), "utf8").trim();
     if (!prompt) throw new Error(`Prompt vazio: ${PROMPT_FILES[purpose]}`);
-    promptCache.set(purpose, prompt);
+    promptCache.set(cacheKey, prompt);
   }
 
-  return [{ role: "system", content: prompt }, ...messages];
+  const prepared: AgentMessage[] = [{ role: "system", content: prompt }, ...messages];
+  if (purpose === "chat" && language !== "pt-BR") {
+    prepared.push({ role: "system", content: t("chat.responseLanguage") });
+  }
+  return prepared;
 }
 
 export function assertOpenRouterSuccess(data: any) {

@@ -1,3 +1,4 @@
+import { getLanguage, t } from "../../i18n";
 import { createHash } from "crypto";
 import { AppError } from "../../exceptions/AppError";
 import { askDashboardInsightsAgent } from "../ai/dashboardInsightsAgentService";
@@ -28,6 +29,7 @@ type InsightResponse = {
   insight: string;
   generatedAt: string;
   cached: boolean;
+  language: import("../../i18n").Language;
   chart?: DashboardInsightChart;
 };
 
@@ -37,51 +39,20 @@ const CACHE_TTL_MS = 15 * 60 * 1000;
 const cache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<Omit<InsightResponse, "cached">>>();
 
-const CHART_CONTEXT: Record<
-  DashboardInsightChart,
-  { title: string; description: string }
-> = {
-  usage: {
-    title: "Tempo de uso diário",
-    description:
-      "Mostra tempo total e distribuição diária de uso. Tempo elevado não prova aprendizagem; deve ser interpretado junto ao desempenho.",
-  },
-  accuracy: {
-    title: "Acertos e erros",
-    description:
-      "Compara respostas corretas e incorretas para indicar a taxa geral de acerto.",
-  },
-  "chat-topics": {
-    title: "Assuntos mais acessados no chat",
-    description:
-      "Mostra a frequência de dúvidas por assunto. Frequência não significa necessariamente dificuldade.",
-  },
-  "general-score": {
-    title: "Avaliação geral de desempenho",
-    description:
-      "Resume em escala de 0 a 10 a média das taxas de acerto dos tópicos com atividade.",
-  },
-  "proficiency-radar": {
-    title: "Proficiência por assunto",
-    description:
-      "Compara a taxa de acerto entre assuntos para revelar forças e conteúdos que pedem revisão.",
-  },
-  "effort-matrix": {
-    title: "Matriz desempenho versus esforço",
-    description:
-      "Relaciona tempo de uso e taxa de acerto. Os dados mostram associação, não causalidade.",
-  },
-  "learning-journey": {
-    title: "Jornada de aprendizagem",
-    description:
-      "Mostra a evolução da taxa de acerto por posição da tentativa de quiz.",
-  },
-  "access-pattern": {
-    title: "Padrão de acesso",
-    description:
-      "Resume dias e horários das sessões para apoiar decisões sobre acompanhamento e disponibilidade.",
-  },
-};
+const CHART_CONTEXT = {
+  "usage": { title: "insights.charts.usage.title", description: "insights.charts.usage.description" },
+  "accuracy": { title: "insights.charts.accuracy.title", description: "insights.charts.accuracy.description" },
+  "chat-topics": { title: "insights.charts.chat-topics.title", description: "insights.charts.chat-topics.description" },
+  "general-score": { title: "insights.charts.general-score.title", description: "insights.charts.general-score.description" },
+  "proficiency-radar": { title: "insights.charts.proficiency-radar.title", description: "insights.charts.proficiency-radar.description" },
+  "effort-matrix": { title: "insights.charts.effort-matrix.title", description: "insights.charts.effort-matrix.description" },
+  "learning-journey": { title: "insights.charts.learning-journey.title", description: "insights.charts.learning-journey.description" },
+  "access-pattern": { title: "insights.charts.access-pattern.title", description: "insights.charts.access-pattern.description" }
+} as const;
+
+function getChartContext(chart: DashboardInsightChart) {
+  return { title: t(CHART_CONTEXT[chart].title), description: t(CHART_CONTEXT[chart].description) };
+}
 
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stableValue);
@@ -115,16 +86,16 @@ function anonymize(value: unknown): unknown {
 }
 
 function scopeLabel(filters: Filters) {
-  if (filters.studentId) return "aluno selecionado";
-  if (filters.classId) return "turma selecionada";
-  if (filters.disciplineId) return "disciplina selecionada";
-  if (filters.courseId) return "curso selecionado";
-  return "universidade selecionada";
+  if (filters.studentId) return t("insights.scope.student");
+  if (filters.classId) return t("insights.scope.class");
+  if (filters.disciplineId) return t("insights.scope.discipline");
+  if (filters.courseId) return t("insights.scope.course");
+  return t("insights.scope.university");
 }
 
 function disciplineNote(filters: Filters) {
   return filters.disciplineId
-    ? "No recorte por disciplina, desempenho considera apenas quizzes da disciplina; tempo de uso, sessões e chat representam a atividade geral dos alunos das turmas vinculadas."
+    ? t("insights.disciplineNote")
     : undefined;
 }
 
@@ -230,12 +201,12 @@ async function chartData(chart: DashboardInsightChart, filters: Filters) {
       }),
     };
   }
-  throw new AppError("Gráfico de insight inválido.", 400);
+  throw new AppError("insights.chartInvalid", 400);
 }
 
 async function getSummaryForFilters(filters: Filters) {
   if (!filters.universityId)
-    throw new AppError("universityId é obrigatório.", 400);
+    throw new AppError("insights.universityRequired", 400);
   return getSummary({
     universityId: filters.universityId,
     courseId: filters.courseId,
@@ -250,25 +221,12 @@ function chartPrompt(
   filters: Filters,
   data: unknown,
 ) {
-  const context = CHART_CONTEXT[chart];
-  return `Gráfico: ${context.title}
-Escopo: ${scopeLabel(filters)}
-Significado: ${context.description}
-${disciplineNote(filters) ? `Observação de escopo: ${disciplineNote(filters)}` : ""}
-
-Dados:
-${JSON.stringify(anonymize(data))}
-
-Responda em Markdown, com no máximo 350 palavras, usando exatamente estes títulos de seção:
-## Leitura principal
-## Evidências nos dados
-## Pontos de atenção
-## Ações recomendadas
-
-Formato de cada seção:
-- Em "Evidências nos dados", tabela Markdown com as colunas: Indicador | Resultado | Interpretação (2 a 5 linhas, sem indicadores inventados).
-- Em "Pontos de atenção", lista curta.
-- Em "Ações recomendadas", tabela Markdown com as colunas: Prioridade | Ação | Como acompanhar (até 4 ações).`;
+  const context = getChartContext(chart);
+  return t("insights.chartPrompt", {
+    title: context.title, scope: scopeLabel(filters), description: context.description,
+    note: disciplineNote(filters) ? t("insights.scopeNote", { note: disciplineNote(filters)! }) : "",
+    data: JSON.stringify(anonymize(data)),
+  });
 }
 
 function overviewPrompt(
@@ -280,24 +238,11 @@ function overviewPrompt(
     data: unknown;
   }>,
 ) {
-  return `Escopo: ${scopeLabel(filters)}
-${disciplineNote(filters) ? `Observação de escopo: ${disciplineNote(filters)}` : ""}
-
-Gráficos:
-${JSON.stringify(anonymize(datasets))}
-
-Responda em Markdown, com no máximo 700 palavras, usando exatamente estes títulos de seção:
-## Resumo executivo
-## Evidências combinadas
-## Prioridades pedagógicas
-## Plano de ação
-## Cuidados na interpretação
-
-Formato de cada seção:
-- Em "Evidências combinadas", tabela Markdown com as colunas: Dimensão | Evidência | Leitura pedagógica.
-- Em "Prioridades pedagógicas", lista numerada curta.
-- Em "Plano de ação", tabela Markdown com as colunas: Prioridade | Ação | Prazo sugerido | Indicador de acompanhamento (3 a 5 ações).
-- Em "Cuidados na interpretação", lista curta.`;
+  return t("insights.overviewPrompt", {
+    scope: scopeLabel(filters),
+    note: disciplineNote(filters) ? t("insights.scopeNote", { note: disciplineNote(filters)! }) : "",
+    data: JSON.stringify(anonymize(datasets)),
+  });
 }
 
 async function generateCached(
@@ -305,7 +250,7 @@ async function generateCached(
   force: boolean,
   generate: () => Promise<Omit<InsightResponse, "cached">>,
 ) {
-  const key = hash(keyPayload);
+  const key = hash({ language: getLanguage(), payload: keyPayload });
   const now = Date.now();
   const cached = cache.get(key);
   if (!force && cached && cached.expiresAt > now) {
@@ -334,7 +279,7 @@ export async function generateChartInsight(input: {
 }): Promise<InsightResponse> {
   const data = await chartData(input.chart, input.filters);
   if (!containsUsefulData(data))
-    throw new AppError("Não há dados suficientes para gerar este insight.", 422);
+    throw new AppError("insights.dataInsufficient", 422);
 
   return generateCached(
     { type: "chart", chart: input.chart, filters: input.filters, data },
@@ -345,6 +290,7 @@ export async function generateChartInsight(input: {
       );
       return {
         insight: response.text,
+        language: getLanguage(),
         generatedAt: new Date().toISOString(),
         chart: input.chart,
       };
@@ -365,8 +311,8 @@ export async function generateOverviewInsight(input: {
         const data = await chartData(chart, input.filters);
         return {
           chart,
-          title: CHART_CONTEXT[chart].title,
-          description: CHART_CONTEXT[chart].description,
+          title: getChartContext(chart).title,
+          description: getChartContext(chart).description,
           data,
         };
       }),
@@ -374,8 +320,7 @@ export async function generateOverviewInsight(input: {
   ).filter((item) => containsUsefulData(item.data));
 
   if (!datasets.length)
-    throw new AppError(
-      "Não há dados suficientes para gerar a análise geral.",
+    throw new AppError("insights.overviewDataInsufficient",
       422,
     );
 
@@ -388,6 +333,7 @@ export async function generateOverviewInsight(input: {
       );
       return {
         insight: response.text,
+        language: getLanguage(),
         generatedAt: new Date().toISOString(),
       };
     },

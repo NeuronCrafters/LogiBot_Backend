@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { logger } from "../../logger";
 import {
   askOpenRouter,
@@ -10,9 +11,6 @@ import {
   type GenerationResult,
   type GenerationStreamCallbacks,
 } from "./generationTypes";
-
-const FALLBACK_TEXT =
-  "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
 
 function buildMessages(input: GenerationInput): AgentMessage[] {
   const professorInstruction = input.settings?.systemPrompt;
@@ -38,7 +36,7 @@ export async function generateNoRagResponse(
   );
 
   return {
-    text: agentResponse?.text ?? FALLBACK_TEXT,
+    text: agentResponse?.text ?? t("chat.fallback"),
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks: [],
   };
@@ -67,7 +65,7 @@ export async function streamNoRagResponse(
   );
 
   return {
-    text: agentResponse?.text ?? FALLBACK_TEXT,
+    text: agentResponse?.text ?? t("chat.fallback"),
     provider: agentResponse?.provider ?? "fallback",
     retrievedChunks: [],
     usage: agentResponse?.usage,

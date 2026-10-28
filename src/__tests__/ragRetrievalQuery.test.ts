@@ -77,3 +77,9 @@ describe("buildRagRetrievalQuery", () => {
     });
   });
 });
+
+it.each(['And in JavaScript?', 'What about JavaScript?', '¿Y en JavaScript?', 'y en JavaScript?', '¿Y con otra variable?'])('reconhece continuação multilíngue: %s', (message) => {
+  const result=buildRagRetrievalQuery({message,history:[{role:'user',content:'How do I create a function in Python?'}]});
+  expect(result.contextualized).toBe(true);
+  expect(result.query).toContain('Python');
+});

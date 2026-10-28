@@ -265,3 +265,45 @@ npm run rag:worker
 ```
 
 Rode `db:migrate:prod` antes do primeiro start ou como job de deploy. Rode `db:seed:prod` apenas quando quiser popular/atualizar os dados iniciais.
+
+## Idiomas da API
+
+A API oferece português do Brasil (`pt-BR`), inglês (`en-US`) e espanhol (`es-ES`). As mensagens e os três prompts originais em português foram preservados. Os catálogos ficam em `src/i18n/catalogs/` e os prompts traduzidos em `prompts/en-US/` e `prompts/es-ES/`.
+
+O idioma de cada requisição segue esta prioridade:
+
+1. Header `X-Language`, para uma escolha explícita válida.
+2. Preferência salva na conta, em rotas autenticadas e após o login.
+3. Header `Accept-Language` enviado pelo navegador, respeitando os pesos `q`.
+4. `pt-BR`, quando não houver idioma suportado.
+
+Variantes como `en-GB` e `es-MX` usam `en-US` e `es-ES`. Um `X-Language` não suportado é ignorado; uma preferência não suportada enviada ao endpoint abaixo retorna 400. A resposta informa o idioma efetivo no header `Content-Language`. O CORS permite os headers de idioma e expõe esse header de resposta. `GET /languages` lista os três idiomas e negocia o idioma pelos headers; a preferência da conta é aplicada nas rotas autenticadas. A chave da API continua obrigatória quando configurada.
+
+Para salvar a escolha do usuário autenticado:
+
+```http
+PATCH /account/preferences
+Content-Type: application/json
+
+{"language":"en-US"}
+```
+
+Use `{"language":null}` para voltar a seguir o navegador. O login e `GET /auth/me` incluem `preferredLanguage`. O frontend pode usar `X-Language` para aplicar imediatamente uma escolha e o endpoint de preferências para persistir essa escolha. Esta etapa implementa o contrato da API; a interface e o seletor visual ficam no frontend.
+
+Mensagens de validação, permissões, confirmações e recuperação de senha têm versões nos três idiomas. Erros conhecidos incluem um `code` estável, independente da tradução. Logs e diagnósticos técnicos dos serviços continuam destinados à operação.
+
+Chat, streaming, RAG e insights usam o idioma efetivo da requisição. Jobs salvam `outputLanguage` ao serem criados e mantêm esse idioma mesmo se a preferência da conta mudar antes da execução. A resposta do job e os metadados das novas respostas do assistente informam o idioma. O cache de insights é separado por idioma.
+
+Na criação manual ou geração de quizzes (`POST /quiz/professor` e `POST /quiz/professor/generate-ai`), o campo opcional `language` escolhe o idioma do novo conteúdo; quando omitido, segue a requisição. Isso permite gerar um quiz em inglês mantendo as mensagens da interface em português. Quizzes existentes mantêm `language: null`, pois não é possível inferir seu idioma com segurança. Chaves JSON, enums, identificadores, respostas corretas e regras de avaliação continuam iguais.
+
+Históricos, nomes, documentos, quizzes e prompts personalizados já salvos não são traduzidos nem reescritos. O RAG pode usar um material em português para responder em inglês ou espanhol, preservando as fontes e os identificadores do material. O idioma solicitado é uma instrução ao modelo; a qualidade e a adesão da geração continuam dependendo do provedor.
+
+A migração `drizzle/0002_api_languages.sql` adiciona preferência, idioma dos jobs e dos novos quizzes e metadados de erros. Jobs legados recebem `pt-BR`. O Compose local aplica as migrações antes de iniciar API e worker:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build --wait --wait-timeout 180
+docker compose --profile test run --build --rm tests npm test -- --silent
+docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T backend node - < load-tests/api-languages-smoke.cjs
+```
+
+O smoke integrado usa a OpenRouter configurada, PostgreSQL, Embedding e ChromaDB do Compose local, cria registros sintéticos e remove seus registros e vetores ao terminar. As chamadas reais ao modelo consomem a conta configurada. Não requer instalar dependências no host.

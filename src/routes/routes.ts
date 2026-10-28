@@ -1,3 +1,5 @@
+import { getLanguage, SUPPORTED_LANGUAGES } from "../i18n";
+import { t } from "../i18n";
 import { Router } from "express";
 import { requireApiKey } from "../http/auth";
 import { accountRouter } from "./modules/accountRoutes";
@@ -20,6 +22,11 @@ routes.use("/health", healthRouter);
 
 routes.use(requireApiKey);
 
+routes.get("/languages", (_req, res) => res.json({
+  language: getLanguage(),
+  languages: SUPPORTED_LANGUAGES,
+}));
+
 routes.use("/auth", authRouter);
 routes.use("/account", accountRouter);
 routes.use("/quiz", quizRouter);
@@ -36,7 +43,7 @@ routes.use("/rag", ragRouter);
 routes.use((req, res) =>
   res
     .status(404)
-    .json({ success: false, message: "rota nao encontrada", path: req.path }),
+    .json({ success: false, message: t("api.routeNotFound"), path: req.path }),
 );
 
 export { routes };

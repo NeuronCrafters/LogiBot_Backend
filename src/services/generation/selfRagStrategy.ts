@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import { ragDocuments } from "../../db/schema";
@@ -101,26 +102,15 @@ async function decideSelfRag(input: {
     askOpenRouter([
       {
         role: "system",
-        content: `Voce decide se um chat educacional deve buscar materiais da turma antes de responder.
-
-Responda somente JSON valido, sem markdown, no formato:
-{"needsRetrieval":true,"reason":"motivo curto"}
-
-Use needsRetrieval=true quando a pergunta depender de conteudo de aula, documentos da turma, material enviado, definicoes especificas, exercicios, exemplos ou explicacoes do curso.
-Use needsRetrieval=false quando for saudacao, conversa casual, pedido administrativo, ou pergunta geral que nao depende dos materiais da turma.
-Se nao houver documentos prontos, use needsRetrieval=false.`,
+        content: t("rag.decisionSystem"),
       },
       {
         role: "user",
-        content: `Documentos prontos na turma: ${
-          input.hasReadyDocuments ? "sim" : "nao"
-        }
-
-Historico recente:
-${compactHistory(input.history) || "(sem historico)"}
-
-Pergunta atual:
-${input.message}`,
+        content: t("rag.decisionRequest", {
+          ready: t(input.hasReadyDocuments ? "common.yes" : "common.no"),
+          history: compactHistory(input.history) || t("common.noHistory"),
+          message: input.message,
+        }),
       },
     ], {
       includeChatPrompt: false,

@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Router, type Request } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
@@ -27,7 +28,7 @@ async function assertCanManageCourse(req: Request, courseId: string) {
     ? (req.user!.courses as string[])
     : [];
   if (!allowedCourseIds.includes(courseId))
-    throw new AppError("acesso negado para este curso", 403);
+    throw new AppError("dashboard.courseDenied", 403);
 }
 
 async function ensureClassDisciplineLinks(
@@ -85,14 +86,14 @@ academicRouter.post(
   requireRoles(["admin"]),
   asyncHandler(async (req, res) => {
     const name = String(req.body.name || "").trim();
-    if (!name) throw new AppError("nome obrigatorio", 400);
+    if (!name) throw new AppError("account.nameRequired", 400);
     const [university] = await getDb()
       .insert(universities)
       .values({ name })
       .returning();
     return res
       .status(201)
-      .json({ message: "universidade criada com sucesso", university });
+      .json({ message: t("academic.universityCreated"), university });
   }),
 );
 
@@ -113,7 +114,7 @@ academicRouter.delete(
     await getDb()
       .delete(universities)
       .where(eq(universities.id, req.params.universityId));
-    return res.json({ message: "universidade removida com sucesso" });
+    return res.json({ message: t("academic.universityRemoved") });
   }),
 );
 
@@ -122,7 +123,7 @@ academicRouter.patch(
   requireRoles(["admin"]),
   asyncHandler(async (req, res) => {
     const name = String(req.body.name || "").trim();
-    if (!name) throw new AppError("nome obrigatorio", 400);
+    if (!name) throw new AppError("account.nameRequired", 400);
 
     const [university] = await getDb()
       .update(universities)
@@ -130,9 +131,9 @@ academicRouter.patch(
       .where(eq(universities.id, req.params.universityId))
       .returning();
 
-    if (!university) throw new AppError("universidade nao encontrada", 404);
+    if (!university) throw new AppError("academic.universityNotFound", 404);
     return res.json({
-      message: "universidade atualizada com sucesso",
+      message: t("academic.universityUpdated"),
       university,
     });
   }),
@@ -152,7 +153,7 @@ academicRouter.post(
       .returning();
     return res
       .status(201)
-      .json({ message: "curso criado com sucesso", course });
+      .json({ message: t("academic.courseCreated"), course });
   }),
 );
 
@@ -175,7 +176,7 @@ academicRouter.delete(
   requireRoles(["admin"]),
   asyncHandler(async (req, res) => {
     await getDb().delete(courses).where(eq(courses.id, req.params.courseId));
-    return res.json({ message: "curso removido com sucesso" });
+    return res.json({ message: t("academic.courseRemoved") });
   }),
 );
 
@@ -188,14 +189,14 @@ academicRouter.patch(
       req.body.universityId || req.body.university || "",
     );
     if (!name || !universityId)
-      throw new AppError("nome e universidade sao obrigatorios", 400);
+      throw new AppError("academic.nameUniversityRequired", 400);
 
     const [university] = await getDb()
       .select()
       .from(universities)
       .where(eq(universities.id, universityId))
       .limit(1);
-    if (!university) throw new AppError("universidade nao encontrada", 404);
+    if (!university) throw new AppError("academic.universityNotFound", 404);
 
     const [course] = await getDb()
       .update(courses)
@@ -203,8 +204,8 @@ academicRouter.patch(
       .where(eq(courses.id, req.params.courseId))
       .returning();
 
-    if (!course) throw new AppError("curso nao encontrado", 404);
-    return res.json({ message: "curso atualizado com sucesso", course });
+    if (!course) throw new AppError("academic.courseNotFound", 404);
+    return res.json({ message: t("academic.courseUpdated"), course });
   }),
 );
 
@@ -232,7 +233,7 @@ academicRouter.post(
             .where(eq(disciplines.id, disciplineId))
             .limit(1);
           if (!discipline || discipline.courseId !== courseId)
-            throw new AppError("disciplina invalida para este curso", 400);
+            throw new AppError("academic.disciplineOutsideCourse", 400);
           await ensureClassDisciplineLinks([classItem.id], disciplineId);
         }),
       );
@@ -240,7 +241,7 @@ academicRouter.post(
     return res
       .status(201)
       .json({
-        message: "turma criada com sucesso",
+        message: t("academic.classCreated"),
         class: classItem,
         registrationCode: classItem.registrationCode,
       });
@@ -257,14 +258,14 @@ academicRouter.patch(
       ? [...new Set(req.body.disciplineIds as string[])]
       : undefined;
     if (!name || !courseId)
-      throw new AppError("nome e curso sao obrigatorios", 400);
+      throw new AppError("academic.nameCourseRequired", 400);
 
     const [course] = await getDb()
       .select()
       .from(courses)
       .where(eq(courses.id, courseId))
       .limit(1);
-    if (!course) throw new AppError("curso nao encontrado", 404);
+    if (!course) throw new AppError("academic.courseNotFound", 404);
     await assertCanManageCourse(req, courseId);
 
     if (disciplineIds?.length) {
@@ -276,8 +277,7 @@ academicRouter.patch(
         disciplineRows.length !== disciplineIds.length ||
         disciplineRows.some((item) => item.courseId !== courseId)
       ) {
-        throw new AppError(
-          "uma ou mais disciplinas nao pertencem ao curso selecionado",
+        throw new AppError("academic.disciplinesOutsideCourse",
           400,
         );
       }
@@ -288,13 +288,13 @@ academicRouter.patch(
       .set({ name, courseId, updatedAt: new Date() })
       .where(eq(classes.id, req.params.classId))
       .returning();
-    if (!classItem) throw new AppError("turma nao encontrada", 404);
+    if (!classItem) throw new AppError("academic.classNotFound", 404);
 
     if (disciplineIds)
       await replaceDisciplineLinksForClass(classItem.id, disciplineIds);
 
     return res.json({
-      message: "turma atualizada com sucesso",
+      message: t("academic.classUpdated"),
       class: classItem,
       registrationCode: classItem.registrationCode,
     });
@@ -310,7 +310,7 @@ academicRouter.patch(
       .from(classes)
       .where(eq(classes.id, req.params.classId))
       .limit(1);
-    if (!classItem) throw new AppError("turma nao encontrada", 404);
+    if (!classItem) throw new AppError("academic.classNotFound", 404);
     await assertCanManageCourse(req, classItem.courseId);
 
     const registrationCode = await generateUniqueRegistrationCode(getDb());
@@ -321,7 +321,7 @@ academicRouter.patch(
       .returning();
 
     return res.json({
-      message: "codigo da turma regenerado com sucesso",
+      message: t("academic.classCodeRegenerated"),
       class: updatedClass,
       registrationCode: updatedClass.registrationCode,
     });
@@ -347,7 +347,7 @@ academicRouter.delete(
   requireRoles(["admin", "course-coordinator"]),
   asyncHandler(async (req, res) => {
     await getDb().delete(classes).where(eq(classes.id, req.params.classId));
-    return res.json({ message: "turma removida com sucesso" });
+    return res.json({ message: t("academic.classRemoved") });
   }),
 );
 
@@ -423,7 +423,7 @@ academicRouter.post(
       .from(courses)
       .where(eq(courses.id, courseId))
       .limit(1);
-    if (!course) throw new AppError("curso nao encontrado", 404);
+    if (!course) throw new AppError("academic.courseNotFound", 404);
     await assertCanManageCourse(req, courseId);
     if (classIds.length) {
       const classRows = await getDb()
@@ -434,8 +434,7 @@ academicRouter.post(
         classRows.length !== classIds.length ||
         classRows.some((item) => item.courseId !== courseId)
       ) {
-        throw new AppError(
-          "uma ou mais turmas nao pertencem ao curso selecionado",
+        throw new AppError("academic.classesOutsideCourse",
           400,
         );
       }
@@ -453,8 +452,7 @@ academicRouter.post(
           ),
       );
       if (invalidProfessor)
-        throw new AppError(
-          "um ou mais professores nao pertencem ao curso selecionado",
+        throw new AppError("academic.professorsOutsideCourse",
           400,
         );
     }
@@ -475,7 +473,7 @@ academicRouter.post(
         )
         .onConflictDoNothing();
     return res.status(201).json({
-      message: "disciplina criada com sucesso",
+      message: t("academic.disciplineCreated"),
       discipline,
     });
   }),
@@ -494,14 +492,14 @@ academicRouter.patch(
       ? [...new Set(req.body.professorIds as string[])]
       : undefined;
     if (!name || !courseId)
-      throw new AppError("nome e curso sao obrigatorios", 400);
+      throw new AppError("academic.nameCourseRequired", 400);
 
     const [course] = await getDb()
       .select()
       .from(courses)
       .where(eq(courses.id, courseId))
       .limit(1);
-    if (!course) throw new AppError("curso nao encontrado", 404);
+    if (!course) throw new AppError("academic.courseNotFound", 404);
     await assertCanManageCourse(req, courseId);
 
     if (classIds?.length) {
@@ -513,8 +511,7 @@ academicRouter.patch(
         classRows.length !== classIds.length ||
         classRows.some((item) => item.courseId !== courseId)
       ) {
-        throw new AppError(
-          "uma ou mais turmas nao pertencem ao curso selecionado",
+        throw new AppError("academic.classesOutsideCourse",
           400,
         );
       }
@@ -533,8 +530,7 @@ academicRouter.patch(
           ),
       );
       if (invalidProfessor)
-        throw new AppError(
-          "um ou mais professores nao pertencem ao curso selecionado",
+        throw new AppError("academic.professorsOutsideCourse",
           400,
         );
     }
@@ -544,14 +540,14 @@ academicRouter.patch(
       .set({ name, courseId, updatedAt: new Date() })
       .where(eq(disciplines.id, req.params.disciplineId))
       .returning();
-    if (!discipline) throw new AppError("disciplina nao encontrada", 404);
+    if (!discipline) throw new AppError("academic.disciplineNotFound", 404);
 
     if (classIds) await replaceClassDisciplineLinks(classIds, discipline.id);
     if (professorIds)
       await replaceProfessorDisciplineLinks(professorIds, discipline.id);
 
     return res.json({
-      message: "disciplina atualizada com sucesso",
+      message: t("academic.disciplineUpdated"),
       discipline,
     });
   }),
@@ -562,14 +558,14 @@ academicRouter.post(
   requireRoles(["admin", "course-coordinator"]),
   asyncHandler(async (req, res) => {
     const professorId = String(req.body.professorId || "");
-    if (!professorId) throw new AppError("professorId e obrigatorio", 400);
+    if (!professorId) throw new AppError("academic.professorIdRequired", 400);
 
     const [discipline] = await getDb()
       .select()
       .from(disciplines)
       .where(eq(disciplines.id, req.params.disciplineId))
       .limit(1);
-    if (!discipline) throw new AppError("disciplina nao encontrada", 404);
+    if (!discipline) throw new AppError("academic.disciplineNotFound", 404);
     await assertCanManageCourse(req, discipline.courseId);
 
     const [professorCourse] = await getDb()
@@ -583,7 +579,7 @@ academicRouter.post(
       )
       .limit(1);
     if (!professorCourse)
-      throw new AppError("professor nao pertence ao curso da disciplina", 400);
+      throw new AppError("academic.professorOutsideCourse", 400);
 
     await getDb()
       .insert(professorDisciplines)
@@ -591,7 +587,7 @@ academicRouter.post(
       .onConflictDoNothing();
 
     return res.json({
-      message: "professor vinculado a disciplina com sucesso",
+      message: t("academic.professorLinked"),
     });
   }),
 );
@@ -601,7 +597,7 @@ academicRouter.post(
   requireRoles(["admin", "course-coordinator"]),
   asyncHandler(async (req, res) => {
     const disciplineId = String(req.body.disciplineId || "");
-    if (!disciplineId) throw new AppError("disciplineId e obrigatorio", 400);
+    if (!disciplineId) throw new AppError("academic.disciplineIdRequired", 400);
 
     const [[classItem], [discipline]] = await Promise.all([
       getDb()
@@ -615,17 +611,16 @@ academicRouter.post(
         .where(eq(disciplines.id, disciplineId))
         .limit(1),
     ]);
-    if (!classItem) throw new AppError("turma nao encontrada", 404);
-    if (!discipline) throw new AppError("disciplina nao encontrada", 404);
+    if (!classItem) throw new AppError("academic.classNotFound", 404);
+    if (!discipline) throw new AppError("academic.disciplineNotFound", 404);
     if (classItem.courseId !== discipline.courseId)
-      throw new AppError(
-        "turma e disciplina devem pertencer ao mesmo curso",
+      throw new AppError("academic.classDisciplineCourseMismatch",
         400,
       );
     await assertCanManageCourse(req, classItem.courseId);
 
     await ensureClassDisciplineLinks([classItem.id], discipline.id);
-    return res.json({ message: "disciplina vinculada a turma com sucesso" });
+    return res.json({ message: t("academic.disciplineLinked") });
   }),
 );
 
@@ -638,7 +633,7 @@ academicRouter.delete(
       .from(classes)
       .where(eq(classes.id, req.params.classId))
       .limit(1);
-    if (!classItem) throw new AppError("turma nao encontrada", 404);
+    if (!classItem) throw new AppError("academic.classNotFound", 404);
     await assertCanManageCourse(req, classItem.courseId);
 
     await getDb()
@@ -651,7 +646,7 @@ academicRouter.delete(
       );
 
     return res.json({
-      message: "disciplina desvinculada da turma com sucesso",
+      message: t("academic.disciplineUnlinked"),
     });
   }),
 );
@@ -665,7 +660,7 @@ academicRouter.delete(
       .from(disciplines)
       .where(eq(disciplines.id, req.params.disciplineId))
       .limit(1);
-    if (!discipline) throw new AppError("disciplina nao encontrada", 404);
+    if (!discipline) throw new AppError("academic.disciplineNotFound", 404);
     await assertCanManageCourse(req, discipline.courseId);
 
     await getDb()
@@ -678,7 +673,7 @@ academicRouter.delete(
       );
 
     return res.json({
-      message: "professor desvinculado da disciplina com sucesso",
+      message: t("academic.professorUnlinked"),
     });
   }),
 );
@@ -700,7 +695,7 @@ academicRouter.delete(
     await getDb()
       .delete(disciplines)
       .where(eq(disciplines.id, req.params.disciplineId));
-    return res.json({ message: "disciplina removida com sucesso" });
+    return res.json({ message: t("academic.disciplineRemoved") });
   }),
 );
 
@@ -727,10 +722,10 @@ async function assertCanManageDisciplineStudents(
       )
       .limit(1);
     if (!link)
-      throw new AppError("professor nao vinculado a esta disciplina", 403);
+      throw new AppError("academic.professorNotLinked", 403);
     return;
   }
-  throw new AppError("acesso negado", 403);
+  throw new AppError("auth.accessDenied", 403);
 }
 
 academicRouter.post(
@@ -738,14 +733,14 @@ academicRouter.post(
   requireRoles(["admin", "course-coordinator"]),
   asyncHandler(async (req, res) => {
     const studentId = String(req.body.studentId || "").trim();
-    if (!studentId) throw new AppError("studentId e obrigatorio", 400);
+    if (!studentId) throw new AppError("academic.studentIdRequired", 400);
 
     const [classItem] = await getDb()
       .select()
       .from(classes)
       .where(eq(classes.id, req.params.classId))
       .limit(1);
-    if (!classItem) throw new AppError("turma nao encontrada", 404);
+    if (!classItem) throw new AppError("academic.classNotFound", 404);
     await assertCanManageCourse(req, classItem.courseId);
 
     const [profile] = await getDb()
@@ -753,15 +748,15 @@ academicRouter.post(
       .from(studentProfiles)
       .where(eq(studentProfiles.accountId, studentId))
       .limit(1);
-    if (!profile) throw new AppError("aluno nao encontrado", 404);
+    if (!profile) throw new AppError("academic.studentNotFound", 404);
     if (profile.courseId !== classItem.courseId)
-      throw new AppError("aluno nao pertence ao curso desta turma", 400);
+      throw new AppError("academic.studentOutsideClassCourse", 400);
 
     await getDb()
       .update(studentProfiles)
       .set({ classId: req.params.classId })
       .where(eq(studentProfiles.accountId, studentId));
-    return res.json({ message: "aluno adicionado a turma com sucesso" });
+    return res.json({ message: t("academic.studentAdded") });
   }),
 );
 
@@ -774,11 +769,10 @@ academicRouter.delete(
       .from(classes)
       .where(eq(classes.id, req.params.classId))
       .limit(1);
-    if (!classItem) throw new AppError("turma nao encontrada", 404);
+    if (!classItem) throw new AppError("academic.classNotFound", 404);
     await assertCanManageCourse(req, classItem.courseId);
 
-    throw new AppError(
-      "aluno deve pertencer a uma turma; transfira-o para outra turma",
+    throw new AppError("academic.studentNeedsClass",
       400,
     );
   }),
@@ -789,14 +783,14 @@ academicRouter.post(
   requireRoles(["admin", "course-coordinator", "professor"]),
   asyncHandler(async (req, res) => {
     const studentId = String(req.body.studentId || "").trim();
-    if (!studentId) throw new AppError("studentId e obrigatorio", 400);
+    if (!studentId) throw new AppError("academic.studentIdRequired", 400);
 
     const [discipline] = await getDb()
       .select()
       .from(disciplines)
       .where(eq(disciplines.id, req.params.disciplineId))
       .limit(1);
-    if (!discipline) throw new AppError("disciplina nao encontrada", 404);
+    if (!discipline) throw new AppError("academic.disciplineNotFound", 404);
     await assertCanManageDisciplineStudents(req, discipline);
 
     const [profile] = await getDb()
@@ -804,12 +798,11 @@ academicRouter.post(
       .from(studentProfiles)
       .where(eq(studentProfiles.accountId, studentId))
       .limit(1);
-    if (!profile) throw new AppError("aluno nao encontrado", 404);
+    if (!profile) throw new AppError("academic.studentNotFound", 404);
     if (profile.courseId !== discipline.courseId)
-      throw new AppError("aluno nao pertence ao curso desta disciplina", 400);
+      throw new AppError("academic.studentOutsideDisciplineCourse", 400);
 
-    throw new AppError(
-      "alunos sao gerenciados pela turma; vincule a disciplina a turma do aluno",
+    throw new AppError("academic.studentClassManaged",
       400,
     );
   }),
@@ -824,11 +817,10 @@ academicRouter.delete(
       .from(disciplines)
       .where(eq(disciplines.id, req.params.disciplineId))
       .limit(1);
-    if (!discipline) throw new AppError("disciplina nao encontrada", 404);
+    if (!discipline) throw new AppError("academic.disciplineNotFound", 404);
     await assertCanManageDisciplineStudents(req, discipline);
 
-    throw new AppError(
-      "alunos sao gerenciados pela turma; remova a disciplina da grade da turma",
+    throw new AppError("academic.studentRemovalClassManaged",
       400,
     );
   }),

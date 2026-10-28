@@ -23,7 +23,7 @@ export async function assertDashboardScopeAccess(
   if (user.role.includes("admin")) return;
 
   if (filters.universityId && filters.universityId !== user.school) {
-    throw new AppError("acesso negado para esta universidade", 403);
+    throw new AppError("dashboard.universityDenied", 403);
   }
   if (
     !filters.courseId &&
@@ -31,8 +31,7 @@ export async function assertDashboardScopeAccess(
     !filters.disciplineId &&
     !filters.studentId
   ) {
-    throw new AppError(
-      "selecione um curso, turma, disciplina ou aluno do seu escopo",
+    throw new AppError("dashboard.scopeRequired",
       403,
     );
   }
@@ -45,7 +44,7 @@ export async function assertDashboardScopeAccess(
     !user.role.includes("course-coordinator");
 
   if (filters.courseId && !allowedCourseIds.has(filters.courseId)) {
-    throw new AppError("acesso negado para este curso", 403);
+    throw new AppError("dashboard.courseDenied", 403);
   }
 
   if (filters.classId) {
@@ -55,7 +54,7 @@ export async function assertDashboardScopeAccess(
       .where(eq(classes.id, filters.classId))
       .limit(1);
     if (!classItem || !allowedCourseIds.has(classItem.courseId)) {
-      throw new AppError("acesso negado para esta turma", 403);
+      throw new AppError("rag.classAccessDenied", 403);
     }
 
     if (isProfessorOnly && !allowedClassIds.has(classItem.id)) {
@@ -74,7 +73,7 @@ export async function assertDashboardScopeAccess(
             )
         : [];
       if (!links.length)
-        throw new AppError("acesso negado para esta turma", 403);
+        throw new AppError("rag.classAccessDenied", 403);
     }
   }
 
@@ -85,13 +84,13 @@ export async function assertDashboardScopeAccess(
       .where(eq(disciplines.id, filters.disciplineId))
       .limit(1);
     if (!discipline || !allowedCourseIds.has(discipline.courseId)) {
-      throw new AppError("acesso negado para esta disciplina", 403);
+      throw new AppError("dashboard.disciplineDenied", 403);
     }
     if (
       isProfessorOnly &&
       !allowedDisciplineIds.has(discipline.id)
     ) {
-      throw new AppError("acesso negado para esta disciplina", 403);
+      throw new AppError("dashboard.disciplineDenied", 403);
     }
   }
 
@@ -110,7 +109,7 @@ export async function assertDashboardScopeAccess(
       profile.schoolId !== user.school ||
       !allowedCourseIds.has(profile.courseId)
     ) {
-      throw new AppError("acesso negado para este aluno", 403);
+      throw new AppError("dashboard.studentDenied", 403);
     }
 
     if (isProfessorOnly) {
@@ -131,7 +130,7 @@ export async function assertDashboardScopeAccess(
               )
           : [];
       if (!directlyAllowed && !disciplineAllowed.length) {
-        throw new AppError("acesso negado para este aluno", 403);
+        throw new AppError("dashboard.studentDenied", 403);
       }
     }
   }

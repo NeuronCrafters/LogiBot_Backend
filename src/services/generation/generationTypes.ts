@@ -1,4 +1,4 @@
-import type { AgentMessage } from "../ai/digitalOceanAgentService";
+import type { AgentMessage } from "../ai/openRouterService";
 import type { RagMode } from "../rag/ragTypes";
 
 export type ChatTimings = Record<string, number>;

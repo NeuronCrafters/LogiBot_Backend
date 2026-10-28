@@ -1,10 +1,4 @@
-// Política de retry compartilhada para chamadas aos agentes de IA (DigitalOcean).
-//
-// Os agentes entram em repouso/cold start quando ficam ociosos: a primeira
-// requisição depois de ocioso costuma falhar por timeout, conexão recusada ou
-// 401/5xx enquanto o agente "acorda". Este helper centraliza a lógica de
-// retentar algumas vezes antes de desistir, usada pelo pool de agentes do
-// chatbot e pelos agentes dedicados de quiz e de insights.
+import { setTimeout as delay } from "timers/promises";
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,15 +32,11 @@ function isAbortError(error: any): boolean {
   );
 }
 
-// Retenta em falhas transitórias típicas de cold start: sem resposta HTTP
-// (rede/DNS/conexão), timeout, ou status 401/429/5xx. Não retenta em abort do
-// usuário nem em erros de validação 4xx (400/403/404/422 etc.).
 export function isRetryableAgentError(error: any): boolean {
   if (isAbortError(error)) return false;
 
   const status = error?.response?.status;
 
-  // Sem response = erro de rede / conexão / DNS / timeout (cold start "dormindo").
   if (status === undefined || status === null) {
     if (typeof error?.code === "string" && RETRYABLE_ERROR_CODES.has(error.code)) {
       return true;
@@ -58,10 +48,11 @@ export function isRetryableAgentError(error: any): boolean {
     return Boolean(error?.request);
   }
 
-  return status === 401 || status === 429 || (status >= 500 && status < 600);
+  return status === 408 || status === 429 || (status >= 500 && status < 600);
 }
 
 export type WithAgentRetryOptions = {
+  signal?: AbortSignal;
   maxAttempts?: number;
   delayMs?: number;
   isRetryable?: (error: any) => boolean;
@@ -83,6 +74,7 @@ export async function withAgentRetry<T>(
   let lastError: any;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    options.signal?.throwIfAborted();
     try {
       return await fn(attempt);
     } catch (error) {
@@ -90,9 +82,15 @@ export async function withAgentRetry<T>(
 
       if (attempt >= maxAttempts || !isRetryable(error)) break;
 
-      const waitMs = delayMs * attempt;
+      const retryAfter = error?.response?.headers?.["retry-after"];
+      const retryAfterMs = retryAfter == null
+        ? 0
+        : /^\d+(\.\d+)?$/.test(String(retryAfter))
+          ? Number(retryAfter) * 1000
+          : Date.parse(String(retryAfter)) - Date.now();
+      const waitMs = Math.max(delayMs * attempt, Number.isFinite(retryAfterMs) ? retryAfterMs : 0);
       options.onRetry?.({ attempt, error, delayMs: waitMs });
-      await sleep(waitMs);
+      await delay(waitMs, undefined, { signal: options.signal });
     }
   }
 

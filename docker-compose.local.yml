@@ -1,0 +1,96 @@
+services:
+  embedding:
+    build:
+      context: ../LogiBot_EmbedAPI
+      args:
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cpu
+    restart: unless-stopped
+    environment:
+      HF_HOME: /models
+      HF_HUB_DISABLE_XET: "1"
+      HF_HUB_DOWNLOAD_TIMEOUT: "60"
+      OMP_NUM_THREADS: "2"
+      TOKENIZERS_PARALLELISM: "false"
+      LOG_TEXTS: "false"
+    volumes:
+      - embedding_models:/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 180s
+
+  chroma:
+    image: chromadb/chroma:1.5.3
+    restart: unless-stopped
+    environment:
+      ANONYMIZED_TELEMETRY: "FALSE"
+    volumes:
+      - chroma_local:/data
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8000;
+          printf 'GET /api/v2/heartbeat HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3;
+          IFS= read -r status <&3;
+          [[ "$$status" == *" 200 "* ]]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: logibot
+      POSTGRES_PASSWORD: logibot_local
+      POSTGRES_DB: logibot
+    volumes:
+      - postgres_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logibot -d logibot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    command: ["node", "dist/db/migrate.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    ports: !override
+      - "127.0.0.1:${PORT:-43187}:${PORT:-43187}"
+    depends_on:
+      embedding:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      worker:
+        condition: service_healthy
+
+  worker:
+    depends_on:
+      embedding:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_local:
+  embedding_models:
+  chroma_local:

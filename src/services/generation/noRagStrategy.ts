@@ -1,9 +1,9 @@
 import { logger } from "../../logger";
 import {
-  askDigitalOceanAgent,
-  streamDigitalOceanAgent,
-} from "../ai/digitalOceanAgentService";
-import type { AgentMessage } from "../ai/digitalOceanAgentService";
+  askOpenRouter,
+  streamOpenRouter,
+} from "../ai/openRouterService";
+import type { AgentMessage } from "../ai/openRouterService";
 import {
   measureChatTiming,
   type GenerationInput,
@@ -14,9 +14,6 @@ import {
 const FALLBACK_TEXT =
   "Tive um problema tecnico ao processar sua mensagem. Pode tentar novamente?";
 
-// A identidade/regras fixas do LogiBot vivem no system prompt configurado no
-// próprio Agent da DigitalOcean (ver PROMPT_CHAT.md). Aqui só enviamos, quando
-// existir, a instrução extra que o professor configurou para a turma.
 function buildMessages(input: GenerationInput): AgentMessage[] {
   const professorInstruction = input.settings?.systemPrompt;
   if (!professorInstruction) return input.history;
@@ -34,7 +31,7 @@ export async function generateNoRagResponse(
     input.timings,
     input.agentTimingStage || "agent",
     () =>
-      askDigitalOceanAgent(buildMessages(input), {
+      askOpenRouter(buildMessages(input), {
         timeoutMs: input.agentTimeoutMs,
         queueTimeoutMs: input.agentQueueTimeoutMs,
       }),
@@ -61,7 +58,7 @@ export async function streamNoRagResponse(
     input.timings,
     input.agentTimingStage || "agent",
     () =>
-      streamDigitalOceanAgent(buildMessages(input), {
+      streamOpenRouter(buildMessages(input), {
         signal: callbacks.signal,
         onToken: callbacks.onToken,
         timeoutMs: input.agentTimeoutMs,

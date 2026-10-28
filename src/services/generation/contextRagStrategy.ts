@@ -3,9 +3,9 @@ import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
 import {
-  askDigitalOceanAgent,
-  streamDigitalOceanAgent,
-} from "../ai/digitalOceanAgentService";
+  askOpenRouter,
+  streamOpenRouter,
+} from "../ai/openRouterService";
 import { createEmbeddingProvider } from "../embeddings/embeddingServiceProvider";
 import { getOrCreateRagCollection } from "../rag/chromaService";
 import {
@@ -26,11 +26,6 @@ function distanceToScore(distance: unknown) {
   return Math.round((1 / (1 + Math.max(0, distance))) * 100);
 }
 
-// A identidade/regras de uso do RAG (quando responder, resposta parcial,
-// frase canonica de "nao encontrei", seguranca do contexto etc.) vivem no
-// system prompt configurado no proprio Agent da DigitalOcean (ver
-// PROMPT_CHAT.md). Aqui so montamos o que e dinamico por request: a
-// instrucao extra do professor (se houver) e os trechos recuperados.
 export function buildSystemPrompt(settings: RuntimeRagSettings, chunks: RetrievedRagChunk[]) {
   const customPrompt = settings.systemPrompt
     ? `Instrucao adicional do professor para esta turma:\n${settings.systemPrompt}\n\n`
@@ -177,7 +172,7 @@ export async function generateContextRagResponse(
   }
 
   const agentResponse = await measureChatTiming(input.timings, input.agentTimingStage || "agent", () =>
-    askDigitalOceanAgent([
+    askOpenRouter([
       {
         role: "system",
         content: buildSystemPrompt(input.settings, retrievedChunks),
@@ -250,7 +245,7 @@ export async function streamContextRagResponse(
     input.timings,
     input.agentTimingStage || "agent",
     () =>
-      streamDigitalOceanAgent(
+      streamOpenRouter(
         [
           {
             role: "system",

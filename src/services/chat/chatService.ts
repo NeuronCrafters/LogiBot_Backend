@@ -9,7 +9,7 @@ import {
 } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
-import { AgentMessage } from "../ai/digitalOceanAgentService";
+import { AgentMessage } from "../ai/openRouterService";
 import {
   generateChatResponse,
   streamChatResponse,

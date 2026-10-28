@@ -1,36 +1,17 @@
 import axios from "axios";
+import { assertOpenRouterSuccess, getOpenRouterConfig, prepareOpenRouterMessages } from "./openRouterConfig";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 import { withAgentRetry } from "../../utils/agentRetry";
 
 function getConfig() {
-  const endpoint = process.env.QUIZ_AI_AGENT_ENDPOINT?.trim();
-  const accessKey = process.env.QUIZ_AI_AGENT_ACCESS_KEY?.trim();
-  const timeoutValue = Number(process.env.QUIZ_AI_GENERATION_TIMEOUT_MS || 300_000);
-  const timeoutMs =
-    Number.isFinite(timeoutValue) && timeoutValue > 0
-      ? Math.min(timeoutValue, 300_000)
-      : 300_000;
-
-  if (!endpoint || !accessKey) {
-    throw new AppError(
-      "O serviço de geração de quiz por IA não está configurado.",
-      503,
-    );
-  }
-
-  const normalizedEndpoint = endpoint
-    .replace(/\/+$/, "")
-    .replace(/(?<!\/api\/v1)\/chat\/completions$/, "");
-  return {
-    endpoint: normalizedEndpoint.endsWith("/api/v1")
-      ? `${normalizedEndpoint}/chat/completions`
-      : normalizedEndpoint.endsWith("/api/v1/chat/completions")
-        ? normalizedEndpoint
-        : `${normalizedEndpoint}/api/v1/chat/completions`,
-    accessKey,
-    timeoutMs,
-  };
+  const config = getOpenRouterConfig();
+  if (!config) throw new AppError("O serviço de geração de quiz por IA não está configurado. Defina OPENROUTER_API_KEY e OPENROUTER_MODEL.", 503);
+  const timeoutValue = Number(process.env.QUIZ_AI_GENERATION_TIMEOUT_MS || 300000);
+  const timeoutMs = Number.isFinite(timeoutValue) && timeoutValue > 0
+    ? Math.min(timeoutValue, 300000)
+    : 300000;
+  return { ...config, timeoutMs };
 }
 
 function extractText(data: any) {
@@ -47,13 +28,14 @@ export async function askQuizAiAgent(prompt: string) {
   const config = getConfig();
 
   try {
-    // Retenta em cold start do agente dedicado (timeout/rede/401/429/5xx),
-    // usando a mesma política compartilhada do chatbot e dos insights.
     return await withAgentRetry(
       async () => {
         const response = await axios.post(
           config.endpoint,
-          { messages: [{ role: "user", content: prompt }] },
+          {
+            model: config.model,
+            messages: prepareOpenRouterMessages("quiz", [{ role: "user", content: prompt }]),
+          },
           {
             headers: {
               Authorization: `Bearer ${config.accessKey}`,
@@ -63,17 +45,18 @@ export async function askQuizAiAgent(prompt: string) {
           },
         );
 
+        assertOpenRouterSuccess(response.data);
         const text = extractText(response.data);
         if (!text)
-          throw new Error("O Agent não retornou uma resposta utilizável.");
+          throw new Error("A OpenRouter não retornou uma resposta utilizável.");
 
-        logger.info("QuizAI", "Quiz gerado pelo Agent dedicado.", {
+        logger.info("QuizAI", "Quiz gerado pela OpenRouter.", {
           providerModel: response.data?.model,
           promptTokens: response.data?.usage?.prompt_tokens,
           completionTokens: response.data?.usage?.completion_tokens,
         });
 
-        return { text, provider: "quiz-ai-agent" };
+        return { text, provider: "openrouter" };
       },
       {
         onRetry: ({ attempt, error }) => {
@@ -88,7 +71,7 @@ export async function askQuizAiAgent(prompt: string) {
   } catch (error: any) {
     if (error instanceof AppError) throw error;
 
-    logger.error("QuizAI", "Falha ao consultar Agent dedicado.", {
+    logger.error("QuizAI", "Falha ao consultar a OpenRouter.", {
       status: error?.response?.status,
       message: error?.response?.data?.message || error?.message,
     });

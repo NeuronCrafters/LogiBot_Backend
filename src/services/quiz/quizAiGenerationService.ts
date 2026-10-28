@@ -43,10 +43,6 @@ function truncate(value: string | undefined | null, max: number): string {
   return value.trim().slice(0, max);
 }
 
-// A identidade, as regras de qualidade e o contrato de saída (JSON) do
-// gerador de quiz vivem no system prompt configurado no próprio Agent
-// dedicado da DigitalOcean (ver PROMPT_QUIZ.md). Aqui só enviamos o que é
-// dinâmico por request: tema, quantidade e o contexto recuperado.
 function buildPrompt(input: {
   theme: string;
   questionCount: number;

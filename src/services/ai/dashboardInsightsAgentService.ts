@@ -1,38 +1,17 @@
 import axios from "axios";
+import { assertOpenRouterSuccess, getOpenRouterConfig, prepareOpenRouterMessages } from "./openRouterConfig";
 import { AppError } from "../../exceptions/AppError";
 import { logger } from "../../logger";
 import { withAgentRetry } from "../../utils/agentRetry";
 
 function getConfig() {
-  const endpoint = process.env.DASHBOARD_INSIGHTS_AGENT_ENDPOINT?.trim();
-  const accessKey = process.env.DASHBOARD_INSIGHTS_AGENT_ACCESS_KEY?.trim();
-  const timeoutValue = Number(
-    process.env.DASHBOARD_INSIGHTS_TIMEOUT_MS || 90_000,
-  );
-  const timeoutMs =
-    Number.isFinite(timeoutValue) && timeoutValue > 0
-      ? Math.min(timeoutValue, 180_000)
-      : 90_000;
-
-  if (!endpoint || !accessKey) {
-    throw new AppError(
-      "O serviço de insights de IA não está configurado.",
-      503,
-    );
-  }
-
-  const normalizedEndpoint = endpoint
-    .replace(/\/+$/, "")
-    .replace(/(?<!\/api\/v1)\/chat\/completions$/, "");
-  return {
-    endpoint: normalizedEndpoint.endsWith("/api/v1")
-      ? `${normalizedEndpoint}/chat/completions`
-      : normalizedEndpoint.endsWith("/api/v1/chat/completions")
-        ? normalizedEndpoint
-        : `${normalizedEndpoint}/api/v1/chat/completions`,
-    accessKey,
-    timeoutMs,
-  };
+  const config = getOpenRouterConfig();
+  if (!config) throw new AppError("O serviço de insights de IA não está configurado. Defina OPENROUTER_API_KEY e OPENROUTER_MODEL.", 503);
+  const timeoutValue = Number(process.env.DASHBOARD_INSIGHTS_TIMEOUT_MS || 90000);
+  const timeoutMs = Number.isFinite(timeoutValue) && timeoutValue > 0
+    ? Math.min(timeoutValue, 180000)
+    : 90000;
+  return { ...config, timeoutMs };
 }
 
 function extractText(data: any) {
@@ -49,13 +28,14 @@ export async function askDashboardInsightsAgent(prompt: string) {
   const config = getConfig();
 
   try {
-    // Retenta em cold start do agente dedicado (timeout/rede/401/429/5xx),
-    // usando a mesma política compartilhada do chatbot e do quiz.
     return await withAgentRetry(
       async () => {
         const response = await axios.post(
           config.endpoint,
-          { messages: [{ role: "user", content: prompt }] },
+          {
+            model: config.model,
+            messages: prepareOpenRouterMessages("insights", [{ role: "user", content: prompt }]),
+          },
           {
             headers: {
               Authorization: `Bearer ${config.accessKey}`,
@@ -65,19 +45,14 @@ export async function askDashboardInsightsAgent(prompt: string) {
           },
         );
 
+        assertOpenRouterSuccess(response.data);
         const text = extractText(response.data);
         if (!text)
-          throw new Error("O Agent não retornou uma resposta utilizável.");
+          throw new Error("A OpenRouter não retornou uma resposta utilizável.");
 
         const providerModel =
           typeof response.data?.model === "string" ? response.data.model : null;
-        if (providerModel && !providerModel.includes("gpt-oss-20b")) {
-          logger.warn("DashboardInsights", "Agent respondeu com modelo inesperado.", {
-            providerModel,
-          });
-        }
-
-        logger.info("DashboardInsights", "Insight gerado pelo Agent dedicado.", {
+        logger.info("DashboardInsights", "Insight gerado pela OpenRouter.", {
           providerModel,
           promptTokens: response.data?.usage?.prompt_tokens,
           completionTokens: response.data?.usage?.completion_tokens,
@@ -98,7 +73,7 @@ export async function askDashboardInsightsAgent(prompt: string) {
   } catch (error: any) {
     if (error instanceof AppError) throw error;
 
-    logger.error("DashboardInsights", "Falha ao consultar Agent dedicado.", {
+    logger.error("DashboardInsights", "Falha ao consultar a OpenRouter.", {
       status: error?.response?.status,
       message: error?.response?.data?.message || error?.message,
     });

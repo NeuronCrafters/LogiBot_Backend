@@ -245,11 +245,6 @@ async function getSummaryForFilters(filters: Filters) {
   });
 }
 
-// A identidade, as regras de fundamentação/privacidade e o estilo geral do
-// assistente de insights vivem no system prompt configurado no próprio Agent
-// dedicado da DigitalOcean (ver PROMPT_DASHBOARD_INSIGHTS.md). Aqui só
-// enviamos o que muda por request: qual gráfico/escopo, os dados, e a
-// estrutura exata de seções/tabelas esperada para este tipo de análise.
 function chartPrompt(
   chart: DashboardInsightChart,
   filters: Filters,

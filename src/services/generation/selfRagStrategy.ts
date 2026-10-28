@@ -3,9 +3,9 @@ import { getDb } from "../../db/client";
 import { ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
 import {
-  askDigitalOceanAgent,
+  askOpenRouter,
   type AgentMessage,
-} from "../ai/digitalOceanAgentService";
+} from "../ai/openRouterService";
 import {
   generateContextRagResponse,
   streamContextRagResponse,
@@ -98,7 +98,7 @@ async function decideSelfRag(input: {
   timings?: GenerationInput["timings"];
 }) {
   const response = await measureChatTiming(input.timings, "agent/self decision", () =>
-    askDigitalOceanAgent([
+    askOpenRouter([
       {
         role: "system",
         content: `Voce decide se um chat educacional deve buscar materiais da turma antes de responder.
@@ -123,6 +123,7 @@ Pergunta atual:
 ${input.message}`,
       },
     ], {
+      includeChatPrompt: false,
       timeoutMs: getSelfDecisionTimeoutMs(),
       queueTimeoutMs: getSelfDecisionQueueTimeoutMs(),
     }),

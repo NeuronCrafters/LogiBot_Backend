@@ -1,4 +1,4 @@
-import type { AgentMessage } from "../ai/digitalOceanAgentService";
+import type { AgentMessage } from "../ai/openRouterService";
 
 const MAX_PREVIOUS_USER_MESSAGES = 2;
 const MAX_MESSAGE_LENGTH = 500;

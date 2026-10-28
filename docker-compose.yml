@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "${PORT:-43187}:43187"
+      - "${PORT:-43187}:${PORT:-43187}"
     env_file: .env
     environment:
       NODE_ENV: production
@@ -15,30 +15,12 @@ services:
     depends_on:
       - worker
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:43187/health/simple"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:${PORT:-43187}/health/simple"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
 
-  # A single worker process is the right size for the current setup: the real
-  # ceiling on chat throughput is the agent pool (up to 5 DigitalOcean agents x
-  # DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT, default 1 => ~5 concurrent LLM
-  # calls total), and CHAT_WORKER_CONCURRENCY (default 5, see workerServer.ts)
-  # already keeps that pool saturated from one process.
-  #
-  # Don't add extra `worker-N` services as a way to scale chat throughput: the
-  # per-agent in-flight/queue tracking in digitalOceanAgentService.ts
-  # (`agentInFlightById`, `agentQueue`) is in-memory and process-local, so two
-  # processes would each independently believe an agent is free and could both
-  # dispatch to it at once — silently exceeding
-  # DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT and risking overload/rate-limits
-  # on the DigitalOcean agents, without increasing real throughput (the agents
-  # remain the bottleneck either way). Running more than one instance would
-  # require coordinating that state externally (e.g. Redis/Postgres) first.
-  #
-  # No host port is published — the worker is reached internally over the
-  # Docker network at http://worker:43188 (RAG_WORKER_URL).
   worker:
     build:
       context: .
@@ -51,11 +33,20 @@ services:
     volumes:
       - rag_uploads:/var/logibots/uploads/rag
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:43188/health/simple"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:${RAG_WORKER_PORT:-43188}/health/simple"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  tests:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      NODE_ENV: test
 
 volumes:
   rag_uploads:

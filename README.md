@@ -41,13 +41,18 @@ SMTP_PASS=change-me
 MAIL_FROM="LogiBot <user@example.com>"
 PASSWORD_RESET_DEBUG_RESPONSE=false
 
-DIGITALOCEAN_AGENT_ENDPOINT=
-DIGITALOCEAN_AGENT_ACCESS_KEY=
-DIGITALOCEAN_AGENT_TIMEOUT_MS=180000
-DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
-DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
-DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
-DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=
+OPENROUTER_TIMEOUT_MS=180000
+OPENROUTER_TIMEOUT_CAP_MS=300000
+OPENROUTER_MAX_CONCURRENCY=5
+OPENROUTER_QUEUE_MAX_SIZE=100
+OPENROUTER_QUEUE_TIMEOUT_MS=600000
+AGENT_MAX_ATTEMPTS=3
+AGENT_RETRY_DELAY_MS=1500
+QUIZ_AI_GENERATION_TIMEOUT_MS=300000
+DASHBOARD_INSIGHTS_TIMEOUT_MS=90000
 SELF_RAG_DECISION_TIMEOUT_MS=60000
 SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
 SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000
@@ -89,56 +94,17 @@ O seed cria:
 
 O endpoint `POST /chat/messages` salva a mensagem do aluno, cria um job em `chat_generation_jobs` e retorna `202` com `jobId`. O worker (`npm run worker`) processa RAG + Agent em background, salva a resposta real no historico e o frontend consulta `GET /chat/jobs/:jobId` ate concluir.
 
-O Agent da DigitalOcean e usado quando `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` estao configurados. `DIGITALOCEAN_AGENT_ENDPOINT` deve ser a URL completa de chat completions fornecida pela DigitalOcean. Como o chat e assincrono, timeouts longos sao usados apenas para recuperar jobs travados, nao como limite da UX HTTP.
+Chat, quizzes e insights usam a OpenRouter, com a mesma chave e o mesmo modelo definidos no servidor. Preencha `OPENROUTER_API_KEY` e `OPENROUTER_MODEL` no `.env`. O modelo deve ser o identificador exato disponível na sua conta, no formato `provedor/modelo`; não há modelo escolhido automaticamente.
 
-Para aumentar concorrencia sem saturar o provedor, o backend tambem aceita um pool de ate 5 Agents da DigitalOcean. A cada chamada, ele aguarda vaga em uma fila local e usa o Agent menos ocupado no processo atual.
+O cliente envia `POST https://openrouter.ai/api/v1/chat/completions` com autenticação Bearer, modelo e mensagens. `OPENROUTER_BASE_URL` aceita a URL base da API ou a URL completa de chat completions. Os prompts `PROMPT_CHAT.md`, `PROMPT_QUIZ.md` e `PROMPT_DASHBOARD_INSIGHTS.md` são carregados pela aplicação e incluídos nas imagens da API e do worker. A decisão técnica do Self-RAG usa seu próprio prompt JSON.
 
-Formato numerado, recomendado para preencher no painel do deploy:
+Sem chave ou modelo, o chat mantém a resposta de indisponibilidade existente e quiz/insights retornam 503. A migração não exige variáveis do provedor anterior. Embeddings e ChromaDB continuam usando seus serviços próprios.
 
-```env
-DIGITALOCEAN_AGENT_1_ENDPOINT=
-DIGITALOCEAN_AGENT_1_ACCESS_KEY=
-DIGITALOCEAN_AGENT_2_ENDPOINT=
-DIGITALOCEAN_AGENT_2_ACCESS_KEY=
-# ...
-DIGITALOCEAN_AGENT_5_ENDPOINT=
-DIGITALOCEAN_AGENT_5_ACCESS_KEY=
-```
+`OPENROUTER_MAX_CONCURRENCY` limita chamadas de chat por processo. A fila aceita até `OPENROUTER_QUEUE_MAX_SIZE` solicitações e aguarda até `OPENROUTER_QUEUE_TIMEOUT_MS`. API e worker mantêm filas independentes; com limite 5 em cada processo, podem existir até 10 chamadas de chat simultâneas, além das chamadas de quiz e insights, que não usam essa fila. Ajuste esses valores e `CHAT_WORKER_CONCURRENCY` ao orçamento da conta antes de escalar instâncias.
 
-Formato em lista, pareado por posicao:
+`OPENROUTER_TIMEOUT_MS` define o timeout do chat, limitado por `OPENROUTER_TIMEOUT_CAP_MS`. Quiz e insights usam seus timeouts específicos. A política compartilhada retenta rede, timeout e HTTP 408/429/5xx; HTTP 401/402/403 não são retentados. `Retry-After` é respeitado quando recebido. Streaming só pode ser reiniciado antes do primeiro token e propaga cancelamento à chamada HTTP.
 
-```env
-DIGITALOCEAN_AGENT_ENDPOINTS=https://agent-1...,https://agent-2...
-DIGITALOCEAN_AGENT_ACCESS_KEYS=key-1,key-2
-```
-
-As variaveis antigas `DIGITALOCEAN_AGENT_ENDPOINT` e `DIGITALOCEAN_AGENT_ACCESS_KEY` continuam funcionando e entram como o Agent `default`. O limite de 5 e total, entao o `default` tambem conta.
-
-Variaveis da fila:
-
-```env
-DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
-DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
-DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
-DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
-```
-
-`DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1` significa que cada Agent recebe uma chamada por vez. As demais requests ficam na fila do backend ate abrir vaga.
-O `DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS` limita o timeout efetivo do Agent para evitar slots presos indefinidamente.
-
-### Insights de IA no dashboard
-
-Os insights pedagógicos usam um Agent dedicado e não compartilham a fila do
-chat. Configure o Agent com GPT-OSS 20B no painel da DigitalOcean:
-
-```env
-DASHBOARD_INSIGHTS_AGENT_ENDPOINT=
-DASHBOARD_INSIGHTS_AGENT_ACCESS_KEY=
-DASHBOARD_INSIGHTS_TIMEOUT_MS=90000
-```
-
-A seleção do modelo é feita no painel da DigitalOcean. Quando informado pelo
-Agent, o nome do modelo é registrado apenas nos logs técnicos.
+Referências: [API OpenRouter](https://openrouter.ai/docs/api_reference/overview) e [streaming SSE](https://openrouter.ai/docs/api_reference/streaming).
 
 No modo `self`, o backend faz uma chamada curta ao Agent para decidir se deve recuperar materiais e depois pode fazer uma segunda chamada para responder. Por isso ele tem orcamento proprio:
 
@@ -203,6 +169,37 @@ O fluxo `POST /auth/password-reset-requests` envia email via SMTP usando Nodemai
 6. Rode `npm run build`.
 7. Inicie `npm start` com seu gerenciador de processo, por exemplo PM2 ou systemd.
 
+## Validação local com Docker
+
+Nenhuma instalação local de Node.js, npm ou PostgreSQL é necessária. Crie `.env` a partir de `.env.example` se ele ainda não existir e configure `JWT_SECRET` com um valor aleatório. O `.env` local preparado para esta entrega já possui esse valor. O arquivo é ignorado pelo Git e excluído das imagens.
+
+Preencha `OPENROUTER_API_KEY` e `OPENROUTER_MODEL` para testar geração real. O `.env.example` usa o PostgreSQL do ambiente local abaixo. Para acessar outro banco, ajuste `DATABASE_URL` e utilize o Compose principal sem o arquivo local.
+
+```bash
+docker compose --profile test run --build --rm tests
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build --wait
+curl http://localhost:43187/health
+```
+
+O arquivo local sobe PostgreSQL, ChromaDB e EmbedAPI, executa as migrações e inicia worker e API, publicada apenas em `127.0.0.1`. A EmbedAPI utiliza PyTorch para CPU e mantém o modelo MiniLM multilíngue existente. O primeiro start baixa o modelo; as próximas inicializações reutilizam o volume `embedding_models`. ChromaDB também possui volume próprio. O banco não publica porta no host e seus dados ficam em volume próprio. O administrador inicial segue o comportamento existente da aplicação. Não use esse banco e suas credenciais de desenvolvimento em produção.
+
+Após alterar a chave ou o modelo no `.env`, execute novamente o comando `up` acima para recriar os containers com o ambiente atualizado. No ambiente local, use `EMBEDDING_SERVICE_URL=http://embedding:8000` e `CHROMA_URL=http://chroma:8000`. Preencha `EMBEDDING_SERVICE_API_KEY` com a chave aceita pela EmbedAPI. Envie um material da turma e aguarde seu processamento antes de testar os modos RAG e a geração de quiz com documento. Os testes automatizados simulam o provedor e não consomem créditos.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml logs --tail=100 backend worker
+docker compose -f docker-compose.yml -f docker-compose.local.yml down
+```
+
+Com os serviços saudáveis e a OpenRouter configurada, o smoke test integrado usa contas, turma e documento temporários no PostgreSQL local. Ele realiza chamadas reais à OpenRouter e remove seus dados ao terminar:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T backend node - < load-tests/openrouter-rag-smoke.cjs
+```
+
+O teste cobre embeddings de 384 dimensões, autenticação, ingestão/reprocessamento, vetores no ChromaDB, teste RAG, streaming e jobs nos modos `none`, `context`, `self` e `hybrid`, quiz criado como rascunho com documento, insights/cache e remoção dos vetores.
+
+O comando `down` preserva os volumes. Em produção, configure o banco e as integrações reais antes de usar o Compose principal.
+
 ## Docker / Dokploy
 
 O backend possui um `Dockerfile` multi-stage pronto para Dokploy.
@@ -226,13 +223,18 @@ JWT_SECRET=change-me
 API_KEY=
 DB_POOL_MAX=10
 HTTP_REQUEST_LOGS=true
-DIGITALOCEAN_AGENT_ENDPOINT=
-DIGITALOCEAN_AGENT_ACCESS_KEY=
-DIGITALOCEAN_AGENT_TIMEOUT_MS=180000
-DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS=300000
-DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT=1
-DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE=100
-DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS=600000
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=
+OPENROUTER_TIMEOUT_MS=180000
+OPENROUTER_TIMEOUT_CAP_MS=300000
+OPENROUTER_MAX_CONCURRENCY=5
+OPENROUTER_QUEUE_MAX_SIZE=100
+OPENROUTER_QUEUE_TIMEOUT_MS=600000
+AGENT_MAX_ATTEMPTS=3
+AGENT_RETRY_DELAY_MS=1500
+QUIZ_AI_GENERATION_TIMEOUT_MS=300000
+DASHBOARD_INSIGHTS_TIMEOUT_MS=90000
 SELF_RAG_DECISION_TIMEOUT_MS=60000
 SELF_RAG_DECISION_QUEUE_TIMEOUT_MS=600000
 SELF_RAG_FINAL_AGENT_TIMEOUT_MS=180000

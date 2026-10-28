@@ -2,57 +2,18 @@ import axios from "axios";
 import { logger } from "../../logger";
 import { isRetryableAgentError, withAgentRetry } from "../../utils/agentRetry";
 
-type ChatRole = "system" | "user" | "assistant";
-
-export function convertSystemMessages(messages: AgentMessage[]): AgentMessage[] {
-  const systemParts = messages
-    .filter((m) => m.role === "system")
-    .map((m) => m.content);
-  const rest = messages.filter((m) => m.role !== "system");
-
-  if (!systemParts.length) return rest;
-
-  const systemText = systemParts.join("\n\n");
-  let latestUserIdx = -1;
-  for (let index = rest.length - 1; index >= 0; index -= 1) {
-    if (rest[index].role === "user") {
-      latestUserIdx = index;
-      break;
-    }
-  }
-
-  if (latestUserIdx === -1) {
-    return [
-      {
-        role: "user",
-        content: `<instrucoes_da_aplicacao>\n${systemText}\n</instrucoes_da_aplicacao>`,
-      },
-      ...rest,
-    ];
-  }
-
-  const converted = [...rest];
-  converted[latestUserIdx] = {
-    role: "user",
-    content: `<instrucoes_da_aplicacao>
-${systemText}
-</instrucoes_da_aplicacao>
-
-<pergunta_atual>
-${converted[latestUserIdx].content}
-</pergunta_atual>`,
-  };
-  return converted;
-}
-
-export type AgentMessage = {
-  role: ChatRole;
-  content: string;
-};
+import { StringDecoder } from "string_decoder";
+import {
+  assertOpenRouterSuccess,
+  getOpenRouterConfig,
+  prepareOpenRouterMessages,
+  type AgentMessage,
+} from "./openRouterConfig";
+export type { AgentMessage } from "./openRouterConfig";
 
 type AgentResponse = {
   text: string;
-  provider: "digitalocean-agent";
+  provider: "openrouter";
   usage?: unknown;
 };
 
@@ -60,6 +21,7 @@ type AgentTarget = {
   id: string;
   endpoint: string;
   accessKey: string;
+  model: string;
 };
 
 type AgentSlot = {
@@ -73,79 +35,41 @@ type QueuedAgentRequest = {
   resolve: (slot: AgentSlot) => void;
   reject: (error: Error) => void;
   timer: NodeJS.Timeout;
+  cleanup: () => void;
 };
 
 type AgentRequestOptions = {
+  signal?: AbortSignal;
   timeoutMs?: number;
   queueTimeoutMs?: number;
+  includeChatPrompt?: boolean;
 };
 
 type StreamAgentOptions = AgentRequestOptions & {
-  signal?: AbortSignal;
   onToken?: (text: string) => void | Promise<void>;
 };
 
-const MAX_AGENT_TARGETS = 5;
 const agentInFlightById = new Map<string, number>();
 const agentQueue: QueuedAgentRequest[] = [];
 let agentCursor = 0;
 
-function normalizeAgentEndpoint(value?: string) {
-  const base = value?.trim().replace(/\/+$/, "");
-  if (!base) return undefined;
-  return base.endsWith("/chat/completions")
-    ? base
-    : `${base}/api/v1/chat/completions`;
-}
-
-function pushAgentTarget(
-  targets: AgentTarget[],
-  id: string,
-  endpoint?: string,
-  accessKey?: string,
-) {
-  if (targets.length >= MAX_AGENT_TARGETS) return;
-
-  const normalizedEndpoint = normalizeAgentEndpoint(endpoint);
-  const normalizedAccessKey = accessKey?.trim();
-  if (!normalizedEndpoint || !normalizedAccessKey) return;
-
-  if (targets.some((target) => target.endpoint === normalizedEndpoint)) return;
-
-  targets.push({
-    id,
-    endpoint: normalizedEndpoint,
-    accessKey: normalizedAccessKey,
-  });
-}
-
-function getAgentTargets() {
-  const targets: AgentTarget[] = [];
-
-  for (let index = 1; index <= MAX_AGENT_TARGETS; index += 1) {
-    pushAgentTarget(
-      targets,
-      `agent-${index}`,
-      process.env[`DIGITALOCEAN_AGENT_${index}_ENDPOINT`],
-      process.env[`DIGITALOCEAN_AGENT_${index}_ACCESS_KEY`],
-    );
-  }
-
-  return targets;
+function getAgentTargets(): AgentTarget[] {
+  const config = getOpenRouterConfig();
+  return config ? [{ id: "openrouter", ...config }] : [];
 }
 
 function getMaxConcurrencyPerAgent() {
-  const value = Number(process.env.DIGITALOCEAN_AGENT_CONCURRENCY_PER_AGENT || 1);
-  return Number.isInteger(value) && value > 0 ? value : 1;
+  const value = Number(process.env.OPENROUTER_MAX_CONCURRENCY || 5);
+  return Number.isInteger(value) && value > 0 ? value : 5;
 }
 
 function getMaxQueueSize() {
-  const value = Number(process.env.DIGITALOCEAN_AGENT_QUEUE_MAX_SIZE || 100);
+  const value = Number(process.env.OPENROUTER_QUEUE_MAX_SIZE || 100);
   return Number.isInteger(value) && value >= 0 ? value : 100;
 }
 
 function getQueueTimeoutMs() {
-  const value = Number(process.env.DIGITALOCEAN_AGENT_QUEUE_TIMEOUT_MS || 600_000);
+  const value = Number(process.env.OPENROUTER_QUEUE_TIMEOUT_MS || 600_000);
   return Number.isFinite(value) && value > 0 ? value : 600_000;
 }
 
@@ -209,9 +133,10 @@ function dispatchAgentQueue() {
 
     const queued = agentQueue.shift()!;
     clearTimeout(queued.timer);
+    queued.cleanup();
 
     const queuedMs = Date.now() - queued.enqueuedAt;
-    logger.info("DigitalOceanAgent", "Dequeued Agent request.", {
+    logger.info("OpenRouter", "Dequeued Agent request.", {
       agentId: target.id,
       queuedMs,
       queueDepth: agentQueue.length,
@@ -228,8 +153,9 @@ function releaseAgentSlot(agentId: string) {
 
 async function acquireAgentSlot(
   targets: AgentTarget[],
-  options?: { queueTimeoutMs?: number },
+  options?: { queueTimeoutMs?: number; signal?: AbortSignal },
 ): Promise<AgentSlot> {
+  options?.signal?.throwIfAborted();
   const target = pickAgentTarget(targets, { requireCapacity: true });
   if (target) return reserveAgentSlot(target, 0);
 
@@ -242,12 +168,22 @@ async function acquireAgentSlot(
     const timer = setTimeout(() => {
       const index = agentQueue.findIndex((item) => item.timer === timer);
       if (index >= 0) agentQueue.splice(index, 1);
+      cleanup();
       reject(new Error("tempo maximo na fila de Agents excedido"));
     }, options?.queueTimeoutMs ?? getQueueTimeoutMs());
 
-    agentQueue.push({ enqueuedAt, resolve, reject, timer });
+    const onAbort = () => {
+      const index = agentQueue.findIndex((item) => item.timer === timer);
+      if (index >= 0) agentQueue.splice(index, 1);
+      clearTimeout(timer);
+      cleanup();
+      reject(options.signal.reason);
+    };
+    const cleanup = () => options?.signal?.removeEventListener("abort", onAbort);
+    options?.signal?.addEventListener("abort", onAbort, { once: true });
+    agentQueue.push({ enqueuedAt, resolve, reject, timer, cleanup });
 
-    logger.info("DigitalOceanAgent", "Queued Agent request.", {
+    logger.info("OpenRouter", "Queued Agent request.", {
       queuePosition: agentQueue.length,
       queueDepth: agentQueue.length,
       configuredAgents: targets.length,
@@ -257,14 +193,14 @@ async function acquireAgentSlot(
 }
 
 function getTimeoutMs() {
-  const value = Number(process.env.DIGITALOCEAN_AGENT_TIMEOUT_MS || 180_000);
+  const value = Number(process.env.OPENROUTER_TIMEOUT_MS || 180_000);
   const configured = Number.isFinite(value) && value > 0 ? value : 180_000;
-  const cap = Number(process.env.DIGITALOCEAN_AGENT_TIMEOUT_CAP_MS || 300_000);
+  const cap = Number(process.env.OPENROUTER_TIMEOUT_CAP_MS || 300_000);
   const timeoutCap = Number.isFinite(cap) && cap > 0 ? cap : 300_000;
   return Math.min(configured, timeoutCap);
 }
 
-export function isDigitalOceanAgentConfigured() {
+export function isOpenRouterConfigured() {
   return getAgentTargets().length > 0;
 }
 
@@ -314,7 +250,7 @@ function parseSsePayloads(buffer: string) {
   return { payloads, remaining };
 }
 
-export async function askDigitalOceanAgent(
+export async function askOpenRouter(
   messages: AgentMessage[],
   options?: AgentRequestOptions,
 ): Promise<AgentResponse | null> {
@@ -322,15 +258,19 @@ export async function askDigitalOceanAgent(
 
   if (!targets.length) return null;
 
-  const sanitizedMessages = convertSystemMessages(messages);
+  const preparedMessages = options?.includeChatPrompt === false
+    ? messages
+    : prepareOpenRouterMessages("chat", messages);
   const timeout = Math.min(options?.timeoutMs ?? getTimeoutMs(), getTimeoutMs());
   let slot: AgentSlot;
   try {
     slot = await acquireAgentSlot(targets, {
       queueTimeoutMs: options?.queueTimeoutMs,
+      signal: options?.signal,
     });
   } catch (error) {
-    logger.warn("DigitalOceanAgent", "Agent request rejected before provider call.", {
+    if (options?.signal?.aborted) throw error;
+    logger.warn("OpenRouter", "Agent request rejected before provider call.", {
       message: error instanceof Error ? error.message : String(error),
       queueDepth: agentQueue.length,
       configuredAgents: targets.length,
@@ -342,23 +282,28 @@ export async function askDigitalOceanAgent(
 
   try {
     // Retenta a requisição dentro do mesmo slot (sem re-enfileirar) para
-    // absorver o cold start do agente "dormindo": timeout/conexão/401/5xx.
+    // absorver falhas transitórias de rede, limite de taxa e indisponibilidade.
     const response = await withAgentRetry(
-      () =>
-        axios.post(
+      async () => {
+        const response = await axios.post(
           target.endpoint,
-          { messages: sanitizedMessages },
+          { model: target.model, messages: preparedMessages },
           {
             headers: {
               Authorization: `Bearer ${target.accessKey}`,
               "Content-Type": "application/json",
             },
             timeout,
+            signal: options?.signal,
           },
-        ),
+        );
+        assertOpenRouterSuccess(response.data);
+        return response;
+      },
       {
+        signal: options?.signal,
         onRetry: ({ attempt, error }) => {
-          logger.warn("DigitalOceanAgent", "Tentativa falhou, retentando...", {
+          logger.warn("OpenRouter", "Tentativa falhou, retentando...", {
             agentId: target.id,
             attempt,
             status: error?.response?.status,
@@ -370,26 +315,27 @@ export async function askDigitalOceanAgent(
 
     const text = extractResponseText(response.data);
     if (!text) {
-      logger.warn("DigitalOceanAgent", "Agent response did not include text.");
+      logger.warn("OpenRouter", "Agent response did not include text.");
       return null;
     }
 
-    logger.info("DigitalOceanAgent", "Agent responded.", {
+    logger.info("OpenRouter", "Agent responded.", {
       agentId: target.id,
       queuedMs: slot.queuedMs,
       model: response.data?.model,
       promptTokens: response.data?.usage?.prompt_tokens,
       completionTokens: response.data?.usage?.completion_tokens,
     });
-    return { text, provider: "digitalocean-agent" };
+    return { text, provider: "openrouter" };
   } catch (error: any) {
+    if (options?.signal?.aborted) throw error;
     const status = error?.response?.status;
-    logger.error("DigitalOceanAgent", "Failed to call DigitalOcean Agent.", {
+    logger.error("OpenRouter", "Failed to call OpenRouter.", {
       agentId: target.id,
       queuedMs: slot.queuedMs,
       status,
       message: error?.response?.data?.message || error?.message,
-      responseData: JSON.stringify(error?.response?.data),
+      responseData: error?.response?.data?.error?.message,
     });
     return null;
   } finally {
@@ -397,7 +343,7 @@ export async function askDigitalOceanAgent(
   }
 }
 
-export async function streamDigitalOceanAgent(
+export async function streamOpenRouter(
   messages: AgentMessage[],
   options: StreamAgentOptions = {},
 ): Promise<AgentResponse | null> {
@@ -405,15 +351,19 @@ export async function streamDigitalOceanAgent(
 
   if (!targets.length) return null;
 
-  const sanitizedMessages = convertSystemMessages(messages);
+  const preparedMessages = options?.includeChatPrompt === false
+    ? messages
+    : prepareOpenRouterMessages("chat", messages);
   const timeout = Math.min(options.timeoutMs ?? getTimeoutMs(), getTimeoutMs());
   let slot: AgentSlot;
   try {
     slot = await acquireAgentSlot(targets, {
       queueTimeoutMs: options.queueTimeoutMs,
+      signal: options.signal,
     });
   } catch (error) {
-    logger.warn("DigitalOceanAgent", "Streaming Agent request rejected before provider call.", {
+    if (options.signal?.aborted) throw error;
+    logger.warn("OpenRouter", "Streaming Agent request rejected before provider call.", {
       message: error instanceof Error ? error.message : String(error),
       queueDepth: agentQueue.length,
       configuredAgents: targets.length,
@@ -423,8 +373,7 @@ export async function streamDigitalOceanAgent(
 
   const target = slot.target;
   // Uma vez que tokens já foram enviados ao cliente não dá para reiniciar o
-  // stream; o retry só é permitido antes do primeiro token (que é justamente
-  // onde o cold start do agente "dormindo" falha).
+  // stream; o retry só é permitido antes do primeiro token.
   let emittedTokens = false;
 
   try {
@@ -433,13 +382,16 @@ export async function streamDigitalOceanAgent(
         let text = "";
         let usage: unknown;
         let buffer = "";
+        const decoder = new StringDecoder("utf8");
+        let completed = false;
         let tokenCount = 0;
         const providerStartedAt = Date.now();
 
         const response = await axios.post(
           target.endpoint,
           {
-            messages: sanitizedMessages,
+            model: target.model,
+            messages: preparedMessages,
             stream: true,
             stream_options: { include_usage: true },
           },
@@ -456,12 +408,15 @@ export async function streamDigitalOceanAgent(
         );
 
         for await (const chunk of response.data as AsyncIterable<Buffer | string>) {
-          buffer += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : chunk;
+          buffer += Buffer.isBuffer(chunk) ? decoder.write(chunk) : chunk;
           const parsed = parseSsePayloads(buffer);
           buffer = parsed.remaining;
 
           for (const payload of parsed.payloads) {
-            if (payload === "[DONE]") continue;
+            if (payload === "[DONE]") {
+              completed = true;
+              continue;
+            }
 
             let data: any;
             try {
@@ -470,6 +425,7 @@ export async function streamDigitalOceanAgent(
               continue;
             }
 
+            assertOpenRouterSuccess(data);
             if (data?.usage) usage = data.usage;
 
             const delta = extractStreamDelta(data);
@@ -479,7 +435,7 @@ export async function streamDigitalOceanAgent(
             tokenCount += 1;
             if (tokenCount === 1) {
               emittedTokens = true;
-              logger.info("DigitalOceanAgent", "Streaming Agent first token received.", {
+              logger.info("OpenRouter", "Streaming Agent first token received.", {
                 agentId: target.id,
                 queuedMs: slot.queuedMs,
                 elapsedMs: Date.now() - providerStartedAt,
@@ -489,31 +445,37 @@ export async function streamDigitalOceanAgent(
           }
         }
 
+        if (!completed) {
+          throw Object.assign(new Error("Stream da OpenRouter encerrado antes de [DONE]."), {
+            response: { status: 502 },
+          });
+        }
         const finalText = text.trim();
         if (!finalText) {
-          logger.warn("DigitalOceanAgent", "Streaming Agent response did not include text.", {
+          logger.warn("OpenRouter", "Streaming Agent response did not include text.", {
             agentId: target.id,
             queuedMs: slot.queuedMs,
           });
           return null;
         }
 
-        logger.info("DigitalOceanAgent", "Streaming Agent responded.", {
+        logger.info("OpenRouter", "Streaming Agent responded.", {
           agentId: target.id,
           queuedMs: slot.queuedMs,
           tokenCount,
           usage,
         });
 
-        return { text: finalText, provider: "digitalocean-agent", usage };
+        return { text: finalText, provider: "openrouter", usage };
       },
       {
+        signal: options.signal,
         isRetryable: (error) =>
           !emittedTokens &&
           !options.signal?.aborted &&
           isRetryableAgentError(error),
         onRetry: ({ attempt, error }) => {
-          logger.warn("DigitalOceanAgent", "Streaming: tentativa falhou, retentando...", {
+          logger.warn("OpenRouter", "Streaming: tentativa falhou, retentando...", {
             agentId: target.id,
             attempt,
             status: error?.response?.status,
@@ -524,20 +486,22 @@ export async function streamDigitalOceanAgent(
     );
   } catch (error: any) {
     if (options.signal?.aborted || error?.name === "CanceledError" || error?.code === "ERR_CANCELED") {
-      logger.warn("DigitalOceanAgent", "Streaming Agent request aborted.", {
+      logger.warn("OpenRouter", "Streaming Agent request aborted.", {
         agentId: target.id,
         queuedMs: slot.queuedMs,
       });
       throw error;
     }
 
+    if (emittedTokens) throw error;
+
     const status = error?.response?.status;
-    logger.error("DigitalOceanAgent", "Failed to stream DigitalOcean Agent.", {
+    logger.error("OpenRouter", "Failed to stream OpenRouter.", {
       agentId: target.id,
       queuedMs: slot.queuedMs,
       status,
       message: error?.response?.data?.message || error?.message,
-      responseData: JSON.stringify(error?.response?.data),
+      responseData: error?.response?.data?.error?.message,
     });
     return null;
   } finally {

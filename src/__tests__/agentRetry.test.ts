@@ -13,8 +13,8 @@ function networkError(code?: string) {
 }
 
 describe("isRetryableAgentError", () => {
-  it("retenta em 401/429/5xx", () => {
-    expect(isRetryableAgentError(httpError(401))).toBe(true);
+  it("retenta em 408/429/5xx", () => {
+    expect(isRetryableAgentError(httpError(408))).toBe(true);
     expect(isRetryableAgentError(httpError(429))).toBe(true);
     expect(isRetryableAgentError(httpError(500))).toBe(true);
     expect(isRetryableAgentError(httpError(503))).toBe(true);
@@ -22,6 +22,8 @@ describe("isRetryableAgentError", () => {
 
   it("NAO retenta em 4xx de validacao", () => {
     expect(isRetryableAgentError(httpError(400))).toBe(false);
+    expect(isRetryableAgentError(httpError(401))).toBe(false);
+    expect(isRetryableAgentError(httpError(402))).toBe(false);
     expect(isRetryableAgentError(httpError(403))).toBe(false);
     expect(isRetryableAgentError(httpError(404))).toBe(false);
     expect(isRetryableAgentError(httpError(422))).toBe(false);
@@ -97,6 +99,27 @@ describe("withAgentRetry", () => {
         isRetryable: () => false,
       }),
     ).rejects.toEqual(httpError(503));
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+});
+
+
+describe("retry e cancelamento OpenRouter", () => {
+  it("respeita Retry-After recebido do provedor", async () => {
+    const fn = jest.fn().mockRejectedValueOnce({ response: { status: 429, headers: { "retry-after": "0.01" } } }).mockResolvedValueOnce("ok");
+    const onRetry = jest.fn();
+    expect(await withAgentRetry(fn, { delayMs: 0, onRetry })).toBe("ok");
+    expect(onRetry).toHaveBeenCalledWith(expect.objectContaining({ delayMs: 10 }));
+  });
+
+  it("interrompe a espera de retry ao cancelar", async () => {
+    const controller = new AbortController();
+    const fn = jest.fn().mockRejectedValue({ response: { status: 503 } });
+    await expect(withAgentRetry(fn, {
+      delayMs: 60000,
+      signal: controller.signal,
+      onRetry: () => controller.abort(),
+    })).rejects.toMatchObject({ name: "AbortError" });
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });

@@ -9,8 +9,8 @@ describe("dashboardInsightsAgentService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.DASHBOARD_INSIGHTS_AGENT_ENDPOINT = "https://agent.example.com";
-    process.env.DASHBOARD_INSIGHTS_AGENT_ACCESS_KEY = "key";
+    process.env.OPENROUTER_API_KEY = "test-key";
+    process.env.OPENROUTER_MODEL = "test/model";
     // acelera o backoff nos testes
     process.env.AGENT_RETRY_DELAY_MS = "1";
     process.env.AGENT_MAX_ATTEMPTS = "3";
@@ -20,9 +20,9 @@ describe("dashboardInsightsAgentService", () => {
     process.env = { ...originalEnv };
   });
 
-  it("retorna 503 quando o Agent dedicado não está configurado", async () => {
-    delete process.env.DASHBOARD_INSIGHTS_AGENT_ENDPOINT;
-    delete process.env.DASHBOARD_INSIGHTS_AGENT_ACCESS_KEY;
+  it("retorna 503 quando o OpenRouter não está configurado", async () => {
+    delete process.env.OPENROUTER_API_KEY;
+    delete process.env.OPENROUTER_MODEL;
 
     await expect(askDashboardInsightsAgent("teste")).rejects.toMatchObject({
       statusCode: 503,

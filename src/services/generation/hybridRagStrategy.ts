@@ -3,9 +3,9 @@ import { getDb } from "../../db/client";
 import { ragDocumentChunks, ragDocuments } from "../../db/schema";
 import { logger } from "../../logger";
 import {
-  askDigitalOceanAgent,
-  streamDigitalOceanAgent,
-} from "../ai/digitalOceanAgentService";
+  askOpenRouter,
+  streamOpenRouter,
+} from "../ai/openRouterService";
 import {
   buildSystemPrompt,
   EMPTY_CONTEXT_TEXT,
@@ -178,7 +178,7 @@ export async function generateHybridRagResponse(
   }
 
   const agentResponse = await measureChatTiming(input.timings, input.agentTimingStage || "agent", () =>
-    askDigitalOceanAgent([
+    askOpenRouter([
       {
         role: "system",
         content: buildSystemPrompt(input.settings, retrievedChunks),
@@ -236,7 +236,7 @@ export async function streamHybridRagResponse(
     input.timings,
     input.agentTimingStage || "agent",
     () =>
-      streamDigitalOceanAgent(
+      streamOpenRouter(
         [
           {
             role: "system",

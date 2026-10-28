@@ -21,7 +21,7 @@ import {
 } from "./hybridRagStrategy";
 import { generateNoRagResponse, streamNoRagResponse } from "./noRagStrategy";
 import { generateSelfRagResponse, streamSelfRagResponse } from "./selfRagStrategy";
-import type { AgentMessage } from "../ai/digitalOceanAgentService";
+import type { AgentMessage } from "../ai/openRouterService";
 
 type RagOverride = {
   ragMode?: unknown;

@@ -3,6 +3,8 @@ import { getDb } from "../../db/client";
 import {
   analysisSessions,
   answerAttempts,
+  courses,
+  disciplines,
   professorQuizAttempts,
   professorQuizzes,
   studentProfiles,
@@ -16,6 +18,7 @@ import {
   type Filters,
 } from "../analytics/analyticsService";
 
+import { normalizeSubjectFromMessage } from "../../utils/normalizeSubject";
 import { dateConditions } from "../analytics/dateFilters";
 
 export async function getTopicPerformance(filters: Filters) {
@@ -36,14 +39,29 @@ export async function getTopicPerformance(filters: Filters) {
 
 export async function getProficiencyRadar(filters: Filters) {
   const byCategory = aggregateByCategory(await queryQuestions(filters));
-  const labels = Object.keys(byCategory).sort();
+  // The course/university catalog is independent of a student's answers and of the selected period.
+  const catalogFilters = { ...filters, studentId: undefined, classId: undefined, startDate: undefined, endDate: undefined };
+  const historicalTopics = Object.keys(aggregateByCategory(await queryQuestions(catalogFilters)));
+  const conditions = [eq(professorQuizzes.status, "published")];
+  if (filters.universityId) conditions.push(eq(courses.universityId, filters.universityId));
+  if (filters.courseId) conditions.push(eq(courses.id, filters.courseId));
+  if (filters.disciplineId) conditions.push(eq(professorQuizzes.disciplineId, filters.disciplineId));
+  const registered = await getDb().selectDistinct({ topic: professorQuizzes.topic })
+    .from(professorQuizzes)
+    .innerJoin(disciplines, eq(disciplines.id, professorQuizzes.disciplineId))
+    .innerJoin(courses, eq(courses.id, disciplines.courseId))
+    .where(and(...conditions));
+  const labels = [...new Set([
+    ...historicalTopics,
+    ...registered.map(({ topic }) => normalizeSubjectFromMessage(topic) || topic),
+    ...Object.keys(byCategory),
+  ])].sort();
   return {
     labels,
     data: labels.map((label) => {
-      const total = byCategory[label].correct + byCategory[label].wrong;
-      return total
-        ? Number(((byCategory[label].correct / total) * 100).toFixed(1))
-        : 0;
+      const values = byCategory[label];
+      const total = values ? values.correct + values.wrong : 0;
+      return total ? Number(((values.correct / total) * 100).toFixed(1)) : null;
     }),
   };
 }

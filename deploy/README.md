@@ -24,3 +24,5 @@ The frontend uses same-origin `/api`. The standalone API hostname also needs its
 - Desktop/mobile browser regressions: administrator without school, actual restored topic labels, full history without hidden date filters, valid zero score, unassessed matrix, and dashboard accessibility in Portuguese, English and Spanish.
 - Isolated PostgreSQL restored from the original backup: all four IFPA scopes; summary totals equal daily session sums; out-of-period cards are empty; inclusive end date; reconciliation; concurrent/idempotent session close.
 - After production migration, compare totals and session sums and repeat authenticated read-only endpoint checks. Do not create fictitious quiz answers for students without assessments.
+
+The proficiency radar uses the topics from published quizzes and the historical answer topics in the selected course/university (or discipline). The axes remain visible for students without answers. `data: null` means unassessed, while numeric `0` is a real 0% result; only assessed subjects contribute to the average. The score formula is available in the information popover.

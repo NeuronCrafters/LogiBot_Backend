@@ -102,10 +102,12 @@ function disciplineNote(filters: Filters) {
 function containsUsefulData(value: unknown): boolean {
   if (typeof value === "number") return value > 0;
   if (Array.isArray(value)) return value.some(containsUsefulData);
-  if (value && typeof value === "object")
-    return Object.values(value as Record<string, unknown>).some(
-      containsUsefulData,
-    );
+  if (value && typeof value === "object") {
+    const series = value as { labels?: unknown[]; data?: unknown[] };
+    if (Array.isArray(series.labels) && Array.isArray(series.data) && series.labels.length > 0)
+      return series.data.some((item) => typeof item === "number" && Number.isFinite(item));
+    return Object.values(value as Record<string, unknown>).some(containsUsefulData);
+  }
   return false;
 }
 
@@ -213,6 +215,8 @@ async function getSummaryForFilters(filters: Filters) {
     classId: filters.classId,
     studentId: filters.studentId,
     disciplineId: filters.disciplineId,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
   });
 }
 

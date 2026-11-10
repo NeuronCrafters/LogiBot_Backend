@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import {
   analysisSessions,
@@ -10,10 +10,13 @@ import {
 } from "../../db/schema";
 import {
   aggregateByCategory,
+  getAnalysisSessions,
   queryQuestions,
   resolveAnalysisWhere,
   type Filters,
 } from "../analytics/analyticsService";
+
+import { dateConditions } from "../analytics/dateFilters";
 
 export async function getTopicPerformance(filters: Filters) {
   const byCategory = aggregateByCategory(await queryQuestions(filters));
@@ -68,6 +71,11 @@ export async function getEffortMatrix(filters: Filters) {
     performanceByUser.set(question.userId, current);
   }
 
+  const usageByAnalysis = new Map<string, number>();
+  for (const session of await getAnalysisSessions(rows.map((row) => row.id), filters)) {
+    if (session.sessionEnd && session.sessionDuration > 0)
+      usageByAnalysis.set(session.analysisId, (usageByAnalysis.get(session.analysisId) || 0) + session.sessionDuration);
+  }
   const points = rows.map((row) => {
     const performance = performanceByUser.get(row.userId) ?? {
       correct: 0,
@@ -78,25 +86,18 @@ export async function getEffortMatrix(filters: Filters) {
       name: row.name,
       performance: total
         ? Number(((performance.correct / total) * 100).toFixed(1))
-        : 0,
-      effort: Number(((row.totalUsageTime || 0) / 60).toFixed(1)),
+        : null,
+      effort: Number(((usageByAnalysis.get(row.id) || 0) / 60).toFixed(1)),
     };
   });
 
+  const assessed = points.filter((point) => point.performance !== null);
   return {
     points,
+    unassessedCount: points.length - assessed.length,
     averages: {
-      avgPerformance: Number(
-        (
-          points.reduce((sum, point) => sum + point.performance, 0) /
-          points.length
-        ).toFixed(1),
-      ),
-      avgEffort: Number(
-        (
-          points.reduce((sum, point) => sum + point.effort, 0) / points.length
-        ).toFixed(1),
-      ),
+      avgPerformance: assessed.length ? Number((assessed.reduce((sum, point) => sum + point.performance!, 0) / assessed.length).toFixed(1)) : 0,
+      avgEffort: assessed.length ? Number((assessed.reduce((sum, point) => sum + point.effort, 0) / assessed.length).toFixed(1)) : 0,
     },
   };
 }
@@ -105,6 +106,7 @@ export async function getLearningJourney(filters: Filters) {
   if (filters.disciplineId) {
     const conditions = [
       eq(professorQuizzes.disciplineId, filters.disciplineId),
+      ...dateConditions(professorQuizAttempts.completedAt, filters),
     ];
     if (filters.studentId)
       conditions.push(eq(professorQuizAttempts.studentId, filters.studentId));
@@ -166,7 +168,7 @@ export async function getLearningJourney(filters: Filters) {
       eq(analysisSessions.id, answerAttempts.sessionId),
     )
     .innerJoin(userAnalyses, eq(userAnalyses.id, analysisSessions.analysisId))
-    .where(await resolveAnalysisWhere(filters))
+    .where(and(await resolveAnalysisWhere(filters), ...dateConditions(answerAttempts.createdAt, filters)))
     .orderBy(asc(userAnalyses.userId), asc(answerAttempts.createdAt));
 
   return aggregateJourney(rows);
@@ -229,14 +231,7 @@ export async function getSessionDetails(
     ),
     isNotNull(analysisSessions.sessionEnd),
   ];
-  if (filters.startDate)
-    conditions.push(
-      gte(analysisSessions.sessionStart, new Date(filters.startDate)),
-    );
-  if (filters.endDate)
-    conditions.push(
-      lte(analysisSessions.sessionStart, new Date(filters.endDate)),
-    );
+  conditions.push(...dateConditions(analysisSessions.sessionStart, filters));
 
   return getDb()
     .select({
@@ -258,10 +253,10 @@ export async function getAccessPattern(filters: Filters) {
     .select({ sessionStart: analysisSessions.sessionStart })
     .from(analysisSessions)
     .where(
-      inArray(
+      and(inArray(
         analysisSessions.analysisId,
         analyses.map((item) => item.id),
-      ),
+      ), ...dateConditions(analysisSessions.sessionStart, filters)),
     );
 
   const pattern: Record<string, number> = {};

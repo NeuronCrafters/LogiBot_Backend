@@ -1,3 +1,4 @@
+import { closeAnalysisSession } from "./studentSessionRepository";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type { AnyDbClient } from "../client";
 import {
@@ -150,19 +151,7 @@ export async function startStudentSession(db: AnyDbClient, account: AccountWithA
     }).returning();
   }
 
-  const [lastSession] = await db.select()
-    .from(analysisSessions)
-    .where(eq(analysisSessions.analysisId, analysis.id))
-    .orderBy(desc(analysisSessions.sessionStart))
-    .limit(1);
-
-  if (lastSession && !lastSession.sessionEnd) {
-    const end = new Date();
-    const duration = Math.floor((end.getTime() - new Date(lastSession.sessionStart).getTime()) / 1000);
-    await db.update(analysisSessions)
-      .set({ sessionEnd: end, sessionDuration: duration, lastActivityAt: end })
-      .where(eq(analysisSessions.id, lastSession.id));
-  }
+  await closeAnalysisSession(db, analysis.id);
 
   await db.insert(analysisSessions).values({
     analysisId: analysis.id,

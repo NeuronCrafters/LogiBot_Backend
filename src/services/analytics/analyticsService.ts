@@ -13,6 +13,7 @@ import {
   studentProfiles,
   userAnalyses,
 } from "../../db/schema";
+import { dateConditions } from "./dateFilters";
 import { normalizeSubjectFromMessage } from "../../utils/normalizeSubject";
 
 export type Filters = {
@@ -102,6 +103,7 @@ export async function queryQuestions(filters: Filters) {
   if (filters.disciplineId) {
     const conditions = [
       eq(professorQuizzes.disciplineId, filters.disciplineId),
+      ...dateConditions(professorQuizAttempts.completedAt, filters),
     ];
     if (filters.universityId)
       conditions.push(eq(studentProfiles.schoolId, filters.universityId));
@@ -149,7 +151,7 @@ export async function queryQuestions(filters: Filters) {
       eq(analysisSessions.id, answerAttempts.sessionId),
     )
     .innerJoin(userAnalyses, eq(userAnalyses.id, analysisSessions.analysisId))
-    .where(await resolveAnalysisWhere(filters));
+    .where(and(await resolveAnalysisWhere(filters), ...dateConditions(answerQuestions.timestamp, filters)));
 }
 
 export function aggregateByCategory(
@@ -165,13 +167,14 @@ export function aggregateByCategory(
   return map;
 }
 
-export async function getSummary(filters: {
-  universityId: string;
-  courseId?: string;
-  classId?: string;
-  studentId?: string;
-  disciplineId?: string;
-}) {
+export async function getAnalysisSessions(analysisIds: string[], filters: Filters) {
+  if (!analysisIds.length) return [];
+  return getDb().select().from(analysisSessions)
+    .where(and(inArray(analysisSessions.analysisId, analysisIds), ...dateConditions(analysisSessions.sessionStart, filters)))
+    .orderBy(desc(analysisSessions.sessionStart));
+}
+
+export async function getSummary(filters: Filters & { universityId: string }) {
   const db = getDb();
   const analyses = await db
     .select()
@@ -180,11 +183,7 @@ export async function getSummary(filters: {
   if (!analyses.length) return getEmptySummary();
 
   const analysisIds = analyses.map((analysis) => analysis.id);
-  const sessions = await db
-    .select()
-    .from(analysisSessions)
-    .where(inArray(analysisSessions.analysisId, analysisIds))
-    .orderBy(desc(analysisSessions.sessionStart));
+  const sessions = await getAnalysisSessions(analysisIds, filters);
 
   const analysisUserMap = new Map(
     analyses.map((analysis) => [
@@ -207,18 +206,17 @@ export async function getSummary(filters: {
     formatted: string;
   }> = [];
 
-  if (filters.disciplineId) {
+  if (filters.disciplineId || filters.startDate || filters.endDate) {
     const questions = await queryQuestions(filters);
     totalCorrectAnswers = questions.filter((item) => item.isCorrect).length;
     totalWrongAnswers = questions.length - totalCorrectAnswers;
   }
 
   for (const analysis of analyses) {
-    if (!filters.disciplineId) {
+    if (!filters.disciplineId && !filters.startDate && !filters.endDate) {
       totalCorrectAnswers += analysis.totalCorrectAnswers;
       totalWrongAnswers += analysis.totalWrongAnswers;
     }
-    totalUsageTime += analysis.totalUsageTime || 0;
   }
 
   for (const session of sessions) {
@@ -234,7 +232,8 @@ export async function getSummary(filters: {
         );
     }
 
-    if (session.sessionStart && session.sessionEnd && session.sessionDuration) {
+    if (session.sessionStart && session.sessionEnd && session.sessionDuration > 0) {
+      totalUsageTime += session.sessionDuration;
       const info = analysisUserMap.get(session.analysisId);
       const date = new Date(session.sessionStart).toISOString().split("T")[0];
       processedSessions.push({

@@ -22,6 +22,13 @@
       "when": 1793239200000,
       "tag": "0002_api_languages",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794340800000,
+      "tag": "0003_reconcile_usage_totals",
+      "breakpoints": true
     }
   ]
 }

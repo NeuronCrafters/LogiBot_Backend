@@ -138,6 +138,12 @@ describe("dashboardInsightsService", () => {
     expect(getSessionDetails).not.toHaveBeenCalled();
   });
 
+  it("permite analisar proficiência zero quando existem respostas", async () => {
+    getProficiencyRadar.mockResolvedValue({ labels: ["linguagem Python"], data: [0] });
+    await expect(generateChartInsight({ chart: "proficiency-radar", filters })).resolves.toMatchObject({ chart: "proficiency-radar" });
+    expect(askDashboardInsightsAgent).toHaveBeenCalledTimes(1);
+  });
+
   it("retorna 422 quando não existem dados úteis", async () => {
     getTopicPerformance.mockResolvedValue([]);
 

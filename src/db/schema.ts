@@ -280,13 +280,58 @@ export const analysisSessions = pgTable("analysis_sessions", {
     .defaultNow(),
   sessionEnd: timestamp("session_end", { withTimezone: true }),
   sessionDuration: integer("session_duration").notNull().default(0),
+  durationSource: text("duration_source").notNull().default("recorded"),
   lastActivityAt: timestamp("last_activity_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
   totalCorrectAnswers: integer("total_correct_answers").notNull().default(0),
   totalWrongAnswers: integer("total_wrong_answers").notNull().default(0),
   subjectCountsChat: jsonb("subject_counts_chat").notNull().default({}),
-});
+}, table => ({
+  chronological: check("analysis_sessions_chronological", sql`${table.sessionEnd} IS NULL OR ${table.sessionEnd} >= ${table.sessionStart}`),
+  nonnegative: check("analysis_sessions_nonnegative_duration", sql`${table.sessionDuration} >= 0`),
+}));
+
+/** Audit trail for explicitly authorised historical repairs; original session values are preserved here. */
+export const analysisSessionRecoveries = pgTable("analysis_session_recoveries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull(),
+  sessionId: uuid("session_id").notNull().references(() => analysisSessions.id),
+  previousState: jsonb("previous_state").notNull(),
+  evidence: jsonb("evidence").notNull(),
+  estimatedEnd: timestamp("estimated_end", { withTimezone: true }).notNull(),
+  estimatedDuration: integer("estimated_duration").notNull(),
+  backupSha256: text("backup_sha256").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => ({ sessionUnique: uniqueIndex("analysis_session_recoveries_session_unique").on(table.sessionId) }));
+
+// One live login per account. Shared browser tabs use the same session and activity clock.
+export const authSessions = pgTable("auth_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  analysisSessionId: uuid("analysis_session_id").references(() => analysisSessions.id),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  lastActivityAt: timestamp("last_activity_at", { withTimezone: true }).notNull().defaultNow(),
+  lastCheckpointAt: timestamp("last_checkpoint_at", { withTimezone: true }).notNull().defaultNow(),
+  idleExpiresAt: timestamp("idle_expires_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  endReason: text("end_reason"),
+}, table => ({
+  liveAccount: uniqueIndex("auth_sessions_live_account").on(table.accountId).where(sql`${table.endedAt} IS NULL`),
+  expiry: index("auth_sessions_expiry").on(table.idleExpiresAt, table.expiresAt).where(sql`${table.endedAt} IS NULL`),
+}));
+
+export const sessionActivityIntervals = pgTable("session_activity_intervals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  authSessionId: uuid("auth_session_id").notNull().references(() => authSessions.id, { onDelete: "cascade" }),
+  analysisSessionId: uuid("analysis_session_id").notNull().references(() => analysisSessions.id),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
+}, table => ({
+  analysis: index("session_activity_intervals_analysis").on(table.analysisSessionId),
+  valid: check("session_activity_intervals_valid", sql`${table.endedAt} > ${table.startedAt} AND ${table.endedAt} <= ${table.startedAt} + interval '60 seconds'`),
+}));
 
 export const answerAttempts = pgTable("answer_attempts", {
   id: uuid("id").primaryKey().defaultRandom(),

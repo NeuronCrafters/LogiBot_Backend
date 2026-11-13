@@ -1,3 +1,4 @@
+import { withLiveSession } from "../../services/auth/sessionLifecycleService";
 import { t } from "../../i18n";
 import { Router } from "express";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
@@ -23,25 +24,12 @@ analyticsRouter.post(
       .where(eq(userAnalyses.userId, req.user!.id))
       .limit(1);
     if (!analysis) return res.json({ success: true });
-    const [session] = await getDb()
-      .select()
-      .from(analysisSessions)
-      .where(
-        and(
-          eq(analysisSessions.analysisId, analysis.id),
-          isNull(analysisSessions.sessionEnd),
-        ),
-      )
-      .orderBy(desc(analysisSessions.sessionStart))
-      .limit(1);
-    if (!session) return res.json({ success: true });
-    await getDb()
-      .update(analysisSessions)
-      .set({
+    await withLiveSession(getDb(), req.authSessionId!, req.user!.id, async (tx, session) => {
+      if (!session.analysis_session_id) return;
+      await tx.update(analysisSessions).set({
         subjectCountsChat: sql`jsonb_set(COALESCE(${analysisSessions.subjectCountsChat}, '{}')::jsonb, ARRAY[${category}], to_jsonb(COALESCE((${analysisSessions.subjectCountsChat}->>${category})::integer, 0) + 1))`,
-        lastActivityAt: new Date(),
-      })
-      .where(eq(analysisSessions.id, session.id));
+      }).where(and(eq(analysisSessions.id, session.analysis_session_id), isNull(analysisSessions.sessionEnd)));
+    });
     return res.json({ success: true });
   }),
 );

@@ -1,3 +1,4 @@
+import { startSessionScheduler, getSessionSweepState } from "./services/auth/sessionScheduler";
 import "express-async-errors";
 import "dotenv/config";
 import express from "express";
@@ -108,6 +109,7 @@ app.get(
     return res.status(degraded ? 503 : 200).json({
       status: degraded ? "degraded" : "ok",
       worker: {
+        sessions: getSessionSweepState(),
         running: workerState.running,
         shuttingDown: workerState.shuttingDown,
         chatWorkerConcurrency,
@@ -145,6 +147,7 @@ async function bootstrap() {
   await connectDB();
   logger.info("Database", "PostgreSQL connection established.");
 
+  const sessionScheduler = startSessionScheduler();
   const server = createServer(app);
 
   server.listen(workerPort, () => {
@@ -163,6 +166,7 @@ async function bootstrap() {
   async function gracefulShutdown(signal: string) {
     logger.info(SCOPE, `${signal} received. Waiting for current job to finish.`);
     workerState.shuttingDown = true;
+    await sessionScheduler.stop();
 
     await loopPromise;
 

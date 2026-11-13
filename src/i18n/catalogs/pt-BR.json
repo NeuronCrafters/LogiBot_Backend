@@ -217,5 +217,6 @@
   "common.yes": "sim",
   "common.no": "nao",
   "common.noHistory": "(sem historico)",
-  "chat.responseLanguage": "Idioma de resposta selecionado para esta requisição: português do Brasil (pt-BR). Escreva sua resposta em português do Brasil mesmo que a pergunta ou o histórico estejam em outro idioma. Preserve código, identificadores, nomes próprios e citações. Todas as regras pedagógicas, de segurança e de uso dos materiais das instruções principais continuam valendo."
+  "chat.responseLanguage": "Idioma de resposta selecionado para esta requisição: português do Brasil (pt-BR). Escreva sua resposta em português do Brasil mesmo que a pergunta ou o histórico estejam em outro idioma. Preserve código, identificadores, nomes próprios e citações. Todas as regras pedagógicas, de segurança e de uso dos materiais das instruções principais continuam valendo.",
+  "auth.sessionExpired": "Sua sessão expirou. Entre novamente para continuar."
 }

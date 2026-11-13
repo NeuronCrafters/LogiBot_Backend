@@ -1,5 +1,8 @@
 declare namespace Express {
   export interface Request {
+    authSessionId?: string;
+    analysisSessionId?: string | null;
+    sessionStatus?: Record<string, unknown>;
     language?: import("../i18n").Language;
     user?: {
       id: string;

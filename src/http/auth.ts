@@ -1,3 +1,5 @@
+import { logoutSession, validateSession } from "../services/auth/sessionLifecycleService";
+import { sessionPolicy } from "../config/session";
 import { accountLanguage } from "../i18n/middleware";
 import { t } from "../i18n";
 import type { NextFunction, Request, Response } from "express";
@@ -16,13 +18,14 @@ export function requireEnv(name: string) {
 
 export function signSession(claims: {
   id: string;
+  sid: string;
   name: string;
   email: string;
   role: Role[];
   school?: string | null;
 }) {
   return jwt.sign(claims, requireEnv("JWT_SECRET"), {
-    expiresIn: "2h",
+    expiresIn: sessionPolicy().absoluteSeconds,
     subject: claims.id,
   });
 }
@@ -48,7 +51,7 @@ export function requireApiKey(req: Request, res: Response, next: NextFunction) {
   if (providedKey !== process.env.API_KEY) {
     return res
       .status(401)
-      .json({ success: false, message: t("auth.apiKeyInvalid") });
+      .json({ success: false, code: "auth.apiKeyInvalid", message: t("auth.apiKeyInvalid") });
   }
 
   return next();
@@ -68,11 +71,18 @@ export async function requireAuth(
       requireEnv("JWT_SECRET"),
     ) as jwt.JwtPayload & {
       id?: string;
+      sid?: string;
       role?: Role[] | Role;
     };
 
     const id = String(decoded.id || decoded.sub || "");
     if (!id) throw new AppError("auth.tokenInvalid", 401);
+    if (!decoded.sid || !/^[0-9a-f-]{36}$/i.test(decoded.sid)) throw new AppError("auth.sessionExpired", 401);
+    const session = await validateSession(getDb(), decoded.sid, id);
+    req.authSessionId = session.id;
+    req.analysisSessionId = session.analysisSessionId;
+    req.sessionStatus = session;
+
 
     const account = await getAccountById(getDb(), id);
     if (!account) throw new AppError("auth.userNotFound", 401);
@@ -99,6 +109,12 @@ export async function requireAuth(
     return next();
   } catch (error) {
     clearAuthCookie(req, res);
+    if (error instanceof jwt.TokenExpiredError) {
+      const expired = jwt.verify(token, requireEnv("JWT_SECRET"), { ignoreExpiration: true }) as jwt.JwtPayload;
+      if (typeof expired.sid === "string" && typeof expired.sub === "string" && /^[0-9a-f-]{36}$/i.test(expired.sid))
+        await logoutSession(getDb(), expired.sid, expired.sub, "absolute_timeout");
+      return next(new AppError("auth.sessionExpired", 401));
+    }
     if (error instanceof jwt.JsonWebTokenError)
       return next(new AppError("auth.tokenInvalid", 401));
     return next(error);

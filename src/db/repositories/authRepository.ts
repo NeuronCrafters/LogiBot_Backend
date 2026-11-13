@@ -1,5 +1,6 @@
+import { AppError } from "../../exceptions/AppError";
 import { closeAnalysisSession } from "./studentSessionRepository";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { AnyDbClient } from "../client";
 import {
   accountRoles,
@@ -125,7 +126,7 @@ export async function createStudentAccount(db: AnyDbClient, input: {
   return getAccountById(db, account.id);
 }
 
-export async function startStudentSession(db: AnyDbClient, account: AccountWithAuth) {
+export async function startStudentSession(db: AnyDbClient, account: AccountWithAuth, now = new Date()) {
   if (!account.schoolId || !account.courseId || !account.classId) return;
 
   const [[school], [course], [classDoc]] = await Promise.all([
@@ -153,10 +154,14 @@ export async function startStudentSession(db: AnyDbClient, account: AccountWithA
 
   await closeAnalysisSession(db, analysis.id);
 
-  await db.insert(analysisSessions).values({
+  const [session] = await db.insert(analysisSessions).values({
     analysisId: analysis.id,
     subjectCountsChat: {},
-  });
+    durationSource: "observed",
+    sessionStart: now,
+    lastActivityAt: now,
+  }).returning();
+  return session.id;
 }
 
 export async function getPublicMe(db: AnyDbClient, account: AccountWithAuth) {
@@ -203,6 +208,7 @@ export async function listStudentDisciplineIds(db: AnyDbClient, studentId: strin
 
 export async function saveStudentQuizResult(db: AnyDbClient, input: {
   userId: string;
+  analysisSessionId: string;
   email: string;
   subject: string;
   level: string;
@@ -217,34 +223,26 @@ export async function saveStudentQuizResult(db: AnyDbClient, input: {
 }) {
   const [analysis] = await db.select()
     .from(userAnalyses)
-    .where(and(eq(userAnalyses.userId, input.userId), eq(userAnalyses.email, input.email)))
+    .where(eq(userAnalyses.userId, input.userId))
     .limit(1);
-  if (!analysis) return false;
+  if (!analysis) throw new AppError("auth.sessionExpired", 401);
 
-  let [session] = await db.select()
-    .from(analysisSessions)
-    .where(eq(analysisSessions.analysisId, analysis.id))
-    .orderBy(desc(analysisSessions.sessionStart))
-    .limit(1);
-
-  if (!session) {
-    [session] = await db.insert(analysisSessions)
-      .values({ analysisId: analysis.id, subjectCountsChat: {} })
-      .returning();
-  }
+  const [session] = await db.select().from(analysisSessions)
+    .where(and(eq(analysisSessions.id, input.analysisSessionId), eq(analysisSessions.analysisId, analysis.id), isNull(analysisSessions.sessionEnd))).limit(1);
+  if (!session) throw new AppError("auth.sessionExpired", 401);
 
   await db.update(analysisSessions)
     .set({
-      totalCorrectAnswers: session.totalCorrectAnswers + input.totalCorrectAnswers,
-      totalWrongAnswers: session.totalWrongAnswers + input.totalWrongAnswers,
+      totalCorrectAnswers: sql`${analysisSessions.totalCorrectAnswers} + ${input.totalCorrectAnswers}`,
+      totalWrongAnswers: sql`${analysisSessions.totalWrongAnswers} + ${input.totalWrongAnswers}`,
       lastActivityAt: new Date(),
     })
     .where(eq(analysisSessions.id, session.id));
 
   await db.update(userAnalyses)
     .set({
-      totalCorrectAnswers: analysis.totalCorrectAnswers + input.totalCorrectAnswers,
-      totalWrongAnswers: analysis.totalWrongAnswers + input.totalWrongAnswers,
+      totalCorrectAnswers: sql`${userAnalyses.totalCorrectAnswers} + ${input.totalCorrectAnswers}`,
+      totalWrongAnswers: sql`${userAnalyses.totalWrongAnswers} + ${input.totalWrongAnswers}`,
     })
     .where(eq(userAnalyses.id, analysis.id));
 

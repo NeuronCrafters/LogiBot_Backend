@@ -4,7 +4,8 @@ import { Pool } from "pg";
 import * as schema from "./schema";
 
 export type DbClient = ReturnType<typeof drizzle<typeof schema>>;
-export type AnyDbClient = DbClient;
+export type TransactionClient = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
+export type AnyDbClient = DbClient | TransactionClient;
 
 let expressPool: Pool | undefined;
 

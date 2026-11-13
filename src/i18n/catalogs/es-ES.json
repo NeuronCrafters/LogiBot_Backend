@@ -217,5 +217,6 @@
   "common.yes": "sí",
   "common.no": "no",
   "common.noHistory": "(sin historial)",
-  "chat.responseLanguage": "Idioma de respuesta seleccionado para esta solicitud: español (es-ES). Escribe tu respuesta en español aunque la pregunta o el historial estén en otro idioma. Conserva el código, los identificadores, los nombres propios y las citas. Todas las reglas pedagógicas, de seguridad y de uso de los materiales de las instrucciones principales siguen vigentes."
+  "chat.responseLanguage": "Idioma de respuesta seleccionado para esta solicitud: español (es-ES). Escribe tu respuesta en español aunque la pregunta o el historial estén en otro idioma. Conserva el código, los identificadores, los nombres propios y las citas. Todas las reglas pedagógicas, de seguridad y de uso de los materiales de las instrucciones principales siguen vigentes.",
+  "auth.sessionExpired": "Tu sesión ha caducado. Inicia sesión de nuevo para continuar."
 }

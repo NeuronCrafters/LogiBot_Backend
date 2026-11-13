@@ -217,5 +217,6 @@
   "common.yes": "yes",
   "common.no": "no",
   "common.noHistory": "(no history)",
-  "chat.responseLanguage": "Selected response language for this request: American English (en-US). Write your answer in English even when the question or conversation history is in another language. Preserve code, identifiers, proper names, and quotations. All teaching, safety, and course-material rules in the main instructions still apply."
+  "chat.responseLanguage": "Selected response language for this request: American English (en-US). Write your answer in English even when the question or conversation history is in another language. Preserve code, identifiers, proper names, and quotations. All teaching, safety, and course-material rules in the main instructions still apply.",
+  "auth.sessionExpired": "Your session expired. Sign in again to continue."
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "analysis_sessions" ADD CONSTRAINT "analysis_sessions_chronological" CHECK ("analysis_sessions"."session_end" IS NULL OR "analysis_sessions"."session_end" >= "analysis_sessions"."session_start");--> statement-breakpoint
+ALTER TABLE "analysis_sessions" ADD CONSTRAINT "analysis_sessions_nonnegative_duration" CHECK ("analysis_sessions"."session_duration" >= 0);

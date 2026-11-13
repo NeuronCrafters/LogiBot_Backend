@@ -1,3 +1,4 @@
+import { withLiveSession } from "../../services/auth/sessionLifecycleService";
 import { Router } from "express";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
@@ -169,77 +170,81 @@ quizRouter.post(
     if (!answers || typeof answers !== "object" || Array.isArray(answers))
       throw new AppError("quiz.answersObjectRequired", 400);
 
-    const db = getDb();
+    const payload = await withLiveSession(getDb(), req.authSessionId!, req.user!.id, async (db, session) => {
+      if (!session.analysis_session_id) throw new AppError("auth.sessionExpired", 401);
 
-    const [quiz] = await db
-      .select({
-        id: professorQuizzes.id,
-        title: professorQuizzes.title,
-        language: professorQuizzes.language,
-        topic: professorQuizzes.topic,
-      })
-      .from(professorQuizzes)
-      .where(eq(professorQuizzes.id, req.params.id))
-      .limit(1);
+      const [quiz] = await db
+        .select({
+          id: professorQuizzes.id,
+          title: professorQuizzes.title,
+          language: professorQuizzes.language,
+          topic: professorQuizzes.topic,
+        })
+        .from(professorQuizzes)
+        .where(eq(professorQuizzes.id, req.params.id))
+        .limit(1);
 
-    if (!quiz) throw new AppError("quiz.notFound", 404);
+      if (!quiz) throw new AppError("quiz.notFound", 404);
 
-    const questions = await db
-      .select()
-      .from(professorQuizQuestions)
-      .where(eq(professorQuizQuestions.quizId, req.params.id))
-      .orderBy(asc(professorQuizQuestions.orderIndex));
+      const questions = await db
+        .select()
+        .from(professorQuizQuestions)
+        .where(eq(professorQuizQuestions.quizId, req.params.id))
+        .orderBy(asc(professorQuizQuestions.orderIndex));
 
-    if (!questions.length)
-      throw new AppError("quiz.noPublishedQuestions", 400);
+      if (!questions.length)
+        throw new AppError("quiz.noPublishedQuestions", 400);
 
-    const result = checkAnswers(questions, answers);
+      const result = checkAnswers(questions, answers);
 
-    // Save attempt
-    const [attempt] = await db
-      .insert(professorQuizAttempts)
-      .values({
-        quizId: quiz.id,
-        studentId: req.user!.id,
+      // Save attempt
+      const [attempt] = await db
+        .insert(professorQuizAttempts)
+        .values({
+          quizId: quiz.id,
+          studentId: req.user!.id,
+          score: result.correct,
+          totalQuestions: questions.length,
+        })
+        .returning();
+
+      // Save per-question answers
+      if (result.detalhes.length) {
+        await db.insert(professorQuizAnswers).values(
+          questions.map((q, i) => ({
+            attemptId: attempt.id,
+            questionId: q.id,
+            selectedOption: result.detalhes[i].selected,
+            isCorrect: result.detalhes[i].isCorrect,
+          })),
+        );
+      }
+
+      // Feed analytics pipeline so dashboard charts stay up-to-date
+      await saveStudentQuizResult(db, {
+        userId: req.user!.id,
+        analysisSessionId: session.analysis_session_id,
+        email: req.user!.email,
+        subject: quiz.topic,
+        level: "",
+        totalCorrectAnswers: result.correct,
+        totalWrongAnswers: result.wrong,
+        detalhes: result.detalhes.map((d) => ({
+          question: d.question,
+          selected: d.selected,
+          isCorrect: d.isCorrect,
+          explanation: d.explanation,
+        })),
+      });
+
+      return {
+        attemptId: attempt.id,
         score: result.correct,
         totalQuestions: questions.length,
-      })
-      .returning();
-
-    // Save per-question answers
-    if (result.detalhes.length) {
-      await db.insert(professorQuizAnswers).values(
-        questions.map((q, i) => ({
-          attemptId: attempt.id,
-          questionId: q.id,
-          selectedOption: result.detalhes[i].selected,
-          isCorrect: result.detalhes[i].isCorrect,
-        })),
-      );
-    }
-
-    // Feed analytics pipeline so dashboard charts stay up-to-date
-    await saveStudentQuizResult(db, {
-      userId: req.user!.id,
-      email: req.user!.email,
-      subject: quiz.topic,
-      level: "",
-      totalCorrectAnswers: result.correct,
-      totalWrongAnswers: result.wrong,
-      detalhes: result.detalhes.map((d) => ({
-        question: d.question,
-        selected: d.selected,
-        isCorrect: d.isCorrect,
-        explanation: d.explanation,
-      })),
+        detalhes: result.detalhes,
+      };
     });
-
-    return res.json({
-      attemptId: attempt.id,
-      score: result.correct,
-      totalQuestions: questions.length,
-      detalhes: result.detalhes,
-    });
+    return res.json(payload);
   }),
 );
 

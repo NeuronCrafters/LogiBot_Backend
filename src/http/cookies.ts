@@ -1,3 +1,4 @@
+import { sessionPolicy } from "../config/session";
 import type { Request, Response } from "express";
 import { AUTH_COOKIE_DOMAIN } from "../config/env";
 
@@ -13,7 +14,7 @@ export function setAuthCookie(req: Request, res: Response, token: string) {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? "none" : "lax",
-    maxAge: 1000 * 60 * 60 * 2,
+    maxAge: 1000 * sessionPolicy().absoluteSeconds,
     domain: isProduction ? AUTH_COOKIE_DOMAIN : undefined,
     path: "/",
   });

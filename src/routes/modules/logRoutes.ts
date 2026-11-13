@@ -196,6 +196,9 @@ logRouter.get(
     return res.json({
       usageTime: summary.usageTime,
       usageTimeInSeconds: summary.usageTimeInSeconds,
+      estimatedUsageTimeInSeconds: summary.estimatedUsageTimeInSeconds,
+      estimatedSessionCount: summary.estimatedSessionCount,
+      undeterminedSessionCount: summary.undeterminedSessionCount,
       dailyUsage: summary.dailyUsage,
     });
   }),

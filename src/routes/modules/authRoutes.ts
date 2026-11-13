@@ -26,7 +26,7 @@ import {
 } from "../../db/repositories/authRepository";
 import { sendPasswordResetEmail } from "../../services/email/mailService";
 import { getFrontendOrigin } from "../../config/env";
-import { closeOpenStudentSession } from "../../services/auth/studentSessionService";
+import { createLoginSession, logoutSession, recordSessionActivity } from "../../services/auth/sessionLifecycleService";
 
 export const authRouter = Router();
 
@@ -132,9 +132,10 @@ authRouter.post(
 
     accountLanguage(req, res, user.preferredLanguage);
     const roles = prioritizeRoles(user.roles || []);
-    if (roles.includes("student")) await startStudentSession(db, user);
+    const session = await createLoginSession(db, { ...user, roles });
     const token = signSession({
       id: user.id,
+      sid: session.id,
       name: user.name,
       email: user.email,
       role: roles,
@@ -144,6 +145,7 @@ authRouter.post(
 
     return res.json({
       success: true,
+      session,
       user: {
         id: user.id,
         _id: user.id,
@@ -175,16 +177,22 @@ authRouter.get(
   asyncHandler(async (req, res) => {
     const account = await getAccountById(getDb(), req.user!.id);
     if (!account) throw new AppError("auth.userNotFound", 404);
-    return res.json(await getPublicMe(getDb(), account));
+    return res.json({ ...await getPublicMe(getDb(), account), session: req.sessionStatus });
   }),
 );
+
+authRouter.get("/session-status", requireAuth, (_req, res) => res.json(_req.sessionStatus));
+
+authRouter.post("/activity", requireAuth, asyncHandler(async (req, res) => {
+  const session = await recordSessionActivity(getDb(), req.authSessionId!, req.user!.id);
+  return res.json(session);
+}));
 
 authRouter.post(
   "/logout",
   requireAuth,
   asyncHandler(async (req, res) => {
-    if (req.user?.role.includes("student"))
-      await closeOpenStudentSession(req.user.id);
+    await logoutSession(getDb(), req.authSessionId!, req.user!.id);
     clearAuthCookie(req, res);
     return res.json({ message: t("auth.loggedOut") });
   }),

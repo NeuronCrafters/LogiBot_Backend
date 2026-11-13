@@ -1,7 +1,9 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { observedUsageByDay } from "./observedUsage";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import {
   analysisSessions,
+  sessionActivityIntervals,
   answerAttempts,
   answerQuestions,
   classDisciplines,
@@ -169,9 +171,19 @@ export function aggregateByCategory(
 
 export async function getAnalysisSessions(analysisIds: string[], filters: Filters) {
   if (!analysisIds.length) return [];
-  return getDb().select().from(analysisSessions)
-    .where(and(inArray(analysisSessions.analysisId, analysisIds), ...dateConditions(analysisSessions.sessionStart, filters)))
+  const period = dateConditions(analysisSessions.sessionStart, filters);
+  const rows = await getDb().select().from(analysisSessions)
+    .where(and(inArray(analysisSessions.analysisId, analysisIds), period.length ? or(eq(analysisSessions.durationSource, "observed"), and(...period)) : undefined))
     .orderBy(desc(analysisSessions.sessionStart));
+  const observed = rows.filter(row => row.durationSource === "observed");
+  const intervals = observed.length ? await getDb().select().from(sessionActivityIntervals)
+    .where(inArray(sessionActivityIntervals.analysisSessionId, observed.map(row => row.id))) : [];
+  return rows.map(row => {
+    if (row.durationSource !== "observed") return { ...row, usageByDay: undefined as Array<{ date: string; seconds: number }> | undefined };
+    const usageByDay = observedUsageByDay(intervals.filter(interval => interval.analysisSessionId === row.id), filters);
+    return { ...row, usageByDay, sessionDuration: usageByDay.reduce((total, day) => total + day.seconds, 0) };
+  }).filter(row => row.durationSource !== "observed" || row.sessionDuration > 0 ||
+    ((!filters.startDate || row.sessionStart >= new Date(filters.startDate)) && (!filters.endDate || row.sessionStart < new Date(+new Date(filters.endDate) + 86400000))));
 }
 
 export async function getSummary(filters: Filters & { universityId: string }) {
@@ -195,6 +207,11 @@ export async function getSummary(filters: Filters & { universityId: string }) {
   let totalCorrectAnswers = 0;
   let totalWrongAnswers = 0;
   let totalUsageTime = 0;
+  let ongoingSessionCount = 0;
+  let observedUsageTimeInSeconds = 0;
+  let estimatedUsageTimeInSeconds = 0;
+  let estimatedSessionCount = 0;
+  let undeterminedSessionCount = 0;
   const processedSessions: Array<{
     date: string;
     sessionStart: Date | null;
@@ -204,6 +221,9 @@ export async function getSummary(filters: Filters & { universityId: string }) {
     userName: string;
     usage: number;
     formatted: string;
+    durationSource: string;
+    ongoing: boolean;
+    usageByDay?: Array<{ date: string; seconds: number }>;
   }> = [];
 
   if (filters.disciplineId || filters.startDate || filters.endDate) {
@@ -220,6 +240,7 @@ export async function getSummary(filters: Filters & { universityId: string }) {
   }
 
   for (const session of sessions) {
+    if (session.durationSource === "unavailable") undeterminedSessionCount++;
     const chatCounts = (session.subjectCountsChat || {}) as Record<
       string,
       number
@@ -232,8 +253,14 @@ export async function getSummary(filters: Filters & { universityId: string }) {
         );
     }
 
-    if (session.sessionStart && session.sessionEnd && session.sessionDuration > 0) {
+    if (session.durationSource === "observed" && !session.sessionEnd) ongoingSessionCount++;
+    if (session.sessionStart && (session.sessionEnd || session.durationSource === "observed") && session.sessionDuration > 0) {
+      if (session.durationSource === "observed") observedUsageTimeInSeconds += session.sessionDuration;
       totalUsageTime += session.sessionDuration;
+      if (session.durationSource === "estimated") {
+        estimatedUsageTimeInSeconds += session.sessionDuration;
+        estimatedSessionCount++;
+      }
       const info = analysisUserMap.get(session.analysisId);
       const date = new Date(session.sessionStart).toISOString().split("T")[0];
       processedSessions.push({
@@ -245,6 +272,9 @@ export async function getSummary(filters: Filters & { universityId: string }) {
         userName: info?.name || "",
         usage: session.sessionDuration / 60,
         formatted: formatSeconds(session.sessionDuration).formatted,
+        durationSource: session.durationSource || "recorded",
+        ongoing: !session.sessionEnd,
+        usageByDay: session.usageByDay,
       });
     }
   }
@@ -253,6 +283,11 @@ export async function getSummary(filters: Filters & { universityId: string }) {
     totalCorrectAnswers,
     totalWrongAnswers,
     usageTimeInSeconds: totalUsageTime,
+    observedUsageTimeInSeconds,
+    ongoingSessionCount,
+    estimatedUsageTimeInSeconds,
+    estimatedSessionCount,
+    undeterminedSessionCount,
     usageTime: formatSeconds(totalUsageTime),
     subjectCounts,
     sessions: processedSessions,
@@ -262,23 +297,18 @@ export async function getSummary(filters: Filters & { universityId: string }) {
 }
 
 export function buildDailyUsage(
-  sessions: Array<{ date: string; sessionDuration: number }>,
+  sessions: Array<{ date: string; sessionDuration: number; usageByDay?: Array<{ date: string; seconds: number }> }>,
 ) {
   const byDay: Record<
     string,
     { date: string; usage: number; formatted: string }
   > = {};
   for (const session of sessions) {
-    if (!byDay[session.date])
-      byDay[session.date] = {
-        date: session.date,
-        usage: 0,
-        formatted: "00:00:00",
-      };
-    byDay[session.date].usage += session.sessionDuration / 60;
-    byDay[session.date].formatted = formatSeconds(
-      Math.round(byDay[session.date].usage * 60),
-    ).formatted;
+    for (const day of session.usageByDay || [{ date: session.date, seconds: session.sessionDuration }]) {
+      if (!byDay[day.date]) byDay[day.date] = { date: day.date, usage: 0, formatted: "00:00:00" };
+      byDay[day.date].usage += day.seconds / 60;
+      byDay[day.date].formatted = formatSeconds(Math.round(byDay[day.date].usage * 60)).formatted;
+    }
   }
   return Object.values(byDay).sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -288,6 +318,11 @@ export function getEmptySummary() {
     totalCorrectAnswers: 0,
     totalWrongAnswers: 0,
     usageTimeInSeconds: 0,
+    observedUsageTimeInSeconds: 0,
+    ongoingSessionCount: 0,
+    estimatedUsageTimeInSeconds: 0,
+    estimatedSessionCount: 0,
+    undeterminedSessionCount: 0,
     usageTime: formatSeconds(0),
     subjectCounts: emptySubjectCounts(),
     sessions: [],

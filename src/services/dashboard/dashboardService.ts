@@ -90,8 +90,10 @@ export async function getEffortMatrix(filters: Filters) {
   }
 
   const usageByAnalysis = new Map<string, number>();
+  const estimatedAnalyses = new Set<string>();
   for (const session of await getAnalysisSessions(rows.map((row) => row.id), filters)) {
-    if (session.sessionEnd && session.sessionDuration > 0)
+    if (session.durationSource === "estimated" && session.sessionDuration > 0) estimatedAnalyses.add(session.analysisId);
+    if ((session.sessionEnd || session.durationSource === "observed") && session.sessionDuration > 0)
       usageByAnalysis.set(session.analysisId, (usageByAnalysis.get(session.analysisId) || 0) + session.sessionDuration);
   }
   const points = rows.map((row) => {
@@ -106,6 +108,7 @@ export async function getEffortMatrix(filters: Filters) {
         ? Number(((performance.correct / total) * 100).toFixed(1))
         : null,
       effort: Number(((usageByAnalysis.get(row.id) || 0) / 60).toFixed(1)),
+      effortEstimated: estimatedAnalyses.has(row.id),
     };
   });
 
@@ -242,22 +245,12 @@ export async function getSessionDetails(
     .where(await resolveAnalysisWhere(filters));
   if (!analyses.length) return [];
 
-  const conditions = [
-    inArray(
-      analysisSessions.analysisId,
-      analyses.map((item) => item.id),
-    ),
-    isNotNull(analysisSessions.sessionEnd),
-  ];
-  conditions.push(...dateConditions(analysisSessions.sessionStart, filters));
-
-  return getDb()
-    .select({
-      startTime: analysisSessions.sessionStart,
-      endTime: analysisSessions.sessionEnd,
-    })
-    .from(analysisSessions)
-    .where(and(...conditions));
+  const sessions = await getAnalysisSessions(analyses.map(row => row.id), filters);
+  return sessions.filter(session => session.sessionEnd || session.durationSource === "observed").map(session => ({
+    startTime: session.sessionStart, endTime: session.sessionEnd,
+    durationSource: session.durationSource, sessionDuration: session.sessionDuration,
+    ongoing: !session.sessionEnd,
+  }));
 }
 
 export async function getAccessPattern(filters: Filters) {

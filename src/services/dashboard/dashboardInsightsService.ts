@@ -116,6 +116,12 @@ async function chartData(chart: DashboardInsightChart, filters: Filters) {
     const summary = await getSummaryForFilters(filters);
     return {
       totalUsageSeconds: summary.usageTimeInSeconds,
+      observedUsageSeconds: summary.observedUsageTimeInSeconds ?? 0,
+      ongoingSessions: summary.ongoingSessionCount ?? 0,
+      estimatedUsageSeconds: summary.estimatedUsageTimeInSeconds ?? 0,
+      estimatedSessionCount: summary.estimatedSessionCount ?? 0,
+      undeterminedSessionCount: summary.undeterminedSessionCount ?? 0,
+      ...(summary.estimatedSessionCount ? { measurementNote: "Includes elapsed time estimated from recorded activity; not a direct measurement of active time." } : {}),
       dailyUsageMinutes: summary.dailyUsage.map((item) => ({
         date: item.date,
         minutes: Number(item.usage.toFixed(1)),

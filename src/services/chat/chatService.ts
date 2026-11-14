@@ -24,6 +24,8 @@ import {
 import { validateAndEnrichPrompt } from "../../utils/subjectExtractor";
 
 const MAX_CHAT_TITLE_LENGTH = 56;
+export const activeChatMessage = sql`coalesce(${chatMessages.metadata}->>'superseded', 'false') <> 'true'`;
+const activeStreams = new Set<string>();
 
 export function isDefaultChatTitle(title?: string | null) {
   return !title || ["Nova Conversa", "New Conversation", "Nueva conversación"].includes(title.trim());
@@ -120,7 +122,7 @@ export async function getRecentChatMessages(
   const rows = await db
     .select({ role: chatMessages.role, content: chatMessages.content })
     .from(chatMessages)
-    .where(eq(chatMessages.chatSessionId, session.id))
+    .where(and(eq(chatMessages.chatSessionId, session.id), activeChatMessage))
     .orderBy(desc(chatMessages.timestamp))
     .limit(limit);
 
@@ -237,11 +239,60 @@ type StreamChatCallbacks = {
   onToken?: (text: string) => void | Promise<void>;
 };
 
+export async function editChatMessage(input: {
+  userId: string; sessionId: string; messageId: string; message: string; topic: string | null;
+}) {
+  if (!/^[0-9a-f-]{36}$/i.test(input.messageId)) throw new AppError("chat.editNotFound", 404);
+  return getDb().transaction(async tx => {
+    const [session] = await tx.select().from(chatSessions)
+      .where(and(eq(chatSessions.userId, input.userId), eq(chatSessions.sessionId, input.sessionId)))
+      .for("update");
+    if (!session) throw new AppError("chat.editNotFound", 404);
+    const [openJob] = await tx.select({ id: chatGenerationJobs.id }).from(chatGenerationJobs)
+      .where(and(eq(chatGenerationJobs.chatSessionId, session.id), inArray(chatGenerationJobs.status, ["queued", "running"]))).limit(1);
+    if (openJob) throw new AppError("chat.generationInProgress", 409);
+    const messages = await tx.select().from(chatMessages)
+      .where(and(eq(chatMessages.chatSessionId, session.id), activeChatMessage))
+      .orderBy(asc(chatMessages.timestamp), asc(chatMessages.id));
+    const index = messages.findIndex(row => row.id === input.messageId && row.role === "user");
+    if (index < 0) throw new AppError("chat.editNotFound", 404);
+    const target = messages[index];
+    const laterIds = messages.slice(index + 1).map(row => row.id);
+    if (laterIds.length) await tx.update(chatMessages).set({
+      metadata: sql`${chatMessages.metadata} || ${JSON.stringify({ superseded: true, supersededBy: target.id })}::jsonb`,
+    }).where(inArray(chatMessages.id, laterIds));
+    await tx.update(chatMessages).set({
+      content: input.message,
+      detectedTopic: input.topic,
+      metadata: { ...(target.metadata as Record<string, unknown>), previousContent: target.content,
+        editedAt: new Date().toISOString(), requestLanguage: getLanguage() },
+    }).where(eq(chatMessages.id, target.id));
+    await tx.update(chatSessions).set({
+      lastActivityAt: new Date(),
+      ...(messages.find(row => row.role === "user")?.id === target.id ? { title: buildChatSessionTitle(input.message) } : {}),
+    }).where(eq(chatSessions.id, session.id));
+    return { sessionId: session.sessionId, chatSessionId: session.id, messageId: target.id };
+  });
+}
+
 export async function streamChatMessage(
+  input: { userId: string; message: string; sessionId?: string; editMessageId?: string },
+  callbacks: StreamChatCallbacks = {},
+) {
+  const sessionId = input.sessionId || randomUUID();
+  const key = `${input.userId}:${sessionId}`;
+  if (activeStreams.has(key)) throw new AppError("chat.generationInProgress", 409);
+  activeStreams.add(key);
+  try { return await runChatMessageStream({ ...input, sessionId }, callbacks); }
+  finally { activeStreams.delete(key); }
+}
+
+async function runChatMessageStream(
   input: {
     userId: string;
     message: string;
     sessionId?: string;
+    editMessageId?: string;
   },
   callbacks: StreamChatCallbacks = {},
 ) {
@@ -261,7 +312,9 @@ export async function streamChatMessage(
   const enriched = validateAndEnrichPrompt(message);
   const detectedTopic = enriched?.subject ?? null;
 
-  const userMessage = await addChatMessage({
+  const userMessage = input.editMessageId ? await editChatMessage({
+    userId: input.userId, sessionId: input.sessionId!, messageId: input.editMessageId, message, topic: detectedTopic,
+  }) : await addChatMessage({
     userId: input.userId,
     sessionId: input.sessionId,
     role: "user",
@@ -764,6 +817,6 @@ export async function listChatSessionMessages(
   return db
     .select()
     .from(chatMessages)
-    .where(eq(chatMessages.chatSessionId, session.id))
+    .where(and(eq(chatMessages.chatSessionId, session.id), activeChatMessage))
     .orderBy(asc(chatMessages.timestamp));
 }

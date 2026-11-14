@@ -4,6 +4,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth } from "../../http/auth";
 import { logger } from "../../logger";
+import { getChatFollowUps } from "../../services/chat/chatFollowUpService";
 import {
   getChatGenerationJobStatus,
   listChatSessionMessages,
@@ -79,7 +80,7 @@ chatRouter.post(
 
     try {
       const result = await streamChatMessage(
-        { userId: req.user!.id, message, sessionId },
+        { userId: req.user!.id, message, sessionId, editMessageId: req.body.editMessageId ? String(req.body.editMessageId) : undefined },
         {
           signal: abortController.signal,
           onSession: (payload) => {
@@ -113,6 +114,7 @@ chatRouter.post(
           retrievedChunks: result.retrievedChunks,
           timingsMs: result.timingsMs,
           usage: result.usage,
+          assistantMessageId: result.assistantMessageId,
         });
       }
     } catch (error) {
@@ -130,6 +132,13 @@ chatRouter.post(
       res.end();
     }
   }),
+);
+
+chatRouter.post(
+  "/sessions/:sessionId/follow-ups",
+  asyncHandler(async (req, res) => res.json(await getChatFollowUps({
+    userId: req.user!.id, sessionId: req.params.sessionId, messageId: String(req.body.messageId || ""),
+  }))),
 );
 
 chatRouter.get(

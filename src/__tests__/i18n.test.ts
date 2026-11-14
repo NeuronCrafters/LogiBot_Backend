@@ -105,13 +105,12 @@ describe('preservação e catálogos', () => {
     for (const [file,hash] of Object.entries(hashes)) expect(createHash('sha256').update(readFileSync(file)).digest('hex')).toBe(hash);
   });
 
-  it.each(['en-US','es-ES'] as const)('explicita o idioma %s junto à pergunta sem reescrever o histórico', language => {
+  it.each(['pt-BR','en-US','es-ES'] as const)('explicita o idioma %s junto à pergunta sem reescrever o histórico', language => {
     const messages = [{role: 'user' as const, content: 'Explique o que é uma variável.'}];
     const prepared = withLanguage(language, () => prepareOpenRouterMessages('chat', messages));
     expect(prepared.slice(1,-1)).toEqual(messages);
     expect(prepared.at(-1)).toEqual({role:'system',content:t('chat.responseLanguage',{},language)});
     expect(messages).toEqual([{role:'user',content:'Explique o que é uma variável.'}]);
-    expect(withLanguage('pt-BR',()=>prepareOpenRouterMessages('chat',messages)).slice(1)).toEqual(messages);
   });
 
   it('seleciona o prompt de cada finalidade sem misturar idiomas no cache', async () => {

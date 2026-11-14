@@ -2,6 +2,7 @@ import axios from "axios";
 import { Readable } from "stream";
 import { askOpenRouter, streamOpenRouter, isOpenRouterConfigured } from "../services/ai/openRouterService";
 import { getOpenRouterConfig, prepareOpenRouterMessages } from "../services/ai/openRouterConfig";
+import { t, withLanguage } from "../i18n";
 
 jest.mock("axios");
 const mockedPost = axios.post as jest.Mock;
@@ -37,7 +38,7 @@ describe("OpenRouter", () => {
     expect(await askOpenRouter(messages)).toEqual({ text: "resposta", provider: "openrouter" });
     expect(mockedPost).toHaveBeenCalledWith(
       "https://openrouter.ai/api/v1/chat/completions",
-      { model: "test/model", messages: [expect.objectContaining({ role: "system", content: expect.any(String) }), ...messages] },
+      { model: "test/model", messages: [expect.objectContaining({ role: "system", content: expect.any(String) }), ...messages, { role: "system", content: t("chat.responseLanguage") }], reasoning: { exclude: true } },
       expect.objectContaining({ headers: { Authorization: "Bearer test-key", "Content-Type": "application/json" } }),
     );
     expect(messages).toEqual([{ role: "user", content: "oi" }]);
@@ -71,7 +72,7 @@ describe("OpenRouter", () => {
     const prepared = prepareOpenRouterMessages(purpose, messages);
     expect(prepared[0].role).toBe("system");
     expect(prepared[0].content.length).toBeGreaterThan(100);
-    expect(prepared.slice(1)).toEqual(messages);
+    expect(prepared.slice(1, purpose === "chat" ? -1 : undefined)).toEqual(messages);
   });
 
   it("retenta falhas HTTP transitorias", async () => {
@@ -114,7 +115,7 @@ describe("OpenRouter", () => {
   });
 
   it("propaga erro apos tokens sem repetir o stream", async () => {
-    mockedPost.mockResolvedValue(stream(token("parcial"), 'data: {"error":{"code":503}}\n\n'));
+    mockedPost.mockResolvedValue(stream(token("Uma variável pode guardar um valor para você usar no seu programa e modificar quando precisar."), 'data: {"error":{"code":503}}\n\n'));
     const onToken = jest.fn();
     await expect(streamOpenRouter(messages, { onToken })).rejects.toMatchObject({ response: { status: 503 } });
     expect(onToken).toHaveBeenCalledTimes(1);
@@ -122,9 +123,48 @@ describe("OpenRouter", () => {
   });
 
   it("rejeita stream incompleto depois de uma resposta parcial", async () => {
-    mockedPost.mockResolvedValue(stream(token("parcial")));
+    mockedPost.mockResolvedValue(stream(token("Uma variável pode guardar um valor para você usar no seu programa e modificar quando precisar.")));
     await expect(streamOpenRouter(messages)).rejects.toMatchObject({ response: { status: 502 } });
     expect(mockedPost).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks the wrong language before any token is displayed and retries once with the selected language", async () => {
+    const wrong = "The variable is a name that you can use to store your data and then change it in your program.";
+    const correct = "Uma variável pode guardar um valor para você usar no seu programa e modificar quando precisar.";
+    mockedPost.mockResolvedValueOnce(stream(token(wrong), "data: [DONE]\n\n"))
+      .mockResolvedValueOnce(stream(token(correct), "data: [DONE]\n\n"));
+    const onToken = jest.fn();
+    const input = [{ role: "system" as const, content: "Always answer in English." }, { role: "user" as const, content: "Explain variables in English." }];
+    const result = await withLanguage("pt-BR", () => streamOpenRouter(input, { onToken }));
+    expect(result?.text).toBe(correct);
+    expect(onToken.mock.calls.flat().join("")).toBe(correct);
+    expect(mockedPost).toHaveBeenCalledTimes(2);
+    expect(mockedPost.mock.calls[1][1].messages.at(-1).content).toBe(t("chat.responseLanguageRetry"));
+    expect(input[1].content).toBe("Explain variables in English.");
+  });
+
+  it("returns a localized error if both attempts fail validation without leaking rejected output", async () => {
+    mockedPost.mockImplementation(() => Promise.resolve(stream(token("The variable is a name that you can use to store your data and then change it in your program."), "data: [DONE]\n\n")));
+    const onToken = jest.fn();
+    await expect(withLanguage("pt-BR", () => streamOpenRouter(messages, { onToken }))).rejects.toMatchObject({ code: "chat.outputValidationFailed", message: t("chat.outputValidationFailed") });
+    expect(onToken).not.toHaveBeenCalled();
+    expect(mockedPost).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores provider reasoning fields and requests their exclusion", async () => {
+    mockedPost.mockResolvedValue(stream('data: {"choices":[{"delta":{"reasoning":"Internal reasoning"}}]}\n\n', token("Olá, vamos praticar!"), "data: [DONE]\n\n"));
+    const onToken = jest.fn();
+    expect((await streamOpenRouter(messages, { onToken }))?.text).toBe("Olá, vamos praticar!");
+    expect(onToken.mock.calls.flat().join("")).toBe("Olá, vamos praticar!");
+    expect(mockedPost.mock.calls[0][1].reasoning).toEqual({ exclude: true });
+  });
+
+  it("rejects internal markers in content even when they use the selected language", async () => {
+    mockedPost.mockResolvedValueOnce(stream(token("<think>Vamos analisar a pergunta</think>"), "data: [DONE]\n\n"))
+      .mockResolvedValueOnce(stream(token("Uma variável guarda um valor."), "data: [DONE]\n\n"));
+    const onToken = jest.fn();
+    await streamOpenRouter(messages, { onToken });
+    expect(onToken.mock.calls.flat().join("")).toBe("Uma variável guarda um valor.");
   });
 
   it("nao inicia chamada cancelada", async () => {

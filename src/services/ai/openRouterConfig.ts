@@ -44,7 +44,7 @@ export function prepareOpenRouterMessages(
   }
 
   const prepared: AgentMessage[] = [{ role: "system", content: prompt }, ...messages];
-  if (purpose === "chat" && language !== "pt-BR") {
+  if (purpose === "chat") {
     prepared.push({ role: "system", content: t("chat.responseLanguage") });
   }
   return prepared;

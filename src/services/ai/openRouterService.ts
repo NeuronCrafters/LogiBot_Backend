@@ -1,6 +1,9 @@
 import axios from "axios";
 import { logger } from "../../logger";
 import { isRetryableAgentError, withAgentRetry } from "../../utils/agentRetry";
+import { getLanguage, t } from "../../i18n";
+import { AppError } from "../../exceptions/AppError";
+import { assertChatOutput, ChatOutputValidationError, createChatOutputGate } from "./chatOutputGuard";
 
 import { StringDecoder } from "string_decoder";
 import {
@@ -257,6 +260,9 @@ export async function askOpenRouter(
   const targets = getAgentTargets();
 
   if (!targets.length) return null;
+  const language = getLanguage();
+  const validateOutput = options?.includeChatPrompt !== false;
+  let validationRetries = 0;
 
   const preparedMessages = options?.includeChatPrompt === false
     ? messages
@@ -287,7 +293,7 @@ export async function askOpenRouter(
       async () => {
         const response = await axios.post(
           target.endpoint,
-          { model: target.model, messages: preparedMessages },
+          { model: target.model, messages: preparedMessages, reasoning: { exclude: true } },
           {
             headers: {
               Authorization: `Bearer ${target.accessKey}`,
@@ -298,11 +304,14 @@ export async function askOpenRouter(
           },
         );
         assertOpenRouterSuccess(response.data);
+        if (validateOutput) assertChatOutput(extractResponseText(response.data), language);
         return response;
       },
       {
         signal: options?.signal,
+        isRetryable: error => error instanceof ChatOutputValidationError ? validationRetries++ < 1 : isRetryableAgentError(error),
         onRetry: ({ attempt, error }) => {
+          if (error instanceof ChatOutputValidationError) preparedMessages.push({ role: "system", content: t("chat.responseLanguageRetry", {}, language) });
           logger.warn("OpenRouter", "Tentativa falhou, retentando...", {
             agentId: target.id,
             attempt,
@@ -329,6 +338,7 @@ export async function askOpenRouter(
     return { text, provider: "openrouter" };
   } catch (error: any) {
     if (options?.signal?.aborted) throw error;
+    if (error instanceof ChatOutputValidationError) throw new AppError("chat.outputValidationFailed", 502);
     const status = error?.response?.status;
     logger.error("OpenRouter", "Failed to call OpenRouter.", {
       agentId: target.id,
@@ -350,6 +360,9 @@ export async function streamOpenRouter(
   const targets = getAgentTargets();
 
   if (!targets.length) return null;
+  const language = getLanguage();
+  const validateOutput = options.includeChatPrompt !== false;
+  let validationRetries = 0;
 
   const preparedMessages = options?.includeChatPrompt === false
     ? messages
@@ -385,6 +398,7 @@ export async function streamOpenRouter(
         const decoder = new StringDecoder("utf8");
         let completed = false;
         let tokenCount = 0;
+        const gate = validateOutput ? createChatOutputGate(language) : null;
         const providerStartedAt = Date.now();
 
         const response = await axios.post(
@@ -394,6 +408,7 @@ export async function streamOpenRouter(
             messages: preparedMessages,
             stream: true,
             stream_options: { include_usage: true },
+            reasoning: { exclude: true },
           },
           {
             headers: {
@@ -433,7 +448,9 @@ export async function streamOpenRouter(
 
             text += delta;
             tokenCount += 1;
-            if (tokenCount === 1) {
+            const visible = gate ? gate.push(delta) : delta;
+            if (!visible) continue;
+            if (!emittedTokens) {
               emittedTokens = true;
               logger.info("OpenRouter", "Streaming Agent first token received.", {
                 agentId: target.id,
@@ -441,7 +458,7 @@ export async function streamOpenRouter(
                 elapsedMs: Date.now() - providerStartedAt,
               });
             }
-            await options.onToken?.(delta);
+            await options.onToken?.(visible);
           }
         }
 
@@ -451,6 +468,9 @@ export async function streamOpenRouter(
           });
         }
         const finalText = text.trim();
+        if (validateOutput) assertChatOutput(finalText, language);
+        const remaining = gate?.finish();
+        if (remaining) { emittedTokens = true; await options.onToken?.(remaining); }
         if (!finalText) {
           logger.warn("OpenRouter", "Streaming Agent response did not include text.", {
             agentId: target.id,
@@ -473,8 +493,9 @@ export async function streamOpenRouter(
         isRetryable: (error) =>
           !emittedTokens &&
           !options.signal?.aborted &&
-          isRetryableAgentError(error),
+          (error instanceof ChatOutputValidationError ? validationRetries++ < 1 : isRetryableAgentError(error)),
         onRetry: ({ attempt, error }) => {
+          if (error instanceof ChatOutputValidationError) preparedMessages.push({ role: "system", content: t("chat.responseLanguageRetry", {}, language) });
           logger.warn("OpenRouter", "Streaming: tentativa falhou, retentando...", {
             agentId: target.id,
             attempt,
@@ -493,6 +514,7 @@ export async function streamOpenRouter(
       throw error;
     }
 
+    if (error instanceof ChatOutputValidationError) throw new AppError("chat.outputValidationFailed", 502);
     if (emittedTokens) throw error;
 
     const status = error?.response?.status;

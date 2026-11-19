@@ -5,6 +5,15 @@ const getLearningJourney = jest.fn();
 const getProficiencyRadar = jest.fn();
 const getSessionDetails = jest.fn();
 const getTopicPerformance = jest.fn();
+const examResults = jest.fn();
+const weeklyEngagement = jest.fn();
+const chatSatisfaction = jest.fn();
+
+jest.mock("../services/dashboard/dashboardComparisonService", () => ({
+  examResults: (...args: unknown[]) => examResults(...args),
+  weeklyEngagement: (...args: unknown[]) => weeklyEngagement(...args),
+  chatSatisfaction: (...args: unknown[]) => chatSatisfaction(...args),
+}));
 
 jest.mock("../services/ai/dashboardInsightsAgentService", () => ({
   askDashboardInsightsAgent: (...args: unknown[]) =>
@@ -26,6 +35,8 @@ jest.mock("../services/dashboard/dashboardService", () => ({
 import {
   __resetDashboardInsightsCacheForTests,
   generateChartInsight,
+  generateComparisonInsight,
+  generateComparisonChartInsight,
   generateOverviewInsight,
 } from "../services/dashboard/dashboardInsightsService";
 
@@ -182,5 +193,64 @@ describe("cache de insights por idioma", () => {
     expect(prompts[0]).toContain('## Leitura principal');
     expect(prompts[1]).toContain('## Main findings');
     expect(prompts[2]).toContain('## Lectura principal');
+  });
+
+  it("compara as duas seleções numa única análise, sem nomes", async () => {
+    const other = { universityId: "00000000-0000-4000-8000-000000000201" };
+    await generateComparisonInsight({ a: filters, b: other });
+    expect(askDashboardInsightsAgent).toHaveBeenCalledTimes(1);
+    const prompt = askDashboardInsightsAgent.mock.calls[0][0] as string;
+    expect(prompt).toContain("## Diferenças principais");
+    expect(prompt).toContain("Seleção A");
+    expect(prompt).toContain("Seleção B");
+    expect(prompt).not.toContain("Ana Silva");
+    // Same pair again comes from the cache.
+    expect((await generateComparisonInsight({ a: filters, b: other })).cached).toBe(true);
+  });
+
+  it("recusa a comparação quando uma das seleções não tem dados", async () => {
+    getSummary.mockResolvedValue({ totalCorrectAnswers: 0, totalWrongAnswers: 0, usageTimeInSeconds: 0, dailyUsage: [], subjectCounts: {} });
+    getTopicPerformance.mockResolvedValue([]);
+    getProficiencyRadar.mockResolvedValue({ labels: [], data: [] });
+    getEffortMatrix.mockResolvedValue({ points: [], averages: { avgPerformance: 0, avgEffort: 0 } });
+    getLearningJourney.mockResolvedValue({ labels: [], data: [] });
+    await expect(generateComparisonInsight({ a: filters, b: { universityId: "00000000-0000-4000-8000-000000000201" } })).rejects.toMatchObject({ statusCode: 422, code: "insights.comparisonDataInsufficient" });
+  });
+
+  describe("análise de um gráfico de comparação", () => {
+    const other = { universityId: "00000000-0000-4000-8000-000000000201", courseId: "00000000-0000-4000-8000-000000000202" };
+
+    it("envia os dados das duas seleções, sem nomes, com o roteiro do gráfico", async () => {
+      const sideA = { exams: [{ title: "Prova da Zuleica", releasedAt: "2026-11-01", expected: 10, submitted: 9, submissionRate: 0.9, averageGrade: 7.5 }], expected: 10, submitted: 9, submissionRate: 0.9, averageGrade: 7.5 };
+      const sideB = { exams: [{ title: "Outra prova", releasedAt: "2026-11-02", expected: 12, submitted: 6, submissionRate: 0.5, averageGrade: 6 }], expected: 12, submitted: 6, submissionRate: 0.5, averageGrade: 6 };
+      examResults.mockImplementation(async (selection: { courseId?: string }) => (selection.courseId === filters.courseId ? sideA : sideB));
+      const result = await generateComparisonChartInsight({ chart: "exam-results", a: filters, b: other });
+      expect(result.insight).toBeTruthy();
+      const prompt = askDashboardInsightsAgent.mock.calls[0][0] as string;
+      expect(prompt).toContain("Resultados das provas");
+      expect(prompt).toContain("## Principais diferenças");
+      expect(prompt).toContain("\"submissionRate\":0.9");
+      // Exam titles may carry names: they are replaced by neutral labels.
+      expect(prompt).not.toContain("Zuleica");
+      expect(prompt).toContain("prova_1");
+      expect((await generateComparisonChartInsight({ chart: "exam-results", a: filters, b: other })).cached).toBe(true);
+    });
+
+    it("conta alunos por faixa no gráfico de distribuição", async () => {
+      getEffortMatrix
+        .mockResolvedValueOnce({ points: [{ name: "Zuleica", performance: 90, effort: 10 }, { name: "Zenóbia", performance: 30, effort: 5 }], averages: { avgPerformance: 60, avgEffort: 7 } })
+        .mockResolvedValueOnce({ points: [{ name: "Zacarias", performance: 100, effort: 3 }], averages: { avgPerformance: 100, avgEffort: 3 } });
+      await generateComparisonChartInsight({ chart: "performance-distribution", a: filters, b: other });
+      const prompt = askDashboardInsightsAgent.mock.calls[0][0] as string;
+      expect(prompt).toContain("\"assessedStudents\":2");
+      expect(prompt).toContain("{\"band\":\"80-100%\",\"students\":1}");
+      expect(prompt).not.toMatch(/Zuleica|Zenóbia|Zacarias/);
+    });
+
+    it("recusa quando uma seleção não tem dados (satisfação oculta em grupo pequeno)", async () => {
+      chatSatisfaction.mockResolvedValueOnce({ available: true, total: 9, up: 5, partial: 2, down: 2, score: 0.67, byTopic: [] }).mockResolvedValueOnce({ available: false, reason: "small", total: 2, minGroupSize: 5 });
+      await expect(generateComparisonChartInsight({ chart: "chat-satisfaction", a: filters, b: other })).rejects.toMatchObject({ statusCode: 422, code: "insights.comparisonDataInsufficient" });
+      expect(askDashboardInsightsAgent).not.toHaveBeenCalled();
+    });
   });
 });

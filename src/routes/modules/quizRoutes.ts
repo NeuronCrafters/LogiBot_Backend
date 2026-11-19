@@ -1,3 +1,5 @@
+import { getFrontendOrigin } from "../../config/env";
+import { notifyQuizCompletion, notifySafely } from "../../services/notifications/notificationService";
 import { withLiveSession } from "../../services/auth/sessionLifecycleService";
 import { Router } from "express";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
@@ -244,6 +246,7 @@ quizRouter.post(
         detalhes: result.detalhes,
       };
     });
+    await notifySafely("quiz_completion", () => notifyQuizCompletion(getDb(), req.params.id, req.user!.id, getFrontendOrigin(req.get("origin"))));
     return res.json(payload);
   }),
 );

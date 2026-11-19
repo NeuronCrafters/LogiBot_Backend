@@ -1,0 +1,2 @@
+ALTER TABLE "exercise_attempts" DROP CONSTRAINT "exercise_attempts_type_check";--> statement-breakpoint
+ALTER TABLE "exercise_attempts" ADD CONSTRAINT "exercise_attempts_type_check" CHECK ("exercise_attempts"."exercise_type" IN ('truth_table', 'translation', 'parsons'));

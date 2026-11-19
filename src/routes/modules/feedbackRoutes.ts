@@ -1,11 +1,11 @@
 import { t } from "../../i18n";
 import { Router } from "express";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
 import { getDb } from "../../db/client";
-import { accounts, feedbacks } from "../../db/schema";
+import { accounts, classes, courses, feedbacks, professorProfiles, studentProfiles, universities } from "../../db/schema";
 
 export const feedbackRouter = Router();
 
@@ -57,11 +57,36 @@ feedbackRouter.get(
         createdAt: feedbacks.createdAt,
         authorName: accounts.name,
         authorEmail: accounts.email,
+        // Where the author belongs, so the list can be filtered by institution, course and class.
+        studentSchoolId: studentProfiles.schoolId,
+        courseId: studentProfiles.courseId,
+        classId: studentProfiles.classId,
+        professorSchoolId: professorProfiles.schoolId,
       })
       .from(feedbacks)
       .leftJoin(accounts, eq(feedbacks.accountId, accounts.id))
+      .leftJoin(studentProfiles, eq(studentProfiles.accountId, feedbacks.accountId))
+      .leftJoin(professorProfiles, eq(professorProfiles.accountId, feedbacks.accountId))
       .orderBy(desc(feedbacks.createdAt));
 
-    return res.json(rows);
+    const ids = (key: "school" | "course" | "class") => Array.from(new Set(rows.map((row) =>
+      key === "school" ? row.studentSchoolId ?? row.professorSchoolId : key === "course" ? row.courseId : row.classId).filter((id): id is string => !!id)));
+    const names = async (table: typeof universities | typeof courses | typeof classes, list: string[]) => {
+      if (!list.length) return {} as Record<string, string>;
+      const found = await getDb().select({ id: table.id, name: table.name }).from(table).where(inArray(table.id, list));
+      return found.reduce((map, row) => { map[row.id] = row.name; return map; }, {} as Record<string, string>);
+    };
+    const [schoolNames, courseNames, classNames] = await Promise.all([names(universities, ids("school")), names(courses, ids("course")), names(classes, ids("class"))]);
+
+    return res.json(rows.map(({ studentSchoolId, professorSchoolId, ...row }) => {
+      const schoolId = studentSchoolId ?? professorSchoolId ?? null;
+      return {
+        ...row,
+        schoolId,
+        schoolName: schoolId ? schoolNames[schoolId] ?? null : null,
+        courseName: row.courseId ? courseNames[row.courseId] ?? null : null,
+        className: row.classId ? classNames[row.classId] ?? null : null,
+      };
+    }));
   }),
 );

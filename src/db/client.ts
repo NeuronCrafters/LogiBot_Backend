@@ -2,12 +2,23 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
+import { currentEnvironment, getSandboxDatabaseUrl } from "./environment";
+
+export { currentEnvironment, getSandboxDatabaseUrl, isSandboxConfigured, runInEnvironment, type DatabaseEnvironment } from "./environment";
 
 export type DbClient = ReturnType<typeof drizzle<typeof schema>>;
 export type TransactionClient = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
 export type AnyDbClient = DbClient | TransactionClient;
 
 let expressPool: Pool | undefined;
+let sandboxPool: Pool | undefined;
+
+export function getSandboxDb(): DbClient {
+  const url = getSandboxDatabaseUrl();
+  if (!url) throw new Error("SANDBOX_DATABASE_URL is not configured.");
+  if (!sandboxPool) sandboxPool = createPool(url);
+  return drizzle(sandboxPool, { schema });
+}
 
 function createPool(connectionString: string) {
   return new Pool({
@@ -32,7 +43,7 @@ export function getExpressDb(): DbClient {
 }
 
 export function getDb(): DbClient {
-  return getExpressDb();
+  return currentEnvironment() === "sandbox" ? getSandboxDb() : getExpressDb();
 }
 
 export async function checkDatabase(db: DbClient = getDb()) {
@@ -43,5 +54,9 @@ export async function closeDatabasePool() {
   if (expressPool) {
     await expressPool.end();
     expressPool = undefined;
+  }
+  if (sandboxPool) {
+    await sandboxPool.end();
+    sandboxPool = undefined;
   }
 }

@@ -13,8 +13,10 @@ import {
   prioritizeRoles,
   signSession,
 } from "../../http/auth";
-import { clearAuthCookie, setAuthCookie } from "../../http/cookies";
+import { clearAuthCookie, clearOwnerReturnCookie, setAuthCookie } from "../../http/cookies";
 import { getDb } from "../../db/client";
+import { currentEnvironment } from "../../db/environment";
+import { isOwner } from "../../services/sandbox/sandboxConfig";
 import { accounts, passwordHistory } from "../../db/schema";
 import {
   createStudentAccount,
@@ -38,6 +40,7 @@ authRouter.post(
       .trim()
       .toLowerCase();
     const password = String(req.body.password || "");
+    const confirmPassword = String(req.body.confirmPassword || "");
     const code = String(req.body.code || "").trim();
 
     if (!name || !email || !password || !code)
@@ -48,6 +51,8 @@ authRouter.post(
       throw new AppError("registration.emailInvalid", 400);
     if (password.length < 12)
       throw new AppError("registration.passwordTooShort", 400);
+    if (confirmPassword !== password)
+      throw new AppError("registration.passwordMismatch", 400);
 
     const db = getDb();
     const existingUser = await getAccountByEmail(db, email);
@@ -140,6 +145,7 @@ authRouter.post(
       email: user.email,
       role: roles,
       school: user.schoolId || null,
+      env: currentEnvironment(),
     });
     setAuthCookie(req, res, token);
 
@@ -177,7 +183,14 @@ authRouter.get(
   asyncHandler(async (req, res) => {
     const account = await getAccountById(getDb(), req.user!.id);
     if (!account) throw new AppError("auth.userNotFound", 404);
-    return res.json({ ...await getPublicMe(getDb(), account), session: req.sessionStatus });
+    return res.json({
+      ...await getPublicMe(getDb(), account),
+      session: req.sessionStatus,
+      environment: currentEnvironment(),
+      // Owner who entered the test environment and can go back to their own account.
+      canReturnToOwner: currentEnvironment() === "sandbox" && !!req.cookies?.owner_return,
+      isOwner: currentEnvironment() === "production" && isOwner(req.user),
+    });
   }),
 );
 
@@ -194,6 +207,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     await logoutSession(getDb(), req.authSessionId!, req.user!.id);
     clearAuthCookie(req, res);
+    clearOwnerReturnCookie(req, res);
     return res.json({ message: t("auth.loggedOut") });
   }),
 );

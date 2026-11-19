@@ -6,6 +6,7 @@ import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
 import { getDb } from "../../db/client";
+import { assertClassInNetwork, assertCourseInNetwork, requireNetwork, seesEveryNetwork } from "../../services/academic/networkScope";
 import {
   accountRoles,
   accounts,
@@ -332,6 +333,7 @@ adminRouter.get(
   "/courses/:courseId/professors",
   requireRoles(["admin", "course-coordinator"]),
   asyncHandler(async (req, res) => {
+    await assertCourseInNetwork(getDb(), req.user!, req.params.courseId);
     const rows = await getDb()
       .select({
         id: accounts.id,
@@ -376,7 +378,9 @@ adminRouter.patch(
 adminRouter.get(
   "/students",
   requireRoles(["admin", "professor", "course-coordinator"]),
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    // Professors and coordinators only list students of their own institution.
+    const network = seesEveryNetwork(req.user!) ? null : requireNetwork(req.user!);
     const rows = await getDb()
       .select({
         id: accounts.id,
@@ -390,6 +394,7 @@ adminRouter.get(
       })
       .from(accounts)
       .innerJoin(studentProfiles, eq(studentProfiles.accountId, accounts.id))
+      .where(network ? eq(studentProfiles.schoolId, network) : undefined)
       .orderBy(asc(accounts.name));
     return res.json(rows.map((row) => ({ ...row, _id: row.id })));
   }),
@@ -588,6 +593,7 @@ adminRouter.get(
   "/classes/:classId/students",
   requireRoles(["admin", "professor", "course-coordinator"]),
   asyncHandler(async (req, res) => {
+    await assertClassInNetwork(getDb(), req.user!, req.params.classId);
     const rows = await getDb()
       .select({ id: accounts.id, name: accounts.name, email: accounts.email })
       .from(accounts)

@@ -1,3 +1,5 @@
+import { logger } from "../../logger";
+import { currentEnvironment } from "../../db/environment";
 import { t, withLanguage, getLanguage, type Language } from "../../i18n";
 import nodemailer from "nodemailer";
 
@@ -33,7 +35,17 @@ function getTransporter() {
   });
 }
 
+/** E-mails that the test environment would have sent (kept in memory for the Dev area). */
+export const suppressedMails: Array<{ to: string; subject: string; at: string }> = [];
+
 export async function sendMail(input: MailInput) {
+  // The test environment never sends real e-mails.
+  if (currentEnvironment() === "sandbox") {
+    suppressedMails.unshift({ to: input.to, subject: input.subject, at: new Date().toISOString() });
+    suppressedMails.splice(50);
+    logger.info("Mail", "E-mail suppressed in the test environment.", { subject: input.subject });
+    return;
+  }
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
   if (!from)
     throw new Error("MAIL_FROM ou SMTP_USER precisa estar configurado.");

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -806,3 +807,381 @@ export type ProfessorQuizAiGeneration =
   typeof professorQuizAiGenerations.$inferSelect;
 export type ProfessorQuizQuestionSource =
   typeof professorQuizQuestionSources.$inferSelect;
+
+// ── Exercise workbench (practice attempts; Q-matrix concepts) ─────────────────
+// One row per "Check" in the workbench. Kept apart from the quiz analytics
+// tables so existing dashboard numbers are not affected.
+export const exerciseAttempts = pgTable(
+  "exercise_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    classId: uuid("class_id").references(() => classes.id, {
+      onDelete: "set null",
+    }),
+    disciplineId: uuid("discipline_id").references(() => disciplines.id, {
+      onDelete: "set null",
+    }),
+    mode: text("mode").notNull().default("practice"),
+    exerciseType: text("exercise_type").notNull(),
+    exerciseId: text("exercise_id").notNull(),
+    exerciseVersion: integer("exercise_version").notNull().default(1),
+    source: text("source").notNull(),
+    subject: text("subject").notNull(),
+    concepts: jsonb("concepts").notNull().$type<string[]>().default([]),
+    attemptNumber: integer("attempt_number").notNull(),
+    isCorrect: boolean("is_correct").notNull(),
+    hintsUsed: integer("hints_used").notNull().default(0),
+    durationMs: integer("duration_ms"),
+    engineVersion: text("engine_version").notNull(),
+    submittedState: jsonb("submitted_state").notNull(),
+    result: jsonb("result").notNull(),
+    events: jsonb("events").notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    modeCheck: check("exercise_attempts_mode_check", sql`${table.mode} IN ('practice', 'exam')`),
+    typeCheck: check("exercise_attempts_type_check", sql`${table.exerciseType} IN ('truth_table', 'translation', 'parsons', 'quiz', 'essay')`),
+    sourceCheck: check("exercise_attempts_source_check", sql`${table.source} IN ('catalog', 'custom', 'bank')`),
+    attemptNumberCheck: check("exercise_attempts_attempt_number_check", sql`${table.attemptNumber} >= 1`),
+    hintsCheck: check("exercise_attempts_hints_check", sql`${table.hintsUsed} >= 0`),
+    durationCheck: check("exercise_attempts_duration_check", sql`${table.durationMs} IS NULL OR ${table.durationMs} >= 0`),
+    idxStudentExercise: index("idx_exercise_attempts_student_exercise").on(
+      table.studentId,
+      table.exerciseId,
+    ),
+    idxClassCreated: index("idx_exercise_attempts_class_created").on(
+      table.classId,
+      table.createdAt,
+    ),
+  }),
+);
+
+export type ExerciseAttempt = typeof exerciseAttempts.$inferSelect;
+
+// ── Notifications (in-app, optional e-mail) ───────────────────────────────────
+// One row per recipient and group: re-publishing does not notify again, and
+// progress of a task is a single notification that is updated (and unread again).
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    recipientId: uuid("recipient_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    groupKey: text("group_key").notNull(),
+    params: jsonb("params").notNull().$type<Record<string, string | number>>().default({}),
+    link: text("link"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    typeCheck: check("notifications_type_check", sql`${table.type} IN ('quiz_published', 'quiz_completion_progress', 'exam_published', 'exam_submission_progress', 'exam_results_released')`),
+    uqRecipientGroup: uniqueIndex("uq_notifications_recipient_group").on(table.recipientId, table.groupKey),
+    idxRecipientUpdated: index("idx_notifications_recipient_updated").on(table.recipientId, table.updatedAt),
+  }),
+);
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  accountId: uuid("account_id")
+    .primaryKey()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  emailEnabled: boolean("email_enabled").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+
+// ── Question bank (professors) ────────────────────────────────────────────────
+// Content is stored normalized (see services/logic/questionCore.ts). "Deleting"
+// archives the question, so exams that used it keep their history.
+export const assessmentQuestions = pgTable(
+  "assessment_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    disciplineId: uuid("discipline_id")
+      .notNull()
+      .references(() => disciplines.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    version: integer("version").notNull().default(1),
+    weight: doublePrecision("weight").notNull().default(1),
+    language: text("language").notNull(),
+    subject: text("subject"),
+    concepts: jsonb("concepts").notNull().$type<string[]>().default([]),
+    statement: text("statement").notNull(),
+    content: jsonb("content").notNull(),
+    sourceQuizQuestionId: uuid("source_quiz_question_id").references(() => professorQuizQuestions.id, {
+      onDelete: "set null",
+    }),
+    /** Also offered in the students' workbench (truth table, translation and Parsons only). */
+    practiceEnabled: boolean("practice_enabled").notNull().default(false),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    typeCheck: check("assessment_questions_type_check", sql`${table.type} IN ('quiz', 'truth_table', 'parsons', 'translation', 'essay')`),
+    languageCheck: check("assessment_questions_language_check", sql`${table.language} IN ('pt-BR', 'en-US', 'es-ES')`),
+    weightCheck: check("assessment_questions_weight_check", sql`${table.weight} >= 0.5 AND ${table.weight} <= 10`),
+    versionCheck: check("assessment_questions_version_check", sql`${table.version} >= 1`),
+    idxDisciplineArchived: index("idx_assessment_questions_discipline").on(table.disciplineId, table.archivedAt),
+    idxOwnerArchived: index("idx_assessment_questions_owner").on(table.ownerId, table.archivedAt),
+    uqImportedQuizQuestion: uniqueIndex("uq_assessment_questions_imported")
+      .on(table.ownerId, table.sourceQuizQuestionId)
+      .where(sql`${table.archivedAt} IS NULL AND ${table.sourceQuizQuestionId} IS NOT NULL`),
+  }),
+);
+
+export type AssessmentQuestion = typeof assessmentQuestions.$inferSelect;
+
+// ── Exams (phase 5) ───────────────────────────────────────────────────────────
+// Publishing copies each question into exam_questions.snapshot, so later edits in
+// the bank never change an exam. Submissions are graded on the server and the
+// results stay hidden until the professor releases them (phase 6).
+export const exams = pgTable(
+  "exams",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    disciplineId: uuid("discipline_id")
+      .notNull()
+      .references(() => disciplines.id, { onDelete: "cascade" }),
+    classId: uuid("class_id").references(() => classes.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    instructions: text("instructions"),
+    shuffle: boolean("shuffle").notNull().default(false),
+    status: text("status").notNull().default("draft"),
+    opensAt: timestamp("opens_at", { withTimezone: true }),
+    closesAt: timestamp("closes_at", { withTimezone: true }),
+    timeLimitMinutes: integer("time_limit_minutes"),
+    draftQuestionIds: jsonb("draft_question_ids").notNull().$type<string[]>().default([]),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    releasedBy: uuid("released_by").references(() => accounts.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    statusCheck: check("exams_status_check", sql`${table.status} IN ('draft', 'published', 'closed', 'released')`),
+    windowCheck: check("exams_window_check", sql`${table.opensAt} IS NULL OR ${table.closesAt} IS NULL OR ${table.closesAt} > ${table.opensAt}`),
+    timeLimitCheck: check("exams_time_limit_check", sql`${table.timeLimitMinutes} IS NULL OR (${table.timeLimitMinutes} >= 1 AND ${table.timeLimitMinutes} <= 600)`),
+    idxOwner: index("idx_exams_owner").on(table.ownerId, table.createdAt),
+    idxDisciplineStatus: index("idx_exams_discipline_status").on(table.disciplineId, table.status),
+  }),
+);
+
+export const examQuestions = pgTable(
+  "exam_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    examId: uuid("exam_id")
+      .notNull()
+      .references(() => exams.id, { onDelete: "cascade" }),
+    questionId: uuid("question_id").references(() => assessmentQuestions.id, { onDelete: "set null" }),
+    questionVersion: integer("question_version").notNull(),
+    orderIndex: integer("order_index").notNull(),
+    type: text("type").notNull(),
+    weight: doublePrecision("weight").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+  },
+  (table) => ({
+    uqExamOrder: uniqueIndex("uq_exam_questions_order").on(table.examId, table.orderIndex),
+  }),
+);
+
+export const examSubmissions = pgTable(
+  "exam_submissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    examId: uuid("exam_id")
+      .notNull()
+      .references(() => exams.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("in_progress"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    deadlineAt: timestamp("deadline_at", { withTimezone: true }),
+    lastSavedAt: timestamp("last_saved_at", { withTimezone: true }),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    submitReason: text("submit_reason"),
+    layout: jsonb("layout").notNull(),
+    answers: jsonb("answers").notNull().default({}),
+    events: jsonb("events").notNull().default({}),
+    objectiveResults: jsonb("objective_results"),
+    /** 0–10, written at release (phase 6). */
+    grade: doublePrecision("grade"),
+  },
+  (table) => ({
+    statusCheck: check("exam_submissions_status_check", sql`${table.status} IN ('in_progress', 'submitted')`),
+    reasonCheck: check("exam_submissions_reason_check", sql`${table.submitReason} IS NULL OR ${table.submitReason} IN ('student', 'time_limit', 'exam_closed')`),
+    uqExamStudent: uniqueIndex("uq_exam_submissions_exam_student").on(table.examId, table.studentId),
+  }),
+);
+
+export type Exam = typeof exams.$inferSelect;
+export type ExamQuestion = typeof examQuestions.$inferSelect;
+export type ExamSubmission = typeof examSubmissions.$inferSelect;
+
+// ── Blind grading (phase 6) ───────────────────────────────────────────────────
+// One row per essay answer. The id and the code are random and unrelated across
+// questions, so the grading screen can never link two answers to the same student.
+export const blindReviews = pgTable(
+  "blind_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .references(() => examSubmissions.id, { onDelete: "cascade" }),
+    examQuestionId: uuid("exam_question_id")
+      .notNull()
+      .references(() => examQuestions.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    displayOrder: doublePrecision("display_order").notNull(),
+    score: doublePrecision("score"),
+    comment: text("comment").notNull().default(""),
+    reviewedBy: uuid("reviewed_by").references(() => accounts.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (table) => ({
+    scoreCheck: check("blind_reviews_score_check", sql`${table.score} IS NULL OR ${table.score} IN (0, 0.5, 1)`),
+    uqQuestionCode: uniqueIndex("uq_blind_reviews_question_code").on(table.examQuestionId, table.code),
+    uqSubmissionQuestion: uniqueIndex("uq_blind_reviews_submission_question").on(table.submissionId, table.examQuestionId),
+  }),
+);
+
+/** Who graded what and when, and who released the results (audit trail). */
+export const examAuditLog = pgTable(
+  "exam_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    examId: uuid("exam_id")
+      .notNull()
+      .references(() => exams.id, { onDelete: "cascade" }),
+    actorId: uuid("actor_id").references(() => accounts.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    targetId: uuid("target_id"),
+    details: jsonb("details").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    actionCheck: check("exam_audit_log_action_check", sql`${table.action} IN ('review', 'release')`),
+    idxExam: index("idx_exam_audit_log_exam").on(table.examId, table.createdAt),
+  }),
+);
+
+export type BlindReview = typeof blindReviews.$inferSelect;
+
+/** 👍 / mais ou menos / 👎 given by the person who asked, on an assistant answer of their own conversation. */
+export const chatMessageFeedback = pgTable(
+  "chat_message_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => chatMessages.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    rating: text("rating").notNull(),
+    reason: text("reason"),
+    comment: text("comment"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    ratingCheck: check("chat_message_feedback_rating_check", sql`${table.rating} IN ('up', 'partial', 'down')`),
+    reasonCheck: check("chat_message_feedback_reason_check", sql`${table.reason} IS NULL OR ${table.reason} IN ('incorrect', 'incomplete', 'unclear', 'off_topic', 'other')`),
+    uqMessageAccount: uniqueIndex("uq_chat_message_feedback_message_account").on(table.messageId, table.accountId),
+    idxCreated: index("idx_chat_message_feedback_created").on(table.createdAt),
+  }),
+);
+
+/**
+ * Release of a feature for a scope. The most specific rule wins (class > course > institution > global);
+ * without any rule a feature is released, so existing behaviour does not change.
+ */
+export const featureRules = pgTable(
+  "feature_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    feature: text("feature").notNull(),
+    scope: text("scope").notNull(),
+    /** Institution, course or class id; empty for the global rule. */
+    scopeId: text("scope_id").notNull().default(""),
+    enabled: boolean("enabled").notNull(),
+    updatedBy: uuid("updated_by").references(() => accounts.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    scopeCheck: check("feature_rules_scope_check", sql`${table.scope} IN ('global', 'institution', 'course', 'class')`),
+    uqRule: uniqueIndex("uq_feature_rules_feature_scope").on(table.feature, table.scope, table.scopeId),
+  }),
+);
+
+/**
+ * Hints given in the workbench (up to 3 per exercise and student, never during an exam).
+ * The unique index keeps the limit even when two requests arrive at the same time.
+ */
+export const exerciseHints = pgTable(
+  "exercise_hints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    attemptId: uuid("attempt_id")
+      .notNull()
+      .references(() => exerciseAttempts.id, { onDelete: "cascade" }),
+    exerciseId: text("exercise_id").notNull(),
+    level: integer("level").notNull(),
+    /** "ai" when written by the model, "fallback" for the built-in text. */
+    source: text("source").notNull(),
+    usedMaterial: boolean("used_material").notNull().default(false),
+    text: text("text").notNull(),
+    language: text("language").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    levelCheck: check("exercise_hints_level_check", sql`${table.level} BETWEEN 1 AND 3`),
+    sourceCheck: check("exercise_hints_source_check", sql`${table.source} IN ('ai', 'fallback')`),
+    uniqueLevel: uniqueIndex("uq_exercise_hints_student_exercise_level").on(table.studentId, table.exerciseId, table.level),
+    byStudentTime: index("idx_exercise_hints_student_created").on(table.studentId, table.createdAt),
+  }),
+);

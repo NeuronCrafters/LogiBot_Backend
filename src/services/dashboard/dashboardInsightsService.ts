@@ -10,6 +10,7 @@ import {
   getSessionDetails,
   getTopicPerformance,
 } from "./dashboardService";
+import { chatSatisfaction, examResults, weeklyEngagement } from "./dashboardComparisonService";
 
 export const DASHBOARD_INSIGHT_CHARTS = [
   "usage",
@@ -308,6 +309,34 @@ export async function generateChartInsight(input: {
   );
 }
 
+/** Data of every chart for one selection (the same set the overall analysis uses). */
+async function overviewDatasets(filters: Filters) {
+  const charts = DASHBOARD_INSIGHT_CHARTS.filter((chart) => chart !== "access-pattern" || Boolean(filters.studentId));
+  return (await Promise.all(charts.map(async (chart) => ({
+    chart, title: getChartContext(chart).title, description: getChartContext(chart).description, data: await chartData(chart, filters),
+  })))).filter((item) => containsUsefulData(item.data));
+}
+
+/**
+ * Analysis of both selections together (A × B): the model receives both sets of charts and is
+ * asked to compare them. Names are never sent, only the kind of each selection.
+ */
+export async function generateComparisonInsight(input: { a: Filters; b: Filters; force?: boolean }): Promise<InsightResponse> {
+  const [a, b] = await Promise.all([overviewDatasets(input.a), overviewDatasets(input.b)]);
+  if (!a.length || !b.length) throw new AppError("insights.comparisonDataInsufficient", 422);
+  return generateCached(
+    { type: "comparison", a: input.a, b: input.b, datasetsA: a, datasetsB: b },
+    Boolean(input.force),
+    async () => {
+      const response = await askDashboardInsightsAgent(t("insights.comparisonPrompt", {
+        scopeA: scopeLabel(input.a), scopeB: scopeLabel(input.b),
+        dataA: JSON.stringify(anonymize(a)), dataB: JSON.stringify(anonymize(b)),
+      }));
+      return { insight: response.text, language: getLanguage(), generatedAt: new Date().toISOString() };
+    },
+  );
+}
+
 export async function generateOverviewInsight(input: {
   filters: Filters;
   force?: boolean;
@@ -346,6 +375,74 @@ export async function generateOverviewInsight(input: {
         language: getLanguage(),
         generatedAt: new Date().toISOString(),
       };
+    },
+  );
+}
+
+/* ── Analysis of one direct comparison chart (A × B) ─────────────────────── */
+
+export const COMPARISON_INSIGHT_CHARTS = [
+  "topic-difference",
+  "radar-overlay",
+  "performance-distribution",
+  "exam-results",
+  "weekly-engagement",
+  "chat-satisfaction",
+] as const;
+export type ComparisonInsightChart = (typeof COMPARISON_INSIGHT_CHARTS)[number];
+export const isComparisonInsightChart = (value: unknown): value is ComparisonInsightChart =>
+  (COMPARISON_INSIGHT_CHARTS as readonly unknown[]).indexOf(value) !== -1;
+
+const BANDS = [[0, 20], [20, 40], [40, 60], [60, 80], [80, 100]];
+
+/** Same numbers the chart shows, computed here for both selections (never taken from the browser). */
+async function comparisonChartData(chart: ComparisonInsightChart, filters: Filters) {
+  if (chart === "topic-difference") {
+    return (await getTopicPerformance(filters)).map((row) => ({ topic: row.topic, successPercentage: row.successPercentage }));
+  }
+  if (chart === "radar-overlay") return getProficiencyRadar(filters);
+  if (chart === "performance-distribution") {
+    const values = (await getEffortMatrix(filters)).points
+      .map((point) => point.performance)
+      .filter((value): value is number => typeof value === "number");
+    return {
+      assessedStudents: values.length,
+      bands: BANDS.map(([from, to], index) => ({
+        band: `${from}-${to}%`,
+        students: values.filter((value) => value >= from && (index === BANDS.length - 1 ? value <= to : value < to)).length,
+      })),
+    };
+  }
+  if (chart === "exam-results") {
+    const result = await examResults(filters);
+    return { ...result, exams: result.exams.map((exam, index) => ({ ...exam, title: `prova_${index + 1}` })) };
+  }
+  if (chart === "weekly-engagement") return weeklyEngagement(filters);
+  return chatSatisfaction(filters);
+}
+
+function comparisonHasData(chart: ComparisonInsightChart, data: unknown) {
+  if (chart === "chat-satisfaction") return (data as { available: boolean }).available;
+  if (chart === "performance-distribution") return (data as { assessedStudents: number }).assessedStudents > 0;
+  if (chart === "exam-results") return (data as { exams: unknown[] }).exams.length > 0;
+  if (chart === "weekly-engagement") return (data as { weeks: unknown[] }).weeks.length > 0;
+  return containsUsefulData(data);
+}
+
+export async function generateComparisonChartInsight(input: { chart: ComparisonInsightChart; a: Filters; b: Filters; force?: boolean }): Promise<InsightResponse> {
+  const [a, b] = await Promise.all([comparisonChartData(input.chart, input.a), comparisonChartData(input.chart, input.b)]);
+  if (!comparisonHasData(input.chart, a) || !comparisonHasData(input.chart, b)) throw new AppError("insights.comparisonDataInsufficient", 422);
+  return generateCached(
+    { type: "comparison-chart", chart: input.chart, a: input.a, b: input.b, dataA: a, dataB: b },
+    Boolean(input.force),
+    async () => {
+      const response = await askDashboardInsightsAgent(t("insights.comparisonChartPrompt", {
+        title: t(`insights.compareCharts.${input.chart}.title` as never),
+        description: t(`insights.compareCharts.${input.chart}.description` as never),
+        scopeA: scopeLabel(input.a), scopeB: scopeLabel(input.b),
+        dataA: JSON.stringify(anonymize(a)), dataB: JSON.stringify(anonymize(b)),
+      }));
+      return { insight: response.text, language: getLanguage(), generatedAt: new Date().toISOString() };
     },
   );
 }

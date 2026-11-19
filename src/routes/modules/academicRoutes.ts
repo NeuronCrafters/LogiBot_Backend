@@ -16,6 +16,7 @@ import {
   universities,
 } from "../../db/schema";
 import { buildAcademicFilters } from "../../services/academic/academicFiltersService";
+import { assertCourseInNetwork, assertDisciplineInNetwork, requireNetwork, seesEveryNetwork } from "../../services/academic/networkScope";
 import { generateUniqueRegistrationCode } from "../../services/academic/disciplineCode";
 
 export const academicRouter = Router();
@@ -332,6 +333,7 @@ academicRouter.get(
   "/courses/:courseId/classes",
   requireRoles(["admin", "course-coordinator"]),
   asyncHandler(async (req, res) => {
+    await assertCourseInNetwork(getDb(), req.user!, req.params.courseId);
     return res.json(
       await getDb()
         .select()
@@ -681,10 +683,17 @@ academicRouter.delete(
 academicRouter.get(
   "/disciplines",
   requireRoles(["admin", "course-coordinator"]),
-  asyncHandler(async (_req, res) => {
-    return res.json(
-      await getDb().select().from(disciplines).orderBy(asc(disciplines.name)),
-    );
+  asyncHandler(async (req, res) => {
+    if (seesEveryNetwork(req.user!))
+      return res.json(await getDb().select().from(disciplines).orderBy(asc(disciplines.name)));
+    // Coordinators only see the subjects of their own institution.
+    const rows = await getDb()
+      .select({ discipline: disciplines })
+      .from(disciplines)
+      .innerJoin(courses, eq(courses.id, disciplines.courseId))
+      .where(eq(courses.universityId, requireNetwork(req.user!)))
+      .orderBy(asc(disciplines.name));
+    return res.json(rows.map((row) => row.discipline));
   }),
 );
 
@@ -692,6 +701,7 @@ academicRouter.delete(
   "/disciplines/:disciplineId",
   requireRoles(["admin", "course-coordinator"]),
   asyncHandler(async (req, res) => {
+    await assertDisciplineInNetwork(getDb(), req.user!, req.params.disciplineId);
     await getDb()
       .delete(disciplines)
       .where(eq(disciplines.id, req.params.disciplineId));

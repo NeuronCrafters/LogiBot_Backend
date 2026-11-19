@@ -3,12 +3,12 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { environmentMiddleware } from "./http/environment";
 import { createServer } from "http";
 import { connectDB } from "./config/database";
 import { routes } from "./routes/routes";
 import { errorHandler } from "./http/errorHandler";
 import { corsAccessLogger, corsOptions } from "./http/cors";
-import { initAdminUser } from "./config/initAdminUser/initAdminUser";
 import { getAppPort, getRequiredBootstrapEnvVars } from "./config/env";
 import { requestLogger } from "./http/requestLogger";
 import { logger } from "./logger";
@@ -25,6 +25,7 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(requestLogger);
+app.use(environmentMiddleware);
 app.use(routes);
 app.use(errorHandler);
 
@@ -40,8 +41,8 @@ export async function bootstrap() {
   await connectDB();
   logger.info("Database", "PostgreSQL connection established.");
 
-  await initAdminUser();
-  logger.info("Bootstrap", "Admin account verification completed.");
+  // No account is created at startup: the platform owner is created once with `db:create-owner`
+  // (password from OWNER_PASSWORD), never with a password written in the code.
 
   const port = getAppPort();
   const server = createServer(app);

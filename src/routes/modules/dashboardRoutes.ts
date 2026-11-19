@@ -12,10 +12,15 @@ import {
 import {
   generateChartInsight,
   generateOverviewInsight,
+  generateComparisonInsight,
+  generateComparisonChartInsight,
+  isComparisonInsightChart,
   isDashboardInsightChart,
 } from "../../services/dashboard/dashboardInsightsService";
+import { chatSatisfaction, examResults, weeklyEngagement } from "../../services/dashboard/dashboardComparisonService";
 import { assertDashboardScopeAccess } from "../../services/dashboard/dashboardPermissionService";
 import { AppError } from "../../exceptions/AppError";
+import { parseScopeFilters, requireDashboardScope } from "../../http/dashboardScope";
 import type { Filters } from "../../services/analytics/analyticsService";
 
 const UUID_PATTERN =
@@ -79,6 +84,44 @@ dashboardRouter.post(
 );
 
 dashboardRouter.post(
+  "/insights/comparison",
+  asyncHandler(async (req, res) => {
+    const a = parseInsightFilters(req.body?.a);
+    const b = parseInsightFilters(req.body?.b);
+    // Both selections must be inside the person's scope.
+    await assertDashboardScopeAccess(req.user!, a);
+    await assertDashboardScopeAccess(req.user!, b);
+    return res.json(await generateComparisonInsight({ a, b, force: req.body.force === true }));
+  }),
+);
+
+// Analysis of one direct comparison chart; both selections must be inside the person's scope.
+dashboardRouter.post(
+  "/insights/comparison-chart",
+  asyncHandler(async (req, res) => {
+    if (!isComparisonInsightChart(req.body?.chart)) throw new AppError("insights.chartFieldInvalid", 400);
+    const a = parseInsightFilters(req.body?.a);
+    const b = parseInsightFilters(req.body?.b);
+    await assertDashboardScopeAccess(req.user!, a);
+    await assertDashboardScopeAccess(req.user!, b);
+    return res.json(await generateComparisonChartInsight({ chart: req.body.chart, a, b, force: req.body.force === true }));
+  }),
+);
+
+// Data of the new comparison charts, one selection per request, with the scope checked.
+for (const [path, load] of [
+  ["/compare/exams", examResults],
+  ["/compare/engagement", weeklyEngagement],
+  ["/compare/chat-satisfaction", chatSatisfaction],
+] as const) {
+  dashboardRouter.post(path, asyncHandler(async (req, res) => {
+    const filters = parseInsightFilters(req.body);
+    await assertDashboardScopeAccess(req.user!, filters);
+    return res.json(await load(filters));
+  }));
+}
+
+dashboardRouter.post(
   "/insights/overview",
   asyncHandler(async (req, res) => {
     const filters = parseInsightFilters(req.body?.filters);
@@ -94,42 +137,36 @@ dashboardRouter.post(
 
 dashboardRouter.post(
   "/topic-performance",
-  asyncHandler(async (req, res) => {
-    return res.json(await getTopicPerformance(req.body));
-  }),
+  requireDashboardScope((req) => parseScopeFilters(req.body)),
+  asyncHandler(async (_req, res) => res.json(await getTopicPerformance(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/proficiency-radar",
-  asyncHandler(async (req, res) => {
-    return res.json(await getProficiencyRadar(req.body));
-  }),
+  requireDashboardScope((req) => parseScopeFilters(req.body)),
+  asyncHandler(async (_req, res) => res.json(await getProficiencyRadar(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/effort-matrix",
-  asyncHandler(async (req, res) => {
-    return res.json(await getEffortMatrix(req.body));
-  }),
+  requireDashboardScope((req) => parseScopeFilters(req.body)),
+  asyncHandler(async (_req, res) => res.json(await getEffortMatrix(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/learning-journey",
-  asyncHandler(async (req, res) => {
-    return res.json(await getLearningJourney(req.body));
-  }),
+  requireDashboardScope((req) => parseScopeFilters(req.body)),
+  asyncHandler(async (_req, res) => res.json(await getLearningJourney(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/session-details",
-  asyncHandler(async (req, res) => {
-    return res.json(await getSessionDetails(req.body));
-  }),
+  requireDashboardScope((req) => parseScopeFilters(req.body)),
+  asyncHandler(async (_req, res) => res.json(await getSessionDetails(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/access-pattern",
-  asyncHandler(async (req, res) => {
-    return res.json(await getAccessPattern(req.body));
-  }),
+  requireDashboardScope((req) => parseScopeFilters(req.body)),
+  asyncHandler(async (_req, res) => res.json(await getAccessPattern(res.locals.scope))),
 );

@@ -3,6 +3,7 @@ import { eq, inArray } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
+import { entityFilters, parseScopeFilters, requireDashboardScope } from "../../http/dashboardScope";
 import { getDb } from "../../db/client";
 import {
   accounts,
@@ -27,10 +28,11 @@ logRouter.use(
 
 logRouter.post(
   "/students/summary",
-  asyncHandler(async (req, res) => {
-    if (!req.body.universityId)
+  requireDashboardScope((req) => parseScopeFilters(req.body)),
+  asyncHandler(async (_req, res) => {
+    if (!res.locals.scope.universityId)
       throw new AppError("analytics.universityRequired", 400);
-    return res.json(await getSummary(req.body));
+    return res.json(await getSummary(res.locals.scope));
   }),
 );
 
@@ -46,6 +48,7 @@ logRouter.get(
 
 logRouter.get(
   "/courses/:courseId/summary",
+  requireDashboardScope((req) => entityFilters("courses", req.params.courseId)),
   asyncHandler(async (req, res) => {
     const [analysis] = await getDb()
       .select()
@@ -65,6 +68,7 @@ logRouter.get(
 
 logRouter.get(
   "/classes/:classId/summary",
+  requireDashboardScope((req) => entityFilters("classes", req.params.classId)),
   asyncHandler(async (req, res) => {
     const [analysis] = await getDb()
       .select()
@@ -85,6 +89,7 @@ logRouter.get(
 
 logRouter.get(
   "/disciplines/:disciplineId/summary",
+  requireDashboardScope((req) => entityFilters("disciplines", req.params.disciplineId)),
   asyncHandler(async (req, res) => {
     return res.json(
       await summaryByEntity("discipline", req.params.disciplineId),
@@ -147,6 +152,7 @@ logRouter.get(
 
 logRouter.get(
   "/professor/students/:studentId",
+  requireDashboardScope((req) => parseScopeFilters({ studentId: req.params.studentId, disciplineId: req.query.disciplineId })),
   asyncHandler(async (req, res) => {
     const [analysis] = await getDb()
       .select()
@@ -176,6 +182,7 @@ logRouter.get("/professor/student-stats", (_req, res) =>
 
 logRouter.get(
   "/:entity/:id/accuracy",
+  requireDashboardScope((req) => entityFilters(req.params.entity, req.params.id)),
   asyncHandler(async (req, res) => {
     const summary = await summaryByEntity(req.params.entity, req.params.id);
     const total = summary.totalCorrectAnswers + summary.totalWrongAnswers;
@@ -191,6 +198,7 @@ logRouter.get(
 
 logRouter.get(
   "/:entity/:id/usage",
+  requireDashboardScope((req) => entityFilters(req.params.entity, req.params.id)),
   asyncHandler(async (req, res) => {
     const summary = await summaryByEntity(req.params.entity, req.params.id);
     return res.json({
@@ -206,6 +214,7 @@ logRouter.get(
 
 logRouter.get(
   "/:entity/:id/subjects/summary",
+  requireDashboardScope((req) => entityFilters(req.params.entity, req.params.id)),
   asyncHandler(async (req, res) => {
     const summary = await summaryByEntity(req.params.entity, req.params.id);
     return res.json({ subjectCounts: summary.subjectCounts });

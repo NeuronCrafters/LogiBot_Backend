@@ -23,6 +23,8 @@ export function signSession(claims: {
   email: string;
   role: Role[];
   school?: string | null;
+  /** Test environment sessions use the sandbox database. */
+  env?: "production" | "sandbox";
 }) {
   return jwt.sign(claims, requireEnv("JWT_SECRET"), {
     expiresIn: sessionPolicy().absoluteSeconds,
@@ -62,6 +64,8 @@ export async function requireAuth(
   res: Response,
   next: NextFunction,
 ) {
+  // Already authenticated earlier in this request (e.g. by a feature gate).
+  if (req.user) return next();
   const token = req.cookies?.token;
   if (!token) return next(new AppError("auth.tokenMissing", 401));
 

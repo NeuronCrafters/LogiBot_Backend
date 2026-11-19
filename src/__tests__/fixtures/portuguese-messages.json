@@ -250,7 +250,7 @@
     "expressions": []
   },
   "dashboard.universityDenied": {
-    "original": "acesso negado para esta universidade",
+    "original": "acesso negado para esta instituição",
     "expressions": []
   },
   "dashboard.scopeRequired": {
@@ -306,7 +306,7 @@
     "expressions": []
   },
   "academic.coursesOutsideUniversity": {
-    "original": "um ou mais cursos nao pertencem a universidade selecionada",
+    "original": "um ou mais cursos nao pertencem a instituição selecionada",
     "expressions": []
   },
   "academic.professorNotFound": {
@@ -488,19 +488,19 @@
     "expressions": []
   },
   "academic.universityCreated": {
-    "original": "universidade criada com sucesso",
+    "original": "instituição criada com sucesso",
     "expressions": []
   },
   "academic.universityRemoved": {
-    "original": "universidade removida com sucesso",
+    "original": "instituição removida com sucesso",
     "expressions": []
   },
   "academic.universityNotFound": {
-    "original": "universidade nao encontrada",
+    "original": "instituição nao encontrada",
     "expressions": []
   },
   "academic.universityUpdated": {
-    "original": "universidade atualizada com sucesso",
+    "original": "instituição atualizada com sucesso",
     "expressions": []
   },
   "academic.courseCreated": {
@@ -512,7 +512,7 @@
     "expressions": []
   },
   "academic.nameUniversityRequired": {
-    "original": "nome e universidade sao obrigatorios",
+    "original": "nome e instituição sao obrigatorios",
     "expressions": []
   },
   "academic.courseNotFound": {

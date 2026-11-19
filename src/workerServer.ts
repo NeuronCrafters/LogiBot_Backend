@@ -4,7 +4,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import { connectDB } from "./config/database";
-import { closeDatabasePool } from "./db/client";
+import { closeDatabasePool, isSandboxConfigured, runInEnvironment } from "./db/client";
 import { asyncHandler } from "./http/asyncHandler";
 import { errorHandler } from "./http/errorHandler";
 import { requestLogger } from "./http/requestLogger";
@@ -87,6 +87,11 @@ async function runWorkerLoop() {
     loops.push(runJobLoop(`chat-${index + 1}`, processNextChatGenerationJob));
   }
   loops.push(runJobLoop("rag-ingestion", processNextRagJob));
+  // The test environment has its own database and its own queue.
+  if (isSandboxConfigured()) {
+    loops.push(runJobLoop("sandbox-chat", () => runInEnvironment("sandbox", processNextChatGenerationJob)));
+    loops.push(runJobLoop("sandbox-rag-ingestion", () => runInEnvironment("sandbox", processNextRagJob)));
+  }
 
   await Promise.all(loops);
 

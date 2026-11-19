@@ -1,3 +1,5 @@
+import { getFrontendOrigin } from "../../config/env";
+import { notifyQuizPublished, notifySafely } from "../../services/notifications/notificationService";
 import { getLanguage, normalizeLanguage } from "../../i18n";
 import { Router } from "express";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
@@ -398,6 +400,7 @@ professorQuizRouter.post(
       .where(eq(professorQuizzes.id, req.params.id))
       .returning();
 
+    await notifySafely("quiz_published", () => notifyQuizPublished(db, updated.id, getFrontendOrigin(req.get("origin"))));
     return res.json(updated);
   }),
 );

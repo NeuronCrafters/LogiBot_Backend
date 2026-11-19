@@ -1,0 +1,1 @@
+ALTER TABLE "assessment_questions" ADD COLUMN "practice_enabled" boolean DEFAULT false NOT NULL;

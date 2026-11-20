@@ -1,13 +1,13 @@
 import "dotenv/config";
 import { closeDatabasePool, getDb, isSandboxConfigured, runInEnvironment } from "./client";
-import { checkEnvironment, checkMainDatabase, checkSandboxDatabase, expectedMigrationCount, type CheckResult } from "../services/deploy/deployChecks";
+import { checkEnvironment, checkExternalServices, checkImageStorage, checkMainDatabase, checkSandboxDatabase, expectedMigrationCount, type CheckResult } from "../services/deploy/deployChecks";
 
 /**
  * Pre-deploy check: run on the server with the production variables (node dist/db/checkDeploy.js).
  * Only reads. Exits with 1 when something must be fixed before going live.
  */
 async function main() {
-  const results: CheckResult[] = checkEnvironment();
+  const results: CheckResult[] = [...checkEnvironment(), checkImageStorage(), ...await checkExternalServices()];
   if (!results.some((check) => check.name === "DATABASE_URL" && check.status === "fail")) {
     const expected = expectedMigrationCount();
     results.push(...await checkMainDatabase(getDb(), expected));

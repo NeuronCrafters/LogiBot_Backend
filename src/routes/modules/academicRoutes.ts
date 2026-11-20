@@ -16,7 +16,7 @@ import {
   universities,
 } from "../../db/schema";
 import { buildAcademicFilters } from "../../services/academic/academicFiltersService";
-import { assertCourseInNetwork, assertDisciplineInNetwork, requireNetwork, seesEveryNetwork } from "../../services/academic/networkScope";
+import { assertCourseInNetwork, assertDisciplineInNetwork, coordinatedCourses, requireNetwork, seesEveryNetwork } from "../../services/academic/networkScope";
 import { generateUniqueRegistrationCode } from "../../services/academic/disciplineCode";
 
 export const academicRouter = Router();
@@ -686,12 +686,14 @@ academicRouter.get(
   asyncHandler(async (req, res) => {
     if (seesEveryNetwork(req.user!))
       return res.json(await getDb().select().from(disciplines).orderBy(asc(disciplines.name)));
-    // Coordinators only see the subjects of their own institution.
+    // Coordinators only see the subjects of the courses they coordinate.
+    const own = coordinatedCourses(req.user!) ?? [];
+    if (!own.length) return res.json([]);
     const rows = await getDb()
       .select({ discipline: disciplines })
       .from(disciplines)
       .innerJoin(courses, eq(courses.id, disciplines.courseId))
-      .where(eq(courses.universityId, requireNetwork(req.user!)))
+      .where(and(eq(courses.universityId, requireNetwork(req.user!)), inArray(courses.id, own)))
       .orderBy(asc(disciplines.name));
     return res.json(rows.map((row) => row.discipline));
   }),

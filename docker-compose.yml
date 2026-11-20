@@ -10,8 +10,10 @@ services:
     environment:
       NODE_ENV: production
       RAG_UPLOAD_DIR: /var/logibots/uploads/rag
+      INSTITUTION_IMAGE_DIR: /var/logibots/uploads/institutions
     volumes:
       - rag_uploads:/var/logibots/uploads/rag
+      - institution_images:/var/logibots/uploads/institutions
     depends_on:
       - worker
     healthcheck:
@@ -50,3 +52,4 @@ services:
 
 volumes:
   rag_uploads:
+  institution_images:

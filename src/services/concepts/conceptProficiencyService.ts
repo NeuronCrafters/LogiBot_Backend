@@ -1,9 +1,9 @@
 import type { Request } from "express";
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { AnyDbClient } from "../../db/client";
-import { accounts, professorClasses } from "../../db/schema";
+import { accounts, classes, professorClasses } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
-import { assertClassInNetwork, assertCourseInNetwork, requireNetwork, seesEveryNetwork } from "../academic/networkScope";
+import { assertClassInNetwork, assertCourseInNetwork, seesEveryNetwork } from "../academic/networkScope";
 import { featuresFor } from "../features/featureService";
 
 /**
@@ -25,6 +25,10 @@ interface Tally { total: number; points: number }
 const tally = (): Tally => ({ total: 0, points: 0 });
 const ratio = (value: Tally) => (value.total ? Math.round((value.points / value.total) * 1000) / 1000 : null);
 
+/** Courses a coordinator answers for. */
+const coordinatedCourses = (user: User) => (Array.isArray(user.courses) ? user.courses : user.courses ? [user.courses] : [])
+  .filter((value): value is string => typeof value === "string" && UUID.test(value));
+
 export interface ProficiencyRequest { scope?: unknown; id?: unknown; days?: unknown }
 
 /** Who may see what. Returns the SQL condition on student_profiles (sp) and whether people may be listed. */
@@ -35,28 +39,33 @@ export async function resolveScope(db: AnyDbClient, user: User, input: Proficien
   if (scope !== "me" && scope !== "all" && !UUID.test(id)) throw new AppError("concepts.scopeInvalid", 400);
   const isCoordinator = user.role.includes("course-coordinator");
   const isAdmin = user.role.includes("admin");
+  const coordinated = coordinatedCourses(user);
 
-  if (scope === "me") {
-    if (!user.role.includes("student")) throw new AppError("concepts.forbidden", 403);
-    return { scope, id: "", where: sql`sp.account_id = ${user.id}`, listStudents: false, aggregated: false };
-  }
+  // The panel is for staff: students follow their own progress in the exercises and exams themselves.
+  if (scope === "me") throw new AppError("concepts.forbidden", 403);
   if (scope === "class") {
     const [teaches] = await db.select({ classId: professorClasses.classId }).from(professorClasses)
       .where(and(eq(professorClasses.professorId, user.id), eq(professorClasses.classId, id))).limit(1);
     if (!teaches) {
       if (!isAdmin && !isCoordinator) throw new AppError("concepts.forbidden", 403);
       await assertClassInNetwork(db, user, id);
+      // Coordination: only classes of the courses it coordinates.
+      if (!isAdmin) {
+        const [own] = await db.select({ courseId: classes.courseId }).from(classes).where(eq(classes.id, id)).limit(1);
+        if (!own || coordinated.indexOf(own.courseId) === -1) throw new AppError("concepts.forbidden", 403);
+      }
     }
     // Only the professor of the class sees each student; coordination and admins see the class as a whole.
     return { scope, id, where: sql`sp.class_id = ${id}`, listStudents: !!teaches, aggregated: !teaches };
   }
   if (scope === "course") {
-    if (!isAdmin && !isCoordinator) throw new AppError("concepts.forbidden", 403);
+    if (!isAdmin && !(isCoordinator && coordinated.indexOf(id) !== -1)) throw new AppError("concepts.forbidden", 403);
     await assertCourseInNetwork(db, user, id);
     return { scope, id, where: sql`sp.course_id = ${id}`, listStudents: false, aggregated: true };
   }
   if (scope === "institution") {
-    if (!isAdmin && !(isCoordinator && requireNetwork(user) === id)) throw new AppError("concepts.forbidden", 403);
+    // The whole institution is the admin's view; coordination sees its own courses.
+    if (!isAdmin) throw new AppError("concepts.forbidden", 403);
     return { scope, id, where: sql`sp.school_id = ${id}`, listStudents: false, aggregated: true };
   }
   if (!seesEveryNetwork(user)) throw new AppError("concepts.forbidden", 403);
@@ -155,9 +164,11 @@ export async function proficiencyScopes(db: AnyDbClient, user: User) {
   const isAdmin = user.role.includes("admin");
   const isCoordinator = user.role.includes("course-coordinator");
   const network = !isAdmin && isCoordinator && typeof user.school === "string" ? user.school : null;
+  const coordinated = network ? coordinatedCourses(user) : [];
   const taught = await db.execute(sql`SELECT class_id FROM professor_classes WHERE professor_id = ${user.id}`);
   const teaches = new Set((taught.rows as Array<{ class_id: string }>).map((row) => row.class_id));
-  const filter = isAdmin ? sql`TRUE` : network ? sql`u.id = ${network}` : sql`FALSE`;
+  const filter = isAdmin ? sql`TRUE`
+    : coordinated.length ? sql`(u.id = ${network} AND c.id IN (${sql.join(coordinated.map((id) => sql`${id}::uuid`), sql`, `)}))` : sql`FALSE`;
   const rows = await db.execute(sql`
     SELECT u.id AS institution_id, u.name AS institution_name, c.id AS course_id, c.name AS course_name, k.id AS class_id, k.name AS class_name
     FROM classes k JOIN courses c ON c.id = k.course_id JOIN universities u ON u.id = c.university_id
@@ -166,12 +177,32 @@ export async function proficiencyScopes(db: AnyDbClient, user: User) {
   type Item = { institution_id: string; institution_name: string; course_id: string; course_name: string; class_id: string; class_name: string };
   const items = rows.rows as Item[];
   const unique = <T extends { id: string }>(list: T[]) => list.filter((item, index) => list.findIndex((other) => other.id === item.id) === index);
-  const wide = isAdmin || !!network;
   return {
-    me: user.role.includes("student"),
+    me: false,
     all: isAdmin,
-    institutions: wide ? unique(items.filter((item) => isAdmin || item.institution_id === network).map((item) => ({ id: item.institution_id, name: item.institution_name }))) : [],
-    courses: wide ? unique(items.filter((item) => isAdmin || item.institution_id === network).map((item) => ({ id: item.course_id, name: item.course_name, institutionId: item.institution_id }))) : [],
+    institutions: isAdmin ? unique(items.map((item) => ({ id: item.institution_id, name: item.institution_name }))) : [],
+    courses: unique(items.filter((item) => isAdmin || coordinated.indexOf(item.course_id) !== -1).map((item) => ({ id: item.course_id, name: item.course_name, institutionId: item.institution_id }))),
     classes: items.map((item) => ({ id: item.class_id, name: item.class_name, courseId: item.course_id, courseName: item.course_name, institutionId: item.institution_id, teaches: teaches.has(item.class_id) })),
   };
+}
+
+/**
+ * Concepts of a whole institution for its page: one rate per concept, counting only concepts seen
+ * by at least `minGroup` students (released exams and the workbench, last 365 days).
+ */
+export async function institutionConcepts(db: AnyDbClient, universityId: string, hiddenTypes: string[], minGroup = MIN_GROUP, now = new Date(), courseIds?: string[]) {
+  const courses = courseIds === undefined ? sql`TRUE`
+    : courseIds.length ? sql`sp.course_id IN (${sql.join(courseIds.map((id) => sql`${id}::uuid`), sql`, `)})` : sql`FALSE`;
+  const rows = await loadRows(db, sql`sp.school_id = ${universityId} AND ${courses}`, new Date(now.getTime() - 365 * 86400000), hiddenTypes);
+  const byConcept: Record<string, { total: number; points: number; students: Record<string, true> }> = {};
+  for (const row of rows) {
+    const entry = byConcept[row.concept] = byConcept[row.concept] || { total: 0, points: 0, students: {} };
+    entry.total++;
+    entry.points += Number(row.score);
+    entry.students[row.student_id] = true;
+  }
+  return Object.keys(byConcept)
+    .filter((concept) => Object.keys(byConcept[concept].students).length >= minGroup)
+    .map((concept) => ({ concept, score: Math.round((byConcept[concept].points / byConcept[concept].total) * 1000) / 1000, total: byConcept[concept].total }))
+    .sort((a, b) => b.score - a.score);
 }

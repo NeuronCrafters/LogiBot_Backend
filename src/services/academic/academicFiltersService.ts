@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../db/client";
 import {
   accountRoles,
@@ -48,8 +48,11 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
         .from(courses)
         .where(inArray(courses.universityId, universityIds))
     : [];
+  // Coordination sees only the courses it coordinates (none linked: nothing). Professors without course
+  // links keep seeing their institution, as before.
+  const isCoordinator = !isAdmin && user.role.includes("course-coordinator");
   const courseRows =
-    isAdmin || !userCourseIds.length
+    isAdmin || (!isCoordinator && !userCourseIds.length)
       ? allCourseRows
       : allCourseRows.filter((course) => userCourseIds.includes(course.id));
   const courseIds = courseRows.map((item) => item.id);
@@ -74,7 +77,9 @@ export async function buildAcademicFilters(user: AcademicFiltersUser) {
       schoolId: professorProfiles.schoolId,
     })
     .from(accounts)
-    .innerJoin(professorProfiles, eq(professorProfiles.accountId, accounts.id));
+    .innerJoin(professorProfiles, eq(professorProfiles.accountId, accounts.id))
+    // Professors of the institutions shown only (not the whole database).
+    .where(universityIds.length ? inArray(professorProfiles.schoolId, universityIds) : sql`FALSE`);
   const studentRows = courseIds.length
     ? await db
         .select({

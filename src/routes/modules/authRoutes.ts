@@ -28,6 +28,7 @@ import {
 } from "../../db/repositories/authRepository";
 import { sendPasswordResetEmail } from "../../services/email/mailService";
 import { getFrontendOrigin } from "../../config/env";
+import { assertInstitutionActiveFor } from "../../services/institutions/institutionService";
 import { createLoginSession, logoutSession, recordSessionActivity } from "../../services/auth/sessionLifecycleService";
 
 export const authRouter = Router();
@@ -134,6 +135,8 @@ authRouter.post(
       );
     if (!(await bcrypt.compare(password, user.passwordHash)))
       throw new AppError("auth.credentialsInvalid", 401);
+    // Checked after the password, so a deactivated institution is not revealed to strangers.
+    await assertInstitutionActiveFor(db, user);
 
     accountLanguage(req, res, user.preferredLanguage);
     const roles = prioritizeRoles(user.roles || []);

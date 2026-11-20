@@ -50,7 +50,7 @@ integration("professor questions in the workbench", () => {
   it("lists only practice questions of the student's class, without answer keys", async () => {
     const tables = await listPracticeQuestions(getDb(), ids.studentA, "truth_table");
     expect(tables.map((row) => row.id)).toEqual([created.table]);
-    expect(tables[0].content).toEqual({ formula: "p → q" });
+    expect(tables[0].content).toEqual({ formula: "p → q", columns: "all" });
     const [translation] = await listPracticeQuestions(getDb(), ids.studentA, "translation");
     expect(translation.content).toEqual({ legend: [{ letter: "c", text: "chove" }, { letter: "m", text: "molha" }] });
     expect(JSON.stringify(translation)).not.toContain("→");

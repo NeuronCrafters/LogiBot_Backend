@@ -27,7 +27,7 @@ COPY --from=build /app/PROMPT_CHAT.md /app/PROMPT_QUIZ.md /app/PROMPT_DASHBOARD_
 COPY --from=build /app/prompts ./prompts
 COPY --from=build /app/drizzle ./drizzle
 
-RUN mkdir -p /app/uploads /var/logibots/uploads/rag \
+RUN mkdir -p /app/uploads /var/logibots/uploads/rag /var/logibots/uploads/institutions \
   && chown -R node:node /app/uploads /var/logibots
 
 USER node

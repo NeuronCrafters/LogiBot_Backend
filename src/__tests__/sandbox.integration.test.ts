@@ -46,7 +46,7 @@ integration("test environment in a separate database", () => {
   it("creates the test structure only in the test database", async () => {
     const before = await count(main, "SELECT count(*) AS n FROM accounts");
     expect(await client.runInEnvironment("sandbox", () => seed.seedSandbox(client.getDb(), "senha-de-teste-123"))).toBe(true);
-    expect(await count(sandbox, "SELECT count(*) AS n FROM accounts WHERE email LIKE '%@dev.sael.com'")).toBe(33);
+    expect(await count(sandbox, "SELECT count(*) AS n FROM accounts WHERE email LIKE '%@dev.sael.com'")).toBe(35);
     expect(await count(sandbox, "SELECT count(*) AS n FROM universities")).toBe(2);
     expect(await count(sandbox, "SELECT count(*) AS n FROM classes")).toBe(8);
     expect(await count(sandbox, "SELECT count(*) AS n FROM student_profiles")).toBe(30);
@@ -149,7 +149,7 @@ integration("test environment in a separate database", () => {
   it("resets only the test database", async () => {
     await sandbox.query("UPDATE accounts SET name='Alterado' WHERE email='aluno0@dev.sael.com'");
     const before = await count(main, "SELECT count(*) AS n FROM accounts");
-    expect(await seed.resetSandbox()).toMatchObject({ accounts: 33, institutions: 2, sessions: 0 });
+    expect(await seed.resetSandbox()).toMatchObject({ accounts: 35, institutions: 2, sessions: 0 });
     expect((await sandbox.query("SELECT name FROM accounts WHERE email='aluno0@dev.sael.com'")).rows[0].name).toBe("Aluno 0 (teste)");
     expect(await count(main, "SELECT count(*) AS n FROM accounts")).toBe(before);
   });

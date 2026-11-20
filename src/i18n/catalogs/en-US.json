@@ -348,5 +348,16 @@
   "insights.compareCharts.chat-satisfaction.title": "Satisfaction with the chat",
   "insights.compareCharts.chat-satisfaction.description": "Ratings of chat answers (yes, more or less, no) and overall satisfaction.",
   "questions.typeUnavailable": "This question type is not released at the moment",
-  "analytics.entityInvalid": "Invalid entity type"
+  "analytics.entityInvalid": "Invalid entity type",
+  "auth.institutionInactive": "Your institution's access is suspended. Please contact the coordination.",
+  "institutions.notFound": "Institution not found",
+  "institutions.statusInvalid": "State whether the institution is active or deactivated",
+  "institutions.invalid": "Check the highlighted fields",
+  "institutions.imageInvalid": "Send a PNG, JPEG or WebP image",
+  "institutions.imageTooLarge": "The image may have at most {{max}} KB",
+  "institutions.geocodeQuery": "Type an address with at least 3 letters",
+  "institutions.geocodeUnavailable": "The map search did not answer right now. Try again or enter the coordinates.",
+  "institutions.postalCodeInvalid": "Type a postal code (CEP) with 8 digits",
+  "institutions.postalCodeNotFound": "Postal code not found",
+  "institutions.postalCodeUnavailable": "The postal code search did not answer right now. Fill in the address manually."
 }

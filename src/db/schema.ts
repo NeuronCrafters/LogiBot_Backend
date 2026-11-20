@@ -1185,3 +1185,36 @@ export const exerciseHints = pgTable(
     byStudentTime: index("idx_exercise_hints_student_created").on(table.studentId, table.createdAt),
   }),
 );
+
+/**
+ * Public profile of an institution (page "Instituição"): every field is optional except the status.
+ * Kept apart from `universities`, so the existing table does not change. Images are stored as
+ * small data URLs (size checked on upload). A deactivated institution keeps all its data.
+ */
+export const institutionProfiles = pgTable("institution_profiles", {
+  universityId: uuid("university_id")
+    .primaryKey()
+    .references(() => universities.id, { onDelete: "cascade" }),
+  kind: text("kind"),
+  city: text("city"),
+  state: text("state"),
+  country: text("country"),
+  address: text("address"),
+  addressNumber: text("address_number"),
+  district: text("district"),
+  postalCode: text("postal_code"),
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  website: text("website"),
+  /** Optional social networks and other sites: [{ kind, url }]. */
+  links: jsonb("links").$type<Array<{ kind: string; url: string }>>(),
+  about: text("about"),
+  logo: text("logo"),
+  cover: text("cover"),
+  active: boolean("active").notNull().default(true),
+  deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
+  deactivatedBy: uuid("deactivated_by").references(() => accounts.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

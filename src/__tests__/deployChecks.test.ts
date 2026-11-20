@@ -1,4 +1,7 @@
-import { checkEnvironment, databaseIdentity } from "../services/deploy/deployChecks";
+import { checkEnvironment, checkExternalServices, checkImageStorage, databaseIdentity } from "../services/deploy/deployChecks";
+import { mkdtempSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import path from "path";
 
 const statusOf = (env: NodeJS.ProcessEnv, name: string) => checkEnvironment(env).find((check) => check.name === name)?.status;
 const base = { DATABASE_URL: "postgres://u:p@db:5432/logibot", JWT_SECRET: "x".repeat(40), OWNER_EMAILS: "owner@logibots.com" };
@@ -22,5 +25,33 @@ describe("pre-deploy configuration checks", () => {
     expect(statusOf({ ...base, SANDBOX_DATABASE_URL: "postgres://u:p@db/sandbox", SANDBOX_PASSWORD: "short" }, "SANDBOX_PASSWORD")).toBe("fail");
     expect(statusOf(base, "SANDBOX_DATABASE_URL")).toBe("warn");
     expect(checkEnvironment(base).every((check) => check.status !== "fail")).toBe(true);
+  });
+});
+
+describe("institution image storage", () => {
+  const saved = process.env.INSTITUTION_IMAGE_DIR;
+  afterEach(() => { if (saved === undefined) delete process.env.INSTITUTION_IMAGE_DIR; else process.env.INSTITUTION_IMAGE_DIR = saved; });
+
+  it("is fine with a writable folder and fails when it cannot be written", () => {
+    process.env.INSTITUTION_IMAGE_DIR = mkdtempSync(path.join(tmpdir(), "images-"));
+    expect(checkImageStorage().status).toBe("ok");
+    const file = path.join(mkdtempSync(path.join(tmpdir(), "images-")), "not-a-folder");
+    writeFileSync(file, "x");
+    process.env.INSTITUTION_IMAGE_DIR = file;
+    expect(checkImageStorage().status).toBe("fail");
+  });
+});
+
+describe("external services of the institution page", () => {
+  it("is fine when ViaCEP and Nominatim answer, and only warns when they do not", async () => {
+    const calls: string[] = [];
+    const ok = (async (url: string) => { calls.push(String(url)); return new Response("[]", { status: 200 }); }) as unknown as typeof fetch;
+    expect((await checkExternalServices(ok, {})).map((check) => check.status)).toEqual(["ok", "ok"]);
+    expect(calls[0]).toBe("https://viacep.com.br/ws/01001000/json/");
+    expect(calls[1]).toContain("https://nominatim.openstreetmap.org/search?");
+    const offline = (async () => { throw new Error("offline"); }) as unknown as typeof fetch;
+    expect((await checkExternalServices(offline, {})).map((check) => check.status)).toEqual(["warn", "warn"]);
+    const refused = (async () => new Response("", { status: 429 })) as unknown as typeof fetch;
+    expect((await checkExternalServices(refused, {}))[1].detail).toContain("429");
   });
 });

@@ -1,12 +1,12 @@
 import { t } from "../../i18n";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
 import { getDb } from "../../db/client";
-import { assertClassInNetwork, assertCourseInNetwork, requireNetwork, seesEveryNetwork } from "../../services/academic/networkScope";
+import { assertClassInNetwork, assertCourseInNetwork, coordinatedCourses, requireNetwork, seesEveryNetwork } from "../../services/academic/networkScope";
 import {
   accountRoles,
   accounts,
@@ -379,8 +379,16 @@ adminRouter.get(
   "/students",
   requireRoles(["admin", "professor", "course-coordinator"]),
   asyncHandler(async (req, res) => {
-    // Professors and coordinators only list students of their own institution.
+    // Coordination lists the students of the courses it coordinates; professors those of the classes
+    // they teach (directly or through a subject); admins everyone of their database.
     const network = seesEveryNetwork(req.user!) ? null : requireNetwork(req.user!);
+    const own = coordinatedCourses(req.user!);
+    const scope = network === null ? undefined
+      : own !== null
+        ? (own.length ? and(eq(studentProfiles.schoolId, network), inArray(studentProfiles.courseId, own)) : sql`FALSE`)
+        : and(eq(studentProfiles.schoolId, network), sql`${studentProfiles.classId} IN (
+            SELECT class_id FROM professor_classes WHERE professor_id = ${req.user!.id}
+            UNION SELECT cd.class_id FROM class_disciplines cd JOIN professor_disciplines pd ON pd.discipline_id = cd.discipline_id WHERE pd.professor_id = ${req.user!.id})`);
     const rows = await getDb()
       .select({
         id: accounts.id,
@@ -394,7 +402,7 @@ adminRouter.get(
       })
       .from(accounts)
       .innerJoin(studentProfiles, eq(studentProfiles.accountId, accounts.id))
-      .where(network ? eq(studentProfiles.schoolId, network) : undefined)
+      .where(scope)
       .orderBy(asc(accounts.name));
     return res.json(rows.map((row) => ({ ...row, _id: row.id })));
   }),

@@ -24,6 +24,9 @@ export const FEATURES = [
   "dashboard",
   "dashboard_comparison",
   "concept_panel",
+  "institution_page",
+  "institution_location",
+  "institution_photo",
 ] as const;
 export type Feature = (typeof FEATURES)[number];
 export const SCOPES = ["global", "institution", "course", "class"] as const;
@@ -87,6 +90,22 @@ export async function featuresFor(db: AnyDbClient, user: FeatureUser): Promise<R
   const rules = await rulesFor(db, chains);
   // Several classes or courses (professors): released in any of them is enough.
   for (const feature of FEATURES) result[feature] = chains.some((chain) => resolveChain(rules, feature, chain));
+  return result;
+}
+
+/**
+ * Components of an institution's own page (location, profile photo): they follow the rules of that
+ * institution (or the global one), whoever is looking at it.
+ */
+export async function featuresForInstitutions(db: AnyDbClient, universityIds: string[]): Promise<Map<string, Record<Feature, boolean>>> {
+  const chains = universityIds.map((id): Array<[Scope, string]> => [["institution", id], ["global", ""]]);
+  const rules = await rulesFor(db, chains);
+  const result = new Map<string, Record<Feature, boolean>>();
+  universityIds.forEach((id, index) => {
+    const released = {} as Record<Feature, boolean>;
+    for (const feature of FEATURES) released[feature] = resolveChain(rules, feature, chains[index]);
+    result.set(id, released);
+  });
   return result;
 }
 

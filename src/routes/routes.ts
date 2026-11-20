@@ -23,11 +23,15 @@ import { examRouter } from "./modules/examRoutes";
 import { quizRouter } from "./modules/quizRoutes";
 import { professorQuizRouter } from "./modules/professorQuizRoutes";
 import { conceptRouter } from "./modules/conceptRoutes";
+import { institutionRouter } from "./modules/institutionRoutes";
+import { institutionImageRouter } from "./modules/institutionImageRoutes";
 import { ragRouter } from "./modules/ragRoutes";
 
 const routes = Router();
 
 routes.use("/health", healthRouter);
+// Institution photos and covers: read-only files named by their hash (an <img> sends no API key).
+routes.use("/institution-images", institutionImageRouter);
 
 routes.use(requireApiKey);
 
@@ -54,6 +58,7 @@ routes.use("/chat-feedback", requireAuth, requireFeature("chat"), chatFeedbackRo
 routes.use("/questions", requireAuth, requireFeature("question_bank"), questionBankRouter);
 routes.use("/exams", requireAuth, requireFeature("exams"), examRouter);
 routes.use("/concepts", requireAuth, requireFeature("concept_panel"), conceptRouter);
+routes.use("/institutions", requireAuth, requireFeature("institution_page"), institutionRouter);
 routes.use("/features", featureRouter);
 routes.use("/dev", devRouter);
 

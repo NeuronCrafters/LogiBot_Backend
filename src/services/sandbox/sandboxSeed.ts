@@ -9,6 +9,7 @@ import {
   classes,
   courses,
   disciplines,
+  institutionProfiles,
   professorClasses,
   professorCourses,
   professorDisciplines,
@@ -21,11 +22,14 @@ import { SANDBOX_STUDENT_COUNT, sandboxEmail } from "./sandboxConfig";
 import { generateDemoData, isDemoPeriod, type DemoPeriod } from "./sandboxDemoData";
 import { dropSandboxCollection } from "../rag/chromaService";
 import { generatePlatformData } from "./sandboxPlatformData";
+import { clearSandboxImages } from "../institutions/institutionImageStore";
 
 /** Structure of the test environment: two institutions of different kinds, two courses each, two classes per course. */
 export const SANDBOX_STRUCTURE = [
-  { institution: "Faculdade SAEL (teste)", courses: ["Ciência da Computação (teste)", "Sistemas de Informação (teste)"] },
-  { institution: "Escola Técnica SAEL (teste)", courses: ["Técnico em Informática (teste)", "Técnico em Desenvolvimento de Sistemas (teste)"] },
+  { institution: "Faculdade SAEL (teste)", courses: ["Ciência da Computação (teste)", "Sistemas de Informação (teste)"],
+    profile: { kind: "faculdade", city: "Belém", state: "PA", country: "Brasil", about: "Instituição fictícia do ambiente de teste, com cursos de computação e turmas de lógica e algoritmos." } },
+  { institution: "Escola Técnica SAEL (teste)", courses: ["Técnico em Informática (teste)", "Técnico em Desenvolvimento de Sistemas (teste)"],
+    profile: { kind: "escola_tecnica", city: "Ananindeua", state: "PA", country: "Brasil", about: "Escola técnica fictícia do ambiente de teste." } },
 ];
 const DISCIPLINES = ["Lógica de Programação", "Algoritmos e Estruturas de Dados"];
 const CLASSES = ["Turma A", "Turma B"];
@@ -42,6 +46,8 @@ export function sandboxAccounts() {
     { email: sandboxEmail("adm"), role: "admin" },
     { email: sandboxEmail("coordenador"), role: "course-coordinator" },
     { email: sandboxEmail("professor"), role: "professor" },
+    { email: sandboxEmail("coordenador2"), role: "course-coordinator" },
+    { email: sandboxEmail("professor2"), role: "professor" },
     ...Array.from({ length: SANDBOX_STUDENT_COUNT }, (_item, index) => ({ email: sandboxEmail(`aluno${index}`), role: "student" })),
   ];
 }
@@ -59,14 +65,21 @@ export async function seedSandbox(db: AnyDbClient, password: string): Promise<bo
   const passwordHash = await bcrypt.hash(password, 10);
 
   const allClasses: Array<{ id: string; courseId: string; schoolId: string }> = [];
+  // Each institution with its courses, classes and subjects (courses in order, subjects per course).
+  const institutionsMade: Array<{ id: string; courses: Array<{ id: string; classes: string[]; disciplines: string[] }> }> = [];
   const firstInstitution = { id: "", courses: [] as string[], classes: [] as string[], disciplines: [] as string[] };
   let code = 1;
   for (const [institutionIndex, item] of SANDBOX_STRUCTURE.entries()) {
     const [institution] = await db.insert(universities).values({ name: item.institution }).returning({ id: universities.id });
+    // Page of the institution: type, location and a short description (no images).
+    await db.insert(institutionProfiles).values({ universityId: institution.id, ...item.profile });
     if (institutionIndex === 0) firstInstitution.id = institution.id;
+    institutionsMade.push({ id: institution.id, courses: [] });
     for (const courseName of item.courses) {
       const [course] = await db.insert(courses).values({ name: courseName, universityId: institution.id }).returning({ id: courses.id });
       const disciplineIds: string[] = [];
+      const made = { id: course.id, classes: [] as string[], disciplines: disciplineIds };
+      institutionsMade[institutionIndex].courses.push(made);
       for (const name of DISCIPLINES) {
         const [discipline] = await db.insert(disciplines).values({ name, courseId: course.id }).returning({ id: disciplines.id });
         disciplineIds.push(discipline.id);
@@ -75,6 +88,7 @@ export async function seedSandbox(db: AnyDbClient, password: string): Promise<bo
         const [created] = await db.insert(classes).values({ name: className, courseId: course.id, registrationCode: `DEV-${String(code++).padStart(3, "0")}` }).returning({ id: classes.id });
         for (const disciplineId of disciplineIds) await db.insert(classDisciplines).values({ classId: created.id, disciplineId });
         allClasses.push({ id: created.id, courseId: course.id, schoolId: institution.id });
+        made.classes.push(created.id);
         if (institutionIndex === 0) firstInstitution.classes.push(created.id);
       }
       if (institutionIndex === 0) {
@@ -98,6 +112,23 @@ export async function seedSandbox(db: AnyDbClient, password: string): Promise<bo
   await db.insert(professorProfiles).values({ accountId: coordinatorId, schoolId: firstInstitution.id });
   await db.insert(professorCourses).values({ professorId: coordinatorId, courseId: firstInstitution.courses[0] });
   for (const disciplineId of firstInstitution.disciplines.slice(0, DISCIPLINES.length)) await db.insert(professorDisciplines).values({ professorId: coordinatorId, disciplineId });
+
+  // Second institution: its own coordination (first course) and a professor who teaches every class
+  // and subject there, so each institution page shows who is in charge of each subject.
+  const second = institutionsMade[1];
+  if (second) {
+    const coordinator2 = await createAccount(db, sandboxEmail("coordenador2"), "Coordenação Escola (teste)", passwordHash, ["professor", "course-coordinator"]);
+    await db.insert(professorProfiles).values({ accountId: coordinator2, schoolId: second.id });
+    await db.insert(professorCourses).values({ professorId: coordinator2, courseId: second.courses[0].id });
+    for (const disciplineId of second.courses[0].disciplines) await db.insert(professorDisciplines).values({ professorId: coordinator2, disciplineId });
+    const professor2 = await createAccount(db, sandboxEmail("professor2"), "Professor Escola (teste)", passwordHash, ["professor"]);
+    await db.insert(professorProfiles).values({ accountId: professor2, schoolId: second.id });
+    for (const course of second.courses) {
+      await db.insert(professorCourses).values({ professorId: professor2, courseId: course.id });
+      for (const classId of course.classes) await db.insert(professorClasses).values({ professorId: professor2, classId });
+      for (const disciplineId of course.disciplines) await db.insert(professorDisciplines).values({ professorId: professor2, disciplineId });
+    }
+  }
 
   // Students spread over every class of both institutions.
   for (let index = 0; index < SANDBOX_STUDENT_COUNT; index++) {
@@ -124,6 +155,8 @@ export async function resetSandbox(days: unknown = 0) {
     if (names.length) await db.execute(sql.raw(`TRUNCATE ${names.join(", ")} RESTART IDENTITY CASCADE`));
     // The RAG documents were just erased, so their vectors go too (only the test collection).
     await dropSandboxCollection();
+    // And the institution images of the test environment.
+    await clearSandboxImages();
     await seedSandbox(db, password);
     // Activity of the chosen period (none for 0), so charts and filters can be checked with real-looking data.
     const activity = await generateDemoData(db, period);

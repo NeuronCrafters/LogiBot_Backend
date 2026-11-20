@@ -62,6 +62,13 @@ CHAT_GENERATION_MAX_ATTEMPTS=1
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
+# Fotos e capas das instituições: precisa ser um volume persistente (veja "Volumes no Dokploy")
+INSTITUTION_IMAGE_DIR=/var/logibots/uploads/institutions
+# Opcionais: serviços de CEP (ViaCEP) e de ponto no mapa (Nominatim/OpenStreetMap) compatíveis
+POSTAL_CODE_URL=https://viacep.com.br/ws
+GEOCODER_URL=https://nominatim.openstreetmap.org
+# Opcional: e-mail de contato enviado ao Nominatim, como pede a política de uso dele
+GEOCODER_EMAIL=
 CHROMA_URL=http://logibots-chroma:8000
 CHROMA_COLLECTION=logibots_rag_chunks
 ```
@@ -244,11 +251,38 @@ CHAT_GENERATION_MAX_ATTEMPTS=1
 EMBEDDING_SERVICE_URL=https://embedapi.saellogibot.com
 EMBEDDING_SERVICE_API_KEY=
 RAG_UPLOAD_DIR=/tmp/logibots/uploads/rag
+# Fotos e capas das instituições: precisa ser um volume persistente (veja "Volumes no Dokploy")
+INSTITUTION_IMAGE_DIR=/var/logibots/uploads/institutions
+# Opcionais: serviços de CEP (ViaCEP) e de ponto no mapa (Nominatim/OpenStreetMap) compatíveis
+POSTAL_CODE_URL=https://viacep.com.br/ws
+GEOCODER_URL=https://nominatim.openstreetmap.org
+# Opcional: e-mail de contato enviado ao Nominatim, como pede a política de uso dele
+GEOCODER_EMAIL=
 CHROMA_URL=http://logibot-chromadb-dwit3i-5b77f2-69-62-93-80.sslip.io:8000
 CHROMA_COLLECTION=logibots_rag_chunks
 ```
 
 Os dominios de frontend e cookie ficam hardcoded no backend: `https://saellogibot.com`, `https://www.saellogibot.com` e localhosts de teste (`5173`, `5174`, `3000`, `3001`). O cookie de producao usa `.saellogibot.com`.
+
+### Volumes no Dokploy
+
+As fotos e capas das instituições ficam em arquivos, não no banco. Na aplicação do backend, em **Advanced → Volumes/Mounts**, crie um volume nomeado (ex.: `institution_images`) montado em `/var/logibots/uploads/institutions` e defina `INSTITUTION_IMAGE_DIR` com esse caminho. Sem o volume, as imagens somem a cada novo deploy. A imagem Docker já cria a pasta com dono `node` (uid 1000); se usar uma pasta do host (bind mount), dê a ela o dono `1000:1000`. `node dist/db/checkDeploy.js` acusa se a pasta não puder ser gravada.
+
+Backup do volume (junto com o `pg_dump`):
+
+```bash
+docker run --rm -v institution_images:/data:ro -v "$PWD":/backup alpine \
+  tar czf /backup/institution-images-$(date +%Y%m%d-%H%M).tgz -C /data .
+```
+
+Restauração: `docker run --rm -v institution_images:/data -v "$PWD":/backup alpine tar xzf /backup/<arquivo>.tgz -C /data`.
+
+### Serviços externos da página da instituição
+
+- **Saída HTTPS do backend** para `viacep.com.br` (CEP preenche o endereço) e `nominatim.openstreetmap.org` (ponto no mapa ao salvar o endereço). Sem acesso, o cadastro funciona, mas o CEP não preenche e o mapa fica sem ponto. `checkDeploy.js` testa os dois.
+- O backend se identifica (`User-Agent: LogiBots/1.0 (+https://saellogibot.com)`), faz no máximo uma busca por segundo no Nominatim e guarda o ponto encontrado no banco, como pede a política de uso do serviço; as buscas de CEP ficam em cache por 24 h.
+- **Navegador:** o mapa embutido vem de `www.openstreetmap.org` (com a atribuição do próprio OpenStreetMap) e os links abrem o Google Maps. Se algum dia o frontend ganhar `Content-Security-Policy`, inclua `frame-src https://www.openstreetmap.org`.
+- As imagens são servidas em `GET /institution-images/<ambiente>/<hash>.<ext>` sem login (uma `<img>` não envia a chave da API); o proxy `deploy/nginx-api.conf` já repassa esse caminho.
 
 Se o PostgreSQL do LogiBot for acessado pelo host publicado, use a porta `5437` no `DATABASE_URL`. Se backend e banco estiverem na mesma rede/stack Docker, use a porta interna `5432`.
 

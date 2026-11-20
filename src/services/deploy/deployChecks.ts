@@ -1,9 +1,11 @@
-import { readFileSync } from "fs";
+import { accessSync, constants, existsSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { and, eq, inArray, like, sql } from "drizzle-orm";
 import type { AnyDbClient } from "../../db/client";
 import { accountRoles, accounts, universities } from "../../db/schema";
 import { ownerEmails, sandboxEmail, SANDBOX_EMAIL_DOMAIN } from "../sandbox/sandboxConfig";
+import { imageDir } from "../institutions/institutionImageStore";
+import { USER_AGENT } from "../institutions/geocoder";
 
 /**
  * Checks before a deploy and the cleanup of old load-test data. Everything here only reads,
@@ -69,6 +71,45 @@ export function checkEnvironment(env: NodeJS.ProcessEnv = process.env): CheckRes
 }
 
 /** Number of migrations in the journal shipped with the build. */
+/** Institution photos and covers need a writable folder (the institution_images volume). Only looks. */
+export function checkImageStorage(env: NodeJS.ProcessEnv = process.env): CheckResult {
+  const base = path.dirname(imageDir("production"));
+  let folder = base;
+  while (!existsSync(folder) && path.dirname(folder) !== folder) folder = path.dirname(folder);
+  try {
+    if (!statSync(folder).isDirectory()) throw new Error("not a folder");
+    accessSync(folder, constants.W_OK);
+  } catch {
+    return { status: "fail", name: "Institution images", detail: `${base} is not writable: mount the institution_images volume there.` };
+  }
+  return env.INSTITUTION_IMAGE_DIR?.trim()
+    ? { status: "ok", name: "Institution images", detail: `${base} is writable.` }
+    : { status: "warn", name: "Institution images", detail: `INSTITUTION_IMAGE_DIR not set: using ${base}; keep it on a persistent volume.` };
+}
+
+/**
+ * The institution page asks ViaCEP (CEP) and Nominatim (map point) from the server. Without them it
+ * still works (no autofill, no map point), so they are warnings. One small read each.
+ */
+export async function checkExternalServices(fetcher: typeof fetch = fetch, env: NodeJS.ProcessEnv = process.env): Promise<CheckResult[]> {
+  const services = [
+    { name: "ViaCEP (CEP)", url: `${(env.POSTAL_CODE_URL || "https://viacep.com.br/ws").replace(/\/$/, "")}/01001000/json/` },
+    { name: "Nominatim (map point)", url: `${(env.GEOCODER_URL || "https://nominatim.openstreetmap.org").replace(/\/$/, "")}/search?format=jsonv2&limit=1&q=Bras%C3%ADlia` },
+  ];
+  const results: CheckResult[] = [];
+  for (const service of services) {
+    try {
+      const response = await fetcher(service.url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(6000) });
+      results.push(response.ok
+        ? { status: "ok", name: service.name, detail: "Reachable from the server." }
+        : { status: "warn", name: service.name, detail: `Answered ${response.status}: CEP autofill or map points may not work.` });
+    } catch {
+      results.push({ status: "warn", name: service.name, detail: "Not reachable from the server: allow outbound HTTPS to it (the page works without it)." });
+    }
+  }
+  return results;
+}
+
 export function expectedMigrationCount(folder = path.resolve(process.cwd(), "drizzle")): number {
   const journal = JSON.parse(readFileSync(path.join(folder, "meta", "_journal.json"), "utf8")) as { entries: unknown[] };
   return journal.entries.length;

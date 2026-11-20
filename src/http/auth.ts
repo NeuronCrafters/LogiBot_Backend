@@ -8,6 +8,7 @@ import { getAccountById } from "../db/repositories/authRepository";
 import { getDb } from "../db/client";
 import { AppError } from "../exceptions/AppError";
 import type { Role } from "../types/Role";
+import { assertInstitutionActiveFor } from "../services/institutions/institutionService";
 import { clearAuthCookie } from "./cookies";
 
 export function requireEnv(name: string) {
@@ -93,6 +94,7 @@ export async function requireAuth(
     accountLanguage(req, res, account.preferredLanguage);
     if (account.status !== "active")
       throw new AppError("auth.accountInactive", 403);
+    await assertInstitutionActiveFor(getDb(), account);
 
     req.user = {
       id: account.id,

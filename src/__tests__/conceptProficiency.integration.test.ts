@@ -8,10 +8,12 @@ const integration = url ? describe : describe.skip;
 
 integration("proficiency per concept on PostgreSQL", () => {
   let pool: Pool;
-  const ids = { school: randomUUID(), other: randomUUID(), course: randomUUID(), classA: randomUUID(), classB: randomUUID(), discipline: randomUUID(), otherCourse: randomUUID(), otherClass: randomUUID() };
+  const ids = { school: randomUUID(), other: randomUUID(), course: randomUUID(), classA: randomUUID(), classB: randomUUID(), discipline: randomUUID(), otherCourse: randomUUID(), otherClass: randomUUID(), siblingCourse: randomUUID(), siblingClass: randomUUID() };
   const people = { professor: randomUUID(), coordinator: randomUUID(), outsider: randomUUID(), admin: randomUUID(), lonely: randomUUID() };
   const students = Array.from({ length: 6 }, () => randomUUID());
   const user = (id: string, role: string[], school: string | null = ids.school) => ({ id, role, school, email: `${id}@example.invalid`, name: "x" }) as never;
+  // Coordination answers for one course (its "faculdade"); the sibling course of the same institution is not its own.
+  const coordinatorUser = () => ({ id: people.coordinator, role: ["professor", "course-coordinator"], school: ids.school, courses: [ids.course], email: "c@example.invalid", name: "x" }) as never;
   const errorOf = async (run: () => Promise<unknown>) => { try { await run(); } catch (error) { return error; } return undefined; };
 
   beforeAll(async () => {
@@ -23,6 +25,8 @@ integration("proficiency per concept on PostgreSQL", () => {
     await q("INSERT INTO courses(id,name,university_id) VALUES($1,'Computação',$2),($3,'Outro curso',$4)", [ids.course, ids.school, ids.otherCourse, ids.other]);
     await q("INSERT INTO classes(id,name,course_id,registration_code) VALUES($1,'A',$3,$4),($2,'B',$3,$5),($6,'Z',$7,$8)", [ids.classA, ids.classB, ids.course, `A-${ids.classA}`, `B-${ids.classB}`, ids.otherClass, ids.otherCourse, `Z-${ids.otherClass}`]);
     await q("INSERT INTO disciplines(id,name,course_id) VALUES($1,'Lógica',$2)", [ids.discipline, ids.course]);
+    await q("INSERT INTO courses(id,name,university_id) VALUES($1,'Curso vizinho',$2)", [ids.siblingCourse, ids.school]);
+    await q("INSERT INTO classes(id,name,course_id,registration_code) VALUES($1,'V',$2,$3)", [ids.siblingClass, ids.siblingCourse, `V-${ids.siblingClass}`]);
     for (const [key, id] of Object.entries(people)) await q("INSERT INTO accounts(id,name,email) VALUES($1,$2,$3)", [id, key, `${id}@example.invalid`]);
     for (const [index, id] of students.entries()) await q("INSERT INTO accounts(id,name,email) VALUES($1,$2,$3)", [id, `Aluno ${index + 1}`, `${id}@example.invalid`]);
     for (const id of [...students, people.lonely]) await q("INSERT INTO account_roles(account_id,role) VALUES($1,'student')", [id]);
@@ -79,7 +83,7 @@ integration("proficiency per concept on PostgreSQL", () => {
   });
 
   it("aggregates for coordination and hides concepts seen by fewer than 5 students", async () => {
-    const coordinator = user(people.coordinator, ["professor", "course-coordinator"]);
+    const coordinator = coordinatorUser();
     const data = await conceptProficiency(getDb(), coordinator, { scope: "course", id: ids.course, days: 30 });
     expect(data.aggregated).toBe(true);
     expect(data.students).toBeUndefined();
@@ -95,27 +99,31 @@ integration("proficiency per concept on PostgreSQL", () => {
     const professor = user(people.professor, ["professor"]);
     expect(await errorOf(() => conceptProficiency(getDb(), professor, { scope: "class", id: ids.classB }))).toMatchObject({ statusCode: 403 });
     expect(await errorOf(() => conceptProficiency(getDb(), professor, { scope: "course", id: ids.course }))).toMatchObject({ statusCode: 403 });
-    const coordinator = user(people.coordinator, ["professor", "course-coordinator"]);
+    const coordinator = coordinatorUser();
     expect(await errorOf(() => conceptProficiency(getDb(), coordinator, { scope: "class", id: ids.otherClass }))).toMatchObject({ statusCode: 404 });
     expect(await errorOf(() => conceptProficiency(getDb(), coordinator, { scope: "institution", id: ids.other }))).toMatchObject({ statusCode: 403 });
+    // Only its own courses: the sibling course is refused, its classes look "not found" (like other institutions), and the institution as a whole is the admin's.
+    expect(await errorOf(() => conceptProficiency(getDb(), coordinator, { scope: "course", id: ids.siblingCourse }))).toMatchObject({ statusCode: 403 });
+    expect(await errorOf(() => conceptProficiency(getDb(), coordinator, { scope: "class", id: ids.siblingClass }))).toMatchObject({ statusCode: 404 });
+    expect(await errorOf(() => conceptProficiency(getDb(), coordinator, { scope: "institution", id: ids.school }))).toMatchObject({ statusCode: 403 });
     expect(await errorOf(() => conceptProficiency(getDb(), coordinator, { scope: "all" }))).toMatchObject({ statusCode: 403 });
     expect(await errorOf(() => conceptProficiency(getDb(), professor, { scope: "me" }))).toMatchObject({ statusCode: 403 });
     expect((await conceptProficiency(getDb(), user(people.admin, ["admin"], null), { scope: "all" })).aggregated).toBe(true);
   });
 
-  it("shows students only their own data", async () => {
-    const data = await conceptProficiency(getDb(), user(students[1], ["student"]), {});
-    expect(data.scope).toBe("me");
-    expect(concept(data, "conjunction")).toMatchObject({ total: 2, score: 0.25 });
-    expect(concept(data, "negation")).toMatchObject({ total: 1, score: 1 });
+  it("is not open to students", async () => {
+    expect(await errorOf(() => conceptProficiency(getDb(), user(students[1], ["student"]), {}))).toMatchObject({ statusCode: 403 });
+    expect(await errorOf(() => conceptProficiency(getDb(), user(students[1], ["student"]), { scope: "me" }))).toMatchObject({ statusCode: 403 });
+    expect((await proficiencyScopes(getDb(), user(students[1], ["student"]))).me).toBe(false);
   });
 
   it("offers each profile only the selections it may open", async () => {
     const professor = await proficiencyScopes(getDb(), user(people.professor, ["professor"]));
     expect(professor).toMatchObject({ me: false, all: false, institutions: [], courses: [] });
     expect(professor.classes).toEqual([expect.objectContaining({ id: ids.classA, teaches: true })]);
-    const coordinator = await proficiencyScopes(getDb(), user(people.coordinator, ["professor", "course-coordinator"]));
-    expect(coordinator.institutions).toEqual([{ id: ids.school, name: "Instituição" }]);
+    const coordinator = await proficiencyScopes(getDb(), coordinatorUser());
+    expect(coordinator.institutions).toEqual([]);
+    expect(coordinator.courses).toEqual([expect.objectContaining({ id: ids.course })]);
     expect(coordinator.classes.map((item) => item.id).sort()).toEqual([ids.classA, ids.classB].sort());
     const admin = await proficiencyScopes(getDb(), user(people.admin, ["admin"], null));
     expect(admin.all).toBe(true);

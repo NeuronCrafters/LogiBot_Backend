@@ -359,5 +359,12 @@
   "institutions.geocodeUnavailable": "La búsqueda en el mapa no respondió ahora. Intente de nuevo o informe las coordenadas.",
   "institutions.postalCodeInvalid": "Escriba un código postal (CEP) de 8 números",
   "institutions.postalCodeNotFound": "Código postal no encontrado",
-  "institutions.postalCodeUnavailable": "La búsqueda del código postal no respondió ahora. Complete la dirección manualmente."
+  "institutions.postalCodeUnavailable": "La búsqueda del código postal no respondió ahora. Complete la dirección manualmente.",
+  "flashcards.notFound": "Mazo o tarjeta no encontrado",
+  "flashcards.invalid": "Revise los campos marcados",
+  "flashcards.ratingInvalid": "Elija fallé, casi o acerté",
+  "ranking.invalid": "Revise las reglas marcadas",
+  "ranking.scopeInvalid": "Elija la plataforma o una institución",
+  "ranking.unavailable": "El ranking no está disponible para su perfil",
+  "ranking.notFound": "Selección no encontrada"
 }

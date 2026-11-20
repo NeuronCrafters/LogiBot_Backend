@@ -4,7 +4,7 @@ import type { AnyDbClient } from "../../db/client";
 import { accounts, classes, professorClasses } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { assertClassInNetwork, assertCourseInNetwork, seesEveryNetwork } from "../academic/networkScope";
-import { featuresFor } from "../features/featureService";
+import { featuresFor, hiddenPracticeTypes } from "../features/featureService";
 
 /**
  * Proficiency per concept (phase 8): negation, conjunction, conditional… and the algorithm concepts.
@@ -72,7 +72,7 @@ export async function resolveScope(db: AnyDbClient, user: User, input: Proficien
   return { scope, id: "", where: sql`TRUE`, listStudents: false, aggregated: true };
 }
 
-async function loadRows(db: AnyDbClient, where: SQL, since: Date | null, hiddenTypes: string[] = []): Promise<Row[]> {
+async function loadRows(db: AnyDbClient, where: SQL, since: Date | null, hiddenTypes: string[] = [], withoutExams = false): Promise<Row[]> {
   const practiceSince = since ? sql`AND ea.created_at >= ${since}` : sql``;
   const examSince = since ? sql`AND e.released_at >= ${since}` : sql``;
   // Exercise types turned off in the release page leave no trace in the panel.
@@ -98,7 +98,7 @@ async function loadRows(db: AnyDbClient, where: SQL, since: Date | null, hiddenT
     JOIN student_profiles sp ON sp.account_id = s.student_id
     CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(q.snapshot->'concepts', '[]'::jsonb)) AS c(concept)
     LEFT JOIN blind_reviews br ON br.submission_id = s.id AND br.exam_question_id = q.id
-    WHERE s.status = 'submitted' AND ${where} ${examSince} ${examTypes}
+    WHERE s.status = 'submitted' AND ${withoutExams ? sql`FALSE` : sql`TRUE`} AND ${where} ${examSince} ${examTypes}
   `);
   return (result.rows as unknown as Row[]).filter((row) => row.score !== null && row.score !== undefined);
 }
@@ -108,7 +108,7 @@ export async function conceptProficiency(db: AnyDbClient, user: User, input: Pro
   const resolved = await resolveScope(db, user, input);
   const since = days ? new Date(now.getTime() - days * 86400000) : null;
   const released = await featuresFor(db, user);
-  const rows = await loadRows(db, resolved.where, since, released.practice_parsons ? [] : ["parsons"]);
+  const rows = await loadRows(db, resolved.where, since, hiddenPracticeTypes(released), !released.exams);
 
   const byConcept: Record<string, { all: Tally; practice: Tally; exam: Tally; students: Record<string, true>; weeks: Record<string, Tally> }> = {};
   const byStudent: Record<string, Record<string, Tally>> = {};
@@ -190,10 +190,10 @@ export async function proficiencyScopes(db: AnyDbClient, user: User) {
  * Concepts of a whole institution for its page: one rate per concept, counting only concepts seen
  * by at least `minGroup` students (released exams and the workbench, last 365 days).
  */
-export async function institutionConcepts(db: AnyDbClient, universityId: string, hiddenTypes: string[], minGroup = MIN_GROUP, now = new Date(), courseIds?: string[]) {
+export async function institutionConcepts(db: AnyDbClient, universityId: string, hiddenTypes: string[], minGroup = MIN_GROUP, now = new Date(), courseIds?: string[], withoutExams = false) {
   const courses = courseIds === undefined ? sql`TRUE`
     : courseIds.length ? sql`sp.course_id IN (${sql.join(courseIds.map((id) => sql`${id}::uuid`), sql`, `)})` : sql`FALSE`;
-  const rows = await loadRows(db, sql`sp.school_id = ${universityId} AND ${courses}`, new Date(now.getTime() - 365 * 86400000), hiddenTypes);
+  const rows = await loadRows(db, sql`sp.school_id = ${universityId} AND ${courses}`, new Date(now.getTime() - 365 * 86400000), hiddenTypes, withoutExams);
   const byConcept: Record<string, { total: number; points: number; students: Record<string, true> }> = {};
   for (const row of rows) {
     const entry = byConcept[row.concept] = byConcept[row.concept] || { total: 0, points: 0, students: {} };

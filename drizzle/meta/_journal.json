@@ -148,6 +148,20 @@
       "when": 1795127045483,
       "tag": "0020_institution_address_number",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1795134134252,
+      "tag": "0021_flashcards",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1795134824641,
+      "tag": "0022_ranking_settings",
+      "breakpoints": true
     }
   ]
 }

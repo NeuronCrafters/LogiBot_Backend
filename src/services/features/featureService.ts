@@ -27,6 +27,8 @@ export const FEATURES = [
   "institution_page",
   "institution_location",
   "institution_photo",
+  "flashcards",
+  "ranking",
 ] as const;
 export type Feature = (typeof FEATURES)[number];
 export const SCOPES = ["global", "institution", "course", "class"] as const;
@@ -107,6 +109,22 @@ export async function featuresForInstitutions(db: AnyDbClient, universityIds: st
     result.set(id, released);
   });
   return result;
+}
+
+/**
+ * What is turned on for the whole platform (global rules only), for the public pages: the home page
+ * only presents what exists. No institution, course or class is revealed.
+ */
+export async function platformFeatures(db: AnyDbClient): Promise<Record<Feature, boolean>> {
+  const rules = await rulesFor(db, []);
+  const result = {} as Record<Feature, boolean>;
+  for (const feature of FEATURES) result[feature] = resolveChain(rules, feature, [["global", ""]]);
+  return result;
+}
+
+/** Workbench exercise types whose feature is turned off: they leave no trace in panels and charts. */
+export function hiddenPracticeTypes(released: Record<Feature, boolean>): string[] {
+  return (Object.keys(PRACTICE_FEATURE) as string[]).filter((type) => !released[PRACTICE_FEATURE[type]]);
 }
 
 /** Blocks the API too, not only the menu. Must run after requireAuth. */

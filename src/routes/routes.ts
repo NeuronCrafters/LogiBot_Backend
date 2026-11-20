@@ -1,8 +1,9 @@
+import { getDb } from "../db/client";
 import { getLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { t } from "../i18n";
 import { Router } from "express";
 import { requireApiKey, requireAuth } from "../http/auth";
-import { practiceFeature, requireFeature } from "../services/features/featureService";
+import { platformFeatures, practiceFeature, requireFeature } from "../services/features/featureService";
 import { featureRouter } from "./modules/featureRoutes";
 import { devRouter } from "./modules/devRoutes";
 import { accountRouter } from "./modules/accountRoutes";
@@ -25,6 +26,8 @@ import { professorQuizRouter } from "./modules/professorQuizRoutes";
 import { conceptRouter } from "./modules/conceptRoutes";
 import { institutionRouter } from "./modules/institutionRoutes";
 import { institutionImageRouter } from "./modules/institutionImageRoutes";
+import { flashcardRouter } from "./modules/flashcardRoutes";
+import { rankingRouter, rankingSettingsRouter } from "./modules/rankingRoutes";
 import { ragRouter } from "./modules/ragRoutes";
 
 const routes = Router();
@@ -39,6 +42,11 @@ routes.get("/languages", (_req, res) => res.json({
   language: getLanguage(),
   languages: SUPPORTED_LANGUAGES,
 }));
+
+// Public: what the platform offers right now (the home page shows only what is turned on).
+routes.get("/features/public", async (_req, res, next) => {
+  try { res.set("Cache-Control", "public, max-age=60"); return res.json({ features: await platformFeatures(getDb()) }); } catch (error) { return next(error); }
+});
 
 routes.use("/auth", authRouter);
 routes.use("/account", accountRouter);
@@ -59,6 +67,9 @@ routes.use("/questions", requireAuth, requireFeature("question_bank"), questionB
 routes.use("/exams", requireAuth, requireFeature("exams"), examRouter);
 routes.use("/concepts", requireAuth, requireFeature("concept_panel"), conceptRouter);
 routes.use("/institutions", requireAuth, requireFeature("institution_page"), institutionRouter);
+routes.use("/flashcards", requireAuth, requireFeature("flashcards"), flashcardRouter);
+routes.use("/ranking-settings", requireAuth, rankingSettingsRouter);
+routes.use("/ranking", requireAuth, requireFeature("ranking"), rankingRouter);
 routes.use("/features", featureRouter);
 routes.use("/dev", devRouter);
 

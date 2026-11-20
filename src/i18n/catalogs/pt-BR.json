@@ -359,5 +359,12 @@
   "institutions.geocodeUnavailable": "A busca no mapa não respondeu agora. Tente de novo ou informe as coordenadas.",
   "institutions.postalCodeInvalid": "Digite um CEP com 8 números",
   "institutions.postalCodeNotFound": "CEP não encontrado",
-  "institutions.postalCodeUnavailable": "A busca de CEP não respondeu agora. Preencha o endereço manualmente."
+  "institutions.postalCodeUnavailable": "A busca de CEP não respondeu agora. Preencha o endereço manualmente.",
+  "flashcards.notFound": "Baralho ou cartão não encontrado",
+  "flashcards.invalid": "Revise os campos marcados",
+  "flashcards.ratingInvalid": "Escolha errei, quase ou acertei",
+  "ranking.invalid": "Revise as regras marcadas",
+  "ranking.scopeInvalid": "Escolha a plataforma ou uma instituição",
+  "ranking.unavailable": "O ranking não está disponível para o seu perfil",
+  "ranking.notFound": "Seleção não encontrada"
 }

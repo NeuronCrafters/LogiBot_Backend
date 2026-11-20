@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { Pool } from "pg";
 import { closeDatabasePool, getDb } from "../db/client";
-import { clearRule, featureEnabledForAccount, featuresFor, setRule } from "../services/features/featureService";
+import { clearRule, featureEnabledForAccount, featuresFor, platformFeatures, setRule } from "../services/features/featureService";
 
 const url = process.env.FEATURES_TEST_DATABASE_URL;
 const integration = url ? describe : describe.skip;
@@ -54,6 +54,16 @@ integration("feature release on PostgreSQL", () => {
     expect((await featuresFor(getDb(), professor)).chat).toBe(true);
     expect((await featuresFor(getDb(), user({}))).chat).toBe(false);
     expect((await featuresFor(getDb(), user({ role: ["admin"] }))).chat).toBe(false);
+  });
+
+  it("tells the public pages only what is turned off for the whole platform", async () => {
+    await setRule(getDb(), ids.admin, { feature: "practice_translation", scope: "global", enabled: false });
+    await setRule(getDb(), ids.admin, { feature: "quiz", scope: "institution", scopeId: ids.uni, enabled: false });
+    const platform = await platformFeatures(getDb());
+    expect(platform.practice_translation).toBe(false);
+    expect(platform.quiz).toBe(true); // an institution's own rule is not revealed
+    await clearRule(getDb(), { feature: "practice_translation", scope: "global" });
+    await clearRule(getDb(), { feature: "quiz", scope: "institution", scopeId: ids.uni });
   });
 
   it("validates the rule target", async () => {

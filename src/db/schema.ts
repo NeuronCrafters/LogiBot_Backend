@@ -1218,3 +1218,91 @@ export const institutionProfiles = pgTable("institution_profiles", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Flash cards: decks made by the staff for a subject; students of the classes that have the subject
+ * study the published ones. Each student keeps their own spaced-repetition box per card.
+ */
+export const flashcardDecks = pgTable(
+  "flashcard_decks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    disciplineId: uuid("discipline_id")
+      .notNull()
+      .references(() => disciplines.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    language: text("language").notNull().default("pt-BR"),
+    published: boolean("published").notNull().default(false),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    byDiscipline: index("idx_flashcard_decks_discipline").on(table.disciplineId),
+  }),
+);
+
+export const flashcards = pgTable(
+  "flashcards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    deckId: uuid("deck_id")
+      .notNull()
+      .references(() => flashcardDecks.id, { onDelete: "cascade" }),
+    front: text("front").notNull(),
+    back: text("back").notNull(),
+    concept: text("concept"),
+    position: integer("position").notNull().default(0),
+    sourceQuestionId: uuid("source_question_id").references(() => assessmentQuestions.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    byDeck: index("idx_flashcards_deck").on(table.deckId, table.position),
+  }),
+);
+
+export const flashcardReviews = pgTable(
+  "flashcard_reviews",
+  {
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => flashcards.id, { onDelete: "cascade" }),
+    /** Leitner box 1 (review soon) to 5 (well known). */
+    box: integer("box").notNull().default(1),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull().defaultNow(),
+    lastRating: text("last_rating"),
+    reviews: integer("reviews").notNull().default(0),
+    correct: integer("correct").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.studentId, table.cardId] }),
+    byStudentDue: index("idx_flashcard_reviews_student_due").on(table.studentId, table.dueAt),
+  }),
+);
+
+/**
+ * Ranking rules set by the owner: one row for the whole platform ("global", scope_id '') and optional
+ * rows per institution that override part of it. `config` holds period, weights and who may see it.
+ */
+export const rankingSettings = pgTable(
+  "ranking_settings",
+  {
+    scope: text("scope").notNull(),
+    scopeId: text("scope_id").notNull().default(""),
+    config: jsonb("config").notNull().$type<Record<string, unknown>>(),
+    updatedBy: uuid("updated_by").references(() => accounts.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.scope, table.scopeId] }),
+    scopeCheck: check("ranking_settings_scope_check", sql`${table.scope} IN ('global', 'institution')`),
+  }),
+);

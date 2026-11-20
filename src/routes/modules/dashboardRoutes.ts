@@ -1,3 +1,4 @@
+import { requireFeature } from "../../services/features/featureService";
 import { Router } from "express";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
@@ -109,12 +110,13 @@ dashboardRouter.post(
 );
 
 // Data of the new comparison charts, one selection per request, with the scope checked.
-for (const [path, load] of [
-  ["/compare/exams", examResults],
-  ["/compare/engagement", weeklyEngagement],
-  ["/compare/chat-satisfaction", chatSatisfaction],
+for (const [path, load, feature] of [
+  ["/compare/exams", examResults, "exams"],
+  ["/compare/engagement", weeklyEngagement, null],
+  ["/compare/chat-satisfaction", chatSatisfaction, "chat"],
 ] as const) {
-  dashboardRouter.post(path, asyncHandler(async (req, res) => {
+  // Data of a turned-off feature is never sent, whatever screen asks for it.
+  dashboardRouter.post(path, requireFeature(() => feature), asyncHandler(async (req, res) => {
     const filters = parseInsightFilters(req.body);
     await assertDashboardScopeAccess(req.user!, filters);
     return res.json(await load(filters));
@@ -137,24 +139,28 @@ dashboardRouter.post(
 
 dashboardRouter.post(
   "/topic-performance",
+  requireFeature("quiz"),
   requireDashboardScope((req) => parseScopeFilters(req.body)),
   asyncHandler(async (_req, res) => res.json(await getTopicPerformance(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/proficiency-radar",
+  requireFeature("quiz"),
   requireDashboardScope((req) => parseScopeFilters(req.body)),
   asyncHandler(async (_req, res) => res.json(await getProficiencyRadar(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/effort-matrix",
+  requireFeature("quiz"),
   requireDashboardScope((req) => parseScopeFilters(req.body)),
   asyncHandler(async (_req, res) => res.json(await getEffortMatrix(res.locals.scope))),
 );
 
 dashboardRouter.post(
   "/learning-journey",
+  requireFeature("quiz"),
   requireDashboardScope((req) => parseScopeFilters(req.body)),
   asyncHandler(async (_req, res) => res.json(await getLearningJourney(res.locals.scope))),
 );

@@ -1,3 +1,4 @@
+import { requireFeature } from "../../services/features/featureService";
 import { Router } from "express";
 import { eq, inArray } from "drizzle-orm";
 import { AppError } from "../../exceptions/AppError";
@@ -182,6 +183,7 @@ logRouter.get("/professor/student-stats", (_req, res) =>
 
 logRouter.get(
   "/:entity/:id/accuracy",
+  requireFeature("quiz"),
   requireDashboardScope((req) => entityFilters(req.params.entity, req.params.id)),
   asyncHandler(async (req, res) => {
     const summary = await summaryByEntity(req.params.entity, req.params.id);
@@ -214,6 +216,7 @@ logRouter.get(
 
 logRouter.get(
   "/:entity/:id/subjects/summary",
+  requireFeature("chat"),
   requireDashboardScope((req) => entityFilters(req.params.entity, req.params.id)),
   asyncHandler(async (req, res) => {
     const summary = await summaryByEntity(req.params.entity, req.params.id);

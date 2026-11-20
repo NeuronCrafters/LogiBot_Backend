@@ -5,7 +5,7 @@ import { institutionProfiles, universities } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { feedbackSummary } from "../chat/chatFeedbackService";
 import { institutionConcepts } from "../concepts/conceptProficiencyService";
-import { featuresFor, featuresForInstitutions } from "../features/featureService";
+import { featuresFor, featuresForInstitutions, hiddenPracticeTypes } from "../features/featureService";
 import { geocodeAddress } from "./geocoder";
 import { lookupPostalCode } from "./postalCode";
 import { imagePath, removeImageIfUnused, storeImage } from "./institutionImageStore";
@@ -452,7 +452,7 @@ async function aggregateView(db: AnyDbClient, run: Run, user: User, id: string, 
   const current = weeks[weeks.length - 1].active;
 
   const released = await featuresFor(db, user);
-  const concepts = await institutionConcepts(db, id, released.practice_parsons ? [] : ["parsons"], MIN_GROUP, now, courseIds ?? undefined);
+  const concepts = await institutionConcepts(db, id, hiddenPracticeTypes(released), MIN_GROUP, now, courseIds ?? undefined, !released.exams);
 
   // Chat satisfaction covers the whole institution: admins only.
   let chat: { score: number | null; total: number } | null = null;

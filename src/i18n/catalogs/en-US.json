@@ -359,5 +359,12 @@
   "institutions.geocodeUnavailable": "The map search did not answer right now. Try again or enter the coordinates.",
   "institutions.postalCodeInvalid": "Type a postal code (CEP) with 8 digits",
   "institutions.postalCodeNotFound": "Postal code not found",
-  "institutions.postalCodeUnavailable": "The postal code search did not answer right now. Fill in the address manually."
+  "institutions.postalCodeUnavailable": "The postal code search did not answer right now. Fill in the address manually.",
+  "flashcards.notFound": "Deck or card not found",
+  "flashcards.invalid": "Check the highlighted fields",
+  "flashcards.ratingInvalid": "Choose missed, almost or got it",
+  "ranking.invalid": "Check the highlighted rules",
+  "ranking.scopeInvalid": "Choose the platform or one institution",
+  "ranking.unavailable": "The ranking is not available for your profile",
+  "ranking.notFound": "Selection not found"
 }

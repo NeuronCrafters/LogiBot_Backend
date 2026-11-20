@@ -3,7 +3,7 @@ import { getDb } from "../../db/client";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
 import { t } from "../../i18n";
-import { featuresFor } from "../../services/features/featureService";
+import { featuresFor, hiddenPracticeTypes } from "../../services/features/featureService";
 import { AppError } from "../../exceptions/AppError";
 import {
   QuestionValidationError,
@@ -27,7 +27,7 @@ const body = (req: Request) => (req.body && typeof req.body === "object" && !Arr
  */
 async function hiddenTypes(req: Request): Promise<string[]> {
   const released = await featuresFor(getDb(), req.user!);
-  return released.practice_parsons ? [] : ["parsons"];
+  return hiddenPracticeTypes(released);
 }
 
 /** A question of a hidden type behaves as if it did not exist. */

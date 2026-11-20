@@ -103,22 +103,29 @@ integration("test environment in a separate database", () => {
 
   it("fills every part of the platform: chat ratings, feedback, bank, workbench, exams, notifications", async () => {
     const result = await seed.resetSandbox(30);
-    expect(result).toMatchObject({ questions: 6, exams: 2 });
+    expect(result).toMatchObject({ questions: 12, exams: 4 });
+    expect(result.flashcardReviews).toBeGreaterThan(0);
     expect(result.hints).toBeGreaterThan(0);
     const ratings = (await sandbox.query("SELECT rating, count(*)::int AS n, count(comment)::int AS comments, count(reason)::int AS reasons FROM chat_message_feedback GROUP BY rating")).rows;
     expect(ratings.map((row) => row.rating).sort()).toEqual(["down", "partial", "up"]);
     expect(ratings.filter((row) => row.rating !== "up").every((row) => row.comments > 0 && row.reasons > 0)).toBe(true);
     expect(await count(sandbox, "SELECT count(*) AS n FROM chat_messages WHERE role='assistant'")).toBeGreaterThan(30);
     expect(await count(sandbox, "SELECT count(DISTINCT type) AS n FROM feedbacks")).toBe(4);
-    expect(await count(sandbox, "SELECT count(*) AS n FROM assessment_questions WHERE practice_enabled")).toBe(4);
+    expect(await count(sandbox, "SELECT count(*) AS n FROM assessment_questions WHERE practice_enabled")).toBe(8);
     // A large truth table (6 propositions) asked with the final column only.
-    expect(await count(sandbox, "SELECT count(*) AS n FROM assessment_questions WHERE type='truth_table' AND content->>'columns' = 'final'")).toBe(1);
+    expect(await count(sandbox, "SELECT count(*) AS n FROM assessment_questions WHERE type='truth_table' AND content->>'columns' = 'final'")).toBe(2);
     // Hints on wrong answers only, each one tied to its attempt.
     expect(await count(sandbox, "SELECT count(*) AS n FROM exercise_hints h JOIN exercise_attempts a ON a.id = h.attempt_id WHERE a.is_correct")).toBe(0);
     expect(await count(sandbox, "SELECT count(DISTINCT level) AS n FROM exercise_hints")).toBe(2);
     expect(await count(sandbox, "SELECT count(DISTINCT exercise_type) AS n FROM exercise_attempts WHERE mode='practice'")).toBe(3);
     expect(await count(sandbox, "SELECT count(DISTINCT is_correct::text) AS n FROM exercise_attempts WHERE mode='practice'")).toBe(2);
-    expect(await count(sandbox, "SELECT count(*) AS n FROM exams WHERE status='released'")).toBe(1);
+    expect(await count(sandbox, "SELECT count(*) AS n FROM exams WHERE status='released'")).toBe(2);
+    // Both institutions: their own bank and exams, flash card decks with progress, and a full profile.
+    expect(await count(sandbox, "SELECT count(DISTINCT q.owner_id) AS n FROM assessment_questions q")).toBe(2);
+    expect(await count(sandbox, "SELECT count(*) AS n FROM flashcard_decks WHERE published")).toBe(8);
+    expect(await count(sandbox, "SELECT count(*) AS n FROM flashcard_decks WHERE NOT published")).toBe(1);
+    expect(await count(sandbox, "SELECT count(DISTINCT box) AS n FROM flashcard_reviews")).toBe(5);
+    expect(await count(sandbox, "SELECT count(*) AS n FROM institution_profiles WHERE latitude IS NOT NULL AND address IS NOT NULL AND jsonb_array_length(links) > 0")).toBe(2);
     expect(await count(sandbox, "SELECT count(*) AS n FROM exam_submissions WHERE grade IS NOT NULL")).toBeGreaterThan(5);
     expect(await count(sandbox, "SELECT count(*) AS n FROM blind_reviews WHERE score IS NULL")).toBe(0);
     expect(await count(sandbox, "SELECT count(*) AS n FROM notifications")).toBeGreaterThan(30);

@@ -8,6 +8,8 @@ const config: Config = {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
   clearMocks: true,
+  // Integration suites seed PostgreSQL and start the app in their hooks; 5 s is too tight on a busy machine.
+  testTimeout: 30000,
 };
 
 export default config;

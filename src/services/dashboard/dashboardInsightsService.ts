@@ -11,6 +11,7 @@ import {
   getTopicPerformance,
 } from "./dashboardService";
 import { chatSatisfaction, examResults, weeklyEngagement } from "./dashboardComparisonService";
+import type { Feature } from "../features/featureService";
 
 export const DASHBOARD_INSIGHT_CHARTS = [
   "usage",
@@ -25,6 +26,21 @@ export const DASHBOARD_INSIGHT_CHARTS = [
 
 export type DashboardInsightChart =
   (typeof DASHBOARD_INSIGHT_CHARTS)[number];
+
+/**
+ * Feature each chart comes from. With the feature turned off for the person, the chart's data is
+ * never read nor sent to the model, also inside the overall and A × B analyses.
+ */
+type Released = Partial<Record<Feature, boolean>>;
+const CHART_FEATURE: Partial<Record<string, Feature>> = {
+  accuracy: "quiz", "general-score": "quiz", "proficiency-radar": "quiz", "effort-matrix": "quiz", "learning-journey": "quiz",
+  "chat-topics": "chat",
+  "topic-difference": "quiz", "radar-overlay": "quiz", "performance-distribution": "quiz", "exam-results": "exams", "chat-satisfaction": "chat",
+};
+const chartReleased = (chart: string, released: Released) => { const feature = CHART_FEATURE[chart]; return !feature || released[feature] !== false; };
+function assertChartReleased(chart: string, released: Released) {
+  if (!chartReleased(chart, released)) throw new AppError("features.unavailable", 403);
+}
 
 type InsightResponse = {
   insight: string;
@@ -287,7 +303,9 @@ export async function generateChartInsight(input: {
   chart: DashboardInsightChart;
   filters: Filters;
   force?: boolean;
+  released?: Released;
 }): Promise<InsightResponse> {
+  assertChartReleased(input.chart, input.released ?? {});
   const data = await chartData(input.chart, input.filters);
   if (!containsUsefulData(data))
     throw new AppError("insights.dataInsufficient", 422);
@@ -310,8 +328,8 @@ export async function generateChartInsight(input: {
 }
 
 /** Data of every chart for one selection (the same set the overall analysis uses). */
-async function overviewDatasets(filters: Filters) {
-  const charts = DASHBOARD_INSIGHT_CHARTS.filter((chart) => chart !== "access-pattern" || Boolean(filters.studentId));
+async function overviewDatasets(filters: Filters, released: Released = {}) {
+  const charts = DASHBOARD_INSIGHT_CHARTS.filter((chart) => (chart !== "access-pattern" || Boolean(filters.studentId)) && chartReleased(chart, released));
   return (await Promise.all(charts.map(async (chart) => ({
     chart, title: getChartContext(chart).title, description: getChartContext(chart).description, data: await chartData(chart, filters),
   })))).filter((item) => containsUsefulData(item.data));
@@ -321,8 +339,8 @@ async function overviewDatasets(filters: Filters) {
  * Analysis of both selections together (A × B): the model receives both sets of charts and is
  * asked to compare them. Names are never sent, only the kind of each selection.
  */
-export async function generateComparisonInsight(input: { a: Filters; b: Filters; force?: boolean }): Promise<InsightResponse> {
-  const [a, b] = await Promise.all([overviewDatasets(input.a), overviewDatasets(input.b)]);
+export async function generateComparisonInsight(input: { a: Filters; b: Filters; force?: boolean; released?: Released }): Promise<InsightResponse> {
+  const [a, b] = await Promise.all([overviewDatasets(input.a, input.released), overviewDatasets(input.b, input.released)]);
   if (!a.length || !b.length) throw new AppError("insights.comparisonDataInsufficient", 422);
   return generateCached(
     { type: "comparison", a: input.a, b: input.b, datasetsA: a, datasetsB: b },
@@ -340,9 +358,10 @@ export async function generateComparisonInsight(input: { a: Filters; b: Filters;
 export async function generateOverviewInsight(input: {
   filters: Filters;
   force?: boolean;
+  released?: Released;
 }): Promise<InsightResponse> {
   const charts = DASHBOARD_INSIGHT_CHARTS.filter(
-    (chart) => chart !== "access-pattern" || Boolean(input.filters.studentId),
+    (chart) => (chart !== "access-pattern" || Boolean(input.filters.studentId)) && chartReleased(chart, input.released ?? {}),
   );
   const datasets = (
     await Promise.all(
@@ -429,7 +448,8 @@ function comparisonHasData(chart: ComparisonInsightChart, data: unknown) {
   return containsUsefulData(data);
 }
 
-export async function generateComparisonChartInsight(input: { chart: ComparisonInsightChart; a: Filters; b: Filters; force?: boolean }): Promise<InsightResponse> {
+export async function generateComparisonChartInsight(input: { chart: ComparisonInsightChart; a: Filters; b: Filters; force?: boolean; released?: Released }): Promise<InsightResponse> {
+  assertChartReleased(input.chart, input.released ?? {});
   const [a, b] = await Promise.all([comparisonChartData(input.chart, input.a), comparisonChartData(input.chart, input.b)]);
   if (!comparisonHasData(input.chart, a) || !comparisonHasData(input.chart, b)) throw new AppError("insights.comparisonDataInsufficient", 422);
   return generateCached(

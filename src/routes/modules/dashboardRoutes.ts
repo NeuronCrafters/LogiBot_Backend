@@ -1,4 +1,5 @@
-import { requireFeature } from "../../services/features/featureService";
+import { getDb } from "../../db/client";
+import { featuresFor, requireFeature } from "../../services/features/featureService";
 import { Router } from "express";
 import { asyncHandler } from "../../http/asyncHandler";
 import { requireAuth, requireRoles } from "../../http/auth";
@@ -79,6 +80,7 @@ dashboardRouter.post(
         chart: req.body.chart,
         filters,
         force: req.body.force === true,
+        released: await featuresFor(getDb(), req.user!),
       }),
     );
   }),
@@ -92,7 +94,7 @@ dashboardRouter.post(
     // Both selections must be inside the person's scope.
     await assertDashboardScopeAccess(req.user!, a);
     await assertDashboardScopeAccess(req.user!, b);
-    return res.json(await generateComparisonInsight({ a, b, force: req.body.force === true }));
+    return res.json(await generateComparisonInsight({ a, b, force: req.body.force === true, released: await featuresFor(getDb(), req.user!) }));
   }),
 );
 
@@ -105,7 +107,7 @@ dashboardRouter.post(
     const b = parseInsightFilters(req.body?.b);
     await assertDashboardScopeAccess(req.user!, a);
     await assertDashboardScopeAccess(req.user!, b);
-    return res.json(await generateComparisonChartInsight({ chart: req.body.chart, a, b, force: req.body.force === true }));
+    return res.json(await generateComparisonChartInsight({ chart: req.body.chart, a, b, force: req.body.force === true, released: await featuresFor(getDb(), req.user!) }));
   }),
 );
 
@@ -132,6 +134,7 @@ dashboardRouter.post(
       await generateOverviewInsight({
         filters,
         force: req.body.force === true,
+        released: await featuresFor(getDb(), req.user!),
       }),
     );
   }),

@@ -155,6 +155,19 @@ describe("dashboardInsightsService", () => {
     expect(askDashboardInsightsAgent).toHaveBeenCalledTimes(1);
   });
 
+  it("nunca lê nem envia ao modelo dados de funções desligadas", async () => {
+    const released = { quiz: false, chat: false };
+    await expect(generateChartInsight({ chart: "effort-matrix", filters, released })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(generateComparisonChartInsight({ chart: "chat-satisfaction", a: filters, b: filters, released })).rejects.toMatchObject({ statusCode: 403 });
+    await generateOverviewInsight({ filters, released });
+    expect(getTopicPerformance).not.toHaveBeenCalled();
+    expect(getProficiencyRadar).not.toHaveBeenCalled();
+    expect(getEffortMatrix).not.toHaveBeenCalled();
+    expect(getLearningJourney).not.toHaveBeenCalled();
+    const prompt = askDashboardInsightsAgent.mock.calls[0][0] as string;
+    expect(prompt).not.toContain("variaveis"); // chat topics and quiz subjects stay out
+  });
+
   it("retorna 422 quando não existem dados úteis", async () => {
     getTopicPerformance.mockResolvedValue([]);
 

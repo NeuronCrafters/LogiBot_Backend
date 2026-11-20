@@ -14,6 +14,8 @@ import {
   professorCourses,
   professorDisciplines,
   professorProfiles,
+  flashcardDecks,
+  flashcards,
   studentProfiles,
   universities,
 } from "../../db/schema";
@@ -27,11 +29,36 @@ import { clearSandboxImages } from "../institutions/institutionImageStore";
 /** Structure of the test environment: two institutions of different kinds, two courses each, two classes per course. */
 export const SANDBOX_STRUCTURE = [
   { institution: "Faculdade SAEL (teste)", courses: ["Ciência da Computação (teste)", "Sistemas de Informação (teste)"],
-    profile: { kind: "faculdade", city: "Belém", state: "PA", country: "Brasil", about: "Instituição fictícia do ambiente de teste, com cursos de computação e turmas de lógica e algoritmos." } },
+    profile: { kind: "faculdade", city: "Belém", state: "PA", country: "Brasil", about: "Instituição fictícia do ambiente de teste, com cursos de computação e turmas de lógica e algoritmos.",
+      address: "Avenida do Ensino", addressNumber: "1000", district: "Centro", postalCode: "66000-000", latitude: -1.4558, longitude: -48.4902,
+      website: "https://www.example.com/faculdade-sael", links: [{ kind: "site", url: "https://www.example.com/faculdade-sael/eventos" }, { kind: "blog", url: "https://blog.example.com/faculdade-sael" }] } },
   { institution: "Escola Técnica SAEL (teste)", courses: ["Técnico em Informática (teste)", "Técnico em Desenvolvimento de Sistemas (teste)"],
-    profile: { kind: "escola_tecnica", city: "Ananindeua", state: "PA", country: "Brasil", about: "Escola técnica fictícia do ambiente de teste." } },
+    profile: { kind: "escola_tecnica", city: "Ananindeua", state: "PA", country: "Brasil", about: "Escola técnica fictícia do ambiente de teste, com cursos técnicos integrados ao ensino médio na área de informática.",
+      address: "Rua da Tecnologia", addressNumber: "250", district: "Centro", postalCode: "67000-000", latitude: -1.3656, longitude: -48.3722,
+      website: "https://www.example.com/escola-tecnica-sael", links: [{ kind: "site", url: "https://www.example.com/escola-tecnica-sael/cursos" }] } },
 ];
 const DISCIPLINES = ["Lógica de Programação", "Algoritmos e Estruturas de Dados"];
+/** Example decks, one per subject above (same order): front, back and concept of each card. */
+const SANDBOX_DECKS: Array<{ title: string; description: string; cards: Array<[string, string, string | null]> }> = [
+  { title: "Conectivos lógicos", description: "Revisão rápida dos conectivos e das tabelas-verdade.", cards: [
+    ["Quando p ∧ q é verdadeiro?", "Só quando p e q são verdadeiros.", "conjunction"],
+    ["Quando p ∨ q é falso?", "Só quando p e q são falsos.", "disjunction"],
+    ["O que faz ¬p?", "Inverte o valor lógico de p.", "negation"],
+    ["Quando p → q é falso?", "Só quando p é verdadeiro e q é falso.", "conditional"],
+    ["Quando p ↔ q é verdadeiro?", "Quando p e q têm o mesmo valor lógico.", "biconditional"],
+    ["Quantas linhas tem a tabela-verdade de 3 proposições?", "8 linhas (2³).", null],
+    ["Como se nega p ∧ q (De Morgan)?", "¬p ∨ ¬q.", "negation"],
+    ["O que é uma contradição?", "Uma fórmula falsa em todas as linhas.", null],
+  ] },
+  { title: "Algoritmos: estruturas básicas", description: "Sequência, decisão e repetição em poucas palavras.", cards: [
+    ["Para que serve uma estrutura de decisão (se/senão)?", "Executar um bloco ou outro conforme uma condição.", "selection"],
+    ["Qual a diferença entre enquanto e para?", "Enquanto repete por uma condição; para repete um número conhecido de vezes.", "repetition"],
+    ["O que é uma variável?", "Um espaço com nome que guarda um valor que pode mudar.", null],
+    ["O que é um vetor?", "Uma coleção de valores do mesmo tipo acessados por posição.", null],
+    ["O que acontece num laço sem condição de parada?", "Ele nunca termina (laço infinito).", "repetition"],
+    ["O que uma função devolve?", "O valor do seu retorno, para quem a chamou.", null],
+  ] },
+];
 const CLASSES = ["Turma A", "Turma B"];
 
 export function sandboxPassword(): string {
@@ -128,6 +155,25 @@ export async function seedSandbox(db: AnyDbClient, password: string): Promise<bo
       for (const classId of course.classes) await db.insert(professorClasses).values({ professorId: professor2, classId });
       for (const disciplineId of course.disciplines) await db.insert(professorDisciplines).values({ professorId: professor2, disciplineId });
     }
+  }
+
+  // Flash cards: one published deck per subject, made by the professor of each institution, and a draft.
+  const owners = [professorId, second ? (await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.email, sandboxEmail("professor2"))).limit(1))[0]?.id : undefined];
+  for (const [institutionIndex, made] of institutionsMade.entries()) {
+    const ownerId = owners[institutionIndex];
+    if (!ownerId) continue;
+    for (const course of made.courses) {
+      for (const [subjectIndex, disciplineId] of course.disciplines.entries()) {
+        const deck = SANDBOX_DECKS[subjectIndex % SANDBOX_DECKS.length];
+        const [created] = await db.insert(flashcardDecks).values({ ownerId, disciplineId, title: deck.title, description: deck.description, language: "pt-BR", published: true }).returning({ id: flashcardDecks.id });
+        await db.insert(flashcards).values(deck.cards.map(([front, back, concept], position) => ({ deckId: created.id, front, back, concept, position })));
+      }
+    }
+  }
+  const [draftCourse] = institutionsMade[0]?.courses ?? [];
+  if (draftCourse) {
+    const [draft] = await db.insert(flashcardDecks).values({ ownerId: professorId, disciplineId: draftCourse.disciplines[0], title: "Revisão para a prova (rascunho)", description: "Ainda não publicado: só a equipe vê.", language: "pt-BR", published: false }).returning({ id: flashcardDecks.id });
+    await db.insert(flashcards).values([{ deckId: draft.id, front: "O que é uma tautologia?", back: "Uma fórmula verdadeira em todas as linhas da tabela-verdade.", concept: "tautology", position: 0 }]);
   }
 
   // Students spread over every class of both institutions.

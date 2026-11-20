@@ -169,6 +169,16 @@ integration("ranking on PostgreSQL", () => {
     await owner.post("/ranking-settings/clear").send({ scope: "institution", scopeId: ids.school }).expect(204);
     expect((await owner.get("/ranking").query({ scope: "institution", id: ids.school }).expect(200)).body.rules.periodDays).toBe(30);
 
+    // A feature turned off for the class takes its activity out of the count and of the rules shown.
+    await owner.put("/features/rules").send({ feature: "exams", scope: "class", scopeId: ids.classA, enabled: false }).expect(200);
+    await owner.put("/features/rules").send({ feature: "practice_truth_table", scope: "class", scopeId: ids.classA, enabled: false }).expect(200);
+    const withoutExams = (await owner.get("/ranking").query({ scope: "class", id: ids.classA }).expect(200)).body;
+    expect(withoutExams.rules.sources).toEqual(["practice", "quiz", "flashcards"]);
+    expect(withoutExams.rules.weights.exam).toBe(0);
+    expect(board(withoutExams)).toEqual([[1, "Aluno A2", 15], [2, "Aluno A4", 4], [3, "Aluno A1", 0], [3, "Aluno A3", 0], [3, "Aluno A5", 0]]);
+    await owner.post("/features/rules/clear").send({ feature: "exams", scope: "class", scopeId: ids.classA }).expect(204);
+    await owner.post("/features/rules/clear").send({ feature: "practice_truth_table", scope: "class", scopeId: ids.classA }).expect(204);
+
     // Turned off for the institution in the release page: hidden, but the rules can still be changed.
     await owner.put("/features/rules").send({ feature: "ranking", scope: "institution", scopeId: ids.school, enabled: false }).expect(200);
     expect((await (await signIn(staff.professor)).get("/ranking/scopes").expect(403)).body.code).toBe("features.unavailable");

@@ -122,6 +122,15 @@ export async function platformFeatures(db: AnyDbClient): Promise<Record<Feature,
   return result;
 }
 
+/** Features of one place (class, course or institution), from its most specific rule to the global one. */
+export async function featuresForChain(db: AnyDbClient, chain: Array<[Scope, string]>): Promise<Record<Feature, boolean>> {
+  const full: Array<[Scope, string]> = [...chain, ["global", ""]];
+  const rules = await rulesFor(db, [full]);
+  const result = {} as Record<Feature, boolean>;
+  for (const feature of FEATURES) result[feature] = resolveChain(rules, feature, full);
+  return result;
+}
+
 /** Workbench exercise types whose feature is turned off: they leave no trace in panels and charts. */
 export function hiddenPracticeTypes(released: Record<Feature, boolean>): string[] {
   return (Object.keys(PRACTICE_FEATURE) as string[]).filter((type) => !released[PRACTICE_FEATURE[type]]);

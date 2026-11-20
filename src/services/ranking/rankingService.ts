@@ -6,6 +6,7 @@ import { currentEnvironment, runInEnvironment } from "../../db/environment";
 import { rankingSettings, universities } from "../../db/schema";
 import { AppError } from "../../exceptions/AppError";
 import { isOwner } from "../sandbox/sandboxConfig";
+import { featuresForChain, hiddenPracticeTypes } from "../features/featureService";
 
 /**
  * Ranking of students by points earned in a period, in cascade: class → course → institution.
@@ -222,6 +223,16 @@ export async function ranking(db: AnyDbClient, user: User, input: { scope?: unkn
   if (!option) throw new AppError("ranking.notFound", 404);
   const institutionId = "institutionId" in option ? option.institutionId : option.id;
   const rules = await effectiveRules(db, institutionId);
+  // Activities of features turned off where this selection is never count (nor show).
+  const released = await featuresForChain(db, scope === "class"
+    ? [["class", id], ["course", (option as { courseId: string }).courseId], ["institution", institutionId]]
+    : scope === "course" ? [["course", id], ["institution", institutionId]] : [["institution", id]]);
+  const hiddenTypes = hiddenPracticeTypes(released);
+  const practiceOn = hiddenTypes.length < 3;
+  const active: Record<Source, boolean> = { practice: practiceOn, quiz: released.quiz, exam: released.exams, flashcards: released.flashcards };
+  const weights = { ...rules.weights };
+  for (const source of SOURCES) if (!active[source]) weights[source] = 0;
+  const practiceTypes = hiddenTypes.length ? sql`AND ea.exercise_type NOT IN (${sql.join(hiddenTypes.map((type) => sql`${type}`), sql`, `)})` : sql``;
   if (!rules.visibleTo[scopes.level]) throw new AppError("ranking.unavailable", 403);
   const since = new Date(now.getTime() - rules.periodDays * 86400000);
   const filter = scope === "class" ? sql`sp.class_id = ${id}` : scope === "course" ? sql`sp.course_id = ${id}` : sql`sp.school_id = ${id}`;
@@ -229,7 +240,7 @@ export async function ranking(db: AnyDbClient, user: User, input: { scope?: unkn
   const rows = await runner(db)<Row>(sql`
     SELECT sp.account_id AS id, a.name, sp.class_id, k.name AS class_name, sp.course_id, c.name AS course_name,
       (SELECT count(DISTINCT (ea.exercise_type, ea.exercise_id))::int FROM exercise_attempts ea
-         WHERE ea.student_id = sp.account_id AND ea.mode = 'practice' AND ea.is_correct AND ea.created_at >= ${since}) AS practice,
+         WHERE ea.student_id = sp.account_id AND ea.mode = 'practice' AND ea.is_correct AND ea.created_at >= ${since} ${practiceTypes}) AS practice,
       ((SELECT count(*)::int FROM professor_quiz_answers pa JOIN professor_quiz_attempts pt ON pt.id = pa.attempt_id
          WHERE pt.student_id = sp.account_id AND pa.is_correct AND pt.completed_at >= ${since})
        + (SELECT count(*)::int FROM quiz_question_attempts qa JOIN quiz_sessions qs ON qs.id = qa.quiz_session_id
@@ -245,10 +256,10 @@ export async function ranking(db: AnyDbClient, user: User, input: { scope?: unkn
 
   const scored = rows.map((row) => {
     const breakdown = {
-      practice: Number(row.practice) * rules.weights.practice,
-      quiz: Number(row.quiz) * rules.weights.quiz,
-      exam: Math.round(Number(row.exam) * rules.weights.exam),
-      flashcards: Number(row.flashcards) * rules.weights.flashcards,
+      practice: Number(row.practice) * weights.practice,
+      quiz: Number(row.quiz) * weights.quiz,
+      exam: Math.round(Number(row.exam) * weights.exam),
+      flashcards: Number(row.flashcards) * weights.flashcards,
     };
     return { row, breakdown, points: breakdown.practice + breakdown.quiz + breakdown.exam + breakdown.flashcards };
   }).sort((a, b) => b.points - a.points || a.row.name.localeCompare(b.row.name));
@@ -284,7 +295,7 @@ export async function ranking(db: AnyDbClient, user: User, input: { scope?: unkn
 
   return {
     scope, id, name: option.name,
-    rules: { periodDays: rules.periodDays, weights: rules.weights, studentNames: rules.studentNames },
+    rules: { periodDays: rules.periodDays, weights, studentNames: rules.studentNames, sources: SOURCES.filter((source) => active[source]) },
     since: since.toISOString(),
     viewer: { level: scopes.level, canConfigure: isOwner(user) && currentEnvironment() === "production" },
     minGroupSize: MIN_GROUP,

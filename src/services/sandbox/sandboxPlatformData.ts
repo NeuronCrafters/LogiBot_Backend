@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import type { DbClient } from "../../db/client";
 import {
   accountRoles,
@@ -10,6 +10,7 @@ import {
   exerciseAttempts,
   exerciseHints,
   feedbacks,
+  flashcardReviews,
   notifications,
   professorDisciplines,
   professorProfiles,
@@ -54,7 +55,7 @@ const FEEDBACK: Array<[string, string]> = [
   ["ELOGIO", "As provas online são bem organizadas."],
 ];
 
-export interface PlatformSummary { chats: number; ratings: number; feedbacks: number; questions: number; exercises: number; hints: number; exams: number; submissions: number; notifications: number }
+export interface PlatformSummary { chats: number; ratings: number; feedbacks: number; questions: number; exercises: number; hints: number; exams: number; submissions: number; notifications: number; flashcardReviews: number }
 
 /**
  * Everything around the dashboards: chat with ratings, feedback, question bank, workbench,
@@ -62,7 +63,7 @@ export interface PlatformSummary { chats: number; ratings: number; feedbacks: nu
  * platform's own services, so the data looks exactly like real use.
  */
 export async function generatePlatformData(db: DbClient, days: DemoPeriod, now = new Date()): Promise<PlatformSummary> {
-  const summary: PlatformSummary = { chats: 0, ratings: 0, feedbacks: 0, questions: 0, exercises: 0, hints: 0, exams: 0, submissions: 0, notifications: 0 };
+  const summary: PlatformSummary = { chats: 0, ratings: 0, feedbacks: 0, questions: 0, exercises: 0, hints: 0, exams: 0, submissions: 0, notifications: 0, flashcardReviews: 0 };
   if (days === 0) return summary;
   const random = seededRandom(days * 104729);
   const pick = <T,>(items: readonly T[]) => items[Math.floor(random() * items.length)];
@@ -71,8 +72,11 @@ export async function generatePlatformData(db: DbClient, days: DemoPeriod, now =
 
   const students = await db.select({ id: accounts.id, classId: studentProfiles.classId }).from(studentProfiles)
     .innerJoin(accounts, eq(accounts.id, studentProfiles.accountId)).orderBy(asc(accounts.email));
-  const [professor] = await db.select({ id: accounts.id, name: accounts.name, email: accounts.email, school: professorProfiles.schoolId })
-    .from(accounts).innerJoin(professorProfiles, eq(professorProfiles.accountId, accounts.id)).where(eq(accounts.email, sandboxEmail("professor"))).limit(1);
+  // Professors of both institutions: each fills the bank and the exams of their own subjects.
+  const professors = await db.select({ id: accounts.id, name: accounts.name, email: accounts.email, school: professorProfiles.schoolId })
+    .from(accounts).innerJoin(professorProfiles, eq(professorProfiles.accountId, accounts.id))
+    .where(inArray(accounts.email, [sandboxEmail("professor"), sandboxEmail("professor2")])).orderBy(asc(accounts.email));
+  const professor = professors.find((row) => row.email === sandboxEmail("professor"));
 
   /* ── Chat: conversations, answers and ratings (useful / more or less / not useful) ── */
   const chatRows: Array<typeof chatSessions.$inferInsert> = [];
@@ -124,8 +128,8 @@ export async function generatePlatformData(db: DbClient, days: DemoPeriod, now =
   await batch(feedbackRows, (rows) => db.insert(feedbacks).values(rows));
   summary.feedbacks = feedbackRows.length;
 
-  /* ── Question bank, workbench and exams: taught by the test professor ── */
-  if (professor) {
+  /* ── Question bank, workbench and exams: taught by the test professors ── */
+  for (const professor of professors) {
     const disciplineIds = (await db.select({ id: professorDisciplines.disciplineId }).from(professorDisciplines).where(eq(professorDisciplines.professorId, professor.id))).map((row) => row.id);
     const user: StaffUser = { id: professor.id, name: professor.name, email: professor.email, role: ["professor"], school: professor.school, disciplines: disciplineIds };
     const disciplineId = disciplineIds[0];
@@ -140,7 +144,7 @@ export async function generatePlatformData(db: DbClient, days: DemoPeriod, now =
         parsons: await createQuestion(db, user, { ...base, concepts: ["selection"], type: "parsons", statement: "Mostre o maior de dois números.", practiceEnabled: true, content: { solution: "leia a, b\nse a > b então\n  escreva a\nsenão\n  escreva b\nfimse", distractors: "escreva a + b", alternatives: "" } }),
         essay: await createQuestion(db, user, { ...base, concepts: ["conditional"], type: "essay", weight: 2, statement: "Explique quando o condicional é falso, com um exemplo.", content: { criteria: "Citar o caso V → F e dar um exemplo." } }),
       };
-      summary.questions = Object.keys(created).length;
+      summary.questions += Object.keys(created).length;
 
       // Exams: one already graded and released, and (for longer periods) one open now.
       const examStudents = (await db.select({ id: studentProfiles.accountId }).from(studentProfiles)
@@ -223,6 +227,25 @@ export async function generatePlatformData(db: DbClient, days: DemoPeriod, now =
       }
     }
   }
+
+  /* ── Flash cards: each student reviewed part of the decks of their class's subjects ── */
+  const cards = await db.execute(sql`
+    SELECT sp.account_id AS student_id, f.id AS card_id FROM student_profiles sp
+    JOIN class_disciplines cd ON cd.class_id = sp.class_id
+    JOIN flashcard_decks d ON d.discipline_id = cd.discipline_id AND d.published AND d.archived_at IS NULL
+    JOIN flashcards f ON f.deck_id = d.id
+    ORDER BY sp.account_id, f.position`);
+  const reviewRows: Array<typeof flashcardReviews.$inferInsert> = [];
+  for (const row of cards.rows as Array<{ student_id: string; card_id: string }>) {
+    if (random() < 0.35) continue; // not seen yet
+    const box = between(1, 5);
+    const updatedAt = at(between(0, days - 1));
+    const reviews = box + between(0, 2);
+    reviewRows.push({ studentId: row.student_id, cardId: row.card_id, box, reviews, correct: Math.max(0, box - 1), lastRating: box >= 3 ? "good" : random() < 0.5 ? "hard" : "again",
+      dueAt: new Date(updatedAt.getTime() + [0, 0.007, 1, 3, 7, 21][box] * DAY), updatedAt });
+  }
+  await batch(reviewRows, (rows) => db.insert(flashcardReviews).values(rows).onConflictDoNothing());
+  summary.flashcardReviews = reviewRows.length;
 
   /* ── Notifications: new quizzes and exam results for students, progress for the professor ── */
   const quizzes = await db.select({ id: professorQuizzes.id, title: professorQuizzes.title, createdAt: professorQuizzes.createdAt }).from(professorQuizzes).orderBy(asc(professorQuizzes.createdAt));
